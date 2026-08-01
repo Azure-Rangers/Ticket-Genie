@@ -1,0 +1,38 @@
+name: Production Infrastructure and Azure Handoff
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*.*.*"
+
+concurrency:
+  group: production-infra-apply
+  cancel-in-progress: false
+
+jobs:
+  terraform-apply:
+    name: Terraform Apply and Azure Handoff
+    runs-on: ubuntu-latest
+    environment: production
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Azure authentication placeholder
+        run: echo "Authenticate to Azure here before running terraform apply."
+
+      - name: Terraform apply placeholder
+        run: echo "Run terraform init/plan/apply in terraform/ here."
+
+      - name: Azure Pipelines handoff placeholder
+        run: echo "Trigger the Azure code deployment pipeline here."

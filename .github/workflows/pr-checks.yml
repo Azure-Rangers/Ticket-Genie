@@ -1,0 +1,57 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-checks:
+    name: Python Quality and Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install .[dev]
+
+      - name: Run Ruff checks
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Run tests
+        run: pytest
+
+  terraform-checks:
+    name: Terraform Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Format and validate Terraform
+        working-directory: terraform
+        run: |
+          terraform init -backend=false
+          terraform fmt -check
+          terraform validate
