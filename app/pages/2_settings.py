@@ -6,7 +6,7 @@ st.set_page_config(page_title="Settings | Ticket-Genie", layout="wide")
 
 st.title("Settings")
 st.write(
-	"Configure ticketing defaults, routing preferences, and deployment options here."
+    "Configure ticketing defaults, routing preferences, and deployment options here."
 )
 
 st.checkbox("Enable auto-triage", value=True)
