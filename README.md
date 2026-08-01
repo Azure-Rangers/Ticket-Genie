@@ -9,10 +9,10 @@ Build and run the application in an isolated container:
 
 ```bash
 # Build the container image
-docker build -t my-streamlit-app .
+docker build -t ticket-genie .
 
 # Run the container locally at http://localhost:8501
-docker run -p 8501:8501 my-streamlit-app
+docker run -p 8501:8501 ticket-genie
 ```
 
 ### Option 2: Run Natively

@@ -8,6 +8,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Set working directory inside container
 WORKDIR /app
 
+# Ensure the project root is always importable when Streamlit runs app/main.py
+ENV PYTHONPATH=/app
+
 # Install system dependencies required for building C-extensions
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -17,11 +20,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy dependency definition file first to leverage Docker layer caching
 COPY pyproject.toml .
 
+# Copy application source before installation so the package is included in the image
+COPY app/ ./app/
+
 # Install dependencies (installing the project without dev extras)
 RUN pip install --no-cache-dir .
-
-# Copy application source code
-COPY app/ ./app/
 
 # Expose Streamlit's default port
 EXPOSE 8501
