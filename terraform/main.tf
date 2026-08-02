@@ -62,18 +62,16 @@ resource "azurerm_linux_web_app" "app" {
   location            = azurerm_service_plan.asp.location
   service_plan_id     = azurerm_service_plan.asp.id
 
-  site_config {
+site_config {
     always_on = true
 
-    # --- Container Configuration ---
     application_stack {
-      docker_image_name = "my-web-app:latest" # Image name inside ACR
-      docker_registry_url = "https://${azurerm_container_registry.acr.login_server}"
+      docker_image_name        = "ticketgenie:latest"
+      docker_registry_url      = "https://${azurerm_container_registry.acr.login_server}"
       docker_registry_username = azurerm_container_registry.acr.admin_username
       docker_registry_password = azurerm_container_registry.acr.admin_password
     }
   }
-
   app_settings = {
     "DATABASE_URL" = "Server=tcp:${azurerm_mssql_server.sql.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.db.name};Persist Security Info=False;User ID=${azurerm_mssql_server.sql.administrator_login};Password=${random_password.db_password.result};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
     
