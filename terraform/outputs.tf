@@ -33,3 +33,7 @@ output "key_vault_secret_name" {
   value       = azurerm_key_vault_secret.db_password.name
   description = "Key Vault secret name holding the SQL admin password"
 }
+output "acr_login_server" {
+  value       = azurerm_container_registry.acr.login_server
+  description = "The login server for Azure Container Registry"
+}

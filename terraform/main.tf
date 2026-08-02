@@ -38,7 +38,15 @@ resource "azurerm_mssql_firewall_rule" "allow_azure_services" {
   start_ip_address = "0.0.0.0"
   end_ip_address   = "0.0.0.0"
 }
+# --- Azure Container Registry ---
 
+resource "azurerm_container_registry" "acr" {
+  name                = "acrwebappprodticketgenie" # Must be globally unique (alphanumeric only, lowercase)
+  resource_group_name = data.azurerm_resource_group.rg.name
+  location            = var.region
+  sku                 = "Basic" # Basic tier is ~$5/month
+  admin_enabled       = true    # Enables admin username/password for simple auth
+}
 # --- Linux Web App ---
 
 resource "azurerm_service_plan" "asp" {
@@ -48,22 +56,28 @@ resource "azurerm_service_plan" "asp" {
   os_type             = "Linux"
   sku_name            = "B1"
 }
-
 resource "azurerm_linux_web_app" "app" {
-  name                = "ticket-genie-web-app-prod" # Must be globally unique
+  name                = "webapp-prod-westus-ticketgenie" # Must be globally unique
   resource_group_name = data.azurerm_resource_group.rg.name
-  location            = var.region
+  location            = azurerm_service_plan.asp.location
   service_plan_id     = azurerm_service_plan.asp.id
 
   site_config {
     always_on = true
+
+    # --- Container Configuration ---
     application_stack {
-      node_version = "18-lts" # Adjust runtime language/version as needed
+      docker_image_name = "my-web-app:latest" # Image name inside ACR
+      docker_registry_url = "https://${azurerm_container_registry.acr.login_server}"
+      docker_registry_username = azurerm_container_registry.acr.admin_username
+      docker_registry_password = azurerm_container_registry.acr.admin_password
     }
   }
 
   app_settings = {
-    # Environment variable injected directly into container memory (process.env.DATABASE_URL)
     "DATABASE_URL" = "Server=tcp:${azurerm_mssql_server.sql.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.db.name};Persist Security Info=False;User ID=${azurerm_mssql_server.sql.administrator_login};Password=${random_password.db_password.result};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+    
+    # Optional: If your container listens on a port other than 80/8080 (e.g. 3000):
+    # "WEBSITES_PORT" = "3000"
   }
 }
