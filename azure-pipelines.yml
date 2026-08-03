@@ -1,0 +1,87 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - app/**
+      - Dockerfile
+      - pyproject.toml
+      - terraform/**
+      - azure-pipelines.yml
+
+variables:
+  azureServiceConnection: "REPLACE_WITH_AZURE_SERVICE_CONNECTION_NAME"
+  resourceGroupName: "Azure_Rangers"
+  acrName: "acrwebappprodticketgenie"
+  acrLoginServer: "acrwebappprodticketgenie.azurecr.io"
+  imageRepository: "ticketgenie"
+  webAppName: "webapp-prod-westus-ticketgenie"
+  imageTag: "$(Build.BuildId)"
+
+stages:
+  - stage: BuildAndPush
+    displayName: Build and Push Container
+    jobs:
+      - job: Build
+        displayName: Build container image
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+
+          - task: AzureCLI@2
+            displayName: Build and push image to ACR
+            inputs:
+              azureSubscription: $(azureServiceConnection)
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+
+                az acr build \
+                  --registry "$(acrName)" \
+                  --image "$(imageRepository):$(imageTag)" \
+                  --image "$(imageRepository):latest" \
+                  --file Dockerfile \
+                  .
+
+  - stage: UpdateWebApp
+    displayName: Update Web App Container
+    dependsOn: BuildAndPush
+    condition: succeeded()
+    jobs:
+      - deployment: DeployWebApp
+        displayName: Point Web App at new container image
+        environment: production
+        pool:
+          vmImage: ubuntu-latest
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: none
+
+                - task: AzureCLI@2
+                  displayName: Update web app container and restart
+                  inputs:
+                    azureSubscription: $(azureServiceConnection)
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      set -euo pipefail
+
+                      az webapp config container set \
+                        --resource-group "$(resourceGroupName)" \
+                        --name "$(webAppName)" \
+                        --docker-custom-image-name "$(acrLoginServer)/$(imageRepository):$(imageTag)" \
+                        --docker-registry-server-url "https://$(acrLoginServer)"
+
+                      az webapp config appsettings set \
+                        --resource-group "$(resourceGroupName)" \
+                        --name "$(webAppName)" \
+                        --settings WEBSITES_PORT=8501
+
+                      az webapp restart \
+                        --resource-group "$(resourceGroupName)" \
+                        --name "$(webAppName)"
