@@ -23,8 +23,26 @@ jobs:
       - name: Build Docker image
         run: docker build -t ticket-genie-prod .
 
+  changes:
+    name: Check for Terraform Changes
+    runs-on: ubuntu-latest
+    outputs:
+      terraform: ${{ steps.filter.outputs.terraform }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            terraform:
+              - 'terraform/**'
+
   terraform-apply:
     name: Terraform Apply and Azure Handoff
+    needs: changes
+    if: ${{ needs.changes.outputs.terraform == 'true' }}
     runs-on: ubuntu-latest
     environment: production
 
@@ -39,11 +57,33 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Azure authentication placeholder
-        run: echo "Authenticate to Azure here before running terraform apply."
+      - name: Log in to Azure via OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Terraform apply placeholder
-        run: echo "Run terraform init/plan/apply in terraform/ here."
+      - name: Terraform Init and Apply
+        working-directory: terraform
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_USE_OIDC: "true"
+        run: |
+          terraform init
+          terraform apply -auto-approve
 
-      - name: Azure Pipelines handoff placeholder
-        run: echo "Trigger the Azure code deployment pipeline here."
+      - name: Trigger Azure DevOps Pipeline
+        env:
+          AZURE_DEVOPS_TOKEN: ${{ secrets.AZ_DEVOPS_PAT }}
+          ADO_ORGANIZATION: "Your-ADO-Org"
+          ADO_PROJECT: "Your-ADO-Project"
+          PIPELINE_ID: "1"
+        run: |
+          curl -X POST \
+            -u ":$AZURE_DEVOPS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"resources": {"repositories": {"self": {"refName": "refs/heads/main"}}}}' \
+            "https://dev.azure.com/${ADO_ORGANIZATION}/${ADO_PROJECT}/_apis/build/builds?api-version=7.0"
