@@ -3,6 +3,14 @@ This project is an intelligent ticketing platform designed to streamline workpla
 
 ## How to Run
 
+### Azure SQL Password
+
+If you need the database admin password for local testing or deployment setup, retrieve it from Azure Key Vault:
+
+```bash
+az keyvault secret show --vault-name kv-app-prod-12345 --name db-admin-password --query value -o tsv
+```
+
 ### Option 1: Run in Docker (Recommended)
 
 Build and run the application in an isolated container:
