@@ -75,8 +75,8 @@ resource "azurerm_linux_web_app" "app" {
   }
 
   app_settings = {
-    "DATABASE_URL"                         = "Server=tcp:${azurerm_mssql_server.sql.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.db.name};Persist Security Info=False;User ID=${azurerm_mssql_server.sql.administrator_login};Password=${random_password.db_password.result};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
-    "WEBSITES_PORT"                        = "8501"
+    "DATABASE_URL"                        = "Server=tcp:${azurerm_mssql_server.sql.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.db.name};Persist Security Info=False;User ID=${azurerm_mssql_server.sql.administrator_login};Password=${random_password.db_password.result};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+    "WEBSITES_PORT"                       = "8501"
     "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "false"
   }
 
