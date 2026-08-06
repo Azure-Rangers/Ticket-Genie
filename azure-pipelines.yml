@@ -11,7 +11,7 @@ trigger:
       - azure-pipelines.yml
 
 variables:
-  azureServiceConnection: "REPLACE_WITH_AZURE_SERVICE_CONNECTION_NAME"
+  azureServiceConnection: "TicketGenie"
   resourceGroupName: "Azure_Rangers"
   acrName: "acrwebappprodticketgenie"
   acrLoginServer: "acrwebappprodticketgenie.azurecr.io"

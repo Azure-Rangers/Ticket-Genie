@@ -57,7 +57,7 @@ resource "azurerm_service_plan" "asp" {
   sku_name            = "B1"
 }
 resource "azurerm_linux_web_app" "app" {
-  name                = "webapp-prod-westus-ticketgenie" # Must be globally unique
+  name                = "webapp-prod-westus-ticketgenie"
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = azurerm_service_plan.asp.location
   service_plan_id     = azurerm_service_plan.asp.id
@@ -66,16 +66,25 @@ resource "azurerm_linux_web_app" "app" {
     always_on = true
 
     application_stack {
+      # Initial bootstrap image for Terraform creation
       docker_image_name        = "ticketgenie:latest"
       docker_registry_url      = "https://${azurerm_container_registry.acr.login_server}"
       docker_registry_username = azurerm_container_registry.acr.admin_username
       docker_registry_password = azurerm_container_registry.acr.admin_password
     }
   }
-  app_settings = {
-    "DATABASE_URL" = "Server=tcp:${azurerm_mssql_server.sql.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.db.name};Persist Security Info=False;User ID=${azurerm_mssql_server.sql.administrator_login};Password=${random_password.db_password.result};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
 
-    # Optional: If your container listens on a port other than 80/8080 (e.g. 3000):
-    # "WEBSITES_PORT" = "3000"
+  app_settings = {
+    "DATABASE_URL"                        = "Server=tcp:${azurerm_mssql_server.sql.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.db.name};Persist Security Info=False;User ID=${azurerm_mssql_server.sql.administrator_login};Password=${random_password.db_password.result};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+    "WEBSITES_PORT"                       = "8501"
+    "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "false"
+  }
+
+  # CRITICAL: Prevents GitHub Actions (Terraform) from resetting the image tag 
+  # back to "ticketgenie:latest" when Azure DevOps moves it in production.
+  lifecycle {
+    ignore_changes = [
+      site_config[0].application_stack[0].docker_image_name,
+    ]
   }
 }

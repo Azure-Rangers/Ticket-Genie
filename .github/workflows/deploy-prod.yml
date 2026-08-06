@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "terraform/**"
     tags:
       - "v*.*.*"
   workflow_dispatch:
@@ -19,37 +21,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  docker-build:
-    name: Build Production Container
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Build Docker image
-        run: docker build -t ticket-genie-prod .
-
-  changes:
-    name: Check for Terraform Changes
-    runs-on: ubuntu-latest
-    outputs:
-      terraform: ${{ steps.filter.outputs.terraform }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            terraform:
-              - 'terraform/**'
-
   terraform-apply:
     name: Terraform Apply and Azure Handoff
-    needs: changes
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.force_terraform || needs.changes.outputs.terraform == 'true' }}
     runs-on: ubuntu-latest
     environment: production
 
@@ -81,16 +54,16 @@ jobs:
         run: |
           terraform init
           terraform apply -auto-approve
-
+    
       - name: Trigger Azure DevOps Pipeline
         env:
           AZURE_DEVOPS_TOKEN: ${{ secrets.AZ_DEVOPS_PAT }}
-          ADO_ORGANIZATION: "Your-ADO-Org"
-          ADO_PROJECT: "Your-ADO-Project"
-          PIPELINE_ID: "1"
+          ADO_ORGANIZATION: "Intern2026"
+          ADO_PROJECT: "Azure Rangers"
+          PIPELINE_ID: "2"
         run: |
           curl -X POST \
             -u ":$AZURE_DEVOPS_TOKEN" \
             -H "Content-Type: application/json" \
-            -d '{"resources": {"repositories": {"self": {"refName": "refs/heads/main"}}}}' \
-            "https://dev.azure.com/${ADO_ORGANIZATION}/${ADO_PROJECT}/_apis/build/builds?api-version=7.0"
+            -d "{\"definition\": {\"id\": ${PIPELINE_ID}}, \"resources\": {\"repositories\": {\"self\": {\"refName\": \"refs/heads/main\"}}}}" \
+            "https://dev.azure.com/${ADO_ORGANIZATION}/${ADO_PROJECT// /%20}/_apis/build/builds?api-version=7.0"
