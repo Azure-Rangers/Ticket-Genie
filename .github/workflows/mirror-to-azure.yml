@@ -1,8 +1,10 @@
 name: Mirror to Azure Repos
 
 on:
-  push: # Triggers on EVERY push to ANY branch or tag
-  delete: # Optional: Also syncs deleted branches/tags
+  push:
+    branches:
+      - '**'
+  delete:
 
 jobs:
   mirror:
@@ -10,11 +12,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch all history and branches, not just a shallow clone
+          fetch-depth: 0
 
       - name: Push to Azure Repos
         env:
           AZURE_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
         run: |
-          # Push all branches and tags to Azure Repos securely using the secret PAT
           git push --prune https://x-access-token:${AZURE_PAT}@dev.azure.com/Intern2026/Azure%20Rangers/_git/Azure%20Rangers +refs/heads/*:refs/heads/* +refs/tags/*:refs/tags/*
