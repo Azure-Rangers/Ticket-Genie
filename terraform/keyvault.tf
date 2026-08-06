@@ -13,18 +13,7 @@ resource "azurerm_key_vault" "kv" {
   # NOTE: Do NOT use inline access_policy blocks here when managing individual access policies separately.
 }
 
-# 1. Terraform Deployment Client / Pipeline Policy
-resource "azurerm_key_vault_access_policy" "deployer" {
-  key_vault_id = azurerm_key_vault.kv.id
-  tenant_id    = data.azurerm_client_config.current.tenant_id
-  object_id    = data.azurerm_client_config.current.object_id
-
-  secret_permissions = [
-    "Get", "List", "Set", "Delete", "Purge"
-  ]
-}
-
-# 2. App/Identity Policy (da02463e-9da4-4f3e-99d3-c68530280b2a)
+# 1. App/Identity Policy (da02463e-9da4-4f3e-99d3-c68530280b2a)
 resource "azurerm_key_vault_access_policy" "app_identity" {
   key_vault_id = azurerm_key_vault.kv.id
   tenant_id    = data.azurerm_client_config.current.tenant_id
@@ -35,7 +24,7 @@ resource "azurerm_key_vault_access_policy" "app_identity" {
   secret_permissions      = ["Get", "List"]
 }
 
-# 3. Admin / Developer User Policy (3c2f99ad-d759-4bcb-aba4-17823aaa36ec)
+# 2. Admin / Deployer User Policy (3c2f99ad-d759-4bcb-aba4-17823aaa36ec)
 resource "azurerm_key_vault_access_policy" "admin_user" {
   key_vault_id = azurerm_key_vault.kv.id
   tenant_id    = data.azurerm_client_config.current.tenant_id
@@ -47,7 +36,7 @@ resource "azurerm_key_vault_access_policy" "admin_user" {
     "Rotate", "Update"
   ]
   secret_permissions = [
-    "Get", "List", "Set", "Delete", "Recover", "Backup", "Restore"
+    "Get", "List", "Set", "Delete", "Purge", "Recover", "Backup", "Restore"
   ]
 }
 
@@ -58,6 +47,6 @@ resource "azurerm_key_vault_secret" "db_password" {
 
   # Ensures access policies exist before secrets are created
   depends_on = [
-    azurerm_key_vault_access_policy.deployer
+    azurerm_key_vault_access_policy.admin_user
   ]
 }
