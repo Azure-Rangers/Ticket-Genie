@@ -7,6 +7,49 @@ import streamlit as st
 from app.components.summary_cards import render_summary_cards
 from app.services.tickets import get_sample_tickets, summarize_ticket_queue
 
+import os
+from azure.identity import DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
+
+def load_multiple_keyvaults_to_env():
+    # Define your vaults
+    vault_urls = [
+        "https://group-1.vault.azure.net/",
+        "https://kv-app-prod-12345.vault.azure.net/"
+    ]
+
+    # 1. Instantiate the credential exactly ONCE.
+    # This automatically picks up your local Azure CLI credentials.
+    credential = DefaultAzureCredential()
+
+    for vault_url in vault_urls:
+        print(f"Loading secrets from {vault_url}...")
+        
+        # 2. Create a client for this specific vault using the shared credential
+        client = SecretClient(vault_url=vault_url, credential=credential)
+        
+        # 3. List all secrets in the vault
+        secret_properties = client.list_properties_of_secrets()
+        
+        for prop in secret_properties:
+            # 4. Fetch the actual plaintext value
+            secret_value = client.get_secret(prop.name).value
+            
+            # 5. Format the key name (e.g., "db-password" -> "DB_PASSWORD")
+            env_key = prop.name.replace("-", "_").upper()
+            
+            # 6. Inject it into Python's environment variables
+            os.environ[env_key] = secret_value
+
+# Call this function BEFORE initializing your database, web framework, etc.
+load_multiple_keyvaults_to_env()
+
+
+# Now you just read from os.environ, no Azure SDK knowledge required here!
+#db_password = os.getenv("DB_PASSWORD")
+#api_key = os.getenv("API_KEY")
+
+print("App initialized successfully with secure secrets.")
 
 def build_app_summary() -> dict[str, int | str]:
     tickets = get_sample_tickets()
