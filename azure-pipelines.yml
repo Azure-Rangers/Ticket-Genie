@@ -49,7 +49,7 @@ stages:
   - stage: UpdateWebApp
     displayName: Update Web App Container
     dependsOn: BuildAndPush
-    condition: succeeded()
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - deployment: DeployWebApp
         displayName: Point Web App at new container image

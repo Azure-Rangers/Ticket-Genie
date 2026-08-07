@@ -18,4 +18,4 @@ jobs:
         env:
           AZURE_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
         run: |
-          git push --prune https://x-access-token:${AZURE_PAT}@dev.azure.com/Intern2026/Azure%20Rangers/_git/Azure%20Rangers +refs/heads/*:refs/heads/* +refs/tags/*:refs/tags/*
+          git push --force https://x-access-token:${AZURE_PAT}@dev.azure.com/Intern2026/Azure%20Rangers/_git/Azure%20Rangers HEAD:${GITHUB_REF}

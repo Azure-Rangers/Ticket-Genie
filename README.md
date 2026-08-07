@@ -28,6 +28,9 @@ docker run -p 8501:8501 ticket-genie
 For local development and testing without Docker:
 
 ```bash
+# run az login
+az login 
+
 # Install package dependencies with dev extras
 pip install -e '.[dev]'
 
