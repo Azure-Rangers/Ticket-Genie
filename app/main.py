@@ -1,15 +1,15 @@
 from __future__ import annotations
 
+import os
 from datetime import datetime
 
 import streamlit as st
+from azure.identity import DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
 
 from app.components.summary_cards import render_summary_cards
 from app.services.tickets import get_sample_tickets, summarize_ticket_queue
 
-import os
-from azure.identity import DefaultAzureCredential
-from azure.keyvault.secrets import SecretClient
 
 def load_multiple_keyvaults_to_env():
     # Define your vaults
