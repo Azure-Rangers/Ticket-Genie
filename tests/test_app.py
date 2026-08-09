@@ -19,4 +19,3 @@ def test_view_functions_callable() -> None:
     assert callable(render_landing_view)
     assert callable(render_employee_view)
     assert callable(render_ticketer_view)
-
