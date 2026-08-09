@@ -94,8 +94,8 @@ st.markdown(
 
 st.markdown(
     '<div class="subtitle">'
-    'Monitor support requests, ticket activity, and AI resolution.'
-    '</div>',
+    "Monitor support requests, ticket activity, and AI resolution."
+    "</div>",
     unsafe_allow_html=True,
 )
 
@@ -143,11 +143,7 @@ with col3:
     )
 
 
-total_tickets = (
-    summary["open"]
-    + summary["in_progress"]
-    + summary["resolved"]
-)
+total_tickets = summary["open"] + summary["in_progress"] + summary["resolved"]
 
 
 with col4:
@@ -176,7 +172,6 @@ left, right = st.columns(2)
 
 
 with left:
-
     st.markdown(
         '<div class="info-card">',
         unsafe_allow_html=True,
@@ -195,13 +190,12 @@ with left:
     )
 
     st.markdown(
-        '</div>',
+        "</div>",
         unsafe_allow_html=True,
     )
 
 
 with right:
-
     st.markdown(
         '<div class="info-card">',
         unsafe_allow_html=True,
@@ -209,9 +203,7 @@ with right:
 
     st.subheader("Current Queue")
 
-    st.write(
-        "Tickets currently being handled by HR or the AI assistant."
-    )
+    st.write("Tickets currently being handled by HR or the AI assistant.")
 
     st.metric(
         "Tickets requiring attention",
@@ -219,7 +211,7 @@ with right:
     )
 
     st.markdown(
-        '</div>',
+        "</div>",
         unsafe_allow_html=True,
     )
 

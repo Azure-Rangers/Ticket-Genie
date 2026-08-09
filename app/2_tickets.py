@@ -4,7 +4,6 @@ import streamlit as st
 
 from app.services.tickets import get_sample_tickets
 
-
 st.set_page_config(
     page_title="Manage Tickets | Ticket-Genie",
     page_icon="🎫",
@@ -55,8 +54,8 @@ st.markdown(
 
 st.markdown(
     '<div class="subtitle">'
-    'Review, prioritize, and resolve employee support requests.'
-    '</div>',
+    "Review, prioritize, and resolve employee support requests."
+    "</div>",
     unsafe_allow_html=True,
 )
 
@@ -97,37 +96,27 @@ filtered_tickets = tickets.copy()
 
 
 if search:
-
     search_lower = search.lower()
 
     filtered_tickets = filtered_tickets[
         filtered_tickets.apply(
-            lambda row:
-                search_lower
-                in " ".join(
-                    str(value)
-                    for value in row.values
-                ).lower(),
+            lambda row: (
+                search_lower in " ".join(str(value) for value in row.values).lower()
+            ),
             axis=1,
         )
     ]
 
 
 if status_filter != "All":
-
-    filtered_tickets = filtered_tickets[
-        filtered_tickets["status"]
-        == status_filter
-    ]
+    filtered_tickets = filtered_tickets[filtered_tickets["status"] == status_filter]
 
 
 # ---------------------------------------------------------
 # TICKET TABLE
 # ---------------------------------------------------------
 
-st.write(
-    f"Showing {len(filtered_tickets)} ticket(s)"
-)
+st.write(f"Showing {len(filtered_tickets)} ticket(s)")
 
 
 st.dataframe(
@@ -147,26 +136,19 @@ st.subheader("Ticket Details")
 
 
 if len(filtered_tickets) > 0:
-
     ticket_options = filtered_tickets.index.tolist()
 
     selected_index = st.selectbox(
         "Select a ticket",
         ticket_options,
-        format_func=lambda index:
-            f"Ticket #{index + 1}",
+        format_func=lambda index: f"Ticket #{index + 1}",
     )
 
-    selected_ticket = filtered_tickets.loc[
-        selected_index
-    ]
+    selected_ticket = filtered_tickets.loc[selected_index]
 
     st.markdown("### Employee Request")
 
-    st.info(
-        str(selected_ticket.to_dict())
-    )
-
+    st.info(str(selected_ticket.to_dict()))
 
     # -----------------------------------------------------
     # AI ANALYSIS
@@ -176,30 +158,23 @@ if len(filtered_tickets) > 0:
 
     col1, col2, col3 = st.columns(3)
 
-
     with col1:
-
         st.metric(
             "Priority",
             "Medium",
         )
 
-
     with col2:
-
         st.metric(
             "Intent",
             "Support Request",
         )
 
-
     with col3:
-
         st.metric(
             "AI Recommendation",
             "Review",
         )
-
 
     # -----------------------------------------------------
     # HR RESPONSE
@@ -213,51 +188,33 @@ if len(filtered_tickets) > 0:
         height=150,
     )
 
-
     col1, col2 = st.columns(2)
 
-
     with col1:
-
         if st.button(
             "Send Response",
             type="primary",
             use_container_width=True,
         ):
-
             if response.strip():
-
-                st.success(
-                    "Response sent successfully."
-                )
+                st.success("Response sent successfully.")
 
                 # Later:
                 # POST /api/tickets/{ticket_id}/messages
 
             else:
-
-                st.warning(
-                    "Please enter a response."
-                )
-
+                st.warning("Please enter a response.")
 
     with col2:
-
         if st.button(
             "✓ Resolve Ticket",
             use_container_width=True,
         ):
-
-            st.success(
-                "Ticket marked as resolved."
-            )
+            st.success("Ticket marked as resolved.")
 
             # Later:
             # PATCH /api/tickets/{ticket_id}
 
 
 else:
-
-    st.info(
-        "No tickets match your search."
-    )
+    st.info("No tickets match your search.")
