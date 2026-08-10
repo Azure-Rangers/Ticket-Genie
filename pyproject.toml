@@ -21,6 +21,7 @@ backend = [
     "uvicorn[standard]>=0.28.0",
     "pydantic>=2.6.0",
     "python-dotenv>=1.0.0",
+    "openai>=1.30.0",
 ]
 dev = [
     "ruff>=0.3.0",
