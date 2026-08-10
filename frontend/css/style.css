@@ -1151,3 +1151,438 @@ h1 {
     }
 
 }
+
+/* ==============================================
+   STAFF DASHBOARD
+============================================== */
+
+.staff-department {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    background: var(--white);
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius);
+
+    padding: 18px 22px;
+
+    margin-bottom: 30px;
+
+    box-shadow: var(--shadow);
+}
+
+
+.small-label {
+
+    display: block;
+
+    font-size: 9px;
+
+    letter-spacing: 1px;
+
+    font-weight: 700;
+
+    color: var(--muted);
+
+    margin-bottom: 5px;
+}
+
+
+.staff-department h2 {
+
+    color: var(--primary);
+
+    font-size: 17px;
+}
+
+
+.staff-department select {
+
+    border: 1px solid var(--border);
+
+    background: var(--white);
+
+    border-radius: 7px;
+
+    padding: 9px 13px;
+
+    color: var(--text);
+
+    font-family: inherit;
+
+    font-size: 12px;
+
+    outline: none;
+}
+
+
+.staff-stats {
+
+    grid-template-columns:
+        repeat(4, 1fr);
+}
+
+
+.stat-icon.high-stat {
+
+    background: var(--danger-light);
+
+    color: var(--danger);
+}
+
+
+/* ==============================================
+   DASHBOARD GRID
+============================================== */
+
+.dashboard-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        1.7fr 1fr;
+
+    gap: 18px;
+
+    margin-bottom: 35px;
+}
+
+
+.dashboard-panel {
+
+    background: var(--white);
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius);
+
+    box-shadow: var(--shadow);
+
+    overflow: hidden;
+}
+
+
+.panel-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: flex-start;
+
+    padding: 20px;
+
+    border-bottom: 1px solid var(--border);
+}
+
+
+.panel-header h2 {
+
+    color: var(--primary);
+
+    font-size: 15px;
+
+    margin-bottom: 4px;
+}
+
+
+.panel-header p {
+
+    color: var(--muted);
+
+    font-size: 11px;
+}
+
+
+/* ==============================================
+   STAFF TICKETS
+============================================== */
+
+.staff-ticket-list {
+
+    display: flex;
+
+    flex-direction: column;
+}
+
+
+.staff-ticket {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    padding: 16px 20px;
+
+    border-bottom: 1px solid #efedf1;
+}
+
+
+.staff-ticket:last-child {
+
+    border-bottom: none;
+}
+
+
+.ticket-priority {
+
+    width: 35px;
+
+    font-size: 8px;
+
+    font-weight: 700;
+
+    text-align: center;
+
+    padding: 4px 3px;
+
+    border-radius: 4px;
+}
+
+
+.ticket-priority.high {
+
+    color: var(--danger);
+
+    background: var(--danger-light);
+}
+
+
+.ticket-priority.medium {
+
+    color: var(--warning);
+
+    background: var(--warning-light);
+}
+
+
+.ticket-priority.low {
+
+    color: var(--success);
+
+    background: var(--success-light);
+}
+
+
+.staff-ticket-info {
+
+    flex: 1;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 4px;
+}
+
+
+.staff-ticket-info strong {
+
+    font-size: 12px;
+
+    color: var(--text);
+}
+
+
+.staff-ticket-info span {
+
+    font-size: 10px;
+
+    color: var(--muted);
+}
+
+
+/* ==============================================
+   AI PANEL
+============================================== */
+
+.ai-panel {
+
+    background:
+        linear-gradient(
+            145deg,
+            #FFFFFF,
+            #F7F3FA
+        );
+}
+
+
+.ai-insight {
+
+    display: flex;
+
+    gap: 12px;
+
+    padding: 17px 20px;
+
+    border-bottom: 1px solid var(--border);
+}
+
+
+.ai-insight-icon {
+
+    flex-shrink: 0;
+
+    width: 31px;
+
+    height: 31px;
+
+    border-radius: 8px;
+
+    background: var(--primary-light);
+
+    color: var(--primary);
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 13px;
+}
+
+
+.ai-insight strong {
+
+    display: block;
+
+    font-size: 11px;
+
+    color: var(--text);
+
+    margin-bottom: 4px;
+}
+
+
+.ai-insight p {
+
+    font-size: 10px;
+
+    line-height: 1.5;
+
+    color: var(--muted);
+}
+
+
+.full-width {
+
+    width: calc(100% - 40px);
+
+    margin: 18px 20px;
+}
+
+
+/* ==============================================
+   ACTIVITY
+============================================== */
+
+.activity-card {
+
+    background: var(--white);
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius);
+
+    box-shadow: var(--shadow);
+}
+
+
+.activity-item {
+
+    display: flex;
+
+    gap: 14px;
+
+    padding: 16px 20px;
+
+    border-bottom: 1px solid #efedf1;
+}
+
+
+.activity-item:last-child {
+
+    border-bottom: none;
+}
+
+
+.activity-dot {
+
+    width: 8px;
+
+    height: 8px;
+
+    margin-top: 5px;
+
+    border-radius: 50%;
+
+    background: var(--primary);
+}
+
+
+.activity-item strong {
+
+    font-size: 11px;
+
+    color: var(--text);
+}
+
+
+.activity-item p {
+
+    margin-top: 4px;
+
+    font-size: 9px;
+
+    color: var(--muted);
+}
+
+
+/* ==============================================
+   RESPONSIVE
+============================================== */
+
+@media (max-width: 1100px) {
+
+    .staff-stats {
+
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+
+    .dashboard-grid {
+
+        grid-template-columns: 1fr;
+    }
+
+}
+
+
+@media (max-width: 700px) {
+
+    .staff-stats {
+
+        grid-template-columns: 1fr;
+    }
+
+
+    .staff-department {
+
+        align-items: flex-start;
+
+        flex-direction: column;
+
+        gap: 15px;
+    }
+
+}
