@@ -1,13 +1,21 @@
-# --- Web App Outputs ---
-
-output "webapp_url" {
-  value       = "https://${azurerm_linux_web_app.app.default_hostname}"
-  description = "The public URL of the deployed Linux Web App"
+output "frontend_webapp_url" {
+  value       = "https://${azurerm_linux_web_app.frontend.default_hostname}"
+  description = "The public URL of the deployed Streamlit Frontend Web App"
 }
 
-output "webapp_name" {
-  value       = azurerm_linux_web_app.app.name
-  description = "The name of the Azure Web App resource"
+output "frontend_webapp_name" {
+  value       = azurerm_linux_web_app.frontend.name
+  description = "The name of the Frontend Web App resource"
+}
+
+output "backend_webapp_url" {
+  value       = "https://${azurerm_linux_web_app.backend.default_hostname}"
+  description = "The public URL of the deployed FastAPI Backend Web App"
+}
+
+output "backend_webapp_name" {
+  value       = azurerm_linux_web_app.backend.name
+  description = "The name of the Backend Web App resource"
 }
 
 # --- Database Outputs ---

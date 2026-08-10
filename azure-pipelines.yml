@@ -16,9 +16,10 @@ variables:
   resourceGroupName: "Azure_Rangers"
   acrName: "acrwebappprodticketgenie"
   acrLoginServer: "acrwebappprodticketgenie.azurecr.io"
-  imageRepository: "ticketgenie"
+  frontendImageRepository: "ticketgenie"
   backendImageRepository: "ticket-genie-backend"
-  webAppName: "webapp-prod-westus-ticketgenie"
+  frontendWebAppName: "webapp-prod-frontend-ticketgenie"
+  backendWebAppName: "webapp-prod-backend-ticketgenie"
   imageTag: "$(Build.BuildId)"
 
 stages:
@@ -61,18 +62,18 @@ stages:
                 az acr build \
                   --registry "$(acrName)" \
                   --target frontend \
-                  --image "$(imageRepository):$(imageTag)" \
-                  --image "$(imageRepository):latest" \
+                  --image "$(frontendImageRepository):$(imageTag)" \
+                  --image "$(frontendImageRepository):latest" \
                   --file Dockerfile \
                   .
 
   - stage: UpdateWebApp
-    displayName: Update Web App Container
+    displayName: Update Web App Containers
     dependsOn: BuildAndPush
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - deployment: DeployWebApp
-        displayName: Point Web App at new container image
+        displayName: Point Web Apps at new container images
         environment: production
         pool:
           vmImage: ubuntu-latest
@@ -83,7 +84,7 @@ stages:
                 - checkout: none
 
                 - task: AzureCLI@2
-                  displayName: Update web app container and restart
+                  displayName: Update backend and frontend web app containers and restart
                   inputs:
                     azureSubscription: $(azureServiceConnection)
                     scriptType: bash
@@ -91,17 +92,34 @@ stages:
                     inlineScript: |
                       set -euo pipefail
 
+                      # 1. Update Backend Web App (FastAPI REST API on Port 8000)
                       az webapp config container set \
                         --resource-group "$(resourceGroupName)" \
-                        --name "$(webAppName)" \
+                        --name "$(backendWebAppName)" \
                         --docker-custom-image-name "$(acrLoginServer)/$(backendImageRepository):$(imageTag)" \
                         --docker-registry-server-url "https://$(acrLoginServer)"
 
                       az webapp config appsettings set \
                         --resource-group "$(resourceGroupName)" \
-                        --name "$(webAppName)" \
+                        --name "$(backendWebAppName)" \
                         --settings WEBSITES_PORT=8000
 
                       az webapp restart \
                         --resource-group "$(resourceGroupName)" \
-                        --name "$(webAppName)"
+                        --name "$(backendWebAppName)"
+
+                      # 2. Update Frontend Web App (Streamlit UI on Port 8501)
+                      az webapp config container set \
+                        --resource-group "$(resourceGroupName)" \
+                        --name "$(frontendWebAppName)" \
+                        --docker-custom-image-name "$(acrLoginServer)/$(frontendImageRepository):$(imageTag)" \
+                        --docker-registry-server-url "https://$(acrLoginServer)"
+
+                      az webapp config appsettings set \
+                        --resource-group "$(resourceGroupName)" \
+                        --name "$(frontendWebAppName)" \
+                        --settings WEBSITES_PORT=8501 BACKEND_API_URL="https://$(backendWebAppName).azurewebsites.net"
+
+                      az webapp restart \
+                        --resource-group "$(resourceGroupName)" \
+                        --name "$(frontendWebAppName)"
