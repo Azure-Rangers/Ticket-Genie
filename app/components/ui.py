@@ -212,3 +212,24 @@ def section_title(title, description=None):
 
     if description:
         st.caption(description)
+
+.ai-card {
+    background: #eef7f3;
+    border: 1px solid #cfe6dc;
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-top: 10px;
+}
+
+.ai-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #24594a;
+    margin-bottom: 8px;
+}
+
+.ai-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #53645e;
+}
