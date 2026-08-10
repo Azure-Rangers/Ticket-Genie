@@ -5,6 +5,7 @@ trigger:
   paths:
     include:
       - app/**
+      - backend/**
       - Dockerfile
       - pyproject.toml
       - terraform/**
@@ -16,22 +17,23 @@ variables:
   acrName: "acrwebappprodticketgenie"
   acrLoginServer: "acrwebappprodticketgenie.azurecr.io"
   imageRepository: "ticketgenie"
+  backendImageRepository: "ticket-genie-backend"
   webAppName: "webapp-prod-westus-ticketgenie"
   imageTag: "$(Build.BuildId)"
 
 stages:
   - stage: BuildAndPush
-    displayName: Build and Push Container
+    displayName: Build and Push Containers
     jobs:
       - job: Build
-        displayName: Build container image
+        displayName: Build container images
         pool:
           vmImage: ubuntu-latest
         steps:
           - checkout: self
 
           - task: AzureCLI@2
-            displayName: Build and push image to ACR
+            displayName: Build and push FastAPI backend image to ACR
             inputs:
               azureSubscription: $(azureServiceConnection)
               scriptType: bash
@@ -41,6 +43,24 @@ stages:
 
                 az acr build \
                   --registry "$(acrName)" \
+                  --target backend \
+                  --image "$(backendImageRepository):$(imageTag)" \
+                  --image "$(backendImageRepository):latest" \
+                  --file Dockerfile \
+                  .
+
+          - task: AzureCLI@2
+            displayName: Build and push Streamlit frontend image to ACR
+            inputs:
+              azureSubscription: $(azureServiceConnection)
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+
+                az acr build \
+                  --registry "$(acrName)" \
+                  --target frontend \
                   --image "$(imageRepository):$(imageTag)" \
                   --image "$(imageRepository):latest" \
                   --file Dockerfile \
@@ -74,13 +94,13 @@ stages:
                       az webapp config container set \
                         --resource-group "$(resourceGroupName)" \
                         --name "$(webAppName)" \
-                        --docker-custom-image-name "$(acrLoginServer)/$(imageRepository):$(imageTag)" \
+                        --docker-custom-image-name "$(acrLoginServer)/$(backendImageRepository):$(imageTag)" \
                         --docker-registry-server-url "https://$(acrLoginServer)"
 
                       az webapp config appsettings set \
                         --resource-group "$(resourceGroupName)" \
                         --name "$(webAppName)" \
-                        --settings WEBSITES_PORT=8501
+                        --settings WEBSITES_PORT=8000
 
                       az webapp restart \
                         --resource-group "$(resourceGroupName)" \

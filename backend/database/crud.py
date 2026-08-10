@@ -5,17 +5,11 @@ tickets = []
 
 def create_ticket(ticket: TicketCreate):
 
-    ticket_record = {
-        "ticket_id": len(tickets) + 1,
-        **ticket.model_dump()
-    }
+    ticket_record = {"ticket_id": len(tickets) + 1, **ticket.model_dump()}
 
     tickets.append(ticket_record)
 
-    return {
-        "message": "Ticket saved successfully!",
-        "ticket": ticket_record
-    }
+    return {"message": "Ticket saved successfully!", "ticket": ticket_record}
 
 
 def get_all_tickets():

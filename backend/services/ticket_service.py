@@ -1,5 +1,5 @@
-from models.ticket import TicketCreate
 from database.crud import create_ticket
+from models.ticket import TicketCreate
 
 
 def process_new_ticket(ticket: TicketCreate):
