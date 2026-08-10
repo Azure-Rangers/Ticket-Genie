@@ -1,15 +1,39 @@
 # Ticket-Genie
 This project is an intelligent ticketing platform designed to streamline workplace support by automating routine employee inquiries and administrative workflows.
 
-## How to Run
+## Environment & Secrets Setup
 
-### Azure SQL Password
+Ticket-Genie uses a `.env` file for managing application configuration and secrets locally.
 
-If you need the database admin password for local testing or deployment setup, retrieve it from Azure Key Vault:
+### Fetching Remote Secrets from Azure Key Vault
+
+To securely fetch environment secrets locally from Azure Key Vault into a `.env` file (works cross-platform on **Windows**, **macOS**, and **Linux**):
 
 ```bash
-az keyvault secret show --vault-name kv-app-prod-12345 --name db-admin-password --query value -o tsv
+# 1. Log in to Azure
+az login
+
+# 2. Run the secret fetch script to populate/update your local .env file
+python fetch_secrets.py
 ```
+
+#### Custom Vault Options:
+```bash
+# Fetch from specific Key Vault names
+python fetch_secrets.py --vault-names kv-app-prod-12345 group-1
+
+# Fetch from specific Key Vault URLs
+python fetch_secrets.py --vault-urls https://kv-app-prod-12345.vault.azure.net/
+
+# Output to custom env file location
+python fetch_secrets.py --env-file .env.local
+```
+
+Both the **Streamlit Frontend** (`app/main.py`) and **FastAPI Backend** (`backend/main.py`) automatically load configuration from the `.env` file at startup using `python-dotenv`.
+
+---
+
+## How to Run
 
 ### Option 1: Run with Docker (Recommended)
 
@@ -20,8 +44,8 @@ The project uses a multi-stage Dockerfile to build either the FastAPI backend or
 # Build the FastAPI backend container image
 docker build --target backend -t ticket-genie-backend .
 
-# Run the backend container at http://localhost:8000
-docker run -p 8000:8000 ticket-genie-backend
+# Run the backend container with local .env configuration at http://localhost:8000
+docker run --env-file .env -p 8000:8000 ticket-genie-backend
 ```
 
 #### Run Streamlit Frontend Container (Port 8501)
@@ -29,8 +53,8 @@ docker run -p 8000:8000 ticket-genie-backend
 # Build the Streamlit frontend container image
 docker build --target frontend -t ticket-genie-frontend .
 
-# Run the frontend container at http://localhost:8501
-docker run -p 8501:8501 ticket-genie-frontend
+# Run the frontend container with local .env configuration at http://localhost:8501
+docker run --env-file .env -p 8501:8501 ticket-genie-frontend
 ```
 
 ---
@@ -40,11 +64,12 @@ docker run -p 8501:8501 ticket-genie-frontend
 For local development without Docker:
 
 ```bash
-# Log in to Azure (if accessing Azure resources)
-az login
-
 # Install core, backend, and dev dependencies
 pip install -e '.[backend,dev]'
+
+# Fetch secrets from Azure Key Vault into .env
+az login
+python fetch_secrets.py
 ```
 
 #### Launch FastAPI Backend API
@@ -66,7 +91,7 @@ streamlit run app/main.py
 ### Running Tests and Quality Checks
 
 ```bash
-# Run pytest test suite (includes app and backend tests)
+# Run pytest test suite (includes app, backend, and secret fetcher tests)
 pytest
 
 # Run Ruff linter and formatting check
@@ -107,16 +132,20 @@ Ticket-Genie/
 │   ├── services/               # Business logic services
 │   ├── database/               # Database connection & CRUD handlers
 │   └── requirements.txt        # Backend dependencies (-e .[backend])
+├── scripts/
+│   └── fetch_secrets.py        # Entrypoint for fetching Key Vault secrets
 ├── terraform/                  # Infrastructure definitions for Azure
 │   ├── main.tf
 │   └── variables.tf
 ├── tests/
 │   ├── test_app.py
 │   ├── test_backend_api.py     # FastAPI endpoint tests
+│   ├── test_fetch_secrets.py   # Secret fetcher tests
 │   └── test_services.py
 ├── .dockerignore
 ├── .gitignore
 ├── Dockerfile                  # Multi-stage Docker build file (backend & frontend)
+├── fetch_secrets.py            # Cross-platform Azure Key Vault to .env fetcher script
 ├── pyproject.toml              # Central config for dependencies, Ruff, pytest
 └── README.md
 ```

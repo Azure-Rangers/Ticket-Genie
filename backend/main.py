@@ -1,5 +1,8 @@
 from api.tickets import router as ticket_router
+from dotenv import load_dotenv
 from fastapi import FastAPI
+
+load_dotenv()
 
 app = FastAPI(
     title="TicketGenie API",
