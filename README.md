@@ -1,6 +1,35 @@
 # Ticket-Genie
 This project is an intelligent ticketing platform designed to streamline workplace support by automating routine employee inquiries and administrative workflows.
 
+## Production Architecture (Dual Azure Web Apps)
+
+Ticket-Genie enforces a strict security boundary by separating the frontend UI and backend REST API into two distinct Azure Linux Web Apps:
+
+```text
+                                 ┌──────────────────────────────────────────────┐
+                                 │   webapp-prod-frontend-ticketgenie           │
+  User Browser ────────────────► │   - Streamlit UI (Port 8501)                 │
+                                 │   - Holds NO database or API secrets         │
+                                 └──────────────────────┬───────────────────────┘
+                                                        │ REST API Calls
+                                                        ▼
+                                 ┌──────────────────────────────────────────────┐
+                                 │   webapp-prod-backend-ticketgenie            │
+                                 │   - FastAPI REST API (Port 8000)             │
+                                 │   - Holds DB Connection & AI Secrets         │
+                                 └──────────────────────┬───────────────────────┘
+                                                        │ SQL Port 1433
+                                                        ▼
+                                           ┌─────────────────────────┐
+                                           │  Azure SQL Database     │
+                                           └─────────────────────────┘
+```
+
+- **Frontend App**: `webapp-prod-frontend-ticketgenie` (Streamlit on port 8501). Contains zero database or AI secrets and connects to the backend API via `BACKEND_API_URL`.
+- **Backend App**: `webapp-prod-backend-ticketgenie` (FastAPI on port 8000). Serves API endpoints and securely accesses Azure SQL Database and Key Vault.
+
+---
+
 ## Environment & Secrets Setup
 
 Ticket-Genie uses a `.env` file for managing application configuration and secrets locally.
@@ -136,6 +165,7 @@ Ticket-Genie/
 │   └── fetch_secrets.py        # Entrypoint for fetching Key Vault secrets
 ├── terraform/                  # Infrastructure definitions for Azure
 │   ├── main.tf
+│   ├── outputs.tf
 │   └── variables.tf
 ├── tests/
 │   ├── test_app.py

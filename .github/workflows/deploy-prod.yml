@@ -23,8 +23,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-push-backend:
-    name: Build and Push FastAPI Backend Image
+  build-and-push-containers:
+    name: Build and Push Container Images (Backend & Frontend)
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -46,13 +46,15 @@ jobs:
         run: |
           az acr login --name acrwebappprodticketgenie
 
-      - name: Build Docker Image
+      - name: Build and Push Docker Images
         run: |
+          # 1. Build and push FastAPI backend image
           docker build --target backend -t acrwebappprodticketgenie.azurecr.io/ticket-genie-backend:latest -f Dockerfile .
-
-      - name: Push to ACR
-        run: |
           docker push acrwebappprodticketgenie.azurecr.io/ticket-genie-backend:latest
+
+          # 2. Build and push Streamlit frontend image
+          docker build --target frontend -t acrwebappprodticketgenie.azurecr.io/ticketgenie:latest -f Dockerfile .
+          docker push acrwebappprodticketgenie.azurecr.io/ticketgenie:latest
 
   terraform-apply:
 
