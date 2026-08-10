@@ -16,10 +16,18 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+backend = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.28.0",
+    "pydantic>=2.6.0",
+    "python-dotenv>=1.0.0",
+]
 dev = [
     "ruff>=0.3.0",
     "pytest>=8.0.0",
+    "httpx>=0.27.0",
 ]
+
 
 # ----------------------------------------------------------------------
 # TOOL CONFIGURATIONS
@@ -34,6 +42,8 @@ select = ["E", "F", "I", "B"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = [".", "backend"]
+
 
 [tool.setuptools]
 package-dir = {"" = "."}
