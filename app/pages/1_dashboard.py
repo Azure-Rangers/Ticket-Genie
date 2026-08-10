@@ -20,7 +20,6 @@ st.set_page_config(
     layout="wide",
 )
 
-
 apply_styles()
 
 
@@ -35,8 +34,6 @@ summary = summarize_ticket_queue(tickets)
 # =========================================================
 # HEADER
 # =========================================================
-# ---------------------------------------------------------
-for col, department in zip(cols, departments, strict=True):
 
 page_header(
     "How can we help you?",
@@ -79,15 +76,35 @@ section_title(
 )
 
 departments = [
-    ("👥", "HR", "Benefits, payroll, time off, employee questions"),
-    ("💻", "IT", "Accounts, devices, software, access"),
-    ("💳", "Accounting", "Expenses, invoices, payments"),
-    ("🏢", "Facilities", "Office access, equipment, workspace"),
+    (
+        "👥",
+        "HR",
+        "Benefits, payroll, time off, employee questions",
+    ),
+    (
+        "💻",
+        "IT",
+        "Accounts, devices, software, access",
+    ),
+    (
+        "💳",
+        "Accounting",
+        "Expenses, invoices, payments",
+    ),
+    (
+        "🏢",
+        "Facilities",
+        "Office access, equipment, workspace",
+    ),
 ]
 
 cols = st.columns(4)
 
-for col, department in zip(cols, departments):
+for col, department in zip(
+    cols,
+    departments,
+    strict=True,
+):
 
     icon, name, description = department
 
@@ -144,7 +161,9 @@ with col2:
         f"""
         <div class="metric-card">
             <div class="metric-label">In Progress</div>
-            <div class="metric-value">{summary["in_progress"]}</div>
+            <div class="metric-value">
+                {summary["in_progress"]}
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -156,7 +175,9 @@ with col3:
         f"""
         <div class="metric-card">
             <div class="metric-label">Resolved</div>
-            <div class="metric-value">{summary["resolved"]}</div>
+            <div class="metric-value">
+                {summary["resolved"]}
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -169,6 +190,7 @@ if st.button(
     "View My Tickets →",
     type="primary",
 ):
+
     st.switch_page("pages/5_my_tickets.py")
 
 
