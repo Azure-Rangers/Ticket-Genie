@@ -1,1 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
 
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>TicketGenie | Help & Support</title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+</head>
+
+
+<body>
+
+    <!-- ================================
+         SIDEBAR
+    ================================= -->
+
+    <aside class="sidebar">
+
+        <div class="logo">
+
+            <div class="logo-icon">
+                ✦
+            </div>
+
+            <div>
+                <div class="logo-name">
+                    TicketGenie
+                </div>
+
+                <div class="logo-subtitle">
+                    Help Desk
+                </div>
+            </div>
+
+        </div>
+
+
+        <nav class="navigation">
+
+            <div class="nav-section-title">
+                MAIN
+            </div>
+
+
+            <a
+                href="index.html"
+                class="nav-item active"
+            >
+                <span class="nav-icon">⌂</span>
+                <span>Help & Support</span>
+            </a>
+
+
+            <a
+                href="tickets.html"
+                class="nav-item"
+            >
+                <span class="nav-icon">▣</span>
+                <span>My Tickets</span>
+            </a>
+
+
+            <a
+                href="new-request.html"
+                class="nav-item"
+            >
+                <span class="nav-icon">＋</span>
+                <span>New Request</span>
+            </a>
+
+
+            <div class="nav-section-title resources-title">
+                RESOURCES
+            </div>
+
+
+            <a
+                href="#"
+                class="nav-item"
+            >
+                <span class="nav-icon">▤</span>
+                <span>Knowledge Base</span>
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-item"
+            >
+                <span class="nav-icon">♢</span>
+                <span>Notifications</span>
+
+                <span class="notification-badge">
+                    3
+                </span>
+
+            </a>
+
+        </nav>
+
+
+        <!-- USER -->
+
+        <div class="sidebar-bottom">
+
+            <div class="user-card">
+
+                <div class="user-avatar">
+                    A
+                </div>
+
+                <div class="user-info">
+
+                    <div class="user-name">
+                        Employee
+                    </div>
+
+                    <div class="user-role">
+                        Employee Portal
+                    </div>
+
+                </div>
+
+                <button class="more-button">
+                    ⋯
+                </button>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+
+    <!-- ================================
+         MAIN
+    ================================= -->
+
+    <main class="main-content">
+
+
+        <!-- HEADER -->
+
+        <header class="top-header">
+
+            <div>
+
+                <div class="breadcrumb">
+                    Help & Support
+                </div>
+
+                <h1>
+                    How can we help you?
+                </h1>
+
+                <p class="header-description">
+                    Find answers, submit a request, or get help
+                    from the right team.
+                </p>
+
+            </div>
+
+
+            <div class="header-actions">
+
+                <button class="header-icon-button">
+                    ♢
+                </button>
+
+                <div class="header-avatar">
+                    A
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- ================================
+             SEARCH
+        ================================= -->
+
+        <section class="search-section">
+
+            <div class="search-box">
+
+                <span class="search-icon">
+                    ⌕
+                </span>
+
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Search the Help Center..."
+                >
+
+                <span class="search-shortcut">
+                    /
+                </span>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================================
+             QUICK HELP
+        ================================= -->
+
+        <section class="content-section">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h2>
+                        Quick Help
+                    </h2>
+
+                    <p>
+                        Choose a department to get started.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="department-grid">
+
+
+                <!-- HR -->
+
+                <a
+                    href="new-request.html?department=HR"
+                    class="department-card"
+                >
+
+                    <div class="department-icon hr-icon">
+                        ♙
+                    </div>
+
+                    <div class="department-content">
+
+                        <h3>
+                            Human Resources
+                        </h3>
+
+                        <p>
+                            Benefits, time off, payroll,
+                            and employee questions.
+                        </p>
+
+                    </div>
+
+                    <span class="card-arrow">
+                        →
+                    </span>
+
+                </a>
+
+
+                <!-- IT -->
+
+                <a
+                    href="new-request.html?department=IT"
+                    class="department-card"
+                >
+
+                    <div class="department-icon it-icon">
+                        ◈
+                    </div>
+
+                    <div class="department-content">
+
+                        <h3>
+                            IT Support
+                        </h3>
+
+                        <p>
+                            Accounts, devices, software,
+                            and technical issues.
+                        </p>
+
+                    </div>
+
+                    <span class="card-arrow">
+                        →
+                    </span>
+
+                </a>
+
+
+                <!-- ACCOUNTING -->
+
+                <a
+                    href="new-request.html?department=Accounting"
+                    class="department-card"
+                >
+
+                    <div class="department-icon accounting-icon">
+                        $
+                    </div>
+
+                    <div class="department-content">
+
+                        <h3>
+                            Accounting
+                        </h3>
+
+                        <p>
+                            Expenses, invoices, payments,
+                            and reimbursements.
+                        </p>
+
+                    </div>
+
+                    <span class="card-arrow">
+                        →
+                    </span>
+
+                </a>
+
+
+                <!-- FACILITIES -->
+
+                <a
+                    href="new-request.html?department=Facilities"
+                    class="department-card"
+                >
+
+                    <div class="department-icon facilities-icon">
+                        ⌂
+                    </div>
+
+                    <div class="department-content">
+
+                        <h3>
+                            Facilities
+                        </h3>
+
+                        <p>
+                            Office access, equipment,
+                            and workspace issues.
+                        </p>
+
+                    </div>
+
+                    <span class="card-arrow">
+                        →
+                    </span>
+
+                </a>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================================
+             TICKET STATS
+        ================================= -->
+
+        <section class="content-section">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h2>
+                        Your Tickets
+                    </h2>
+
+                    <p>
+                        Keep track of your support requests.
+                    </p>
+
+                </div>
+
+
+                <a
+                    href="tickets.html"
+                    class="text-button"
+                >
+                    View all tickets →
+                </a>
+
+            </div>
+
+
+            <div class="stats-grid">
+
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+
+                        <span class="stat-label">
+                            Open
+                        </span>
+
+                        <span class="stat-icon open">
+                            ○
+                        </span>
+
+                    </div>
+
+                    <div
+                        class="stat-number"
+                        id="openCount"
+                    >
+                        5
+                    </div>
+
+                    <div class="stat-description">
+                        Need your attention
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+
+                        <span class="stat-label">
+                            In Progress
+                        </span>
+
+                        <span class="stat-icon progress">
+                            ◐
+                        </span>
+
+                    </div>
+
+                    <div
+                        class="stat-number"
+                        id="progressCount"
+                    >
+                        2
+                    </div>
+
+                    <div class="stat-description">
+                        Being worked on
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+
+                        <span class="stat-label">
+                            Resolved
+                        </span>
+
+                        <span class="stat-icon resolved">
+                            ✓
+                        </span>
+
+                    </div>
+
+                    <div
+                        class="stat-number"
+                        id="resolvedCount"
+                    >
+                        12
+                    </div>
+
+                    <div class="stat-description">
+                        Successfully completed
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================================
+             RECENT TICKETS
+        ================================= -->
+
+        <section class="content-section">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h2>
+                        Recent Tickets
+                    </h2>
+
+                    <p>
+                        Your latest support requests.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="ticket-table-container">
+
+                <table class="ticket-table">
+
+                    <thead>
+
+                        <tr>
+                            <th>Ticket</th>
+                            <th>Subject</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        <tr>
+
+                            <td>
+                                <strong>#1042</strong>
+                            </td>
+
+                            <td>
+                                Unable to access email
+                            </td>
+
+                            <td>
+                                IT
+                            </td>
+
+                            <td>
+                                <span class="status in-progress">
+                                    In Progress
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="priority high">
+                                    High
+                                </span>
+                            </td>
+
+                        </tr>
+
+
+                        <tr>
+
+                            <td>
+                                <strong>#1041</strong>
+                            </td>
+
+                            <td>
+                                Benefits question
+                            </td>
+
+                            <td>
+                                HR
+                            </td>
+
+                            <td>
+                                <span class="status open">
+                                    Open
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="priority medium">
+                                    Medium
+                                </span>
+                            </td>
+
+                        </tr>
+
+
+                        <tr>
+
+                            <td>
+                                <strong>#1039</strong>
+                            </td>
+
+                            <td>
+                                Expense reimbursement
+                            </td>
+
+                            <td>
+                                Accounting
+                            </td>
+
+                            <td>
+                                <span class="status resolved">
+                                    Resolved
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="priority low">
+                                    Low
+                                </span>
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================================
+             AI
+        ================================= -->
+
+        <section class="ai-banner">
+
+            <div class="ai-left">
+
+                <div class="ai-symbol">
+                    ✦
+                </div>
+
+                <div>
+
+                    <h3>
+                        Need help figuring out where to start?
+                    </h3>
+
+                    <p>
+                        Genie AI can help identify the right
+                        department and answer common questions.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <button
+                class="ai-button"
+                id="aiButton"
+            >
+                Ask Genie
+            </button>
+
+        </section>
+
+
+        <footer class="footer">
+
+            <span>
+                TicketGenie Help Desk
+            </span>
+
+            <span>
+                Employee Support Portal
+            </span>
+
+        </footer>
+
+    </main>
+
+
+    <script src="js/main.js"></script>
+
+</body>
+
+</html>
