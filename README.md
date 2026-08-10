@@ -11,31 +11,67 @@ If you need the database admin password for local testing or deployment setup, r
 az keyvault secret show --vault-name kv-app-prod-12345 --name db-admin-password --query value -o tsv
 ```
 
-### Option 1: Run in Docker (Recommended)
+### Option 1: Run with Docker (Recommended)
 
-Build and run the application in an isolated container:
+The project uses a multi-stage Dockerfile to build either the FastAPI backend or the Streamlit frontend container.
 
+#### Run FastAPI Backend Container (Port 8000)
 ```bash
-# Build the container image
-docker build -t ticket-genie .
+# Build the FastAPI backend container image
+docker build --target backend -t ticket-genie-backend .
 
-# Run the container locally at http://localhost:8501
-docker run -p 8501:8501 ticket-genie
+# Run the backend container at http://localhost:8000
+docker run -p 8000:8000 ticket-genie-backend
 ```
+
+#### Run Streamlit Frontend Container (Port 8501)
+```bash
+# Build the Streamlit frontend container image
+docker build --target frontend -t ticket-genie-frontend .
+
+# Run the frontend container at http://localhost:8501
+docker run -p 8501:8501 ticket-genie-frontend
+```
+
+---
 
 ### Option 2: Run Natively
 
-For local development and testing without Docker:
+For local development without Docker:
 
 ```bash
-# run az login
-az login 
+# Log in to Azure (if accessing Azure resources)
+az login
 
-# Install package dependencies with dev extras
-pip install -e '.[dev]'
+# Install core, backend, and dev dependencies
+pip install -e '.[backend,dev]'
+```
 
-# Launch Streamlit app
+#### Launch FastAPI Backend API
+```bash
+# Start Uvicorn dev server at http://localhost:8000
+uvicorn backend.main:app --reload --port 8000
+```
+- API Health Check: `http://localhost:8000/health`
+- Interactive Swagger Docs: `http://localhost:8000/docs`
+
+#### Launch Streamlit Frontend App
+```bash
+# Launch Streamlit app at http://localhost:8501
 streamlit run app/main.py
+```
+
+---
+
+### Running Tests and Quality Checks
+
+```bash
+# Run pytest test suite (includes app and backend tests)
+pytest
+
+# Run Ruff linter and formatting check
+ruff check .
+ruff format --check .
 ```
 
 ## Branching Strategy
@@ -55,26 +91,34 @@ Ticket-Genie/
 ├── .github/
 │   ├── PULL_REQUEST_TEMPLATE.md
 │   └── workflows/
-│       ├── pr-checks.yml       # Ruff linting, pytest, & terraform validation
-│       └── deploy-prod.yml     # Infrastructure apply + Azure Pipelines handoff
-├── app/
+│       ├── pr-checks.yml       # Ruff linting, pytest, & Docker smoke testing
+│       └── deploy-prod.yml     # ACR build/push & Azure handoff
+├── app/                        # Streamlit Frontend
 │   ├── main.py                 # Main Streamlit entrypoint (Home page)
 │   ├── pages/                  # Multi-page Streamlit views
 │   │   ├── 1_dashboard.py
 │   │   └── 2_settings.py
 │   ├── components/             # Custom UI component functions
-│   └── services/               # Backend logic, DB calls, API integration
+│   └── services/               # UI backend logic & API integration
+├── backend/                    # FastAPI Backend Service
+│   ├── main.py                 # FastAPI application entrypoint
+│   ├── api/                    # API route controllers
+│   ├── models/                 # Pydantic data schemas
+│   ├── services/               # Business logic services
+│   ├── database/               # Database connection & CRUD handlers
+│   └── requirements.txt        # Backend dependencies (-e .[backend])
 ├── terraform/                  # Infrastructure definitions for Azure
 │   ├── main.tf
 │   └── variables.tf
 ├── tests/
-│   ├── test_services.py
-│   └── test_app.py
+│   ├── test_app.py
+│   ├── test_backend_api.py     # FastAPI endpoint tests
+│   └── test_services.py
 ├── .dockerignore
 ├── .gitignore
-├── Dockerfile                  # Container build instructions
+├── Dockerfile                  # Multi-stage Docker build file (backend & frontend)
 ├── pyproject.toml              # Central config for dependencies, Ruff, pytest
 └── README.md
 ```
 
-The app is organized under `app/` with a Streamlit entrypoint, multi-page views, reusable UI components, and backend services.
+The repository follows a monorepo structure with a Streamlit frontend under `app/` and a FastAPI REST API backend service under `backend/`.
