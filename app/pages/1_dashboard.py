@@ -2,227 +2,181 @@ from __future__ import annotations
 
 import streamlit as st
 
+from app.components.ui import (
+    apply_styles,
+    page_header,
+    section_title,
+)
+
 from app.services.tickets import (
     get_sample_tickets,
     summarize_ticket_queue,
 )
 
+
 st.set_page_config(
-    page_title="Analytics Dashboard | Ticket-Genie",
-    page_icon="📊",
+    page_title="Help & Support | Ticket-Genie",
+    page_icon="🎫",
     layout="wide",
 )
 
 
-# ---------------------------------------------------------
-# CUSTOM CSS
-# ---------------------------------------------------------
-
-st.markdown(
-    """
-    <style>
-
-    .main-title {
-        font-size: 32px;
-        font-weight: 700;
-        margin-bottom: 4px;
-    }
-
-    .subtitle {
-        color: #6b7280;
-        font-size: 15px;
-        margin-bottom: 25px;
-    }
-
-    .metric-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 20px;
-        min-height: 120px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    }
-
-    .metric-title {
-        color: #6b7280;
-        font-size: 14px;
-        margin-bottom: 8px;
-    }
-
-    .metric-number {
-        font-size: 30px;
-        font-weight: 700;
-        color: #111827;
-    }
-
-    .section-title {
-        font-size: 21px;
-        font-weight: 650;
-        margin-top: 25px;
-        margin-bottom: 10px;
-    }
-
-    .info-card {
-        background: #f8fafc;
-        border-radius: 10px;
-        padding: 16px;
-        border: 1px solid #e5e7eb;
-    }
-
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+apply_styles()
 
 
-# ---------------------------------------------------------
+# =========================================================
 # DATA
-# ---------------------------------------------------------
+# =========================================================
 
 tickets = get_sample_tickets()
 summary = summarize_ticket_queue(tickets)
 
 
-# ---------------------------------------------------------
+# =========================================================
 # HEADER
-# ---------------------------------------------------------
+# =========================================================
 
-st.markdown(
-    '<div class="main-title">HR Analytics Dashboard</div>',
-    unsafe_allow_html=True,
-)
-
-st.markdown(
-    '<div class="subtitle">'
-    "Monitor support requests, ticket activity, and AI resolution."
-    "</div>",
-    unsafe_allow_html=True,
+page_header(
+    "How can we help you?",
+    "Find answers, submit a request, or get help from the right team.",
 )
 
 
-# ---------------------------------------------------------
-# SUMMARY CARDS
-# ---------------------------------------------------------
+# =========================================================
+# SEARCH
+# =========================================================
 
-col1, col2, col3, col4 = st.columns(4)
+st.markdown(
+    """
+    <div class="card">
+        <div class="card-title">
+            🔍 Search the Help Center
+        </div>
+        <div class="card-description">
+            Search articles, policies, guides, and support resources.
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
+search = st.text_input(
+    "Search",
+    placeholder="What can we help you find?",
+    label_visibility="collapsed",
+)
+
+
+# =========================================================
+# QUICK HELP
+# =========================================================
+
+section_title(
+    "Quick Help",
+    "Find support by department.",
+)
+
+departments = [
+    ("👥", "HR", "Benefits, payroll, time off, employee questions"),
+    ("💻", "IT", "Accounts, devices, software, access"),
+    ("💳", "Accounting", "Expenses, invoices, payments"),
+    ("🏢", "Facilities", "Office access, equipment, workspace"),
+]
+
+cols = st.columns(4)
+
+for col, department in zip(cols, departments):
+
+    icon, name, description = department
+
+    with col:
+
+        st.markdown(
+            f"""
+            <div class="quick-card">
+                <div class="quick-icon">{icon}</div>
+                <div class="quick-title">{name}</div>
+                <div class="quick-description">
+                    {description}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        if st.button(
+            f"Get {name} help",
+            key=f"help_{name}",
+            use_container_width=True,
+        ):
+            st.session_state["department"] = name
+            st.switch_page("pages/4_new_request.py")
+
+
+# =========================================================
+# YOUR TICKETS
+# =========================================================
+
+section_title(
+    "Your Tickets",
+    "Track requests you have submitted.",
+)
+
+col1, col2, col3 = st.columns(3)
 
 with col1:
+
     st.markdown(
         f"""
         <div class="metric-card">
-            <div class="metric-title">Open Tickets</div>
-            <div class="metric-number">{summary["open"]}</div>
+            <div class="metric-label">Open</div>
+            <div class="metric-value">{summary["open"]}</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-
 
 with col2:
+
     st.markdown(
         f"""
         <div class="metric-card">
-            <div class="metric-title">In Progress</div>
-            <div class="metric-number">{summary["in_progress"]}</div>
+            <div class="metric-label">In Progress</div>
+            <div class="metric-value">{summary["in_progress"]}</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-
 
 with col3:
+
     st.markdown(
         f"""
         <div class="metric-card">
-            <div class="metric-title">Resolved</div>
-            <div class="metric-number">{summary["resolved"]}</div>
+            <div class="metric-label">Resolved</div>
+            <div class="metric-value">{summary["resolved"]}</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 
-total_tickets = summary["open"] + summary["in_progress"] + summary["resolved"]
+st.write("")
+
+if st.button(
+    "View My Tickets →",
+    type="primary",
+):
+    st.switch_page("pages/5_my_tickets.py")
 
 
-with col4:
-    st.markdown(
-        f"""
-        <div class="metric-card">
-            <div class="metric-title">Total Tickets</div>
-            <div class="metric-number">{total_tickets}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-# ---------------------------------------------------------
-# TICKET OVERVIEW
-# ---------------------------------------------------------
-
-st.markdown(
-    '<div class="section-title">Ticket Overview</div>',
-    unsafe_allow_html=True,
-)
-
-
-left, right = st.columns(2)
-
-
-with left:
-    st.markdown(
-        '<div class="info-card">',
-        unsafe_allow_html=True,
-    )
-
-    st.subheader("Ticket Status")
-
-    st.bar_chart(
-        {
-            "Tickets": {
-                "Open": summary["open"],
-                "In Progress": summary["in_progress"],
-                "Resolved": summary["resolved"],
-            }
-        }
-    )
-
-    st.markdown(
-        "</div>",
-        unsafe_allow_html=True,
-    )
-
-
-with right:
-    st.markdown(
-        '<div class="info-card">',
-        unsafe_allow_html=True,
-    )
-
-    st.subheader("Current Queue")
-
-    st.write("Tickets currently being handled by HR or the AI assistant.")
-
-    st.metric(
-        "Tickets requiring attention",
-        summary["open"] + summary["in_progress"],
-    )
-
-    st.markdown(
-        "</div>",
-        unsafe_allow_html=True,
-    )
-
-
-# ---------------------------------------------------------
+# =========================================================
 # RECENT TICKETS
-# ---------------------------------------------------------
+# =========================================================
 
-st.markdown(
-    '<div class="section-title">Recent Tickets</div>',
-    unsafe_allow_html=True,
+section_title(
+    "Recent Tickets",
+    "Your latest support requests.",
 )
 
 st.dataframe(
@@ -232,15 +186,22 @@ st.dataframe(
 )
 
 
-# ---------------------------------------------------------
-# NAVIGATION
-# ---------------------------------------------------------
+# =========================================================
+# AI ASSISTANT
+# =========================================================
 
-st.divider()
-
-if st.button(
-    "🎫 Manage Tickets",
-    type="primary",
-    use_container_width=True,
-):
-    st.switch_page("pages/2_tickets.py")
+st.markdown(
+    """
+    <div class="ai-card">
+        <div class="ai-title">
+            🤖 Genie AI
+        </div>
+        <div>
+            Need help figuring out where to start?
+            Genie can help you find the right department,
+            answer common questions, and create a support request.
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
