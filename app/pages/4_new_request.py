@@ -84,7 +84,10 @@ with col2:
 
 description = st.text_area(
     "Description *",
-    placeholder="Describe the issue and include any information that may help us resolve it.",
+    placeholder=(
+        "Describe the issue and include any information "
+        "that may help us resolve it."
+    ),
     height=180,
 )
 
