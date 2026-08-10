@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>TicketGenie | Staff Dashboard</title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+</head>
+
+
+<body>
+
+    <!-- ==============================
+         SIDEBAR
+    =============================== -->
+
+    <aside class="sidebar">
+
+        <div class="logo">
+
+            <div class="logo-icon">
+                ✦
+            </div>
+
+            <div>
+
+                <div class="logo-name">
+                    TicketGenie
+                </div>
+
+                <div class="logo-subtitle">
+                    Staff Portal
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <nav class="navigation">
+
+            <div class="nav-section-title">
+                WORKSPACE
+            </div>
+
+
+            <a
+                href="staff-dashboard.html"
+                class="nav-item active"
+            >
+
+                <span class="nav-icon">
+                    ▦
+                </span>
+
+                <span>
+                    Dashboard
+                </span>
+
+            </a>
+
+
+            <a
+                href="staff-tickets.html"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ▣
+                </span>
+
+                <span>
+                    Manage Tickets
+                </span>
+
+                <span class="notification-badge">
+                    7
+                </span>
+
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ◇
+                </span>
+
+                <span>
+                    Analytics
+                </span>
+
+            </a>
+
+
+            <div class="nav-section-title resources-title">
+                RESOURCES
+            </div>
+
+
+            <a
+                href="#"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ▤
+                </span>
+
+                <span>
+                    Knowledge Base
+                </span>
+
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-item"
+            >
+
+                <span class="nav-icon">
+                    ⚙
+                </span>
+
+                <span>
+                    Settings
+                </span>
+
+            </a>
+
+        </nav>
+
+
+        <div class="sidebar-bottom">
+
+            <div class="user-card">
+
+                <div class="user-avatar">
+                    H
+                </div>
+
+                <div class="user-info">
+
+                    <div class="user-name">
+                        Help Desk Staff
+                    </div>
+
+                    <div class="user-role">
+                        HR Department
+                    </div>
+
+                </div>
+
+                <button class="more-button">
+                    ⋯
+                </button>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+
+    <!-- ==============================
+         MAIN
+    =============================== -->
+
+    <main class="main-content">
+
+
+        <!-- HEADER -->
+
+        <header class="top-header">
+
+            <div>
+
+                <div class="breadcrumb">
+                    Staff Portal / Dashboard
+                </div>
+
+                <h1>
+                    Good morning 👋
+                </h1>
+
+                <p class="header-description">
+                    Here's what's happening with your support queue.
+                </p>
+
+            </div>
+
+
+            <div class="header-actions">
+
+                <button class="header-icon-button">
+                    ♢
+                </button>
+
+                <div class="header-avatar">
+                    H
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- ==============================
+             DEPARTMENT SELECTOR
+        =============================== -->
+
+        <section class="staff-department">
+
+            <div>
+
+                <span class="small-label">
+                    CURRENT DEPARTMENT
+                </span>
+
+                <h2>
+                    Human Resources
+                </h2>
+
+            </div>
+
+
+            <select id="departmentSelector">
+
+                <option>
+                    Human Resources
+                </option>
+
+                <option>
+                    IT Support
+                </option>
+
+                <option>
+                    Accounting
+                </option>
+
+                <option>
+                    Facilities
+                </option>
+
+                <option>
+                    All Departments
+                </option>
+
+            </select>
+
+        </section>
+
+
+        <!-- ==============================
+             METRICS
+        =============================== -->
+
+        <section class="content-section">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h2>
+                        Support Overview
+                    </h2>
+
+                    <p>
+                        Current ticket activity for your department.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="stats-grid staff-stats">
+
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+
+                        <span class="stat-label">
+                            Open Tickets
+                        </span>
+
+                        <span class="stat-icon open">
+                            ○
+                        </span>
+
+                    </div>
+
+                    <div class="stat-number">
+                        24
+                    </div>
+
+                    <div class="stat-description">
+                        +4 since yesterday
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+
+                        <span class="stat-label">
+                            In Progress
+                        </span>
+
+                        <span class="stat-icon progress">
+                            ◐
+                        </span>
+
+                    </div>
+
+                    <div class="stat-number">
+                        11
+                    </div>
+
+                    <div class="stat-description">
+                        Currently being handled
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+
+                        <span class="stat-label">
+                            High Priority
+                        </span>
+
+                        <span class="stat-icon high-stat">
+                            !
+                        </span>
+
+                    </div>
+
+                    <div class="stat-number">
+                        5
+                    </div>
+
+                    <div class="stat-description">
+                        Require attention
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+
+                        <span class="stat-label">
+                            Resolved Today
+                        </span>
+
+                        <span class="stat-icon resolved">
+                            ✓
+                        </span>
+
+                    </div>
+
+                    <div class="stat-number">
+                        18
+                    </div>
+
+                    <div class="stat-description">
+                        Successfully completed
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==============================
+             TWO COLUMN AREA
+        =============================== -->
+
+        <div class="dashboard-grid">
+
+
+            <!-- RECENT TICKETS -->
+
+            <section class="dashboard-panel">
+
+                <div class="panel-header">
+
+                    <div>
+
+                        <h2>
+                            Tickets Needing Attention
+                        </h2>
+
+                        <p>
+                            Prioritize tickets that need action.
+                        </p>
+
+                    </div>
+
+
+                    <a
+                        href="staff-tickets.html"
+                        class="text-button"
+                    >
+                        View all →
+                    </a>
+
+                </div>
+
+
+                <div class="staff-ticket-list">
+
+
+                    <div class="staff-ticket">
+
+                        <div class="ticket-priority high">
+                            HIGH
+                        </div>
+
+                        <div class="staff-ticket-info">
+
+                            <strong>
+                                #1042 — Benefits enrollment issue
+                            </strong>
+
+                            <span>
+                                Submitted 24 minutes ago · Employee
+                            </span>
+
+                        </div>
+
+                        <span class="status open">
+                            Open
+                        </span>
+
+                    </div>
+
+
+                    <div class="staff-ticket">
+
+                        <div class="ticket-priority medium">
+                            MED
+                        </div>
+
+                        <div class="staff-ticket-info">
+
+                            <strong>
+                                #1040 — PTO balance question
+                            </strong>
+
+                            <span>
+                                Submitted 1 hour ago · Employee
+                            </span>
+
+                        </div>
+
+                        <span class="status in-progress">
+                            In Progress
+                        </span>
+
+                    </div>
+
+
+                    <div class="staff-ticket">
+
+                        <div class="ticket-priority medium">
+                            MED
+                        </div>
+
+                        <div class="staff-ticket-info">
+
+                            <strong>
+                                #1038 — Update personal information
+                            </strong>
+
+                            <span>
+                                Submitted 2 hours ago · Employee
+                            </span>
+
+                        </div>
+
+                        <span class="status open">
+                            Open
+                        </span>
+
+                    </div>
+
+
+                    <div class="staff-ticket">
+
+                        <div class="ticket-priority low">
+                            LOW
+                        </div>
+
+                        <div class="staff-ticket-info">
+
+                            <strong>
+                                #1037 — Benefits information
+                            </strong>
+
+                            <span>
+                                Submitted yesterday · Employee
+                            </span>
+
+                        </div>
+
+                        <span class="status resolved">
+                            Resolved
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- AI PANEL -->
+
+            <section class="dashboard-panel ai-panel">
+
+                <div class="panel-header">
+
+                    <div>
+
+                        <h2>
+                            ✦ Genie AI
+                        </h2>
+
+                        <p>
+                            AI-assisted ticket insights.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="ai-insight">
+
+                    <div class="ai-insight-icon">
+                        ✦
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            8 tickets may be auto-resolved
+                        </strong>
+
+                        <p>
+                            Genie identified common questions
+                            with answers available in the knowledge base.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="ai-insight">
+
+                    <div class="ai-insight-icon">
+                        !
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            2 tickets may need escalation
+                        </strong>
+
+                        <p>
+                            These requests appear to require
+                            additional HR review.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <button class="ai-button full-width">
+                    Review AI Recommendations
+                </button>
+
+            </section>
+
+        </div>
+
+
+        <!-- ==============================
+             ACTIVITY
+        =============================== -->
+
+        <section class="content-section">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h2>
+                        Today's Activity
+                    </h2>
+
+                    <p>
+                        Recent activity across your support queue.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="activity-card">
+
+                <div class="activity-item">
+
+                    <div class="activity-dot">
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            Ticket #1042 was assigned to you
+                        </strong>
+
+                        <p>
+                            10 minutes ago
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="activity-item">
+
+                    <div class="activity-dot">
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            Ticket #1039 was resolved
+                        </strong>
+
+                        <p>
+                            32 minutes ago
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="activity-item">
+
+                    <div class="activity-dot">
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            Genie AI automatically categorized
+                            4 new tickets
+                        </strong>
+
+                        <p>
+                            1 hour ago
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+    </main>
+
+
+    <script src="js/staff-dashboard.js"></script>
+
+</body>
+
+</html>
