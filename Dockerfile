@@ -1,36 +1,52 @@
-# Use an official lightweight Python base image
-FROM python:3.11-slim
+# Multi-stage Dockerfile for Ticket-Genie Monorepo
 
-# Prevent Python from writing .pyc files and buffer stdout/stderr for clean container logs
+# Stage 1: FastAPI Backend Application
+FROM python:3.11-slim AS backend
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/workspace:/workspace/backend
 
-# Set working directory inside container
-WORKDIR /app
 
-# Ensure the project root is always importable when Streamlit runs app/main.py
-ENV PYTHONPATH=/app
+WORKDIR /workspace
 
-# Install system dependencies required for building C-extensions
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy dependency definition file first to leverage Docker layer caching
 COPY pyproject.toml .
+COPY backend/ ./backend/
+RUN pip install --no-cache-dir .[backend]
 
-# Copy application source before installation so the package is included in the image
+
+EXPOSE 8000
+
+HEALTHCHECK CMD curl --fail http://localhost:8000/health || exit 1
+
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# Stage 2: Streamlit Frontend Application
+FROM python:3.11-slim AS frontend
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml .
 COPY app/ ./app/
 
-# Install dependencies (installing the project without dev extras)
 RUN pip install --no-cache-dir .
 
-# Expose Streamlit's default port
 EXPOSE 8501
 
-# Configure Streamlit healthcheck
 HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health || exit 1
 
-# Launch Streamlit app
 ENTRYPOINT ["streamlit", "run", "app/main.py", "--server.port=8501", "--server.address=0.0.0.0"]

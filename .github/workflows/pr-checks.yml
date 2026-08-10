@@ -28,7 +28,8 @@ jobs:
           cache: "pip"
 
       - name: Install dependencies
-        run: pip install .[dev]
+        run: |
+          pip install .[backend,dev]
 
       - name: Run Ruff checks
         run: |
@@ -38,6 +39,28 @@ jobs:
       - name: Run tests
         run: pytest
 
+  test-backend:
+    name: FastAPI Backend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install .[backend,dev]
+
+
+      - name: Run Pytest
+        run: pytest tests/
+
   docker-checks:
     name: Docker Build and Smoke Test
     runs-on: ubuntu-latest
@@ -46,25 +69,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build Docker image
-        run: docker build -t ticket-genie-pr-check .
+      - name: Build Backend Docker image
+        run: docker build --target backend -t ticket-genie-backend-pr-check .
 
-      - name: Start container
-        run: docker run -d --name ticket-genie-pr-check -p 8501:8501 ticket-genie-pr-check
+      - name: Start Backend container
+        run: docker run -d --name ticket-genie-backend-pr-check -p 8000:8000 ticket-genie-backend-pr-check
 
-      - name: Wait for Streamlit health check
+      - name: Wait for FastAPI health check
         run: |
           for _ in $(seq 1 60); do
-            if curl --fail --silent http://localhost:8501/_stcore/health; then
+            if curl --fail --silent http://localhost:8000/health; then
               exit 0
             fi
             sleep 1
           done
           exit 1
 
-      - name: Stop container
+      - name: Stop Backend container
         if: always()
-        run: docker rm -f ticket-genie-pr-check
+        run: docker rm -f ticket-genie-backend-pr-check
+
 
   terraform-checks:
     name: Terraform Validation
