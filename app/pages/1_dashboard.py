@@ -86,8 +86,6 @@ summary = summarize_ticket_queue(tickets)
 # ---------------------------------------------------------
 # HEADER
 # ---------------------------------------------------------
-for col, department in zip(cols, departments, strict=True):
-
 st.markdown(
     '<div class="main-title">HR Analytics Dashboard</div>',
     unsafe_allow_html=True,
