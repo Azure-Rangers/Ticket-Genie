@@ -8,16 +8,13 @@ from app.components.ui import (
     section_title,
 )
 
-
 st.set_page_config(
     page_title="New Request | Ticket-Genie",
     page_icon="➕",
     layout="wide",
 )
 
-
 apply_styles()
-
 
 # =========================================================
 # HEADER
@@ -30,9 +27,9 @@ department = st.session_state.get(
 
 page_header(
     "Submit a new request",
-    f"Tell us what you need help with and we'll route your request to {department}.",
+    f"Tell us what you need help with and we'll route "
+    f"your request to {department}.",
 )
-
 
 # =========================================================
 # REQUEST DETAILS
@@ -40,21 +37,26 @@ page_header(
 
 section_title(
     "Request Details",
-    "Provide enough information for our team to understand your issue.",
+    "Tell us what you need help with so we can get "
+    "your request to the right team.",
 )
 
+# =========================================================
+# SUBJECT
+# =========================================================
 
 subject = st.text_input(
     "Request subject *",
     placeholder="Briefly describe what you need help with",
 )
 
+# =========================================================
+# CATEGORY + PRIORITY
+# =========================================================
 
 col1, col2 = st.columns(2)
 
-
 with col1:
-
     category = st.selectbox(
         "Category *",
         [
@@ -62,15 +64,12 @@ with col1:
             "HR",
             "IT",
             "Accounting",
-            "Finance",
             "Facilities",
             "Other",
         ],
     )
 
-
 with col2:
-
     priority = st.selectbox(
         "Priority *",
         [
@@ -81,6 +80,9 @@ with col2:
         ],
     )
 
+# =========================================================
+# DESCRIPTION
+# =========================================================
 
 description = st.text_area(
     "Description *",
@@ -91,17 +93,24 @@ description = st.text_area(
     height=180,
 )
 
+# =========================================================
+# PREFERRED DATE
+# =========================================================
 
 preferred_date = st.date_input(
     "Preferred resolution date",
 )
 
+# =========================================================
+# ATTACHMENTS
+# =========================================================
+
+st.markdown("**Supporting files**")
 
 attachment = st.file_uploader(
-    "Attach supporting files",
+    "Attach screenshots, documents, or other files",
     accept_multiple_files=True,
 )
-
 
 # =========================================================
 # AI PREVIEW
@@ -109,6 +118,7 @@ attachment = st.file_uploader(
 
 section_title(
     "Before you submit",
+    "Here's what Genie AI will do with your request.",
 )
 
 st.markdown(
@@ -117,21 +127,22 @@ st.markdown(
         <div class="ai-title">
             🤖 Genie AI will review this request
         </div>
-
-        <p>
-            After submission, the AI assistant can identify the
-            request type, estimate priority, and determine whether
-            the request can be automatically resolved.
-        </p>
+        <div class="ai-text">
+            After submission, Genie AI can identify the request
+            type, estimate its priority, route it to the correct
+            department, and determine whether it can be resolved
+            automatically.
+        </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-
 # =========================================================
 # SUBMIT
 # =========================================================
+
+st.markdown("")
 
 if st.button(
     "Submit Request",
@@ -139,36 +150,44 @@ if st.button(
     use_container_width=True,
 ):
 
-    if not subject or not description:
-        st.warning(
-            "Please complete the subject and description."
-        )
+    # -----------------------------------------------------
+    # FRONTEND VALIDATION
+    # -----------------------------------------------------
+
+    if not subject.strip():
+        st.warning("Please enter a request subject.")
+
+    elif not description.strip():
+        st.warning("Please describe your issue.")
 
     elif category == "Select a category":
-        st.warning(
-            "Please select a category."
-        )
+        st.warning("Please select a category.")
+
+    elif priority == "Select priority":
+        st.warning("Please select a priority.")
 
     else:
 
-        # =================================================
+        # -------------------------------------------------
         # BACKEND CONNECTION GOES HERE LATER
-        # =================================================
+        # -------------------------------------------------
 
-        # Example:
+        # Example for your teammates:
         #
         # ticket_service.create_ticket(
         #     subject=subject,
         #     description=description,
         #     category=category,
         #     priority=priority,
+        #     preferred_date=preferred_date,
+        #     attachments=attachment,
         # )
-        #
 
         st.success(
             "Your request has been submitted successfully!"
         )
 
         st.info(
-            "Your request has been sent to the appropriate support team."
+            f"Your request has been sent to the "
+            f"{category} support team."
         )
