@@ -42,10 +42,6 @@ def load_multiple_keyvaults_to_env():
             os.environ[env_key] = secret_value
 
 
-# Call this function BEFORE initializing your database, web framework, etc.
-load_multiple_keyvaults_to_env()
-
-
 # Now you just read from os.environ, no Azure SDK knowledge required here!
 # db_password = os.getenv("DB_PASSWORD")
 # api_key = os.getenv("API_KEY")
@@ -117,7 +113,31 @@ def render_ticketer_view() -> None:
 
 
 def main() -> None:
-    st.set_page_config(page_title="Ticket-Genie", page_icon="🎫", layout="wide")
+    load_multiple_keyvaults_to_env()
+
+    st.set_page_config(
+        page_title="Ticket-Genie",
+        page_icon="🎫",
+        layout="wide",
+    )
+
+    st.title("Ticket-Genie")
+    st.write(
+        "Streamlit starter app for tracking support tickets and workflow health."
+    )
+
+    summary = build_app_summary()
+    render_summary_cards(summary)
+
+    st.subheader("Sample tickets")
+    st.dataframe(
+        get_sample_tickets(),
+        use_container_width=True,
+    )
+
+    st.caption(
+        f"Snapshot generated {summary['generated_at']}"
+    )
 
     if "active_view" not in st.session_state:
         st.session_state["active_view"] = "landing"

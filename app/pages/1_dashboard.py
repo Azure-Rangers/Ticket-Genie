@@ -35,6 +35,8 @@ summary = summarize_ticket_queue(tickets)
 # =========================================================
 # HEADER
 # =========================================================
+# ---------------------------------------------------------
+for col, department in zip(cols, departments, strict=True):
 
 page_header(
     "How can we help you?",
