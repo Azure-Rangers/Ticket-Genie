@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Manage Tickets | TicketGenie</title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+</head>
+
+
+<body>
+
+
+<!-- =========================================
+     SIDEBAR
+========================================= -->
+
+<aside class="sidebar">
+
+    <div class="logo">
+
+        <div class="logo-icon">
+            ✦
+        </div>
+
+        <div>
+
+            <div class="logo-name">
+                TicketGenie
+            </div>
+
+            <div class="logo-subtitle">
+                Staff Portal
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <nav class="navigation">
+
+        <div class="nav-section-title">
+            WORKSPACE
+        </div>
+
+
+        <a
+            href="staff-dashboard.html"
+            class="nav-item"
+        >
+
+            <span class="nav-icon">
+                ▦
+            </span>
+
+            Dashboard
+
+        </a>
+
+
+        <a
+            href="staff-tickets.html"
+            class="nav-item active"
+        >
+
+            <span class="nav-icon">
+                ▣
+            </span>
+
+            Manage Tickets
+
+            <span class="notification-badge">
+                7
+            </span>
+
+        </a>
+
+
+        <a
+            href="#"
+            class="nav-item"
+        >
+
+            <span class="nav-icon">
+                ◇
+            </span>
+
+            Analytics
+
+        </a>
+
+
+        <div class="nav-section-title resources-title">
+            RESOURCES
+        </div>
+
+
+        <a
+            href="#"
+            class="nav-item"
+        >
+
+            <span class="nav-icon">
+                ▤
+            </span>
+
+            Knowledge Base
+
+        </a>
+
+
+        <a
+            href="#"
+            class="nav-item"
+        >
+
+            <span class="nav-icon">
+                ⚙
+            </span>
+
+            Settings
+
+        </a>
+
+    </nav>
+
+
+    <div class="sidebar-bottom">
+
+        <div class="user-card">
+
+            <div class="user-avatar">
+                H
+            </div>
+
+            <div class="user-info">
+
+                <div class="user-name">
+                    Help Desk Staff
+                </div>
+
+                <div class="user-role">
+                    HR Department
+                </div>
+
+            </div>
+
+            <button class="more-button">
+                ⋯
+            </button>
+
+        </div>
+
+    </div>
+
+</aside>
+
+
+
+<!-- =========================================
+     MAIN CONTENT
+========================================= -->
+
+<main class="main-content">
+
+
+    <!-- HEADER -->
+
+    <header class="top-header">
+
+        <div>
+
+            <div class="breadcrumb">
+                Staff Portal / Manage Tickets
+            </div>
+
+            <h1>
+                Manage Tickets
+            </h1>
+
+            <p class="header-description">
+                Review, assign, and resolve support requests.
+            </p>
+
+        </div>
+
+
+        <div class="header-actions">
+
+            <button class="header-icon-button">
+                ♢
+            </button>
+
+            <div class="header-avatar">
+                H
+            </div>
+
+        </div>
+
+    </header>
+
+
+
+    <!-- =========================================
+         TICKET SUMMARY
+    ========================================= -->
+
+    <section class="ticket-summary">
+
+        <div class="ticket-summary-item">
+
+            <span class="summary-number">
+                24
+            </span>
+
+            <span class="summary-label">
+                Open
+            </span>
+
+        </div>
+
+
+        <div class="ticket-summary-item">
+
+            <span class="summary-number">
+                11
+            </span>
+
+            <span class="summary-label">
+                In Progress
+            </span>
+
+        </div>
+
+
+        <div class="ticket-summary-item">
+
+            <span class="summary-number danger-number">
+                5
+            </span>
+
+            <span class="summary-label">
+                High Priority
+            </span>
+
+        </div>
+
+
+        <div class="ticket-summary-item">
+
+            <span class="summary-number success-number">
+                18
+            </span>
+
+            <span class="summary-label">
+                Resolved Today
+            </span>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =========================================
+         FILTERS
+    ========================================= -->
+
+    <section class="ticket-controls">
+
+        <div class="ticket-search">
+
+            <span>
+                🔍
+            </span>
+
+            <input
+                type="text"
+                id="ticketSearch"
+                placeholder="Search tickets..."
+            >
+
+        </div>
+
+
+        <select id="departmentFilter">
+
+            <option value="all">
+                All Departments
+            </option>
+
+            <option value="HR">
+                HR
+            </option>
+
+            <option value="IT">
+                IT
+            </option>
+
+            <option value="Accounting">
+                Accounting
+            </option>
+
+            <option value="Facilities">
+                Facilities
+            </option>
+
+        </select>
+
+
+        <select id="statusFilter">
+
+            <option value="all">
+                All Statuses
+            </option>
+
+            <option value="open">
+                Open
+            </option>
+
+            <option value="in-progress">
+                In Progress
+            </option>
+
+            <option value="resolved">
+                Resolved
+            </option>
+
+        </select>
+
+
+        <select id="priorityFilter">
+
+            <option value="all">
+                All Priorities
+            </option>
+
+            <option value="high">
+                High
+            </option>
+
+            <option value="medium">
+                Medium
+            </option>
+
+            <option value="low">
+                Low
+            </option>
+
+        </select>
+
+    </section>
+
+
+
+    <!-- =========================================
+         TICKETS
+    ========================================= -->
+
+    <section class="tickets-panel">
+
+
+        <div class="tickets-panel-header">
+
+            <div>
+
+                <h2>
+                    Support Queue
+                </h2>
+
+                <p>
+                    Tickets assigned to your department.
+                </p>
+
+            </div>
+
+
+            <button
+                class="secondary-button"
+                id="refreshTickets"
+            >
+                ↻ Refresh
+            </button>
+
+        </div>
+
+
+
+        <!-- TABLE HEADER -->
+
+        <div class="ticket-table-header">
+
+            <span>
+                TICKET
+            </span>
+
+            <span>
+                REQUESTER
+            </span>
+
+            <span>
+                DEPARTMENT
+            </span>
+
+            <span>
+                PRIORITY
+            </span>
+
+            <span>
+                STATUS
+            </span>
+
+            <span>
+                ACTION
+            </span>
+
+        </div>
+
+
+
+        <!-- TICKET 1 -->
+
+        <div
+            class="ticket-row"
+            data-department="HR"
+            data-status="open"
+            data-priority="high"
+        >
+
+            <div class="ticket-id">
+
+                <strong>
+                    #1042
+                </strong>
+
+                <span>
+                    Benefits enrollment issue
+                </span>
+
+            </div>
+
+
+            <div class="requester">
+
+                <strong>
+                    A. Johnson
+                </strong>
+
+                <span>
+                    Employee
+                </span>
+
+            </div>
+
+
+            <div>
+                <span class="department-tag hr">
+                    HR
+                </span>
+            </div>
+
+
+            <div>
+
+                <span class="priority-tag high">
+                    High
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <span class="status-tag open">
+                    Open
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <button
+                    class="view-ticket-button"
+                    data-ticket="1042"
+                >
+                    View →
+                </button>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- TICKET 2 -->
+
+        <div
+            class="ticket-row"
+            data-department="HR"
+            data-status="in-progress"
+            data-priority="medium"
+        >
+
+            <div class="ticket-id">
+
+                <strong>
+                    #1040
+                </strong>
+
+                <span>
+                    PTO balance question
+                </span>
+
+            </div>
+
+
+            <div class="requester">
+
+                <strong>
+                    M. Patel
+                </strong>
+
+                <span>
+                    Employee
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <span class="department-tag hr">
+                    HR
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <span class="priority-tag medium">
+                    Medium
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <span class="status-tag in-progress">
+                    In Progress
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <button
+                    class="view-ticket-button"
+                    data-ticket="1040"
+                >
+                    View →
+                </button>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- TICKET 3 -->
+
+        <div
+            class="ticket-row"
+            data-department="IT"
+            data-status="open"
+            data-priority="high"
+        >
+
+            <div class="ticket-id">
+
+                <strong>
+                    #1039
+                </strong>
+
+                <span>
+                    Unable to access company account
+                </span>
+
+            </div>
+
+
+            <div class="requester">
+
+                <strong>
+                    J. Smith
+                </strong>
+
+                <span>
+                    Employee
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <span class="department-tag it">
+                    IT
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <span class="priority-tag high">
+                    High
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <span class="status-tag open">
+                    Open
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <button
+                    class="view-ticket-button"
+                    data-ticket="1039"
+                >
+                    View →
+                </button>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- TICKET 4 -->
+
+        <div
+            class="ticket-row"
+            data-department="Accounting"
+            data-status="open"
+            data-priority="medium"
+        >
+
+            <div class="ticket-id">
+
+                <strong>
+                    #1038
+                </strong>
+
+                <span>
+                    Expense reimbursement question
+                </span>
+
+            </div>
+
+
+            <div class="requester">
+
+                <strong>
+                    R. Davis
+                </strong>
+
+                <span>
+                    Employee
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <span class="department-tag accounting">
+                    Accounting
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <span class="priority-tag medium">
+                    Medium
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <span class="status-tag open">
+                    Open
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <button
+                    class="view-ticket-button"
+                    data-ticket="1038"
+                >
+                    View →
+                </button>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- TICKET 5 -->
+
+        <div
+            class="ticket-row"
+            data-department="Facilities"
+            data-status="resolved"
+            data-priority="low"
+        >
+
+            <div class="ticket-id">
+
+                <strong>
+                    #1037
+                </strong>
+
+                <span>
+                    Office equipment request
+                </span>
+
+            </div>
+
+
+            <div class="requester">
+
+                <strong>
+                    S. Lee
+                </strong>
+
+                <span>
+                    Employee
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <span class="department-tag facilities">
+                    Facilities
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <span class="priority-tag low">
+                    Low
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <span class="status-tag resolved">
+                    Resolved
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <button
+                    class="view-ticket-button"
+                    data-ticket="1037"
+                >
+                    View →
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div
+            id="noTickets"
+            class="no-tickets"
+        >
+
+            No tickets match your filters.
+
+        </div>
+
+
+    </section>
+
+
+</main>
+
+
+
+<script src="js/staff-tickets.js"></script>
+
+</body>
+
+</html>
