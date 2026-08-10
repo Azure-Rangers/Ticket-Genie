@@ -11,6 +11,7 @@ from app.services.tickets import get_sample_tickets, summarize_ticket_queue
 # Load environment variables from local .env file
 load_dotenv()
 
+
 def build_app_summary() -> dict[str, int | str]:
     tickets = get_sample_tickets()
     queue_summary = summarize_ticket_queue(tickets)
@@ -75,8 +76,6 @@ def render_ticketer_view() -> None:
 
 
 def main() -> None:
-    load_multiple_keyvaults_to_env()
-
     st.set_page_config(
         page_title="Ticket-Genie",
         page_icon="🎫",
@@ -84,9 +83,7 @@ def main() -> None:
     )
 
     st.title("Ticket-Genie")
-    st.write(
-        "Streamlit starter app for tracking support tickets and workflow health."
-    )
+    st.write("Streamlit starter app for tracking support tickets and workflow health.")
 
     summary = build_app_summary()
     render_summary_cards(summary)
@@ -97,9 +94,7 @@ def main() -> None:
         use_container_width=True,
     )
 
-    st.caption(
-        f"Snapshot generated {summary['generated_at']}"
-    )
+    st.caption(f"Snapshot generated {summary['generated_at']}")
 
     if "active_view" not in st.session_state:
         st.session_state["active_view"] = "landing"
