@@ -1,11 +1,22 @@
-/* Base Variables for the Professional/Muted Theme */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700&display=swap');
+
+/* Base Variables for Professional Modern Theme */
 :root {
-    --bg-main: #f8f9fa; /* Muted white/off-white */
-    --text-main: #212529; /* Dark gray/near-black */
-    --accent-purple: #6f42c1; /* Primary accent */
-    --sidebar-purple: #4b2b82; /* Dark purple */
-    --card-bg: #ffffff; /* White cards */
-    --border-light: #dee2e6; /* Light gray borders */
+    --bg-main: #f8fafc; /* Sleek off-white background */
+    --text-main: #0f172a; /* Slate 900 */
+    --text-muted: #64748b; /* Slate 500 */
+    --accent-purple: #6366f1; /* Indigo 500 */
+    --accent-purple-hover: #4f46e5; /* Indigo 600 */
+    --sidebar-purple: #1e1b4b; /* Deep Indigo 950 */
+    --sidebar-active: #312e81; /* Deep Indigo 900 */
+    --card-bg: #ffffff;
+    --border-light: #e2e8f0; /* Slate 200 */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 4px 10px -2px rgba(0, 0, 0, 0.04);
 }
 
 /* Basic Reset for clean whitespace */
@@ -13,16 +24,14 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-body {
-   /* Layout Skeleton */
 body {
     background-color: var(--bg-main);
     color: var(--text-main);
     height: 100vh;
-    overflow: hidden; /* Prevents whole page from scrolling */
+    overflow: hidden;
 }
 
 .app-container {
@@ -310,33 +319,40 @@ h1 {
 
 /* Badges for Status/Priority */
 .badge {
-    padding: 5px 10px;
-    border-radius: 20px;
+    padding: 4px 12px;
+    border-radius: 9999px;
     font-size: 12px;
     font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    letter-spacing: 0.01em;
 }
 
-.badge-high { background-color: #ffeeba; color: #856404; }
-.badge-med { background-color: #e2e3e5; color: #383d41; }
-.badge-low { background-color: #d4edda; color: #155724; }
-.badge-open { background-color: #cce5ff; color: #004085; }
-.badge-progress { background-color: #d1c4e9; color: var(--sidebar-purple); }
+.badge-high { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.badge-med { background-color: #fffbe6; color: #d97706; border: 1px solid #fef3c7; }
+.badge-low { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+.badge-open { background-color: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; }
+.badge-progress { background-color: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+.badge-resolved { background-color: #d1fae5; color: #047857; border: 1px solid #a7f3d0; }
 
 /* Small buttons */
 .btn-sm {
-    padding: 6px 12px;
-    background-color: var(--bg-main);
+    padding: 7px 14px;
+    background-color: var(--card-bg);
     border: 1px solid var(--border-light);
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    font-size: 12px;
-    transition: all 0.2s;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
 }
 
 .btn-sm:hover {
     background-color: var(--accent-purple);
     color: white;
     border-color: var(--accent-purple);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
 }
 
 /* =========================================
