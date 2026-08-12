@@ -75,5 +75,56 @@
             </section>
         </main>
     </div>
+
+    <div id="articleModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Article Title</h2>
+                <button id="closeModalBtn" class="close-modal-btn">✖</button>
+            </div>
+            <div class="modal-body">
+                <p id="modalText">Loading content...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const modal = document.getElementById('articleModal');
+        const closeBtn = document.getElementById('closeModalBtn');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalText = document.getElementById('modalText');
+
+        // 1. Find every single article link on the page
+        const articleLinks = document.querySelectorAll('.kb-article-list a');
+
+        // 2. Add a click event to all of them
+        articleLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault(); // Stop the link from trying to jump to the top of the page
+
+                // Grab the exact text of the link they clicked
+                const title = this.innerText;
+                
+                // Set the modal title and some mock text
+                modalTitle.innerText = title;
+                modalText.innerHTML = `This is the official Ticket-Genie company policy for <strong>${title}</strong>.<br><br>Once your backend team connects the database to this frontend, this box will automatically fill with the real document text! For now, this is a clean frontend placeholder.`;
+
+                // Show the modal
+                modal.classList.add('active');
+            });
+        });
+
+        // 3. Close modal when clicking the X
+        closeBtn.addEventListener('click', () => {
+            modal.classList.remove('active');
+        });
+
+        // 4. Close modal when clicking on the dark blurred background outside the box
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+            }
+        });
+    </script>
 </body>
 </html>

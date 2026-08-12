@@ -71,7 +71,7 @@
                             <textarea placeholder="Type your response to Sarah..."></textarea>
                             <div class="response-actions">
                                 <button class="btn-outline">Save Note</button>
-                                <button class="btn-primary">Send & Resolve Ticket</button>
+                                <button id="resolveTicketBtn" class="btn-primary">Send & Resolve Ticket</button>
                             </div>
                         </div>
                     </div>
@@ -89,5 +89,74 @@
             </section>
         </main>
     </div>
+    <div id="resolveToast" class="toast-notification">
+        <span>✅</span> Ticket successfully resolved! Returning to queue...
+    </div>
+
+    <div class="genie-chat-widget">
+        <button id="chatToggleBtn" class="genie-chat-btn">✨</button>
+        
+        <div id="chatWindow" class="genie-chat-window">
+            <div class="genie-chat-header">
+                <span>Genie AI Assistant</span>
+                <button id="closeChatBtn" class="close-chat-btn">✖</button>
+            </div>
+            <div id="chatBody" class="genie-chat-body">
+                <div class="chat-bubble genie-bubble">
+                    Hi! I'm Genie. I can help you draft a response or look up HR policies. How can I assist?
+                </div>
+            </div>
+            <div class="genie-chat-input">
+                <input type="text" id="chatInput" placeholder="Ask Genie...">
+                <button id="sendChatBtn">Send</button>
+            </div>
+        </div>
+    </div>
+    <script>
+       // =========================================
+        // RESOLVE TICKET LOGIC (WITH CACHE FIX)
+        // =========================================
+        const resolveBtn = document.getElementById('resolveTicketBtn');
+        const toast = document.getElementById('resolveToast');
+        const successSound = new Audio('https://assets.mixkit.co/active_storage/sfx/1114/1114-preview.mp3');
+
+        // FIX: Force the page to reset its state instantly without animating
+        window.addEventListener('pageshow', function() {
+            // Turn off the CSS animation temporarily
+            toast.style.transition = 'none'; 
+            
+            // Snap it completely off-screen
+            toast.classList.remove('show');
+            resolveBtn.innerText = "Send & Resolve Ticket";
+            resolveBtn.style.opacity = "1";
+            
+            // Turn the CSS animation back on a tiny millisecond later
+            setTimeout(() => {
+                toast.style.transition = 'right 0.4s ease';
+            }, 50);
+        });
+
+        resolveBtn.addEventListener('click', function() {
+            successSound.play();
+            
+            resolveBtn.innerText = "Resolving...";
+            resolveBtn.style.opacity = "0.7";
+            
+            // Slide the notification IN
+            toast.classList.add('show');
+
+            // Slide the notification OUT after 1.5 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 1500);
+
+            // Redirect the page after 2 seconds
+            setTimeout(() => {
+                window.location.href = 'hr-tickets.html';
+            }, 2000);
+        });
+    </script>
+    
+    
 </body>
 </html>
