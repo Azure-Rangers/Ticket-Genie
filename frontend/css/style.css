@@ -1,0 +1,41 @@
+/* Base Variables for the Professional/Muted Theme */
+:root {
+    --bg-main: #f8f9fa; /* Muted white/off-white */
+    --text-main: #212529; /* Dark gray/near-black */
+    --accent-purple: #6f42c1; /* Primary accent */
+    --sidebar-purple: #4b2b82; /* Dark purple */
+    --card-bg: #ffffff; /* White cards */
+    --border-light: #dee2e6; /* Light gray borders */
+}
+
+/* Basic Reset for clean whitespace */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* Temporary test class */
+.test-container {
+    background-color: var(--card-bg);
+    padding: 40px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px; /* Slightly rounded corners */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); /* Subtle shadows */
+    text-align: center;
+}
+
+h1 {
+    color: var(--accent-purple);
+    margin-bottom: 10px;
+}
