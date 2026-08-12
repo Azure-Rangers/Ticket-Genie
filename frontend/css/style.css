@@ -542,3 +542,85 @@ h1 {
     margin-bottom: 15px;
     color: var(--text-main);
 }
+
+/* =========================================
+   ANALYTICS PAGE STYLES
+   ========================================= */
+
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+.chart-card {
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+.chart-card h3 {
+    font-size: 16px;
+    color: var(--text-main);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* =========================================
+   KNOWLEDGE BASE STYLES
+   ========================================= */
+
+.kb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+}
+
+.kb-category-card {
+    background-color: var(--card-bg);
+    padding: 25px;
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+    transition: transform 0.2s;
+}
+
+.kb-category-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
+}
+
+.kb-icon {
+    font-size: 32px;
+    margin-bottom: 15px;
+}
+
+.kb-category-card h3 {
+    font-size: 18px;
+    color: var(--text-main);
+    margin-bottom: 15px;
+    border-bottom: 2px solid var(--bg-main);
+    padding-bottom: 10px;
+}
+
+.kb-article-list {
+    list-style: none;
+}
+
+.kb-article-list li {
+    margin-bottom: 12px;
+}
+
+.kb-article-list a {
+    text-decoration: none;
+    color: var(--accent-purple);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.kb-article-list a:hover {
+    text-decoration: underline;
+}
