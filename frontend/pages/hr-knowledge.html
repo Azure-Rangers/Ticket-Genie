@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket-Genie | HR Knowledge Base</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        
+        <nav class="sidebar">
+            <div class="logo">
+                <h2>Ticket-Genie</h2>
+            </div>
+            <ul class="nav-links">
+                <li><a href="hr-portal.html">Dashboard</a></li>
+                <li><a href="hr-tickets.html">Manage Tickets</a></li>
+                <li class="active"><a href="hr-knowledge.html">Knowledge Base</a></li>
+                <li><a href="hr-analytics.html">Analytics</a></li>
+            </ul>
+            <div class="genie-panel-teaser">
+                <p>✨ Genie AI is active</p>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <header class="top-header">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search policies, articles, guides...">
+                </div>
+                <div class="user-profile">
+                    <span>HR Representative</span>
+                </div>
+            </header>
+            
+            <section class="dashboard-area">
+                <div class="dashboard-header">
+                    <h1>HR Knowledge Base</h1>
+                    <p>Standard operating procedures, policies, and reference guides.</p>
+                </div>
+
+                <div class="kb-grid">
+                    <div class="kb-category-card">
+                        <div class="kb-icon">💰</div>
+                        <h3>Payroll & Compensation</h3>
+                        <ul class="kb-article-list">
+                            <li><a href="#">Overtime Approval Process</a></li>
+                            <li><a href="#">Off-cycle Check Procedures</a></li>
+                            <li><a href="#">Annual Bonus Structure 2026</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="kb-category-card">
+                        <div class="kb-icon">🏥</div>
+                        <h3>Benefits & Leave</h3>
+                        <ul class="kb-article-list">
+                            <li><a href="#">FMLA & Maternity Leave Policy</a></li>
+                            <li><a href="#">Health Insurance Open Enrollment</a></li>
+                            <li><a href="#">Adding Dependents (Qualifying Events)</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="kb-category-card">
+                        <div class="kb-icon">🤝</div>
+                        <h3>Employee Relations</h3>
+                        <ul class="kb-article-list">
+                            <li><a href="#">Conflict Resolution Steps</a></li>
+                            <li><a href="#">Performance Improvement Plans (PIP)</a></li>
+                            <li><a href="#">Offboarding & Exit Interviews</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <div id="articleModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Article Title</h2>
+                <button id="closeModalBtn" class="close-modal-btn">✖</button>
+            </div>
+            <div class="modal-body">
+                <p id="modalText">Loading content...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const modal = document.getElementById('articleModal');
+        const closeBtn = document.getElementById('closeModalBtn');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalText = document.getElementById('modalText');
+
+        // 1. Find every single article link on the page
+        const articleLinks = document.querySelectorAll('.kb-article-list a');
+
+        // 2. Add a click event to all of them
+        articleLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault(); // Stop the link from trying to jump to the top of the page
+
+                // Grab the exact text of the link they clicked
+                const title = this.innerText;
+                
+                // Set the modal title and some mock text
+                modalTitle.innerText = title;
+                modalText.innerHTML = `This is the official Ticket-Genie company policy for <strong>${title}</strong>.<br><br>Once your backend team connects the database to this frontend, this box will automatically fill with the real document text! For now, this is a clean frontend placeholder.`;
+
+                // Show the modal
+                modal.classList.add('active');
+            });
+        });
+
+        // 3. Close modal when clicking the X
+        closeBtn.addEventListener('click', () => {
+            modal.classList.remove('active');
+        });
+
+        // 4. Close modal when clicking on the dark blurred background outside the box
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>

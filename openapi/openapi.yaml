@@ -4,25 +4,60 @@ info:
   description: AI-powered HR & IT Helpdesk System
   version: '1.0'
 paths:
-  /tickets:
-    get:
-      summary: List Tickets
-      operationId: list_tickets_tickets_get
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema: {}
+  /api/tickets:
     post:
-      summary: Create Ticket
-      operationId: create_ticket_tickets_post
+      tags:
+      - tickets
+      summary: Handle Create Ticket
+      operationId: handle_create_ticket_api_tickets_post
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/TicketCreate'
-        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - tickets
+      summary: List Tickets
+      operationId: list_tickets_api_tickets_get
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      - name: priority
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Priority
+      - name: search
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Search
       responses:
         '200':
           description: Successful Response
@@ -35,16 +70,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /tickets/{ticket_id}:
+  /api/tickets/{ticket_id}:
     get:
+      tags:
+      - tickets
       summary: Get Ticket
-      operationId: get_ticket_tickets__ticket_id__get
+      operationId: get_ticket_api_tickets__ticket_id__get
       parameters:
       - name: ticket_id
         in: path
         required: true
         schema:
-          type: integer
+          type: string
           title: Ticket Id
       responses:
         '200':
@@ -52,6 +89,31 @@ paths:
           content:
             application/json:
               schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/genie/chat:
+    post:
+      tags:
+      - genie
+      summary: Genie Chat
+      operationId: genie_chat_api_genie_chat_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenieChatRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenieChatResponse'
         '422':
           description: Validation Error
           content:
@@ -80,6 +142,31 @@ paths:
               schema: {}
 components:
   schemas:
+    GenieChatRequest:
+      properties:
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+      - message
+      title: GenieChatRequest
+    GenieChatResponse:
+      properties:
+        reply:
+          type: string
+          title: Reply
+        suggestions:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Suggestions
+      type: object
+      required:
+      - reply
+      title: GenieChatResponse
     HTTPValidationError:
       properties:
         detail:
@@ -96,16 +183,29 @@ components:
           maxLength: 200
           minLength: 3
           title: Title
+        category:
+          type: string
+          title: Category
+          default: IT Support
+        priority:
+          type: string
+          title: Priority
+          default: Medium
+        department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Department
+          default: IT
         description:
           type: string
-          minLength: 10
+          minLength: 5
           title: Description
-        department:
-          type: string
-          enum:
-          - HR
-          - IT
-          title: Department
+        preferredDate:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Preferreddate
         is_anonymous:
           type: boolean
           title: Is Anonymous
@@ -119,7 +219,6 @@ components:
       required:
       - title
       - description
-      - department
       title: TicketCreate
     ValidationError:
       properties:

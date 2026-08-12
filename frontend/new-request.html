@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TicketGenie | New Request</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="brand" style="position: relative; justify-content: space-between; width: 100%; padding-right: 15px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="brand-icon">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div>
+                <h2>TicketGenie</h2>
+                <span>Employee Support</span>
+            </div>
+        </div>
+        
+        <button id="brandMenuToggle" class="brand-menu-toggle" aria-label="Toggle Pages">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <div id="brandDropdown" class="brand-dropdown">
+            <a href="index.html"><i class="fa-solid fa-house"></i> Help & Support</a>
+            <a href="my-tickets.html"><i class="fa-solid fa-ticket"></i> My Tickets</a>
+            <a href="new-request.html"><i class="fa-solid fa-plus"></i> New Request</a>
+            <a href="knowledge-base.html"><i class="fa-solid fa-book-open"></i> Knowledge Base</a>
+            <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
+        </div>
+    </div>
+
+    <nav class="navigation">
+        <div class="nav-title">WORKSPACE</div>
+        <a href="index.html" class="nav-item">
+            <i class="fa-solid fa-house"></i><span>Help & Support</span>
+        </a>
+        <a href="my-tickets.html" class="nav-item">
+            <i class="fa-solid fa-ticket"></i><span>My Tickets</span>
+        </a>
+        <a href="new-request.html" class="nav-item active">
+            <i class="fa-solid fa-plus"></i><span>New Request</span>
+        </a>
+
+        <div class="nav-title">RESOURCES</div>
+        <a href="knowledge-base.html" class="nav-item">
+            <i class="fa-solid fa-book-open"></i><span>Knowledge Base</span>
+        </a>
+        <a href="notifications.html" class="nav-item">
+            <i class="fa-solid fa-bell"></i><span>Notifications</span><span class="notification-count">3</span>
+        </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+        <div class="system-status">
+            <div class="status-dot"></div>
+            <div><strong>All systems operational</strong><small>TicketGenie is online</small></div>
+        </div>
+    </div>
+</aside>
+
+<main class="main-content">
+    <header class="topbar">
+        <div class="header-left" style="display: flex; align-items: center; gap: 20px;">
+            <button class="icon-button" id="sidebarToggle" type="button" aria-label="Toggle Sidebar">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="page-title">
+                <span>WORKSPACE</span>
+                <h1>New Request</h1>
+            </div>
+        </div>
+
+        <div class="topbar-actions">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Search help..." id="globalSearch">
+                <span class="shortcut">⌘ K</span>
+            </div>
+            <button class="icon-button" type="button">
+                <i class="fa-regular fa-bell"></i><span class="notification-dot"></span>
+            </button>
+            <div class="profile">
+                <button class="profile-button" id="profileDropdownTrigger" aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdownMenu">
+                    <div class="avatar">NM</div>
+                    <div class="profile-info"><strong>Nishita</strong><span id="currentRoleDisplay">Employee</span></div>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </button>
+                <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu" aria-labelledby="profileDropdownTrigger">
+                    <span class="dropdown-label">Switch View</span>
+                    <button type="button" class="role-switch-btn active" data-role="Employee" role="menuitem">
+                        <i class="fa-regular fa-user"></i> Employee View
+                    </button>
+                    <button type="button" class="role-switch-btn" data-role="Management" role="menuitem">
+                        <i class="fa-solid fa-briefcase"></i> Management View
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="request-intro">
+        <div class="eyebrow">SUPPORT REQUEST</div>
+        <h2>Submit a new request</h2>
+        <p>Tell us what you need help with and our support team will review your request.</p>
+    </section>
+
+    <div class="request-layout">
+        <section class="request-form-card">
+            <div class="form-card-header">
+                <div><h3>Request Details</h3><p>Provide as much detail as possible.</p></div>
+                <span class="required-note">* Required</span>
+            </div>
+            
+            <div id="formErrorMessage" class="form-error-message" style="display: none;"></div>
+            
+            <form id="newTicketForm">
+                <div class="form-group">
+                    <label for="ticketSubject">Request subject <span>*</span></label>
+                    <input type="text" id="ticketSubject" name="subject" placeholder="Briefly describe what you need help with" required>
+                    <small>Keep your subject short and specific.</small>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="ticketCategory">Category <span>*</span></label>
+                        <select id="ticketCategory" name="category" required>
+                            <option value="">Select a category</option>
+                            <option value="HR">HR</option>
+                            <option value="IT Support">IT Support</option>
+                            <option value="Payroll">Payroll</option>
+                            <option value="Benefits">Benefits</option>
+                            <option value="Time Off">Time Off</option>
+                            <option value="Employee Services">Employee Services</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ticketPriority">Priority <span>*</span></label>
+                        <select id="ticketPriority" name="priority" required>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                            <option value="Low">Low</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group description-group">
+                    <label for="ticketDescription">Description <span>*</span></label>
+                    <textarea id="ticketDescription" name="description" placeholder="Describe the issue, what you were trying to do, and any relevant details..." required></textarea>
+                    <div class="field-footer">
+                        <small>Include any error messages or relevant context.</small>
+                        <span id="characterCount">0 / 1000</span>
+                    </div>
+                </div>
+
+                <div class="form-group preferred-date-group">
+                    <label for="preferredDate">Preferred resolution date</label>
+                    <input type="date" id="preferredDate" name="preferredDate">
+                    <small>Optional. Let us know if you have a preferred date.</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Attachment</label>
+                    <div class="upload-area">
+                        <div class="upload-icon"><i class="fa-solid fa-paperclip"></i></div>
+                        <div class="upload-content">
+                            <strong>Attach supporting files</strong>
+                            <span>Add screenshots, documents, or other relevant files.</span>
+                            <small><button type="button" class="browse-button" id="browseButton">Browse files</button></small>
+                        </div>
+                        <input type="file" id="fileUpload" hidden multiple>
+                    </div>
+                    <div id="selectedFiles"></div>
+                </div>
+
+                <div class="form-actions">
+                    <a href="index.html" class="cancel-button">Cancel</a>
+                    <button type="submit" class="submit-request-button" id="submitRequestButton">
+                        <i class="fa-solid fa-paper-plane"></i> Submit Request
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <aside class="request-help-panel">
+            <div class="help-panel-card">
+                <div class="help-panel-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                <h3>Need help writing your request?</h3>
+                <p>Genie can help you describe your issue, identify the right category, or find an existing answer.</p>
+                <button type="button" class="ai-help-button" id="openGenieFromRequest">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Ask Genie
+                </button>
+            </div>
+            <div class="help-panel-card">
+                <div class="tips-header">
+                    <i class="fa-solid fa-lightbulb"></i><h3>Helpful tips</h3>
+                </div>
+                <div class="tip"><span class="tip-number">01</span><p>Use a clear subject that summarizes your issue.</p></div>
+                <div class="tip"><span class="tip-number">02</span><p>Include specific details about what happened.</p></div>
+                <div class="tip"><span class="tip-number">03</span><p>Attach screenshots when they help explain the issue.</p></div>
+            </div>
+            <div class="response-card">
+                <div><i class="fa-regular fa-clock"></i></div>
+                <section><strong>Typical response time</strong><span>Within 1–2 business days</span></section>
+            </div>
+        </aside>
+    </div>
+</main>
+
+<div class="genie-container">
+    <button class="genie-button" id="genieButton" type="button">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Ask Genie
+    </button>
+    <div class="genie-chat" id="genieChat">
+        <div class="genie-chat-header">
+            <div class="genie-header-info">
+                <div class="genie-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                <div><strong>Genie AI</strong><span><span class="genie-status-dot"></span> Online</span></div>
+            </div>
+            <button class="genie-close" id="closeGenieButton" type="button"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="genie-messages" id="genieMessages">
+            <div class="genie-message">
+                <div class="genie-message-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                <div class="genie-bubble">Hi! I'm Genie. I can help you describe your request or find the right support resource.</div>
+            </div>
+            <div class="genie-suggestions">
+                <button class="genie-suggestion" type="button">Help describe my issue</button>
+                <button class="genie-suggestion" type="button">Which category?</button>
+                <button class="genie-suggestion" type="button">Find an answer</button>
+            </div>
+        </div>
+        <div class="genie-input-area">
+            <input type="text" id="genieInput" placeholder="Ask Genie something..." autocomplete="off">
+            <button type="button" id="genieSendButton"><i class="fa-solid fa-arrow-up"></i></button>
+        </div>
+        <div class="genie-disclaimer">Genie may occasionally provide inaccurate information.</div>
+    </div>
+</div>
+
+<div class="ticket-success-message" id="ticketSuccessMessage">
+    <div class="success-icon"><i class="fa-solid fa-check"></i></div>
+    <div><strong>Request submitted</strong><span id="successTicketNumber">Your ticket has been created.</span></div>
+</div>
+
+<script src="js/script.js"></script>
+</body>
+</html>
