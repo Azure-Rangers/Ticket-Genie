@@ -4,45 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notifications | TicketGenie</title>
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
-
-    <style>
-        /* PROFILE DROPDOWN STYLES */
-        .profile { position: relative; display: flex; align-items: center; }
-        .profile-button { display: flex; align-items: center; gap: 9px; background: transparent; border: none; cursor: pointer; padding: 6px; border-radius: 8px; text-align: left; transition: background 0.2s ease, outline 0.2s ease; }
-        .profile-button:hover, .profile-button:focus-visible { background: #f4f8f5; outline: 2px solid #527d66; outline-offset: 2px; }
-        .profile-button .avatar { width: 35px; height: 35px; border-radius: 50%; background: #dce9df; color: #365e48; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
-        .profile-button .profile-info strong { display: block; font-size: 11px; font-weight: 600; color: #28332c; }
-        .profile-button .profile-info span { display: block; font-size: 9px; color: #8b968f; margin-top: 2px; }
-        .profile-button > i { color: #9aa39d; font-size: 9px; margin-left: 3px; }
-        .profile-dropdown-menu { position: absolute; top: 100%; right: 0; margin-top: 10px; width: 200px; background: white; border: 1px solid #dfe5e1; border-radius: 8px; box-shadow: 0 4px 15px rgba(35, 66, 54, 0.08); display: none; flex-direction: column; padding: 10px 0; z-index: 1000; }
-        .profile-dropdown-menu.show { display: flex; }
-        .dropdown-label { font-size: 10px; color: #8b968f; padding: 4px 16px 8px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
-        .role-switch-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 16px; border: none; background: transparent; text-align: left; font-size: 11px; color: #333; cursor: pointer; transition: background 0.2s ease, color 0.2s ease; }
-        .role-switch-btn i { color: #8b968f; font-size: 13px; width: 16px; text-align: center; transition: color 0.2s ease; }
-        .role-switch-btn:hover, .role-switch-btn:focus-visible { background: #f4f8f5; outline: none; }
-        .role-switch-btn.active { background: #e7f0e9; color: #527d66; font-weight: 600; }
-        .role-switch-btn.active i { color: #527d66; }
-
-        /* FIX SUCCESS MESSAGE BLOCKING CLICKS */
-        .ticket-success-message { pointer-events: none; }
-        .ticket-success-message.show { pointer-events: auto; }
-
-        /* SIDEBAR TOGGLE STYLES */
-        .sidebar { transition: transform 0.3s ease; }
-        .sidebar.collapsed { transform: translateX(-100%); }
-        .main-content { transition: margin-left 0.3s ease; }
-        .main-content.expanded { margin-left: 0; }
-    </style>
 </head>
 <body>
 
 <aside class="sidebar">
-    <div class="brand">
-        <div class="brand-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-        <div><h2>TicketGenie</h2><span>Employee Support</span></div>
+    <div class="brand" style="position: relative; justify-content: space-between; width: 100%; padding-right: 15px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="brand-icon">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div>
+                <h2>TicketGenie</h2>
+                <span>Employee Support</span>
+            </div>
+        </div>
+        
+        <button id="brandMenuToggle" class="brand-menu-toggle" aria-label="Toggle Pages">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <div id="brandDropdown" class="brand-dropdown">
+            <a href="index.html"><i class="fa-solid fa-house"></i> Help & Support</a>
+            <a href="my-tickets.html"><i class="fa-solid fa-ticket"></i> My Tickets</a>
+            <a href="new-request.html"><i class="fa-solid fa-plus"></i> New Request</a>
+            <a href="knowledge-base.html"><i class="fa-solid fa-book-open"></i> Knowledge Base</a>
+            <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
+        </div>
     </div>
 
     <nav class="navigation">
@@ -182,14 +171,16 @@
             </section>
         </div>
     </section>
+</main>
 
+<div class="genie-container">
     <button class="genie-button" id="genieButton" type="button"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Ask Genie</span></button>
     
     <div class="genie-chat" id="genieChat">
         <div class="genie-chat-header">
             <div class="genie-header-info">
                 <div class="genie-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                <div><strong>Genie AI</strong><span><span class="genie-status-dot"></span>Online</span></div>
+                <div><strong>Genie AI</strong><span><span class="genie-status-dot"></span> Online</span></div>
             </div>
             <button class="genie-close" id="closeGenieButton" type="button"><i class="fa-solid fa-xmark"></i></button>
         </div>
@@ -205,56 +196,8 @@
         </div>
         <div class="genie-disclaimer">Genie may occasionally provide inaccurate information.</div>
     </div>
-</main>
+</div>
 
 <script src="js/script.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // Profile Dropdown
-        const trigger = document.getElementById('profileDropdownTrigger');
-        const menu = document.getElementById('profileDropdownMenu');
-        const roleDisplay = document.getElementById('currentRoleDisplay');
-        const roleBtns = document.querySelectorAll('.role-switch-btn');
-
-        if(trigger && menu) {
-            trigger.addEventListener('click', () => {
-                const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
-                trigger.setAttribute('aria-expanded', !isExpanded);
-                menu.classList.toggle('show');
-            });
-        }
-        document.addEventListener('click', (e) => {
-            if (trigger && menu && !trigger.contains(e.target) && !menu.contains(e.target)) {
-                trigger.setAttribute('aria-expanded', 'false');
-                menu.classList.remove('show');
-            }
-        });
-        if(roleBtns) {
-            roleBtns.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    roleBtns.forEach(b => b.classList.remove('active'));
-                    const targetBtn = e.currentTarget;
-                    targetBtn.classList.add('active');
-                    if(roleDisplay) roleDisplay.textContent = targetBtn.getAttribute('data-role');
-                    if(trigger && menu) {
-                        trigger.setAttribute('aria-expanded', 'false');
-                        menu.classList.remove('show');
-                    }
-                });
-            });
-        }
-
-        // Global Sidebar Toggle
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        const sidebar = document.querySelector('.sidebar');
-        const mainContent = document.querySelector('.main-content');
-        if (sidebarToggle && sidebar && mainContent) {
-            sidebarToggle.addEventListener('click', () => {
-                sidebar.classList.toggle('collapsed');
-                mainContent.classList.toggle('expanded');
-            });
-        }
-    });
-</script>
 </body>
 </html>

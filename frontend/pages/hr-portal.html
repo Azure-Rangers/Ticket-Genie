@@ -3,106 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ticket-Genie | Help Desk</title>
+    <title>HR Portal | TicketGenie</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-   <div class="app-container">
-        
-        <nav class="sidebar">
-            <div class="logo">
-                <h2>Ticket-Genie</h2>
+
+<aside class="sidebar">
+    <div class="brand">
+        <div class="brand-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <div><h2>TicketGenie</h2><span>HR Administration</span></div>
+    </div>
+
+    <nav class="navigation">
+        <div class="nav-title">WORKSPACE</div>
+        <a href="../index.html" class="nav-item">
+            <i class="fa-solid fa-arrow-left"></i><span>Employee Hub</span>
+        </a>
+        <a href="hr-portal.html" class="nav-item active">
+            <i class="fa-solid fa-chart-pie"></i><span>Dashboard</span>
+        </a>
+        <a href="hr-tickets.html" class="nav-item">
+            <i class="fa-solid fa-ticket"></i><span>Manage Tickets</span>
+        </a>
+
+        <div class="nav-title">RESOURCES</div>
+        <a href="hr-knowledge.html" class="nav-item">
+            <i class="fa-solid fa-book-open"></i><span>Knowledge Base</span>
+        </a>
+        <a href="hr-analytics.html" class="nav-item">
+            <i class="fa-solid fa-chart-line"></i><span>Analytics</span>
+        </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+        <div class="system-status">
+            <div class="status-dot"></div>
+            <div><strong>All systems operational</strong><small>TicketGenie HR Portal</small></div>
+        </div>
+    </div>
+</aside>
+
+<main class="main-content">
+    <header class="topbar">
+        <div class="header-left" style="display: flex; align-items: center; gap: 20px;">
+            <button class="icon-button" id="sidebarToggle" type="button" aria-label="Toggle Sidebar">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="page-title">
+                <span>MANAGEMENT</span>
+                <h1>HR Portal</h1>
             </div>
-            <ul class="nav-links">
-                <li class="active"><a href="hr-portal.html">Dashboard</a></li>
-                <li><a href="hr-tickets.html">Manage Tickets</a></li>
-                <li><a href="hr-knowledge.html">Knowledge Base</a></li>
-                <li><a href="hr-analytics.html">Analytics</a></li>
-            </ul>
-            <div class="genie-panel-teaser">
-                <p>✨ Genie AI is active</p>
+        </div>
+
+        <div class="topbar-actions">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Search HR records..." id="globalSearch">
+                <span class="shortcut">⌘ K</span>
             </div>
-        </nav>
+            <div class="profile">
+                <div class="avatar">HR</div>
+                <div class="profile-info"><strong>HR Representative</strong><span>Admin</span></div>
+            </div>
+        </div>
+    </header>
 
-        <main class="main-content">
-            <header class="top-header">
-                <div class="search-bar">
-                    <input type="text" placeholder="Search for help...">
-                </div>
-                <div class="user-profile">
-                    <span>HR Representative</span>
-                </div>
-            </header>
-            
-            <section class="dashboard-area">
-                <div class="dashboard-header">
-                    <h1>HR Portal</h1>
-                    <p>Overview of human resources tickets, payroll inquiries, and employee relations.</p>
-                </div>
+    <section class="welcome-section">
+        <div class="eyebrow">HUMAN RESOURCES</div>
+        <h2>HR Management Dashboard</h2>
+        <p>Overview of human resources tickets, payroll inquiries, and employee relations.</p>
+    </section>
 
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h3>Open Tickets</h3>
-                        <span class="stat-number">24</span>
-                    </div>
-                    <div class="stat-card border-red">
-                        <h3>High Priority</h3>
-                        <span class="stat-number">5</span>
-                    </div>
-                    <div class="stat-card border-green">
-                        <h3>Resolved Today</h3>
-                        <span class="stat-number">12</span>
-                    </div>
-                    <div class="stat-card border-purple">
-                        <h3>AI Summaries Pending</h3>
-                        <span class="stat-number">3</span>
-                    </div>
-                </div>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Open Tickets</h3>
+            <span class="stat-number">24</span>
+        </div>
+        <div class="stat-card border-red">
+            <h3>High Priority</h3>
+            <span class="stat-number">5</span>
+        </div>
+        <div class="stat-card border-green">
+            <h3>Resolved Today</h3>
+            <span class="stat-number">12</span>
+        </div>
+        <div class="stat-card border-purple">
+            <h3>AI Summaries Pending</h3>
+            <span class="stat-number">3</span>
+        </div>
+    </div>
 
-                <div class="ticket-queue-container">
-                    <h2>Recent Tickets</h2>
-                    <table class="ticket-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Requester</th>
-                                <th>Department</th>
-                                <th>Priority</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>#1042</td>
-                                <td>Sarah Jenkins</td>
-                                <td>IT</td>
-                                <td><span class="badge badge-high">High</span></td>
-                                <td><span class="badge badge-open">Open</span></td>
-                                <td><button class="btn-sm">View</button></td>
-                            </tr>
-                            <tr>
-                                <td>#1041</td>
-                                <td>Mike Ross</td>
-                                <td>HR</td>
-                                <td><span class="badge badge-med">Medium</span></td>
-                                <td><span class="badge badge-progress">In Progress</span></td>
-                                <td><button class="btn-sm">View</button></td>
-                            </tr>
-                            <tr>
-                                <td>#1040</td>
-                                <td>Emily Chen</td>
-                                <td>Facilities</td>
-                                <td><span class="badge badge-low">Low</span></td>
-                                <td><span class="badge badge-open">Open</span></td>
-                                <td><button class="btn-sm">View</button></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        </main>
+    <section class="section">
+        <div class="section-header">
+            <div><h3>Recent HR Tickets</h3><p>Latest tickets assigned to HR team</p></div>
+            <a href="hr-tickets.html">Manage all <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+        <table class="ticket-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Requester</th>
+                    <th>Department</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>#1042</td>
+                    <td>Sarah Jenkins</td>
+                    <td>IT</td>
+                    <td><span class="badge badge-high">High</span></td>
+                    <td><span class="badge badge-open">Open</span></td>
+                    <td><a href="hr-resolve-ticket.html" class="btn-sm" style="text-decoration: none;">View</a></td>
+                </tr>
+                <tr>
+                    <td>#1041</td>
+                    <td>Mike Ross</td>
+                    <td>HR</td>
+                    <td><span class="badge badge-med">Medium</span></td>
+                    <td><span class="badge badge-progress">In Progress</span></td>
+                    <td><a href="hr-resolve-ticket.html" class="btn-sm" style="text-decoration: none;">View</a></td>
+                </tr>
+                <tr>
+                    <td>#1040</td>
+                    <td>Emily Chen</td>
+                    <td>Facilities</td>
+                    <td><span class="badge badge-low">Low</span></td>
+                    <td><span class="badge badge-open">Open</span></td>
+                    <td><a href="hr-resolve-ticket.html" class="btn-sm" style="text-decoration: none;">View</a></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+</main>
 
-    </div> 
+<script src="../js/script.js"></script>
 </body>
 </html>
