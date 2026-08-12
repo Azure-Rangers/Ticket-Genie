@@ -780,8 +780,8 @@ h1 {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(0, 0, 0, 0.6); /* Dark background */
-    backdrop-filter: blur(3px); /* Elegant blur effect */
+    background-color: rgba(80, 22, 95, 0.45); /* Dark background */
+    backdrop-filter: blur(4px); /* Elegant blur effect */
     display: none; /* Hidden by default */
     justify-content: center;
     align-items: center;

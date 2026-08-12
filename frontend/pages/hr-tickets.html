@@ -43,28 +43,28 @@
                 <div class="filter-bar">
                     <div class="filter-group">
                         <label>Status:</label>
-                        <select>
-                            <option>All Open</option>
-                            <option>In Progress</option>
-                            <option>Resolved</option>
+                        <select id="statusFilter">
+                            <option value="All">All Statuses</option>
+                            <option value="Open">Open</option>
+                            <option value="In Progress">In Progress</option>
                         </select>
                     </div>
                     <div class="filter-group">
                         <label>Priority:</label>
-                        <select>
-                            <option>All Priorities</option>
-                            <option>High</option>
-                            <option>Medium</option>
-                            <option>Low</option>
+                        <select id="priorityFilter">
+                            <option value="All">All Priorities</option>
+                            <option value="High">High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Low">Low</option>
                         </select>
                     </div>
                     <div class="filter-group">
                         <label>Category:</label>
-                        <select>
-                            <option>All Categories</option>
-                            <option>Payroll</option>
-                            <option>Benefits</option>
-                            <option>Conflicts</option>
+                        <select id="categoryFilter">
+                            <option value="All">All Categories</option>
+                            <option value="Payroll">Payroll</option>
+                            <option value="Benefits">Benefits</option>
+                            <option value="Policy">Policy</option>
                         </select>
                     </div>
                 </div>
@@ -118,30 +118,58 @@
     </div>
 
     <script>
-        // 1. Load the sound effect (you can change this URL to your own mp3 later!)
+        // 1. SOUND & ROUTING LOGIC
         const clickSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
-        clickSound.volume = 0.5; // Make it not too loud
+        clickSound.volume = 0.5;
 
-        // 2. Find all the "Resolve" buttons on the page
         const resolveButtons = document.querySelectorAll('.btn-sm');
-
-        // 3. Add a click event to each button
         resolveButtons.forEach(button => {
             button.addEventListener('click', function(event) {
-                // Play the sound
                 clickSound.play();
-
-                // Change the button text to show it's working
                 this.innerText = "Opening...";
-                this.style.backgroundColor = "#4b2b82"; // Darken button
+                this.style.backgroundColor = "#4b2b82";
                 this.style.color = "white";
-
-                // Wait 400 milliseconds (so the sound can play), then go to the resolve page
                 setTimeout(() => {
                     window.location.href = 'hr-resolve-ticket.html';
                 }, 400);
             });
         });
+
+        // 2. FILTERING LOGIC
+        const statusFilter = document.getElementById('statusFilter');
+        const priorityFilter = document.getElementById('priorityFilter');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const tableRows = document.querySelectorAll('.ticket-table tbody tr');
+
+        function filterTable() {
+            const statusVal = statusFilter.value;
+            const priorityVal = priorityFilter.value;
+            const categoryVal = categoryFilter.value;
+
+            tableRows.forEach(row => {
+                // Get the text from the specific columns in the table
+                const categoryText = row.cells[3].innerText.trim();
+                const priorityText = row.cells[4].innerText.trim();
+                const statusText = row.cells[5].innerText.trim();
+
+                // Check if the row matches the selected dropdowns
+                const matchStatus = (statusVal === 'All' || statusText === statusVal);
+                const matchPriority = (priorityVal === 'All' || priorityText === priorityVal);
+                const matchCategory = (categoryVal === 'All' || categoryText === categoryVal);
+
+                // Hide or show the row
+                if (matchStatus && matchPriority && matchCategory) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Run the filter function whenever a dropdown is changed
+        statusFilter.addEventListener('change', filterTable);
+        priorityFilter.addEventListener('change', filterTable);
+        categoryFilter.addEventListener('change', filterTable);
     </script>
 </body>
 </html>

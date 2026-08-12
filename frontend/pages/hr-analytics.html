@@ -86,12 +86,17 @@
             data: {
                 labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
                 datasets: [{
-                    label: 'New Tickets',
-                    data: [5, 8, 12, 7, 15, 2, 3],
-                    borderColor: purpleMain,
-                    backgroundColor: purpleLight,
-                    fill: true,
-                    tension: 0.4 // Makes the line curvy!
+                    label: 'Number of Tickets',
+                    data: [12, 19, 5, 8, 14],
+                    // We replaced the single color with an array of purple shades!
+                    backgroundColor: [
+                        '#4b2b82', // Darkest
+                        '#5c35a1', // Darker
+                        '#6f42c1', // Main Purple
+                        '#9474d1', // Lighter
+                        '#bda6e3'  // Lightest
+                    ],
+                    borderRadius: 4
                 }]
             },
             options: { responsive: true }

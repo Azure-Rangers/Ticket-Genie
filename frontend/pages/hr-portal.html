@@ -104,5 +104,29 @@
         </main>
 
     </div> 
+    
+    <script>
+        const clickSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
+        clickSound.volume = 0.5;
+
+        // Find all the 'View' buttons in the Recent Tickets table
+        const viewButtons = document.querySelectorAll('.ticket-table .btn-sm');
+
+        viewButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                clickSound.play();
+                
+                // Visual feedback
+                this.innerText = "Opening...";
+                this.style.backgroundColor = "#4b2b82";
+                this.style.color = "white";
+
+                // Wait for the sound, then go to the resolve page
+                setTimeout(() => {
+                    window.location.href = 'hr-resolve-ticket.html';
+                }, 400);
+            });
+        });
+    </script>
 </body>
 </html>
