@@ -8,6 +8,71 @@
 ========================================================= */
 
 const STORAGE_KEY = "ticketGenieTickets";
+const API_BASE_URL = "/api";
+
+/* =========================================================
+   BACKEND API CLIENT
+========================================================= */
+
+async function apiFetchTickets(params = {}) {
+    try {
+        const query = new URLSearchParams();
+        if (params.search) query.append("search", params.search);
+        if (params.status && params.status !== "all") query.append("status", params.status);
+        if (params.priority && params.priority !== "all") query.append("priority", params.priority);
+
+        const url = query.toString() ? `${API_BASE_URL}/tickets?${query.toString()}` : `${API_BASE_URL}/tickets`;
+        const res = await fetch(url);
+        if (res.ok) {
+            const data = await res.json();
+            const tickets = Array.isArray(data) ? data : (data.tickets || []);
+            saveTickets(tickets);
+            return tickets;
+        }
+    } catch (err) {
+        console.warn("Backend API unreachable, using local storage fallback:", err);
+    }
+    return getTickets();
+}
+
+async function apiCreateTicket(ticketPayload) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/tickets`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ticketPayload)
+        });
+        if (res.ok) {
+            const created = await res.json();
+            const tickets = getTickets();
+            tickets.unshift(created);
+            saveTickets(tickets);
+            return created;
+        }
+    } catch (err) {
+        console.warn("Backend API create error, saving locally:", err);
+    }
+    const tickets = getTickets();
+    tickets.unshift(ticketPayload);
+    saveTickets(tickets);
+    return ticketPayload;
+}
+
+async function apiSendGenieChat(message) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/genie/chat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message })
+        });
+        if (res.ok) {
+            return await res.json();
+        }
+    } catch (err) {
+        console.warn("Genie API error, using local fallback:", err);
+    }
+    return { reply: getGenieResponse(message) };
+}
 
 
 /* Get tickets from browser storage */
@@ -283,46 +348,29 @@ function initializeNewRequestForm() {
                CREATE TICKET
             ================================================= */
 
-            const newTicket = {
+            /* =================================================
+               CREATE & SAVE TICKET VIA BACKEND API
+            ================================================= */
 
+            const newTicketData = {
                 id: generateTicketId(),
-
                 title: title,
-
                 category: category,
-
                 priority: priority,
-
+                department: category === "Payroll" || category === "Benefits" || category === "Time Off" ? "HR" : "IT",
                 status: "Open",
-
                 description: description,
-
                 date: preferredDate,
-
-                createdAt:
-                    new Date().toISOString()
-
+                createdAt: new Date().toISOString()
             };
 
-
-            /* =================================================
-               SAVE TICKET
-            ================================================= */
-
-            const tickets = getTickets();
-
-            tickets.unshift(newTicket);
-
-            saveTickets(tickets);
-
-
-            /* =================================================
-               SHOW SUCCESS
-            ================================================= */
-
-            showSuccessMessage(
-                newTicket
-            );
+            apiCreateTicket(newTicketData).then((savedTicket) => {
+                showSuccessMessage(savedTicket);
+                setTimeout(() => {
+                    window.location.href = "my-tickets.html";
+                }, 1200);
+            });
+            return;
 
 
             /* =================================================
@@ -1587,29 +1635,13 @@ function initializeGenie() {
         const thinking =
             addGenieThinking();
 
-
-        setTimeout(
-            () => {
-
-                if (thinking) {
-                    thinking.remove();
-                }
-
-
-                const response =
-                    getGenieResponse(
-                        message
-                    );
-
-
-                addGenieMessage(
-                    response,
-                    "agent"
-                );
-
-            },
-            700
-        );
+        apiSendGenieChat(message).then((response) => {
+            if (thinking) {
+                thinking.remove();
+            }
+            const replyText = response.reply || response;
+            addGenieMessage(replyText, "agent");
+        });
 
     }
 
