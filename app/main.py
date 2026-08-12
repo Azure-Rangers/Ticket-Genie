@@ -82,20 +82,6 @@ def main() -> None:
         layout="wide",
     )
 
-    st.title("Ticket-Genie")
-    st.write("Streamlit starter app for tracking support tickets and workflow health.")
-
-    summary = build_app_summary()
-    render_summary_cards(summary)
-
-    st.subheader("Sample tickets")
-    st.dataframe(
-        get_sample_tickets(),
-        use_container_width=True,
-    )
-
-    st.caption(f"Snapshot generated {summary['generated_at']}")
-
     if "active_view" not in st.session_state:
         st.session_state["active_view"] = "landing"
 
