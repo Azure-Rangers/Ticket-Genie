@@ -338,3 +338,52 @@ h1 {
     color: white;
     border-color: var(--accent-purple);
 }
+
+/* =========================================
+   MANAGE TICKETS PAGE STYLES
+   ========================================= */
+
+.filter-bar {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 25px;
+    background-color: var(--card-bg);
+    padding: 15px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filter-group label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.filter-group select {
+    padding: 8px 12px;
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+    background-color: #fff;
+    cursor: pointer;
+}
+
+.filter-group select:focus {
+    border-color: var(--accent-purple);
+}
+
+/* Make the small action buttons purple on this page */
+.btn-primary.btn-sm {
+    width: auto;
+    padding: 6px 15px;
+    font-size: 12px;
+    margin-top: 0;
+}

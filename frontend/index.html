@@ -14,7 +14,7 @@
             </div>
             <p class="login-subtitle">Sign in to your portal</p>
             
-            <form action="pages/dashboard.html" method="GET">
+            <form id="loginForm">
                 <div class="form-group">
                     <label for="role-select">Select Your Role</label>
                     <select id="role-select" name="role" required>
@@ -41,5 +41,25 @@
             </form>
         </div>
     </div>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Stop the form from submitting normally
+            
+            const roleSelect = document.getElementById('role-select');
+            const selectedRole = roleSelect.value;
+            
+            if (selectedRole === 'hr') {
+                window.location.href = 'pages/hr-portal.html';
+            } else if (selectedRole === 'it') {
+                window.location.href = 'pages/it-portal.html';
+            } else if (selectedRole === 'executive') {
+                window.location.href = 'pages/management-portal.html';
+            } else if (selectedRole === 'other') {
+                window.location.href = 'pages/other-portal.html';
+            } else {
+                alert('Please select a valid staff role.');
+            }
+        });
+    </script>
 </body>
 </html>
