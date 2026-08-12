@@ -22,6 +22,9 @@ backend = [
     "uvicorn[standard]>=0.28.0",
     "pydantic>=2.6.0",
     "python-dotenv>=1.0.0",
+    "azure-monitor-opentelemetry>=1.6.0",
+    "opentelemetry-instrumentation-fastapi>=0.45b0",
+    "pyyaml>=6.0.0",
 ]
 dev = [
     "ruff>=0.3.0",

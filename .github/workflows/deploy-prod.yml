@@ -46,15 +46,25 @@ jobs:
         run: |
           az acr login --name acrwebappprodticketgenie
 
-      - name: Build and Push Docker Images
+      - name: Build, Push, and Archive Docker Images
         run: |
+          mkdir -p container-artifacts
+
           # 1. Build and push FastAPI backend image
           docker build --target backend -t acrwebappprodticketgenie.azurecr.io/ticket-genie-backend:latest -f Dockerfile .
           docker push acrwebappprodticketgenie.azurecr.io/ticket-genie-backend:latest
+          docker save acrwebappprodticketgenie.azurecr.io/ticket-genie-backend:latest -o container-artifacts/backend-container.tar
 
           # 2. Build and push Streamlit frontend image
           docker build --target frontend -t acrwebappprodticketgenie.azurecr.io/ticketgenie:latest -f Dockerfile .
           docker push acrwebappprodticketgenie.azurecr.io/ticketgenie:latest
+          docker save acrwebappprodticketgenie.azurecr.io/ticketgenie:latest -o container-artifacts/frontend-container.tar
+
+      - name: Upload Container Archives to DevOps / GitHub Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-artifacts
+          path: container-artifacts/
 
   terraform-apply:
 

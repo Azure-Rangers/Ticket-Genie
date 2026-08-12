@@ -120,13 +120,25 @@ streamlit run app/main.py
 ### Running Tests and Quality Checks
 
 ```bash
-# Run pytest test suite (includes app, backend, and secret fetcher tests)
+# Run pytest test suite (includes app, backend, secret fetcher, and openapi monitoring tests)
 pytest
 
 # Run Ruff linter and formatting check
 ruff check .
 ruff format --check .
 ```
+
+### Updating OpenAPI Spec & Monitoring Artifacts
+
+When modifying API endpoints in `backend/`, re-generate and commit the updated specs and monitoring rules:
+
+```bash
+python scripts/export_openapi.py
+python scripts/generate_openapi_monitoring.py
+git add openapi/ artifacts/ terraform/openapi_alerts.tf
+```
+
+---
 
 ## Branching Strategy
 
@@ -145,32 +157,42 @@ Ticket-Genie/
 ├── .github/
 │   ├── PULL_REQUEST_TEMPLATE.md
 │   └── workflows/
-│       ├── pr-checks.yml       # Ruff linting, pytest, & Docker smoke testing
+│       ├── pr-checks.yml       # Ruff linting, pytest, OpenAPI drift check, & Docker smoke testing
 │       └── deploy-prod.yml     # ACR build/push & Azure handoff
 ├── app/                        # Streamlit Frontend
 │   ├── main.py                 # Main Streamlit entrypoint (Home page)
 │   ├── pages/                  # Multi-page Streamlit views
-│   │   ├── 1_dashboard.py
-│   │   └── 2_settings.py
 │   ├── components/             # Custom UI component functions
 │   └── services/               # UI backend logic & API integration
+├── artifacts/                  # Generated Azure Monitor Artifacts
+│   ├── openapi_kql_queries.kql # Pre-built Application Insights KQL queries
+│   └── openapi_workbook.json   # Azure Application Insights Workbook dashboard JSON
 ├── backend/                    # FastAPI Backend Service
 │   ├── main.py                 # FastAPI application entrypoint
+│   ├── telemetry.py            # Azure Monitor OpenTelemetry setup
 │   ├── api/                    # API route controllers
 │   ├── models/                 # Pydantic data schemas
 │   ├── services/               # Business logic services
 │   ├── database/               # Database connection & CRUD handlers
 │   └── requirements.txt        # Backend dependencies (-e .[backend])
+├── openapi/                    # Exported OpenAPI 3.0 Contract Specifications
+│   ├── openapi.json
+│   └── openapi.yaml
 ├── scripts/
-│   └── fetch_secrets.py        # Entrypoint for fetching Key Vault secrets
+│   ├── export_openapi.py       # OpenAPI schema exporter script
+│   ├── fetch_secrets.py        # Entrypoint for fetching Key Vault secrets
+│   └── generate_openapi_monitoring.py # OpenAPI-driven Azure Monitor generator script
 ├── terraform/                  # Infrastructure definitions for Azure
 │   ├── main.tf
+│   ├── monitoring.tf           # Log Analytics Workspace & App Insights definitions
+│   ├── openapi_alerts.tf       # Auto-generated Azure Monitor Metric Alerts
 │   ├── outputs.tf
 │   └── variables.tf
 ├── tests/
 │   ├── test_app.py
 │   ├── test_backend_api.py     # FastAPI endpoint tests
 │   ├── test_fetch_secrets.py   # Secret fetcher tests
+│   ├── test_openapi_monitoring.py # Telemetry & OpenAPI monitoring generator tests
 │   └── test_services.py
 ├── .dockerignore
 ├── .gitignore
