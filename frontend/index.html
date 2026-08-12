@@ -3,13 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ticket-Genie | Help Desk</title>
+    <title>Ticket-Genie | Login</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="test-container">
-        <h1>Welcome to Ticket-Genie</h1>
-        <p>The frontend environment is working!</p>
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="login-logo">
+                <h2>Ticket-Genie</h2>
+            </div>
+            <p class="login-subtitle">Sign in to your portal</p>
+            
+            <form action="pages/dashboard.html" method="GET">
+                <div class="form-group">
+                    <label for="role-select">Select Your Role</label>
+                    <select id="role-select" name="role" required>
+                        <option value="" disabled selected>Choose your portal...</option>
+                        <option value="employee">Employee (Standard User)</option>
+                        <option value="hr">Human Resources (HR)</option>
+                        <option value="it">Information Technology (IT)</option>
+                        <option value="executive">Executive / Higher-ups</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" placeholder="name@company.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="btn-primary">Sign In</button>
+            </form>
+        </div>
     </div>
 </body>
 </html>
