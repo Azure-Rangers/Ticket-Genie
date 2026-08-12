@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Optional
+
 from models.ticket import TicketCreate
 
 # Seed mock ticket dataset matching frontend schema
@@ -143,4 +144,3 @@ def get_ticket_by_id(ticket_id: str):
         if t["id"].lower() == ticket_id.lower():
             return t
     return None
-

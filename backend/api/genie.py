@@ -10,7 +10,8 @@ def genie_chat(request: GenieChatRequest):
 
     if "ticket" in msg or "status" in msg:
         reply = (
-            "You can track your submitted tickets under 'My Tickets' in the navigation bar. "
+            "You can track your submitted tickets under 'My Tickets' "
+            "in the navigation bar. "
             "Your open requests are currently being processed by support staff."
         )
         suggestions = ["Check my tickets", "Create new request"]
@@ -34,9 +35,9 @@ def genie_chat(request: GenieChatRequest):
         suggestions = ["Time Off Request", "HR Portal"]
     else:
         reply = (
-            f"Hi! I'm Genie, your AI helpdesk assistant. "
-            f"I can help you search knowledge base articles, understand ticket statuses, "
-            f"or route you to the right department."
+            "Hi! I'm Genie, your AI helpdesk assistant. "
+            "I can help you search knowledge base articles, "
+            "understand ticket statuses, or route you to the right department."
         )
         suggestions = ["Check my tickets", "IT help", "Payroll help", "Time off"]
 

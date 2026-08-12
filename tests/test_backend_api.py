@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+
 from backend.main import app
 
 client = TestClient(app)
@@ -51,4 +52,3 @@ def test_genie_chat() -> None:
     reply = response.json()
     assert "reply" in reply
     assert "Payroll" in reply["reply"] or "payroll" in reply["reply"]
-

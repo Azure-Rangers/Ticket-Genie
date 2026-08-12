@@ -1,5 +1,5 @@
-from datetime import datetime
 from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -35,4 +35,3 @@ class GenieChatRequest(BaseModel):
 class GenieChatResponse(BaseModel):
     reply: str
     suggestions: Optional[list[str]] = None
-
