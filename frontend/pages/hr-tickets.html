@@ -116,5 +116,32 @@
             </section>
         </main>
     </div>
+
+    <script>
+        // 1. Load the sound effect (you can change this URL to your own mp3 later!)
+        const clickSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
+        clickSound.volume = 0.5; // Make it not too loud
+
+        // 2. Find all the "Resolve" buttons on the page
+        const resolveButtons = document.querySelectorAll('.btn-sm');
+
+        // 3. Add a click event to each button
+        resolveButtons.forEach(button => {
+            button.addEventListener('click', function(event) {
+                // Play the sound
+                clickSound.play();
+
+                // Change the button text to show it's working
+                this.innerText = "Opening...";
+                this.style.backgroundColor = "#4b2b82"; // Darken button
+                this.style.color = "white";
+
+                // Wait 400 milliseconds (so the sound can play), then go to the resolve page
+                setTimeout(() => {
+                    window.location.href = 'hr-resolve-ticket.html';
+                }, 400);
+            });
+        });
+    </script>
 </body>
 </html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket-Genie | Resolve Ticket #1045</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        
+        <nav class="sidebar">
+            <div class="logo">
+                <h2>Ticket-Genie</h2>
+            </div>
+            <ul class="nav-links">
+                <li><a href="hr-portal.html">Dashboard</a></li>
+                <li class="active"><a href="hr-tickets.html">Manage Tickets</a></li>
+                <li><a href="#">Knowledge Base</a></li>
+                <li><a href="#">Analytics</a></li>
+            </ul>
+            <div class="genie-panel-teaser">
+                <p>✨ Genie AI is active</p>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <header class="top-header">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search across all tickets...">
+                </div>
+                <div class="user-profile">
+                    <span>HR Representative</span>
+                </div>
+            </header>
+            
+            <section class="dashboard-area">
+                
+                <div class="ticket-detail-header">
+                    <div class="header-left">
+                        <a href="hr-tickets.html" class="back-link">← Back to Queue</a>
+                        <h1>Ticket #1045: Missing overtime pay on last check</h1>
+                        <div class="ticket-meta">
+                            <span><strong>Requester:</strong> Sarah Jenkins</span>
+                            <span><strong>Department:</strong> Payroll</span>
+                            <span><strong>Created:</strong> Today, 10:30 AM</span>
+                        </div>
+                    </div>
+                    <div class="header-right">
+                        <span class="badge badge-high">High</span>
+                        <span class="badge badge-open">Open</span>
+                    </div>
+                </div>
+
+                <div class="ticket-content-grid">
+                    
+                    <div class="ticket-thread">
+                        <div class="message user-message">
+                            <div class="message-header">
+                                <strong>Sarah Jenkins</strong> <span>10:30 AM</span>
+                            </div>
+                            <div class="message-body">
+                                <p>Hi HR,</p>
+                                <br>
+                                <p>I just checked my paystub for this period and the 8 hours of overtime I worked last Saturday aren't showing up. Can someone look into this? I've attached my approved timesheet.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="response-box">
+                            <h3>Reply & Resolve</h3>
+                            <textarea placeholder="Type your response to Sarah..."></textarea>
+                            <div class="response-actions">
+                                <button class="btn-outline">Save Note</button>
+                                <button class="btn-primary">Send & Resolve Ticket</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ticket-sidebar">
+                        <div class="ai-summary-card">
+                            <h3>✨ Genie AI Analysis</h3>
+                            <p><strong>Issue:</strong> Employee is missing 8 hours of overtime pay on the current payroll cycle.</p>
+                            <p><strong>Suggested Action:</strong> Verify attached timesheet against the payroll system. If a discrepancy exists, process an off-cycle adjustment.</p>
+                            <p><strong>Sentiment:</strong> Neutral / Concerned</p>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>
