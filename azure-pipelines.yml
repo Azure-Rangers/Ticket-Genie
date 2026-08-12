@@ -7,6 +7,7 @@ trigger:
       - frontend/**
       - backend/**
       - Dockerfile
+      - docker-compose.yml
       - nginx.conf
       - pyproject.toml
       - terraform/**
