@@ -1,0 +1,101 @@
+// ==========================================================================
+
+// Azure Application Insights KQL Diagnostic Queries (From OpenAPI)
+
+// ==========================================================================
+
+
+// 1. Latency (P50, P95, P99) and Error Rates for Endpoints
+
+requests
+| where timestamp > ago(24h)
+| summarize
+    TotalRequests = count(),
+    SuccessCount = countif(success == true),
+    FailedCount = countif(success == false),
+    P50_Ms = percentiles(duration, 50)[0],
+    P95_Ms = percentiles(duration, 95)[0],
+    P99_Ms = percentiles(duration, 99)[0]
+  by name, resultCode
+| extend FailureRate = round(100.0 * FailedCount / TotalRequests, 2)
+| order by TotalRequests desc
+
+
+// 2. Per-Route Performance Breakdown
+
+// Route: GET /tickets (default)
+
+requests
+| where timestamp > ago(1h) and name == "GET /tickets"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: POST /tickets (default)
+
+requests
+| where timestamp > ago(1h) and name == "POST /tickets"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: GET /tickets/{ticket_id} (default)
+
+requests
+| where timestamp > ago(1h) and name == "GET /tickets/{ticket_id}"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: GET / (default)
+
+requests
+| where timestamp > ago(1h) and name == "GET /"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: GET /health (default)
+
+requests
+| where timestamp > ago(1h) and name == "GET /health"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// 3. High Latency (>1000ms) Request Trace Correlation
+
+requests
+| where timestamp > ago(24h) and duration > 1000
+| project timestamp, name, resultCode, duration, url, customDimensions
+| order by duration desc

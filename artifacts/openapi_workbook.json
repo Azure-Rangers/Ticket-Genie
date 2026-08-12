@@ -1,0 +1,42 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "## \ud83d\ude80 TicketGenie FastAPI Backend Dashboard\n*Auto-generated from OpenAPI 3.0 Specification*"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests\n| where timestamp >= {TimeRange}\n| summarize\n    Total_Requests = count(),\n    Failed_Requests = countif(success == false),\n    Avg_Latency_Ms = round(avg(duration), 2),\n    P95_Latency_Ms = round(percentiles(duration, 95)[0], 2)\n  by name\n| extend Error_Rate_Pct = round(100.0 * Failed_Requests / Total_Requests, 2)\n| order by Total_Requests desc",
+        "size": 0,
+        "title": "API Endpoint Performance & Error Overview",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "gridSettings": {
+          "formatters": []
+        }
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests\n| where timestamp >= {TimeRange}\n| make-series Requests=count() on timestamp\n    from {TimeRange:start} to {TimeRange:end} step 5m by name\n| render timechart",
+        "size": 0,
+        "title": "Request Throughput per OpenAPI Route (RPS / 5m)",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components"
+      }
+    }
+  ],
+  "style": "categoryGrid",
+  "tags": [
+    "FastAPI",
+    "OpenAPI",
+    "TicketGenie"
+  ]
+}
