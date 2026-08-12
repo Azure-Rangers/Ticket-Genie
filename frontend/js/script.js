@@ -1,13 +1,7 @@
 /* =========================================================
-   TICKETGENIE - MAIN JAVASCRIPT
+   TICKETGENIE - MAIN JAVASCRIPT & BACKEND API CLIENT
 ========================================================= */
 
-
-/* =========================================================
-   TICKET STORAGE
-========================================================= */
-
-const STORAGE_KEY = "ticketGenieTickets";
 const API_BASE_URL = "/api";
 
 /* =========================================================
@@ -23,16 +17,13 @@ async function apiFetchTickets(params = {}) {
 
         const url = query.toString() ? `${API_BASE_URL}/tickets?${query.toString()}` : `${API_BASE_URL}/tickets`;
         const res = await fetch(url);
-        if (res.ok) {
-            const data = await res.json();
-            const tickets = Array.isArray(data) ? data : (data.tickets || []);
-            saveTickets(tickets);
-            return tickets;
-        }
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const data = await res.json();
+        return Array.isArray(data) ? data : (data.tickets || []);
     } catch (err) {
-        console.warn("Backend API unreachable, using local storage fallback:", err);
+        console.error("Failed to fetch tickets from backend API:", err);
+        return [];
     }
-    return getTickets();
 }
 
 async function apiCreateTicket(ticketPayload) {
@@ -42,20 +33,12 @@ async function apiCreateTicket(ticketPayload) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(ticketPayload)
         });
-        if (res.ok) {
-            const created = await res.json();
-            const tickets = getTickets();
-            tickets.unshift(created);
-            saveTickets(tickets);
-            return created;
-        }
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return await res.json();
     } catch (err) {
-        console.warn("Backend API create error, saving locally:", err);
+        console.error("Failed to create ticket via backend API:", err);
+        throw err;
     }
-    const tickets = getTickets();
-    tickets.unshift(ticketPayload);
-    saveTickets(tickets);
-    return ticketPayload;
 }
 
 async function apiSendGenieChat(message) {
@@ -65,130 +48,13 @@ async function apiSendGenieChat(message) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ message })
         });
-        if (res.ok) {
-            return await res.json();
-        }
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return await res.json();
     } catch (err) {
-        console.warn("Genie API error, using local fallback:", err);
+        console.error("Failed to send Genie chat message:", err);
+        return { reply: "I'm having trouble connecting to the support service right now." };
     }
-    return { reply: getGenieResponse(message) };
 }
-
-
-/* Get tickets from browser storage */
-
-function getTickets() {
-
-    const tickets = localStorage.getItem(STORAGE_KEY);
-
-    if (!tickets) {
-
-        const defaultTickets = [
-
-            {
-                id: "HD-1024",
-                title: "Payroll Issue",
-                category: "Payroll",
-                priority: "High",
-                status: "In Progress",
-                description: "Having an issue with my latest paycheck.",
-                date: "2026-08-08",
-                createdAt: "2026-08-08T10:00:00"
-            },
-
-            {
-                id: "HD-1025",
-                title: "Benefits Question",
-                category: "Benefits",
-                priority: "Medium",
-                status: "Open",
-                description: "I have a question about my benefits.",
-                date: "2026-08-07",
-                createdAt: "2026-08-07T10:00:00"
-            },
-
-            {
-                id: "HD-1026",
-                title: "Laptop Request",
-                category: "IT Support",
-                priority: "Low",
-                status: "Resolved",
-                description: "Requesting a replacement laptop.",
-                date: "2026-08-05",
-                createdAt: "2026-08-05T10:00:00"
-            },
-
-            {
-                id: "HD-1027",
-                title: "PTO Request",
-                category: "Time Off",
-                priority: "Medium",
-                status: "Pending",
-                description: "Requesting PTO.",
-                date: "2026-08-04",
-                createdAt: "2026-08-04T10:00:00"
-            },
-
-            {
-                id: "HD-1028",
-                title: "Expense Reimbursement",
-                category: "Payroll",
-                priority: "Low",
-                status: "Resolved",
-                description: "Submitting an expense reimbursement.",
-                date: "2026-08-02",
-                createdAt: "2026-08-02T10:00:00"
-            }
-
-        ];
-
-        return defaultTickets;
-    }
-
-    return JSON.parse(tickets);
-}
-
-
-/* Save tickets */
-
-function saveTickets(tickets) {
-
-    localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(tickets)
-    );
-
-}
-
-
-/* =========================================================
-   GENERATE TICKET ID
-========================================================= */
-
-function generateTicketId() {
-
-    const tickets = getTickets();
-
-    let highestNumber = 1028;
-
-    tickets.forEach(ticket => {
-
-        const number = parseInt(
-            ticket.id.replace("HD-", ""),
-            10
-        );
-
-        if (!isNaN(number) && number > highestNumber) {
-
-            highestNumber = number;
-
-        }
-
-    });
-
-    return `HD-${highestNumber + 1}`;
-}
-
 
 /* =========================================================
    NEW REQUEST FORM
@@ -353,15 +219,12 @@ function initializeNewRequestForm() {
             ================================================= */
 
             const newTicketData = {
-                id: generateTicketId(),
                 title: title,
                 category: category,
                 priority: priority,
                 department: category === "Payroll" || category === "Benefits" || category === "Time Off" ? "HR" : "IT",
-                status: "Open",
                 description: description,
-                date: preferredDate,
-                createdAt: new Date().toISOString()
+                preferredDate: preferredDate
             };
 
             apiCreateTicket(newTicketData).then((savedTicket) => {
@@ -563,7 +426,7 @@ function initializeMyTickets() {
    RENDER TICKETS
 ========================================================= */
 
-function renderTickets() {
+async function renderTickets() {
 
     const table =
         document.querySelector(
@@ -572,16 +435,10 @@ function renderTickets() {
 
     if (!table) return;
 
-
-    /* =================================================
-       SEARCH
-    ================================================= */
-
     const searchInput =
         document.getElementById(
             "ticketSearch"
         );
-
 
     const searchTerm =
         searchInput
@@ -589,11 +446,6 @@ function renderTickets() {
                 .toLowerCase()
                 .trim()
             : "";
-
-
-    /* =================================================
-       FILTERS
-    ================================================= */
 
     const statusFilter =
         document.getElementById(
@@ -605,21 +457,21 @@ function renderTickets() {
             "ticketPriorityFilter"
         );
 
-
     const statusValue =
         statusFilter
             ? statusFilter.value
             : "all";
-
 
     const priorityValue =
         priorityFilter
             ? priorityFilter.value
             : "all";
 
-
-    let tickets =
-        getTickets();
+    let tickets = await apiFetchTickets({
+        search: searchTerm,
+        status: statusValue,
+        priority: priorityValue
+    });
 
 
     /* =================================================
@@ -1035,10 +887,9 @@ function formatTicketDate(
    UPDATE TICKET COUNTS
 ========================================================= */
 
-function updateTicketOverview() {
+async function updateTicketOverview(providedTickets) {
 
-    const tickets =
-        getTickets();
+    const tickets = providedTickets || await apiFetchTickets();
 
 
     const open =
@@ -1848,230 +1699,6 @@ function addGenieThinking() {
 
 
     return thinking;
-
-}
-
-
-/* =========================================================
-   GENIE RESPONSES
-========================================================= */
-
-function getGenieResponse(message) {
-
-    const text =
-        message
-            .toLowerCase()
-            .trim();
-
-
-    /* =================================================
-       GREETING
-    ================================================= */
-
-    if (
-        text.includes("hello")
-        ||
-        text.includes("hi")
-        ||
-        text.includes("hey")
-        ||
-        text === "genie"
-    ) {
-
-        return "Hi! I'm Genie, your AI support agent. I can help you find the right support category, answer common questions, or guide you through creating a request. What do you need help with?";
-
-    }
-
-
-    /* =================================================
-       PAYROLL
-    ================================================= */
-
-    if (
-        text.includes("payroll")
-        ||
-        text.includes("paycheck")
-        ||
-        text.includes("salary")
-        ||
-        text.includes("wages")
-        ||
-        text.includes("pay")
-    ) {
-
-        return "I can help with payroll questions. If you're experiencing an issue with your paycheck, select Payroll when creating a request and include the pay period and a description of the issue.";
-
-    }
-
-
-    /* =================================================
-       IT SUPPORT
-    ================================================= */
-
-    if (
-        text.includes("laptop")
-        ||
-        text.includes("computer")
-        ||
-        text.includes("wifi")
-        ||
-        text.includes("wi-fi")
-        ||
-        text.includes("internet")
-        ||
-        text.includes("password")
-        ||
-        text.includes("login")
-        ||
-        text.includes("log in")
-        ||
-        text.includes("software")
-        ||
-        text.includes("monitor")
-        ||
-        text.includes("keyboard")
-        ||
-        text.includes("mouse")
-        ||
-        text.includes("printer")
-        ||
-        text.includes("it help")
-        ||
-        text.includes("it issue")
-    ) {
-
-        return "This sounds like an IT Support request. If you've already tried basic troubleshooting and still need help, create a new request and select IT & Technology as the category. Be sure to include any error messages or screenshots.";
-
-    }
-
-
-    /* =================================================
-       BENEFITS
-    ================================================= */
-
-    if (
-        text.includes("benefit")
-        ||
-        text.includes("insurance")
-        ||
-        text.includes("health")
-        ||
-        text.includes("dental")
-        ||
-        text.includes("vision")
-        ||
-        text.includes("401k")
-    ) {
-
-        return "For benefits questions, the Payroll & Benefits category is usually the best choice. When submitting your request, include the specific benefit or plan you're asking about so the right team can assist you.";
-
-    }
-
-
-    /* =================================================
-       TIME OFF
-    ================================================= */
-
-    if (
-        text.includes("pto")
-        ||
-        text.includes("vacation")
-        ||
-        text.includes("leave")
-        ||
-        text.includes("time off")
-        ||
-        text.includes("day off")
-    ) {
-
-        return "For PTO or leave-related requests, select Time Off as your category when creating a new request. You can also include your preferred date in the request.";
-
-    }
-
-
-    /* =================================================
-       ACCESS / PERMISSIONS
-    ================================================= */
-
-    if (
-        text.includes("access")
-        ||
-        text.includes("permission")
-        ||
-        text.includes("permissions")
-        ||
-        text.includes("account")
-    ) {
-
-        return "For access or permission issues, select IT & Technology as your category. Include the system or application you need access to and explain what you're currently unable to access.";
-
-    }
-
-
-    /* =================================================
-       CREATE TICKET
-    ================================================= */
-
-    if (
-        text.includes("ticket")
-        ||
-        text.includes("request")
-        ||
-        text.includes("submit")
-        ||
-        text.includes("create")
-    ) {
-
-        return "I can help you create a support request. Select New Request from the sidebar, then provide a clear title, category, priority, description, and preferred date if needed. Once submitted, your request will appear under My Tickets.";
-
-    }
-
-
-    /* =================================================
-       MY TICKETS
-    ================================================= */
-
-    if (
-        text.includes("my ticket")
-        ||
-        text.includes("my tickets")
-        ||
-        text.includes("ticket status")
-        ||
-        text.includes("check my tickets")
-        ||
-        text.includes("status")
-    ) {
-
-        return "You can view your submitted requests by selecting My Tickets from the sidebar. There you can search, filter, and select a ticket to view its details.";
-
-    }
-
-
-    /* =================================================
-       RESPONSE TIME
-    ================================================= */
-
-    if (
-        text.includes("how long")
-        ||
-        text.includes("response")
-        ||
-        text.includes("when")
-        ||
-        text.includes("wait")
-    ) {
-
-        return "The typical response time for a support request is within 1-2 business days. You can check My Tickets to monitor the status of your request.";
-
-    }
-
-
-    /* =================================================
-       FALLBACK
-    ================================================= */
-
-    return "I can help with IT & Technology, Payroll & Benefits, Time Off, Employee Services, or creating and tracking a support request. Tell me a little more about what you need help with.";
 
 }
 
