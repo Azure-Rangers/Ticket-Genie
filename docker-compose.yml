@@ -1,0 +1,20 @@
+services:
+  backend:
+    build:
+      context: .
+      target: backend
+    container_name: ticketgenie-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+
+  frontend:
+    build:
+      context: .
+      target: frontend
+    container_name: ticketgenie-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
