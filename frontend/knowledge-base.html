@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Knowledge Base | TicketGenie</title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
+
+    <style>
+        /* =========================================================
+           PROFILE DROPDOWN STYLES
+        ========================================================= */
+        .profile {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .profile-button {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 8px;
+            text-align: left;
+            transition: background 0.2s ease, outline 0.2s ease;
+        }
+
+        .profile-button:hover,
+        .profile-button:focus-visible {
+            background: #f4f8f5;
+            outline: 2px solid #527d66;
+            outline-offset: 2px;
+        }
+
+        .profile-button .avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #dce9df;
+            color: #365e48;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .profile-button .profile-info strong {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: #28332c;
+        }
+
+        .profile-button .profile-info span {
+            display: block;
+            font-size: 9px;
+            color: #8b968f;
+            margin-top: 2px;
+        }
+
+        .profile-button > i {
+            color: #9aa39d;
+            font-size: 9px;
+            margin-left: 3px;
+        }
+
+        .profile-dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 10px;
+            width: 200px;
+            background: white;
+            border: 1px solid #dfe5e1;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(35, 66, 54, 0.08);
+            display: none;
+            flex-direction: column;
+            padding: 10px 0;
+            z-index: 1000;
+        }
+
+        .profile-dropdown-menu.show {
+            display: flex;
+        }
+
+        .dropdown-label {
+            font-size: 10px;
+            color: #8b968f;
+            padding: 4px 16px 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .role-switch-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 10px 16px;
+            border: none;
+            background: transparent;
+            text-align: left;
+            font-size: 11px;
+            color: #333;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .role-switch-btn i {
+            color: #8b968f;
+            font-size: 13px;
+            width: 16px;
+            text-align: center;
+            transition: color 0.2s ease;
+        }
+
+        .role-switch-btn:hover,
+        .role-switch-btn:focus-visible {
+            background: #f4f8f5;
+            outline: none;
+        }
+
+        .role-switch-btn.active {
+            background: #e7f0e9;
+            color: #527d66;
+            font-weight: 600;
+        }
+
+        .role-switch-btn.active i {
+            color: #527d66;
+        }
+    </style>
+</head>
+
+
+<body>
+
+
+<!-- =========================================================
+     SIDEBAR
+========================================================= -->
+
+<aside class="sidebar">
+
+    <div class="brand">
+
+        <div class="brand-icon">
+
+            <i class="fa-solid fa-ticket"></i>
+
+        </div>
+
+        <div>
+
+            <h2>TicketGenie</h2>
+
+            <span>Employee Portal</span>
+
+        </div>
+
+    </div>
+
+
+    <nav class="navigation">
+
+        <p class="nav-title">
+            WORKSPACE
+        </p>
+
+
+        <a
+            href="index.html"
+            class="nav-item"
+        >
+
+            <i class="fa-solid fa-house"></i>
+
+            <span>Help & Support</span>
+
+        </a>
+
+
+        <a
+            href="my-tickets.html"
+            class="nav-item"
+        >
+
+            <i class="fa-solid fa-ticket"></i>
+
+            <span>My Tickets</span>
+
+        </a>
+
+
+        <a
+            href="new-request.html"
+            class="nav-item"
+        >
+
+            <i class="fa-solid fa-plus"></i>
+
+            <span>New Request</span>
+
+        </a>
+
+
+        <p class="nav-title">
+            RESOURCES
+        </p>
+
+
+        <a
+            href="knowledge-base.html"
+            class="nav-item active"
+        >
+
+            <i class="fa-solid fa-book-open"></i>
+
+            <span>Knowledge Base</span>
+
+        </a>
+
+
+        <a
+            href="notifications.html"
+            class="nav-item"
+        >
+
+            <i class="fa-solid fa-bell"></i>
+
+            <span>Notifications</span>
+
+            <span class="notification-count">
+                3
+            </span>
+
+        </a>
+
+    </nav>
+
+
+    <div class="sidebar-bottom">
+
+        <div class="system-status">
+
+            <span class="status-dot"></span>
+
+            <div>
+
+                <strong>
+                    All systems operational
+                </strong>
+
+                <small>
+                    TicketGenie is online
+                </small>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</aside>
+
+
+
+<!-- =========================================================
+     MAIN CONTENT
+========================================================= -->
+
+<main class="main-content">
+
+
+    <!-- TOP BAR -->
+
+    <header class="topbar">
+
+        <div class="page-title">
+
+            <span>
+                WORKSPACE
+            </span>
+
+            <h1>
+                Knowledge Base
+            </h1>
+
+        </div>
+
+
+        <div class="topbar-actions">
+
+            <div class="search-box">
+
+                <i class="fa-solid fa-magnifying-glass"></i>
+
+                <input
+                    type="text"
+                    placeholder="Search help..."
+                >
+
+                <span class="shortcut">
+                    ⌘ K
+                </span>
+
+            </div>
+
+
+            <button
+                class="icon-button"
+                type="button"
+            >
+
+                <i class="fa-regular fa-bell"></i>
+
+                <span class="notification-dot"></span>
+
+            </button>
+
+
+            <!-- ACCESSIBLE PROFILE DROPDOWN -->
+            <div class="profile">
+                
+                <button 
+                    class="profile-button" 
+                    id="profileDropdownTrigger"
+                    aria-haspopup="menu"
+                    aria-expanded="false"
+                    aria-controls="profileDropdownMenu"
+                >
+                    <div class="avatar">NM</div>
+                    <div class="profile-info">
+                        <strong>Nishita</strong>
+                        <span id="currentRoleDisplay">Employee</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </button>
+
+                <div 
+                    class="profile-dropdown-menu" 
+                    id="profileDropdownMenu"
+                    role="menu"
+                    aria-labelledby="profileDropdownTrigger"
+                >
+                    <span class="dropdown-label">Switch View</span>
+                    
+                    <button type="button" class="role-switch-btn active" data-role="Employee" role="menuitem">
+                        <i class="fa-regular fa-user"></i>
+                        Employee View
+                    </button>
+                    
+                    <button type="button" class="role-switch-btn" data-role="Management" role="menuitem">
+                        <i class="fa-solid fa-briefcase"></i>
+                        Management View
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+
+    </header>
+
+
+
+    <!-- INTRO -->
+
+    <section class="welcome-section">
+
+        <p class="eyebrow">
+            EMPLOYEE RESOURCES
+        </p>
+
+        <h2>
+            Knowledge Base
+        </h2>
+
+        <p>
+            Find answers to common employee questions and support issues.
+        </p>
+
+    </section>
+
+
+
+    <!-- SEARCH -->
+
+    <section class="help-search">
+
+        <div class="help-search-icon">
+
+            <i class="fa-solid fa-book-open"></i>
+
+        </div>
+
+
+        <div class="help-search-content">
+
+            <h3>
+                Search the Knowledge Base
+            </h3>
+
+            <p>
+                Find articles, guides, and answers to common questions.
+            </p>
+
+
+            <div class="large-search">
+
+                <i class="fa-solid fa-magnifying-glass"></i>
+
+                <input
+                    type="text"
+                    id="knowledgeSearch"
+                    placeholder="Search articles..."
+                >
+
+                <button
+                    type="button"
+                    id="knowledgeSearchButton"
+                >
+                    Search
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- CATEGORIES -->
+
+    <section class="section">
+
+        <div class="section-header">
+
+            <div>
+
+                <h3>
+                    Browse by Category
+                </h3>
+
+                <p>
+                    Find resources related to your employee needs.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="help-categories">
+
+
+            <div class="category-card">
+
+                <div class="category-icon">
+
+                    <i class="fa-solid fa-computer"></i>
+
+                </div>
+
+                <div>
+
+                    <h4>
+                        IT Support
+                    </h4>
+
+                    <p>
+                        Devices, accounts & access
+                    </p>
+
+                </div>
+
+                <i class="fa-solid fa-chevron-right arrow"></i>
+
+            </div>
+
+
+            <div class="category-card">
+
+                <div class="category-icon">
+
+                    <i class="fa-solid fa-receipt"></i>
+
+                </div>
+
+                <div>
+
+                    <h4>
+                        Payroll
+                    </h4>
+
+                    <p>
+                        Paychecks & expenses
+                    </p>
+
+                </div>
+
+                <i class="fa-solid fa-chevron-right arrow"></i>
+
+            </div>
+
+
+            <div class="category-card">
+
+                <div class="category-icon">
+
+                    <i class="fa-solid fa-shield-heart"></i>
+
+                </div>
+
+                <div>
+
+                    <h4>
+                        Benefits
+                    </h4>
+
+                    <p>
+                        Plans & enrollment
+                    </p>
+
+                </div>
+
+                <i class="fa-solid fa-chevron-right arrow"></i>
+
+            </div>
+
+
+            <div class="category-card">
+
+                <div class="category-icon">
+
+                    <i class="fa-solid fa-calendar-check"></i>
+
+                </div>
+
+                <div>
+
+                    <h4>
+                        Time Off
+                    </h4>
+
+                    <p>
+                        PTO & leave policies
+                    </p>
+
+                </div>
+
+                <i class="fa-solid fa-chevron-right arrow"></i>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- POPULAR ARTICLES -->
+
+    <section class="section">
+
+        <div class="section-header">
+
+            <div>
+
+                <h3>
+                    Popular Articles
+                </h3>
+
+                <p>
+                    Frequently viewed employee resources.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="knowledge-articles">
+
+
+            <div class="knowledge-article">
+
+                <div class="article-icon">
+
+                    <i class="fa-solid fa-key"></i>
+
+                </div>
+
+                <div class="article-content">
+
+                    <span class="article-category">IT SUPPORT</span>
+
+                    <h4>
+                        How to reset your password
+                    </h4>
+
+                    <p>
+                        3 min read
+                    </p>
+
+                    <a href="#">
+                        Read article
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            <div class="knowledge-article">
+
+                <div class="article-icon">
+
+                    <i class="fa-solid fa-laptop"></i>
+
+                </div>
+
+                <div class="article-content">
+
+                    <span class="article-category">IT SUPPORT</span>
+
+                    <h4>
+                        Requesting a new company device
+                    </h4>
+
+                    <p>
+                        4 min read
+                    </p>
+
+                    <a href="#">
+                        Read article
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            <div class="knowledge-article">
+
+                <div class="article-icon">
+
+                    <i class="fa-solid fa-money-check-dollar"></i>
+
+                </div>
+
+                <div class="article-content">
+
+                    <span class="article-category">PAYROLL</span>
+
+                    <h4>
+                        Understanding your paycheck
+                    </h4>
+
+                    <p>
+                        5 min read
+                    </p>
+
+                    <a href="#">
+                        Read article
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            <div class="knowledge-article">
+
+                <div class="article-icon">
+
+                    <i class="fa-solid fa-calendar-days"></i>
+
+                </div>
+
+                <div class="article-content">
+
+                    <span class="article-category">TIME OFF</span>
+
+                    <h4>
+                        How to request time off
+                    </h4>
+
+                    <p>
+                        3 min read
+                    </p>
+
+                    <a href="#">
+                        Read article
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            <div class="knowledge-article">
+
+                <div class="article-icon">
+
+                    <i class="fa-solid fa-heart"></i>
+
+                </div>
+
+                <div class="article-content">
+
+                    <span class="article-category">BENEFITS</span>
+
+                    <h4>
+                        Benefits enrollment guide
+                    </h4>
+
+                    <p>
+                        6 min read
+                    </p>
+
+                    <a href="#">
+                        Read article
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            <div class="knowledge-article">
+
+                <div class="article-icon">
+
+                    <i class="fa-solid fa-shield-halved"></i>
+
+                </div>
+
+                <div class="article-content">
+
+                    <span class="article-category">SECURITY</span>
+
+                    <h4>
+                        Access and permissions guide
+                    </h4>
+
+                    <p>
+                        4 min read
+                    </p>
+
+                    <a href="#">
+                        Read article
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- KNOWLEDGE HELP CARD -->
+
+    <section class="section">
+
+        <div class="knowledge-help-card">
+
+            <div class="knowledge-help-icon">
+
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+
+            </div>
+
+            <div class="knowledge-help-content">
+
+                <span class="eyebrow">STILL NEED HELP?</span>
+
+                <h3>Can't find what you're looking for?</h3>
+
+                <p>Ask Genie or submit a support request and our team will help you out.</p>
+
+            </div>
+
+            <div class="knowledge-help-actions">
+
+                <button class="knowledge-genie-button" type="button" id="knowledgeGenieButton">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    Ask Genie
+                </button>
+
+                <a class="knowledge-request-button" href="new-request.html">
+                    <i class="fa-solid fa-plus"></i>
+                    New Request
+                </a>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+
+<!-- =========================================================
+     GENIE AI AGENT
+========================================================= -->
+
+<button
+    class="genie-button"
+    id="genieButton"
+    type="button"
+>
+
+    <i class="fa-solid fa-wand-magic-sparkles"></i>
+
+    <span>
+        Ask Genie
+    </span>
+
+</button>
+
+
+<div
+    class="genie-chat"
+    id="genieChat"
+>
+
+    <div class="genie-chat-header">
+
+        <div class="genie-header-info">
+
+            <div class="genie-avatar">
+
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+
+            </div>
+
+            <div>
+
+                <strong>
+                    Genie AI
+                </strong>
+
+                <span>
+
+                    <span class="genie-status-dot"></span>
+
+                    Online
+
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <button
+            class="genie-close"
+            id="closeGenieButton"
+            type="button"
+        >
+
+            <i class="fa-solid fa-xmark"></i>
+
+        </button>
+
+    </div>
+
+
+    <div
+        class="genie-messages"
+        id="genieMessages"
+    >
+
+        <div class="genie-message">
+
+            <div class="genie-message-avatar">
+
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+
+            </div>
+
+            <div class="genie-bubble">
+
+                Hi! I'm Genie, your AI support agent. I can help you find articles or figure out what kind of support you need.
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="genie-input-area">
+
+        <input
+            type="text"
+            id="genieInput"
+            placeholder="Ask Genie something..."
+            autocomplete="off"
+        >
+
+        <button
+            id="genieSendButton"
+            type="button"
+        >
+
+            <i class="fa-solid fa-arrow-up"></i>
+
+        </button>
+
+    </div>
+
+
+    <div class="genie-disclaimer">
+        Genie may occasionally provide inaccurate information.
+    </div>
+
+</div>
+
+
+<script src="js/script.js"></script>
+
+<!-- PROFILE DROPDOWN INTERACTION SCRIPT -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const trigger = document.getElementById('profileDropdownTrigger');
+        const menu = document.getElementById('profileDropdownMenu');
+        const roleDisplay = document.getElementById('currentRoleDisplay');
+        const roleBtns = document.querySelectorAll('.role-switch-btn');
+
+        if(trigger && menu) {
+            trigger.addEventListener('click', () => {
+                const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
+                trigger.setAttribute('aria-expanded', !isExpanded);
+                menu.classList.toggle('show');
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (trigger && menu && !trigger.contains(e.target) && !menu.contains(e.target)) {
+                trigger.setAttribute('aria-expanded', 'false');
+                menu.classList.remove('show');
+            }
+        });
+
+        if(roleBtns) {
+            roleBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    roleBtns.forEach(b => b.classList.remove('active'));
+                    const targetBtn = e.currentTarget;
+                    targetBtn.classList.add('active');
+                    const newRole = targetBtn.getAttribute('data-role');
+                    if(roleDisplay) roleDisplay.textContent = newRole;
+                    if(trigger && menu) {
+                        trigger.setAttribute('aria-expanded', 'false');
+                        menu.classList.remove('show');
+                    }
+                });
+            });
+        }
+    });
+</script>
+
+</body>
+
+</html>

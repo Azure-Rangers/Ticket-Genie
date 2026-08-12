@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TicketGenie | Help & Support</title>
+    <title>TicketGenie | My Tickets</title>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
@@ -47,10 +47,10 @@
 
     <nav class="navigation">
         <div class="nav-title">WORKSPACE</div>
-        <a href="index.html" class="nav-item active">
+        <a href="index.html" class="nav-item">
             <i class="fa-solid fa-house"></i><span>Help & Support</span>
         </a>
-        <a href="my-tickets.html" class="nav-item">
+        <a href="my-tickets.html" class="nav-item active">
             <i class="fa-solid fa-ticket"></i><span>My Tickets</span>
         </a>
         <a href="new-request.html" class="nav-item">
@@ -82,14 +82,14 @@
             </button>
             <div class="page-title">
                 <span>WORKSPACE</span>
-                <h1>Help & Support</h1>
+                <h1>My Tickets</h1>
             </div>
         </div>
 
         <div class="topbar-actions">
             <div class="search-box">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" placeholder="Search help..." id="globalSearch">
+                <input type="text" placeholder="Search tickets..." id="globalSearch">
                 <span class="shortcut">⌘ K</span>
             </div>
             <button class="icon-button" type="button">
@@ -114,88 +114,75 @@
         </div>
     </header>
 
-    <section class="welcome-section">
-        <div class="eyebrow">WELCOME BACK</div>
-        <h2>How can we help you?</h2>
-        <p>Find answers, explore resources, or submit a support request.</p>
+    <section class="welcome-section ticket-page-intro">
+        <div>
+            <div class="eyebrow">SUPPORT REQUESTS</div>
+            <h2>My Tickets</h2>
+            <p>View and manage your submitted support requests.</p>
+        </div>
+        <a href="new-request.html" class="new-ticket-button"><i class="fa-solid fa-plus"></i> New Request</a>
     </section>
 
-    <section class="help-search">
-        <div class="help-search-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
-        <div class="help-search-content">
-            <h3>Search the Help Center</h3>
-            <p>Search for answers, guides, and support resources.</p>
-            <div class="large-search">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="helpSearch" placeholder="What can we help you find?">
-                <button type="button" id="helpSearchButton">Search</button>
-            </div>
+    <div class="ticket-controls">
+        <div class="ticket-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="ticketSearch" placeholder="Search by ticket number, subject, or category...">
         </div>
-    </section>
-
-    <section class="section">
-        <div class="section-header">
-            <div><h3>Quick Help</h3><p>Find support by topic</p></div>
-            <a href="knowledge-base.html">View all <i class="fa-solid fa-arrow-right"></i></a>
-        </div>
-        <div class="help-categories">
-            <div class="category-card">
-                <div class="category-icon"><i class="fa-solid fa-laptop"></i></div>
-                <div><h4>IT & Technology</h4><p>Systems, software & access</p></div>
-                <i class="fa-solid fa-chevron-right arrow"></i>
-            </div>
-            <div class="category-card">
-                <div class="category-icon"><i class="fa-solid fa-wallet"></i></div>
-                <div><h4>Payroll & Benefits</h4><p>Pay, benefits & deductions</p></div>
-                <i class="fa-solid fa-chevron-right arrow"></i>
-            </div>
-            <div class="category-card">
-                <div class="category-icon"><i class="fa-solid fa-calendar-days"></i></div>
-                <div><h4>Time Off</h4><p>Leave & time-off requests</p></div>
-                <i class="fa-solid fa-chevron-right arrow"></i>
-            </div>
-            <div class="category-card">
-                <div class="category-icon"><i class="fa-solid fa-user"></i></div>
-                <div><h4>Employee Services</h4><p>General employee support</p></div>
-                <i class="fa-solid fa-chevron-right arrow"></i>
-            </div>
-        </div>
-    </section>
+        <select class="ticket-filter" id="ticketStatusFilter">
+            <option value="all">All Statuses</option>
+            <option value="Open">Open</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Pending">Pending</option>
+            <option value="Resolved">Resolved</option>
+        </select>
+        <select class="ticket-filter" id="ticketPriorityFilter">
+            <option value="all">All Priorities</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+        </select>
+    </div>
 
     <section class="section">
-        <div class="section-header">
-            <div><h3>Your Tickets</h3><p>Keep track of your support requests</p></div>
-            <a href="my-tickets.html">View tickets <i class="fa-solid fa-arrow-right"></i></a>
-        </div>
-        <div class="ticket-overview">
-            <div class="overview-card">
-                <div class="overview-top"><span>Open</span><div class="overview-icon purple"><i class="fa-regular fa-folder-open"></i></div></div>
-                <strong id="openCount">0</strong><p>Currently being reviewed</p>
-            </div>
-            <div class="overview-card">
-                <div class="overview-top"><span>In Progress</span><div class="overview-icon green"><i class="fa-solid fa-spinner"></i></div></div>
-                <strong id="inProgressCount">0</strong><p>Being actively worked on</p>
-            </div>
-            <div class="overview-card">
-                <div class="overview-top"><span>Resolved</span><div class="overview-icon green"><i class="fa-solid fa-circle-check"></i></div></div>
-                <strong id="resolvedCount">0</strong><p>Successfully completed</p>
-            </div>
-        </div>
-    </section>
-
-    <section class="section">
-        <div class="section-header">
-            <div><h3>Recent Tickets</h3><p>Your latest support activity</p></div>
-            <a href="new-request.html"><i class="fa-solid fa-plus"></i> New request</a>
-        </div>
         <div class="tickets-table">
             <div class="table-header">
                 <span>REQUEST</span><span>STATUS</span><span>PRIORITY</span><span>CREATED</span><span></span>
             </div>
-            <div id="recentTickets"></div>
+            <div id="myTicketsList"></div>
+        </div>
+
+        <div class="pagination">
+            <span id="ticketPaginationText">Showing tickets</span>
+            <div class="pagination-buttons">
+                <button type="button" id="previousPage" disabled><i class="fa-solid fa-chevron-left"></i></button>
+                <button type="button" class="page-active" id="currentPage">1</button>
+                <button type="button" id="nextPage"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
         </div>
     </section>
 </main>
+
+<div class="ticket-modal" id="ticketModal" style="display: none;">
+    <div class="ticket-modal-content">
+        <button class="ticket-modal-close" id="ticketModalClose" type="button" aria-label="Close ticket"><i class="fa-solid fa-xmark"></i></button>
+        <div class="eyebrow">TICKET DETAILS</div>
+        <h2 id="modalTicketTitle">Ticket Details</h2>
+        <div class="ticket-detail-grid">
+            <div><span>Ticket Number</span><strong id="modalTicketId">—</strong></div>
+            <div><span>Status</span><strong id="modalTicketStatus">—</strong></div>
+            <div><span>Category</span><strong id="modalTicketCategory">—</strong></div>
+            <div><span>Priority</span><strong id="modalTicketPriority">—</strong></div>
+            <div><span>Created</span><strong id="modalTicketDate">—</strong></div>
+            <div><span>Preferred Date</span><strong id="modalPreferredDate">—</strong></div>
+        </div>
+        <div class="ticket-description">
+            <span>Description</span><p id="modalTicketDescription">—</p>
+        </div>
+        <div class="ticket-modal-footer">
+            <span>TicketGenie Support</span><button type="button" class="modal-close-button" id="modalCloseButton">Close</button>
+        </div>
+    </div>
+</div>
 
 <div class="genie-container">
     <button class="genie-button" id="genieButton" type="button"><i class="fa-solid fa-wand-magic-sparkles"></i> Ask Genie</button>
@@ -210,13 +197,12 @@
         <div class="genie-messages" id="genieMessages">
             <div class="genie-message">
                 <div class="genie-message-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                <div class="genie-bubble">Hi! I'm Genie. I can help you find answers, understand your tickets, or figure out where to submit a request.</div>
+                <div class="genie-bubble">Hi! I'm Genie. I can help you understand your tickets or find the right support resource.</div>
             </div>
             <div class="genie-suggestions">
                 <button class="genie-suggestion" type="button">Check my tickets</button>
-                <button class="genie-suggestion" type="button">IT help</button>
-                <button class="genie-suggestion" type="button">Payroll help</button>
-                <button class="genie-suggestion" type="button">Time off</button>
+                <button class="genie-suggestion" type="button">Ticket status</button>
+                <button class="genie-suggestion" type="button">Create a ticket</button>
             </div>
         </div>
         <div class="genie-input-area">
