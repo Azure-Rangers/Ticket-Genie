@@ -15,9 +15,7 @@ logger = logging.getLogger("ticketgenie.telemetry")
 _telemetry_initialized = False
 
 
-def setup_telemetry(
-    app: FastAPI, connection_string: Optional[str] = None
-) -> bool:
+def setup_telemetry(app: FastAPI, connection_string: Optional[str] = None) -> bool:
     """Initialize Azure Monitor OpenTelemetry for FastAPI backend.
 
     Args:
@@ -35,9 +33,7 @@ def setup_telemetry(
         logger.info("Telemetry already initialized.")
         return True
 
-    conn_str = connection_string or os.getenv(
-        "APPLICATIONINSIGHTS_CONNECTION_STRING"
-    )
+    conn_str = connection_string or os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
 
     if not conn_str:
         logger.info(

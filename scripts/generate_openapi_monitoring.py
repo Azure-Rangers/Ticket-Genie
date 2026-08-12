@@ -71,9 +71,7 @@ def generate_kql_queries(routes: List[Dict[str, Any]]) -> str:
     ]
 
     # 1. Overall Endpoint Latency & Failure Summary
-    kql_blocks.append(
-        "// 1. Latency (P50, P95, P99) and Error Rates for Endpoints"
-    )
+    kql_blocks.append("// 1. Latency (P50, P95, P99) and Error Rates for Endpoints")
     kql_blocks.append("""requests
 | where timestamp > ago(24h)
 | summarize
@@ -223,11 +221,7 @@ def generate_terraform_alerts(routes: List[Dict[str, Any]]) -> str:
     # Route specific alert rules for key routes
     for route in routes:
         clean_name = (
-            route["path"]
-            .replace("/", "_")
-            .replace("{", "")
-            .replace("}", "")
-            .strip("_")
+            route["path"].replace("/", "_").replace("{", "").replace("}", "").strip("_")
         )
         if not clean_name:
             clean_name = "root"
@@ -285,9 +279,7 @@ def main():
     # 2. Generate Azure Workbook JSON
     workbook_content = generate_workbook_json(routes)
     workbook_file = artifacts_dir / "openapi_workbook.json"
-    workbook_file.write_text(
-        json.dumps(workbook_content, indent=2), encoding="utf-8"
-    )
+    workbook_file.write_text(json.dumps(workbook_content, indent=2), encoding="utf-8")
     print(f"✅ Generated Azure Workbook artifact: {workbook_file}")
 
     # 3. Generate Terraform Metric Alerts
