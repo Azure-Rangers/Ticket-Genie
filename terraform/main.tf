@@ -90,7 +90,7 @@ resource "azurerm_linux_web_app" "backend" {
   }
 }
 
-# 2. Frontend Web App (Streamlit UI) - Port 8501
+# 2. Frontend Web App (Nginx UI with Reverse Proxy) - Port 80
 resource "azurerm_linux_web_app" "frontend" {
   name                = "webapp-prod-frontend-ticketgenie"
   resource_group_name = data.azurerm_resource_group.rg.name
@@ -110,7 +110,7 @@ resource "azurerm_linux_web_app" "frontend" {
 
   app_settings = {
     "BACKEND_API_URL"                     = "https://${azurerm_linux_web_app.backend.default_hostname}"
-    "WEBSITES_PORT"                       = "8501"
+    "WEBSITES_PORT"                       = "80"
     "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "false"
   }
 
