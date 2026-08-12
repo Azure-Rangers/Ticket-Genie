@@ -41,14 +41,14 @@ resource "azurerm_monitor_metric_alert" "api_high_latency" {
   }
 }
 
-# Alert for route: GET /tickets
-resource "azurerm_monitor_metric_alert" "route_tickets_get_errors" {
-  name                = "alert-api-tickets-get-failed"
+# 3. HTTP 500 Internal Server Errors Alert
+resource "azurerm_monitor_metric_alert" "api_500_errors" {
+  name                = "alert-ticketgenie-api-500-errors"
   resource_group_name = data.azurerm_resource_group.rg.name
   scopes              = [azurerm_application_insights.appi.id]
-  description         = "Alert for failed requests on endpoint GET /tickets"
-  severity            = 2
-  frequency           = "PT5M"
+  description         = "Triggers when HTTP 500 Internal Server Errors occur"
+  severity            = 1
+  frequency           = "PT1M"
   window_size         = "PT5M"
 
   criteria {
@@ -59,21 +59,21 @@ resource "azurerm_monitor_metric_alert" "route_tickets_get_errors" {
     threshold        = 3
 
     dimension {
-      name     = "request/name"
+      name     = "request/resultCode"
       operator = "Include"
-      values   = ["GET /tickets"]
+      values   = ["500"]
     }
   }
 }
 
-# Alert for route: POST /tickets
-resource "azurerm_monitor_metric_alert" "route_tickets_post_errors" {
-  name                = "alert-api-tickets-post-failed"
+# 4. HTTP 503 Service Unavailable Errors Alert
+resource "azurerm_monitor_metric_alert" "api_503_errors" {
+  name                = "alert-ticketgenie-api-503-errors"
   resource_group_name = data.azurerm_resource_group.rg.name
   scopes              = [azurerm_application_insights.appi.id]
-  description         = "Alert for failed requests on endpoint POST /tickets"
-  severity            = 2
-  frequency           = "PT5M"
+  description         = "Triggers when HTTP 503 Service Unavailable errors occur"
+  severity            = 1
+  frequency           = "PT1M"
   window_size         = "PT5M"
 
   criteria {
@@ -84,84 +84,9 @@ resource "azurerm_monitor_metric_alert" "route_tickets_post_errors" {
     threshold        = 3
 
     dimension {
-      name     = "request/name"
+      name     = "request/resultCode"
       operator = "Include"
-      values   = ["POST /tickets"]
-    }
-  }
-}
-
-# Alert for route: GET /tickets/{ticket_id}
-resource "azurerm_monitor_metric_alert" "route_tickets_ticket_id_get_errors" {
-  name                = "alert-api-tickets_ticket_id-get-failed"
-  resource_group_name = data.azurerm_resource_group.rg.name
-  scopes              = [azurerm_application_insights.appi.id]
-  description         = "Alert for failed requests on endpoint GET /tickets/{ticket_id}"
-  severity            = 2
-  frequency           = "PT5M"
-  window_size         = "PT5M"
-
-  criteria {
-    metric_namespace = "microsoft.insights/components"
-    metric_name      = "requests/failed"
-    aggregation      = "Count"
-    operator         = "GreaterThan"
-    threshold        = 3
-
-    dimension {
-      name     = "request/name"
-      operator = "Include"
-      values   = ["GET /tickets/{ticket_id}"]
-    }
-  }
-}
-
-# Alert for route: GET /
-resource "azurerm_monitor_metric_alert" "route_root_get_errors" {
-  name                = "alert-api-root-get-failed"
-  resource_group_name = data.azurerm_resource_group.rg.name
-  scopes              = [azurerm_application_insights.appi.id]
-  description         = "Alert for failed requests on endpoint GET /"
-  severity            = 2
-  frequency           = "PT5M"
-  window_size         = "PT5M"
-
-  criteria {
-    metric_namespace = "microsoft.insights/components"
-    metric_name      = "requests/failed"
-    aggregation      = "Count"
-    operator         = "GreaterThan"
-    threshold        = 3
-
-    dimension {
-      name     = "request/name"
-      operator = "Include"
-      values   = ["GET /"]
-    }
-  }
-}
-
-# Alert for route: GET /health
-resource "azurerm_monitor_metric_alert" "route_health_get_errors" {
-  name                = "alert-api-health-get-failed"
-  resource_group_name = data.azurerm_resource_group.rg.name
-  scopes              = [azurerm_application_insights.appi.id]
-  description         = "Alert for failed requests on endpoint GET /health"
-  severity            = 2
-  frequency           = "PT5M"
-  window_size         = "PT5M"
-
-  criteria {
-    metric_namespace = "microsoft.insights/components"
-    metric_name      = "requests/failed"
-    aggregation      = "Count"
-    operator         = "GreaterThan"
-    threshold        = 3
-
-    dimension {
-      name     = "request/name"
-      operator = "Include"
-      values   = ["GET /health"]
+      values   = ["503"]
     }
   }
 }

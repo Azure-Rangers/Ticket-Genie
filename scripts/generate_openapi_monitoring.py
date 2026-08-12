@@ -216,46 +216,57 @@ def generate_terraform_alerts(routes: List[Dict[str, Any]]) -> str:
   }
 }
 """,
-    ]
-
-    # Route specific alert rules for key routes
-    for route in routes:
-        clean_name = (
-            route["path"].replace("/", "_").replace("{", "").replace("}", "").strip("_")
-        )
-        if not clean_name:
-            clean_name = "root"
-
-        method_lower = route["method"].lower()
-        req_name = route["request_name"]
-
-        hcl.append(
-            f"""# Alert for route: {req_name}
-resource "azurerm_monitor_metric_alert" "route_{clean_name}_{method_lower}_errors" {{
-  name                = "alert-api-{clean_name}-{method_lower}-failed"
+        "# 3. HTTP 500 Internal Server Errors Alert",
+        """resource "azurerm_monitor_metric_alert" "api_500_errors" {
+  name                = "alert-ticketgenie-api-500-errors"
   resource_group_name = data.azurerm_resource_group.rg.name
   scopes              = [azurerm_application_insights.appi.id]
-  description         = "Alert for failed requests on endpoint {req_name}"
-  severity            = 2
-  frequency           = "PT5M"
+  description         = "Triggers when HTTP 500 Internal Server Errors occur"
+  severity            = 1
+  frequency           = "PT1M"
   window_size         = "PT5M"
 
-  criteria {{
+  criteria {
     metric_namespace = "microsoft.insights/components"
     metric_name      = "requests/failed"
     aggregation      = "Count"
     operator         = "GreaterThan"
     threshold        = 3
 
-    dimension {{
-      name     = "request/name"
+    dimension {
+      name     = "request/resultCode"
       operator = "Include"
-      values   = ["{req_name}"]
-    }}
-  }}
-}}
-"""
-        )
+      values   = ["500"]
+    }
+  }
+}
+""",
+        "# 4. HTTP 503 Service Unavailable Errors Alert",
+        """resource "azurerm_monitor_metric_alert" "api_503_errors" {
+  name                = "alert-ticketgenie-api-503-errors"
+  resource_group_name = data.azurerm_resource_group.rg.name
+  scopes              = [azurerm_application_insights.appi.id]
+  description         = "Triggers when HTTP 503 Service Unavailable errors occur"
+  severity            = 1
+  frequency           = "PT1M"
+  window_size         = "PT5M"
+
+  criteria {
+    metric_namespace = "microsoft.insights/components"
+    metric_name      = "requests/failed"
+    aggregation      = "Count"
+    operator         = "GreaterThan"
+    threshold        = 3
+
+    dimension {
+      name     = "request/resultCode"
+      operator = "Include"
+      values   = ["503"]
+    }
+  }
+}
+""",
+    ]
 
     return "\n".join(hcl)
 
