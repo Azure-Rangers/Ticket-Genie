@@ -98,14 +98,18 @@ def test_summary_and_response_agents_return_typed_results():
     )
     service = FakeAIService({TicketSummary: summary, EmployeeResponse: response})
 
-    assert summarize_ticket(
-        "VPN unavailable", "I cannot connect.", ai_service=service
-    ) == summary
-    assert draft_response(
-        "VPN unavailable",
-        "I cannot connect.",
-        category="IT",
-        priority="High",
-        queue="IT - Service Desk",
-        ai_service=service,
-    ) == response
+    assert (
+        summarize_ticket("VPN unavailable", "I cannot connect.", ai_service=service)
+        == summary
+    )
+    assert (
+        draft_response(
+            "VPN unavailable",
+            "I cannot connect.",
+            category="IT",
+            priority="High",
+            queue="IT - Service Desk",
+            ai_service=service,
+        )
+        == response
+    )

@@ -23,8 +23,7 @@ class AIService:
 
         if not api_key:
             raise ValueError(
-                "GROUP1OPENAIAPIKEY is missing. "
-                "Run fetch_secrets.py to populate .env."
+                "GROUP1OPENAIAPIKEY is missing. Run fetch_secrets.py to populate .env."
             )
 
         if not endpoint:
