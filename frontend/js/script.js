@@ -6,19 +6,12 @@ const API_BASE_URL = "/api";
 const STORAGE_KEY = "ticketGenieTickets";
 
 /* =========================================================
-   LOCAL STORAGE & DEFAULT DATA
+   LOCAL STORAGE (NO MOCK/DEFAULT TICKETS)
    ========================================================= */
 function getTickets() {
     const tickets = localStorage.getItem(STORAGE_KEY);
     if (!tickets) {
-        const defaultTickets = [
-            { id: "HD-1024", title: "Payroll Issue", category: "Payroll", priority: "High", status: "In Progress", description: "Having an issue with my latest paycheck.", date: "2026-08-08", createdAt: "2026-08-08T10:00:00" },
-            { id: "HD-1025", title: "Benefits Question", category: "Benefits", priority: "Medium", status: "Open", description: "I have a question about my benefits.", date: "2026-08-07", createdAt: "2026-08-07T10:00:00" },
-            { id: "HD-1026", title: "Laptop Request", category: "IT Support", priority: "Low", status: "Resolved", description: "Requesting a replacement laptop.", date: "2026-08-05", createdAt: "2026-08-05T10:00:00" },
-            { id: "HD-1027", title: "PTO Request", category: "Time Off", priority: "Medium", status: "Pending", description: "Requesting PTO.", date: "2026-08-04", createdAt: "2026-08-04T10:00:00" },
-            { id: "HD-1028", title: "Expense Reimbursement", category: "Payroll", priority: "Low", status: "Resolved", description: "Submitting an expense reimbursement.", date: "2026-08-02", createdAt: "2026-08-02T10:00:00" }
-        ];
-        return defaultTickets;
+        return [];
     }
     try {
         return JSON.parse(tickets);
@@ -33,7 +26,7 @@ function saveTickets(tickets) {
 
 function generateTicketId() {
     const tickets = getTickets();
-    let highestNumber = 1028;
+    let highestNumber = 1000;
     tickets.forEach(ticket => {
         const number = parseInt(String(ticket.id).replace("HD-", ""), 10);
         if (!isNaN(number) && number > highestNumber) {
@@ -345,7 +338,7 @@ function showSuccessMessage(ticket) {
         <div class="success-icon"><i class="fa-solid fa-check"></i></div>
         <div>
             <strong>Request submitted successfully</strong>
-            <span>Ticket #${escapeHTML(ticket.id || "HD-1000")} has been created.</span>
+            <span>Ticket #${escapeHTML(ticket.id || "HD-1001")} has been created.</span>
         </div>
     `;
 
@@ -496,7 +489,7 @@ async function renderTickets() {
     const priorityValue = priorityFilter ? priorityFilter.value : "all";
 
     const apiTickets = await apiFetchTickets({ search: searchTerm, status: statusValue, priority: priorityValue });
-    let tickets = apiTickets && apiTickets.length > 0 ? apiTickets : getTickets();
+    let tickets = apiTickets && Array.isArray(apiTickets) ? apiTickets : getTickets();
 
     if (searchTerm) {
         tickets = tickets.filter(ticket => {
@@ -527,20 +520,20 @@ async function renderTickets() {
         listContainer.innerHTML = "";
     }
 
-    tickets.forEach(ticket => {
-        const row = createTicketRow(ticket);
-        listContainer.appendChild(row);
-    });
-
     if (tickets.length === 0) {
         const empty = document.createElement("div");
         empty.className = "ticket-empty-state";
         empty.innerHTML = `
             <i class="fa-regular fa-folder-open"></i>
             <strong>No tickets found</strong>
-            <span>Try changing your search or filters.</span>
+            <span>Submit a new request or adjust your search filters.</span>
         `;
         listContainer.appendChild(empty);
+    } else {
+        tickets.forEach(ticket => {
+            const row = createTicketRow(ticket);
+            listContainer.appendChild(row);
+        });
     }
 
     updateTicketOverview(tickets);
@@ -557,7 +550,7 @@ function createTicketRow(ticket) {
             <div class="request-icon"><i class="${icon}"></i></div>
             <div>
                 <strong>${escapeHTML(ticket.title || ticket.subject || "Request")}</strong>
-                <span>#${escapeHTML(ticket.id || "HD-1000")}</span>
+                <span>#${escapeHTML(ticket.id || "HD-1001")}</span>
             </div>
         </div>
         <span>${escapeHTML(ticket.category || "General")}</span>
@@ -620,10 +613,20 @@ async function updateTicketOverview(optionalTickets) {
     const recentTickets = document.getElementById("recentTickets");
     if (recentTickets) {
         recentTickets.innerHTML = "";
-        tickets.slice(0, 5).forEach(ticket => {
-            const row = createTicketRow(ticket);
-            recentTickets.appendChild(row);
-        });
+        if (tickets.length === 0) {
+            recentTickets.innerHTML = `
+                <div class="ticket-empty-state">
+                    <i class="fa-regular fa-folder-open"></i>
+                    <strong>No support requests found</strong>
+                    <span>Submit a new request to get started.</span>
+                </div>
+            `;
+        } else {
+            tickets.slice(0, 5).forEach(ticket => {
+                const row = createTicketRow(ticket);
+                recentTickets.appendChild(row);
+            });
+        }
     }
 }
 
@@ -635,7 +638,7 @@ function showTicketDetails(ticket) {
             <button class="ticket-modal-close" type="button" aria-label="Close ticket details">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            <p class="eyebrow">TICKET #${escapeHTML(ticket.id || "HD-1000")}</p>
+            <p class="eyebrow">TICKET #${escapeHTML(ticket.id || "HD-1001")}</p>
             <h2>${escapeHTML(ticket.title || ticket.subject || "Ticket Details")}</h2>
             <div class="ticket-detail-grid">
                 <div><span>Category</span><strong>${escapeHTML(ticket.category || "General")}</strong></div>
