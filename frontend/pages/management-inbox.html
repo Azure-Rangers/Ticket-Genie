@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticket Genie - Smart Inbox</title>
+  <style>
+    /* --- CSS RESET & BASE STYLES --- */
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { display: flex; height: 100vh; background-color: #f9fafb; color: #1f2937; margin: 0; overflow: hidden; }
+
+    /* --- SIDEBAR --- */
+    .sidebar { width: 260px; background-color: #2b1b36; color: #d1d5db; display: flex; flex-direction: column; flex-shrink: 0; }
+    .sidebar-header { padding: 24px; border-bottom: 1px solid #402b4a; }
+    .sidebar-header h2 { color: #ffffff; font-size: 1.25rem; display: flex; align-items: center; gap: 8px; }
+    
+    .nav-section { padding: 0 16px; margin-top: 24px; }
+    .nav-title { font-size: 0.75rem; color: #a5b4fc; text-transform: uppercase; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
+    .nav-link { display: block; padding: 10px 16px; color: #d1d5db; text-decoration: none; border-radius: 8px; font-size: 0.9rem; margin-bottom: 4px; transition: background 0.2s; }
+    .nav-link:hover, .nav-link.active { background-color: #402a4a; color: #ffffff; }
+
+    /* --- SPLIT PANE LAYOUT --- */
+    .inbox-container { display: flex; flex: 1; height: 100%; background-color: #ffffff; }
+
+    /* --- LEFT: TICKET LIST & CAPACITY --- */
+    .ticket-list-pane { width: 380px; background-color: #ffffff; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; z-index: 5; box-shadow: 1px 0 10px rgba(0,0,0,0.02); }
+    .pane-header { padding: 24px; border-bottom: 1px solid #e5e7eb; background: #f9fafb; }
+    .pane-header h2 { font-size: 1.25rem; margin-bottom: 16px; text-transform: capitalize; color: #111827; }
+    
+    /* Capacity Tracker */
+    .capacity-tracker { background: #ffffff; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .capacity-tracker p { font-size: 0.75rem; font-weight: 700; color: #475569; display: flex; justify-content: space-between; margin-bottom: 8px; text-transform: uppercase; }
+    .progress-bar { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; background: #4f46e5; width: 85%; }
+    
+    .ticket-list { flex: 1; overflow-y: auto; }
+    .ticket-item { padding: 20px 24px; border-bottom: 1px solid #f3f4f6; cursor: pointer; transition: background 0.2s; }
+    .ticket-item:hover { background-color: #f9fafb; }
+    .ticket-item.active { background-color: #eef2ff; border-left: 4px solid #4f46e5; padding-left: 20px; }
+    
+    .ticket-meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: #6b7280; margin-bottom: 8px; font-weight: 500; }
+    .ticket-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 8px; color: #111827; line-height: 1.4; }
+    
+    .tag { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; margin-right: 6px; margin-bottom: 4px; }
+    .tag-approval { background: #fef08a; color: #854d0e; }
+    .tag-india { background: #e0e7ff; color: #3730a3; }
+    .tag-secure { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+
+    /* --- RIGHT: TICKET DETAILS & WORKFLOW --- */
+    .ticket-detail-pane { flex: 1; display: flex; flex-direction: column; background-color: #f8fafc; }
+    
+    .detail-header { padding: 32px 40px 24px; background-color: #ffffff; border-bottom: 1px solid #e5e7eb; }
+    .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+    .header-top h1 { font-size: 1.75rem; color: #111827; margin-top: 6px; }
+    
+    /* Action Bar (Reorganized!) */
+    .action-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .btn-action { padding: 10px 18px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: 1px solid #d1d5db; background: white; transition: 0.2s; display: flex; align-items: center; gap: 8px; color: #374151; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .btn-action:hover { background: #f3f4f6; border-color: #9ca3af; }
+    .btn-approve { background: #7c3aed; color: white; border: none; }
+    .btn-approve:hover { background: #6d28d9; }
+    .btn-handoff { background: #4f46e5; color: white; border: none; }
+    .btn-handoff:hover { background: #4338ca; }
+
+    /* Visual Status Chain (Reorganized!) */
+    .status-chain-wrapper { background: #ffffff; padding: 16px 40px; border-bottom: 1px solid #e5e7eb; }
+    .status-chain { display: inline-flex; align-items: center; gap: 12px; background: #f8fafc; padding: 8px 16px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.8rem; color: #475569; }
+    .chain-node { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+    .chain-arrow { color: #cbd5e1; font-weight: bold; }
+    .node-active { color: #4f46e5; font-weight: 700; background: #eef2ff; padding: 4px 10px; border-radius: 6px; border: 1px solid #c7d2fe; }
+
+    /* Chat Area */
+    .chat-area { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
+    
+    .message { max-width: 85%; padding: 24px; border-radius: 12px; font-size: 0.95rem; line-height: 1.6; background-color: #ffffff; border: 1px solid #e5e7eb; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    
+    /* Genie AI Special Styling */
+    .msg-genie { border-left: 4px solid #4f46e5; background: linear-gradient(to right, #f5f3ff, #ffffff); }
+    
+    /* Private Note Styling */
+    .msg-private { align-self: flex-end; background-color: #fefce8; border: 1px solid #fef08a; border-left: 4px solid #eab308; }
+    
+    .msg-meta { font-size: 0.75rem; color: #6b7280; margin-bottom: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #f3f4f6; padding-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  
+    .profile { position: relative; }
+    .profile-button { background: transparent; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit; }
+    .profile-dropdown-menu { position: absolute; top: 100%; right: 0; margin-top: 8px; width: 190px; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12); display: none; flex-direction: column; padding: 8px 0; z-index: 1000; }
+    .profile-dropdown-menu.show { display: flex !important; }
+    .dropdown-label { font-size: 10px; color: #8b968f; padding: 4px 16px 6px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .role-switch-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 16px; border: none; background: transparent; text-align: left; font-size: 0.85rem; color: #374151; cursor: pointer; transition: background 0.2s ease; }
+    .role-switch-btn i { width: 16px; text-align: center; color: #6b7280; }
+    .role-switch-btn:hover { background: #f3f4f6; }
+    .role-switch-btn.active { background: #eef2ff; color: #4f46e5; font-weight: 600; }
+    .role-switch-btn.active i { color: #4f46e5; }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>🧞 Ticket Genie</h2>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-title">Main</div>
+      <a href="management-portal.html" class="nav-link">📊 My Dashboard</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-title">Ticketing System</div>
+      <a href="management-submit-ticket.html" class="nav-link">➕ Submit New Ticket</a>
+      <a href="management-inbox.html" class="nav-link active">📥 Team Inbox</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-title">Workforce</div>
+      <a href="management-onboarding.html" class="nav-link">🚀 Onboarding & Visas</a>
+    </div>
+
+    <div class="nav-section" id="adminNav" style="display: none;">
+      <div class="nav-title">Administration</div>
+      <a href="management-knowledge-base.html" class="nav-link">📚 AI Knowledge Base</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-title">Account</div>
+        <a href="../index.html" class="nav-link">🏠 Employee View</a>
+      <a href="management-settings.html" class="nav-link">⚙️ Settings</a>
+    </div>
+  </aside>
+
+      <div class="top-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; border-bottom: 1px solid #f3f4f6; background: white;">
+      <div class="search-small" style="display: flex; align-items: center; background: #f3f4f6; padding: 8px 16px; border-radius: 8px; width: 300px;">
+        <span>🔍</span>
+        <input type="text" placeholder="Search..." style="border: none; background: transparent; outline: none; margin-left: 8px; font-size: 0.85rem; width: 100%;">
+      </div>
+      <div class="nav-actions" style="display: flex; align-items: center; gap: 16px;">
+        <span style="cursor: pointer;">🌙</span>
+        <span style="cursor: pointer;">🔔</span>
+        <div class="profile" style="position: relative;">
+          <button class="profile-button" id="profileDropdownTrigger" style="background: transparent; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit;">
+            <div class="avatar" id="navAvatar" style="width: 32px; height: 32px; background: #eef2ff; color: #4f46e5; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 600;">M</div>
+            <div style="text-align: left;">
+              <div id="navName" style="font-weight: 600; font-size: 0.85rem; color: #111827;">Management User</div>
+              <div id="currentRoleDisplay" style="font-size: 0.7rem; color: #6b7280;">Management</div>
+            </div>
+            <i class="fa-solid fa-chevron-down" style="font-size: 0.75rem; color: #6b7280; margin-left: 4px;"></i>
+          </button>
+          <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu" aria-labelledby="profileDropdownTrigger">
+            <span class="dropdown-label">Switch View</span>
+            <button type="button" class="role-switch-btn" data-role="Employee" role="menuitem" onclick="localStorage.setItem('portalUser', JSON.stringify({name: 'Employee User', role: 'Employee', email: 'employee@ticketgenie.com'})); window.location.href='../index.html';">
+              <i class="fa-regular fa-user"></i> Employee View
+            </button>
+            <button type="button" class="role-switch-btn active" data-role="Management" role="menuitem" onclick="localStorage.setItem('portalUser', JSON.stringify({name: 'Management User', role: 'Management', email: 'management@ticketgenie.com'})); window.location.href='management-portal.html';">
+              <i class="fa-solid fa-briefcase"></i> Management View
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  <div class="inbox-container">
+    
+    <div class="ticket-list-pane">
+      <div class="pane-header">
+        <h2 id="inboxTitle">Team Inbox</h2>
+        
+        <div class="capacity-tracker" title="Total hours logged by team this month">
+          <p><span>Team Capacity Limit</span> <span>145 / 170 Hrs</span></p>
+          <div class="progress-bar">
+            <div class="progress-fill"></div>
+          </div>
+          <p style="font-size: 0.75rem; color: #ef4444; margin-top: 10px; margin-bottom: 0; text-transform: none; font-weight: 600;">⚠️ Approaching monthly maximum</p>
+        </div>
+      </div>
+      
+      <div class="ticket-list">
+        <div class="ticket-item active">
+          <div class="ticket-meta"><span>#T-992 • Immigration (OPT)</span> <span>10m ago</span></div>
+          <div class="ticket-title">OPT Extension Documents Need Review</div>
+          <div>
+            <span class="tag tag-secure">🔒 Deal/Person Specific</span>
+            <span class="tag tag-approval">Needs Approval</span>
+          </div>
+        </div>
+
+        <div class="ticket-item">
+          <div class="ticket-meta"><span>#T-993 • IT-Related</span> <span>1h ago</span></div>
+          <div class="ticket-title">Onboarding: New Hire Hardware Setup</div>
+          <div>
+            <span class="tag tag-india">Assigned: India Team</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ticket-detail-pane">
+      
+      <div class="detail-header">
+        <div class="header-top">
+          <div>
+            <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 8px; font-weight: 600;">Ticket #T-992 &nbsp;•&nbsp; <span style="color: #b91c1c;">🔒 Restricted Visibility</span></div>
+            <h1>OPT Extension Documents Need Review</h1>
+          </div>
+        </div>
+        
+        <div class="action-bar">
+          <button class="btn-action btn-approve" onclick="alert('Document Approved. Logging 0.5 hours to team capacity.')">✅ Approve Document</button>
+          <button class="btn-action btn-handoff" onclick="alert('Ticket reassigned and routed to HR India Team.')">✈️ Route to India Team</button>
+          <button class="btn-action" onclick="alert('Reassigning to IT Department...')">🔄 Send to IT Dept</button>
+          <div style="flex: 1;"></div>
+          <button class="btn-action">⏱️ Log Time</button>
+        </div>
+      </div>
+
+      <div class="status-chain-wrapper">
+        <div class="status-chain">
+          <strong style="color: #111827; margin-right: 8px;">Ticket Journey:</strong>
+          <div class="chain-node">👤 Employee Submitted</div>
+          <div class="chain-arrow">➔</div>
+          <div class="chain-node node-active">🇺🇸 US HR Review</div>
+          <div class="chain-arrow">➔</div>
+          <div class="chain-node" style="opacity: 0.5;">🇮🇳 India Team Processing</div>
+        </div>
+      </div>
+
+      <div class="chat-area">
+        
+        <div class="message msg-genie">
+          <div class="msg-meta"><span style="font-size: 1.1rem;">🧞</span> Genie AI Analysis</div>
+          <div>Employee has uploaded their I-765 and STEM OPT training plan. <br><br><strong>Action Required:</strong> US HR must approve the training plan before it is routed to the India immigration team for final processing and filing. Please review the attached sensitive documents.</div>
+        </div>
+
+        <div class="message msg-private">
+          <div class="msg-meta" style="color: #ca8a04; border-bottom-color: #fef08a;">🔒 Private Internal Note • You</div>
+          <div>I have reviewed the training plan. It looks correct, but I need to log 0.5 hours against our capacity before I formally hit approve and send it to India.</div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    
+    let userDataString = localStorage.getItem('portalUser');
+    if (!userDataString) {
+      const defaultUser = { name: 'Management User', role: 'Management', email: 'management@ticketgenie.com' };
+      localStorage.setItem('portalUser', JSON.stringify(defaultUser));
+      userDataString = JSON.stringify(defaultUser);
+    }
+
+    if (userDataString) {
+      const user = JSON.parse(userDataString);
+      document.getElementById('inboxTitle').innerText = `${user.role} Team Inbox`;
+      
+      if (user.role === 'HR' || user.role === 'Management') {
+        document.getElementById('adminNav').style.display = 'block';
+      }
+    }
+  </script>
+  <script src="../js/script.js"></script>
+</body>
+</html>

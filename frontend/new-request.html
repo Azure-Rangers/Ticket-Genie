@@ -6,6 +6,20 @@
     <title>TicketGenie | New Request</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Added styles for Tabs and Professional Notes -->
+    <style>
+        .request-tabs { display: flex; gap: 20px; margin-bottom: 25px; border-bottom: 1px solid #edf0ee; }
+        .tab-btn { background: none; border: none; padding: 0 0 10px 0; font-size: 11px; font-weight: 600; color: #8a948d; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s ease; margin-bottom: -1px; }
+        .tab-btn:hover { color: #527d66; }
+        .tab-btn.active { color: #527d66; border-bottom-color: #527d66; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .professional-note { background: #fcf8f2; border-left: 3px solid #dca753; padding: 13px 16px; border-radius: 6px; font-size: 10px; color: #6b5220; margin-bottom: 22px; line-height: 1.5; }
+        .professional-note.anon-note { background: #f4f8f5; border-left-color: #527d66; color: #3f4943; }
+        .date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 22px;}
+    </style>
 </head>
 <body>
 
@@ -13,7 +27,8 @@
     <div class="brand" style="position: relative; justify-content: space-between; width: 100%; padding-right: 15px;">
         <div style="display: flex; align-items: center; gap: 12px;">
             <div class="brand-icon">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <!-- Swapped fa-wand-magic-sparkles for fa-ticket -->
+                <i class="fa-solid fa-ticket"></i>
             </div>
             <div>
                 <h2>TicketGenie</h2>
@@ -24,15 +39,9 @@
         <button id="brandMenuToggle" class="brand-menu-toggle" aria-label="Toggle Pages">
             <i class="fa-solid fa-bars"></i>
         </button>
-
-        <div id="brandDropdown" class="brand-dropdown">
-            <a href="index.html"><i class="fa-solid fa-house"></i> Help & Support</a>
-            <a href="my-tickets.html"><i class="fa-solid fa-ticket"></i> My Tickets</a>
-            <a href="new-request.html"><i class="fa-solid fa-plus"></i> New Request</a>
-            <a href="knowledge-base.html"><i class="fa-solid fa-book-open"></i> Knowledge Base</a>
-            <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
-        </div>
     </div>
+    
+    <!-- ... rest of sidebar ... -->
 
     <nav class="navigation">
         <div class="nav-title">WORKSPACE</div>
@@ -42,8 +51,13 @@
         <a href="my-tickets.html" class="nav-item">
             <i class="fa-solid fa-ticket"></i><span>My Tickets</span>
         </a>
-        <a href="new-request.html" class="nav-item active">
+        <a href="new-request.html" class="nav-item">
             <i class="fa-solid fa-plus"></i><span>New Request</span>
+        </a>
+        
+        <!-- ADD THIS NEW LINK RIGHT HERE -->
+        <a href="chat-history.html" class="nav-item">
+            <i class="fa-regular fa-comments"></i><span>Chat History</span>
         </a>
 
         <div class="nav-title">RESOURCES</div>
@@ -69,10 +83,6 @@
             <button class="icon-button" id="sidebarToggle" type="button" aria-label="Toggle Sidebar">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <div class="page-title">
-                <span>WORKSPACE</span>
-                <h1>New Request</h1>
-            </div>
         </div>
 
         <div class="topbar-actions">
@@ -81,6 +91,10 @@
                 <input type="text" placeholder="Search help..." id="globalSearch">
                 <span class="shortcut">⌘ K</span>
             </div>
+            <!-- Dark Mode Toggle Button -->
+            <button class="icon-button" id="darkModeToggle" type="button" aria-label="Toggle Dark Mode">
+                <i class="fa-solid fa-moon" id="darkModeIcon"></i>
+            </button>
             <button class="icon-button" type="button">
                 <i class="fa-regular fa-bell"></i><span class="notification-dot"></span>
             </button>
@@ -111,81 +125,191 @@
 
     <div class="request-layout">
         <section class="request-form-card">
-            <div class="form-card-header">
-                <div><h3>Request Details</h3><p>Provide as much detail as possible.</p></div>
+            
+            <div class="form-card-header" style="margin-bottom: 25px; border-bottom: none; padding-bottom: 0;">
+                <div><h3>Request Details</h3><p>Select a request type and provide as much detail as possible.</p></div>
                 <span class="required-note">* Required</span>
+            </div>
+
+            <!-- Custom Tabs -->
+            <div class="request-tabs">
+                <button type="button" class="tab-btn active" data-target="standardRequestTab">Standard Request</button>
+                <button type="button" class="tab-btn" data-target="anonymousRequestTab">Anonymous Request</button>
+                <button type="button" class="tab-btn" data-target="leaveRequestTab">Leave Management</button>
             </div>
             
             <div id="formErrorMessage" class="form-error-message" style="display: none;"></div>
             
-            <form id="newTicketForm">
-                <div class="form-group">
-                    <label for="ticketSubject">Request subject <span>*</span></label>
-                    <input type="text" id="ticketSubject" name="subject" placeholder="Briefly describe what you need help with" required>
-                    <small>Keep your subject short and specific.</small>
-                </div>
+            <!-- TAB 1: Standard Request -->
+            <div id="standardRequestTab" class="tab-content active">
+                <form id="newTicketForm">
+                    <div class="form-group">
+                        <label for="ticketSubject">Request subject <span>*</span></label>
+                        <input type="text" id="ticketSubject" name="subject" placeholder="Briefly describe what you need help with" required>
+                        <small>Keep your subject short and specific.</small>
+                    </div>
 
-                <div class="form-row">
                     <div class="form-group">
                         <label for="ticketCategory">Category <span>*</span></label>
                         <select id="ticketCategory" name="category" required>
                             <option value="">Select a category</option>
-                            <option value="HR">HR</option>
-                            <option value="IT Support">IT Support</option>
-                            <option value="Payroll">Payroll</option>
-                            <option value="Benefits">Benefits</option>
-                            <option value="Time Off">Time Off</option>
-                            <option value="Employee Services">Employee Services</option>
+                            <option value="HR & Workforce Operations">HR & Workforce Operations</option>
+                            <option value="IT & Technology">IT & Technology</option>
+                            <option value="Account Management">Account Management</option>
+                            <option value="Upper Executive Management">Upper Executive Management</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
 
+                    <div class="form-group description-group">
+                        <label for="ticketDescription">Description <span>*</span></label>
+                        <textarea id="ticketDescription" name="description" placeholder="Describe the issue, what you were trying to do, and any relevant details..." required></textarea>
+                        <div class="field-footer">
+                            <small>Include any error messages or relevant context.</small>
+                            <span id="characterCount">0 / 1000</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group preferred-date-group">
+                        <label for="preferredDate">Preferred resolution date</label>
+                        <input type="date" id="preferredDate" name="preferredDate">
+                        <small>Optional. Let us know if you have a preferred date.</small>
+                    </div>
+
                     <div class="form-group">
-                        <label for="ticketPriority">Priority <span>*</span></label>
-                        <select id="ticketPriority" name="priority" required>
-                            <option value="Medium" selected>Medium</option>
-                            <option value="High">High</option>
-                            <option value="Low">Low</option>
+                        <label>Attachment</label>
+                        <div class="upload-area">
+                            <div class="upload-icon"><i class="fa-solid fa-paperclip"></i></div>
+                            <div class="upload-content">
+                                <strong>Attach supporting files</strong>
+                                <span>Add screenshots, documents, or other relevant files.</span>
+                                <small><button type="button" class="browse-button" id="browseButton">Browse files</button></small>
+                            </div>
+                            <input type="file" id="fileUpload" hidden multiple>
+                        </div>
+                        <div id="selectedFiles"></div>
+                    </div>
+
+                    <div class="form-actions">
+                        <a href="index.html" class="cancel-button">Cancel</a>
+                        <button type="submit" class="submit-request-button" id="submitRequestButton">
+                            <i class="fa-solid fa-paper-plane"></i> Submit Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TAB 2: Anonymous Request -->
+            <div id="anonymousRequestTab" class="tab-content">
+                <div class="professional-note anon-note">
+                    <i class="fa-solid fa-user-secret" style="margin-right: 5px;"></i> <strong>Anonymous Submission:</strong> Your identity, employee ID, and profile details will be completely masked from the support team routing and reviewing this ticket.
+                </div>
+                
+                <form id="anonTicketForm">
+                    <div class="form-group">
+                        <label for="anonTicketSubject">Request subject <span>*</span></label>
+                        <input type="text" id="anonTicketSubject" name="subject" placeholder="Briefly describe what you need help with" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="anonTicketCategory">Category <span>*</span></label>
+                        <select id="anonTicketCategory" name="category" required>
+                            <option value="">Select a category</option>
+                            <option value="HR & Workforce Operations">HR & Workforce Operations</option>
+                            <option value="IT & Technology">IT & Technology</option>
+                            <option value="Account Management">Account Management</option>
+                            <option value="Upper Executive Management">Upper Executive Management</option>
+                            <option value="Other">Other</option>
                         </select>
                     </div>
-                </div>
 
-                <div class="form-group description-group">
-                    <label for="ticketDescription">Description <span>*</span></label>
-                    <textarea id="ticketDescription" name="description" placeholder="Describe the issue, what you were trying to do, and any relevant details..." required></textarea>
-                    <div class="field-footer">
-                        <small>Include any error messages or relevant context.</small>
-                        <span id="characterCount">0 / 1000</span>
+                    <div class="form-group description-group">
+                        <label for="anonTicketDescription">Description <span>*</span></label>
+                        <textarea id="anonTicketDescription" name="description" placeholder="Describe your concern or question in detail..." required></textarea>
                     </div>
-                </div>
 
-                <div class="form-group preferred-date-group">
-                    <label for="preferredDate">Preferred resolution date</label>
-                    <input type="date" id="preferredDate" name="preferredDate">
-                    <small>Optional. Let us know if you have a preferred date.</small>
-                </div>
-
-                <div class="form-group">
-                    <label>Attachment</label>
-                    <div class="upload-area">
-                        <div class="upload-icon"><i class="fa-solid fa-paperclip"></i></div>
-                        <div class="upload-content">
-                            <strong>Attach supporting files</strong>
-                            <span>Add screenshots, documents, or other relevant files.</span>
-                            <small><button type="button" class="browse-button" id="browseButton">Browse files</button></small>
+                    <div class="form-group">
+                        <label>Attachment</label>
+                        <div class="upload-area">
+                            <div class="upload-icon"><i class="fa-solid fa-paperclip"></i></div>
+                            <div class="upload-content">
+                                <strong>Attach supporting files</strong>
+                                <span>Add screenshots, documents, or other relevant files.</span>
+                                <small><button type="button" class="browse-button" id="anonBrowseButton">Browse files</button></small>
+                            </div>
+                            <input type="file" id="anonFileUpload" hidden multiple>
                         </div>
-                        <input type="file" id="fileUpload" hidden multiple>
+                        <div id="anonSelectedFiles"></div>
                     </div>
-                    <div id="selectedFiles"></div>
-                </div>
 
-                <div class="form-actions">
-                    <a href="index.html" class="cancel-button">Cancel</a>
-                    <button type="submit" class="submit-request-button" id="submitRequestButton">
-                        <i class="fa-solid fa-paper-plane"></i> Submit Request
-                    </button>
+                    <div class="form-actions">
+                        <a href="index.html" class="cancel-button">Cancel</a>
+                        <button type="submit" class="submit-request-button">
+                            <i class="fa-solid fa-paper-plane"></i> Submit Anonymously
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TAB 3: Leave Management -->
+            <div id="leaveRequestTab" class="tab-content">
+                <div class="professional-note">
+                    <i class="fa-solid fa-circle-info" style="margin-right: 5px;"></i> <strong>Important Note:</strong> Leave management requests require preliminary review and approval from Upper Executive Management prior to being routed to the Human Resources department for processing.
                 </div>
-            </form>
+                
+                <form id="leaveTicketForm">
+                    <div class="form-group">
+                        <label for="leaveType">Leave Type <span>*</span></label>
+                        <select id="leaveType" name="leaveType" required>
+                            <option value="">Select leave type</option>
+                            <option value="Paid Time Off (PTO)">Paid Time Off (PTO)</option>
+                            <option value="Medical Leave">Medical Leave</option>
+                            <option value="Parental Leave">Parental Leave</option>
+                            <option value="Bereavement">Bereavement</option>
+                            <option value="Unpaid Leave">Unpaid Leave</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="date-row">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="leaveStartDate">Start Date <span>*</span></label>
+                            <input type="date" id="leaveStartDate" name="leaveStartDate" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="leaveEndDate">End Date <span>*</span></label>
+                            <input type="date" id="leaveEndDate" name="leaveEndDate" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group description-group">
+                        <label for="leaveDescription">Reason / Additional Details <span>*</span></label>
+                        <textarea id="leaveDescription" name="description" placeholder="Provide a brief explanation for your leave request..." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Attachment</label>
+                        <div class="upload-area">
+                            <div class="upload-icon"><i class="fa-solid fa-paperclip"></i></div>
+                            <div class="upload-content">
+                                <strong>Attach supporting files</strong>
+                                <span>Add doctor's notes, forms, or other relevant files.</span>
+                                <small><button type="button" class="browse-button" id="leaveBrowseButton">Browse files</button></small>
+                            </div>
+                            <input type="file" id="leaveFileUpload" hidden multiple>
+                        </div>
+                        <div id="leaveSelectedFiles"></div>
+                    </div>
+
+                    <div class="form-actions">
+                        <a href="index.html" class="cancel-button">Cancel</a>
+                        <button type="submit" class="submit-request-button">
+                            <i class="fa-solid fa-paper-plane"></i> Request Approval
+                        </button>
+                    </div>
+                </form>
+            </div>
+
         </section>
 
         <aside class="request-help-panel">
@@ -244,11 +368,27 @@
     </div>
 </div>
 
-<div class="ticket-success-message" id="ticketSuccessMessage">
-    <div class="success-icon"><i class="fa-solid fa-check"></i></div>
-    <div><strong>Request submitted</strong><span id="successTicketNumber">Your ticket has been created.</span></div>
-</div>
-
 <script src="js/script.js"></script>
+
+<!-- Added logic to handle Tab Switching locally -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove active classes from all buttons and contents
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+
+                // Add active class to clicked button and the corresponding content block
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.target).classList.add('active');
+            });
+        });
+    });
+</script>
+
 </body>
 </html>

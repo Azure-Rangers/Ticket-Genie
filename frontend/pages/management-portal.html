@@ -1,80 +1,254 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Management Portal | TicketGenie</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="../css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TicketGenie - Unified Portal</title>
+  <style>
+    /* --- CSS RESET & BASE STYLES --- */
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { display: flex; height: 100vh; background-color: #fdfdfd; color: #1f2937; margin: 0; overflow: hidden; }
+
+    /* --- SIDEBAR --- */
+    .sidebar { width: 250px; background-color: #2b1b36; color: #d1d5db; display: flex; flex-direction: column; flex-shrink: 0; justify-content: space-between; }
+    .sidebar-top { flex: 1; }
+    .sidebar-header { padding: 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .sidebar-header h2 { color: #ffffff; font-size: 1.2rem; }
+    .sidebar-header span { display: block; font-size: 0.7rem; color: #a5b4fc; font-weight: normal; text-transform: uppercase; letter-spacing: 1px; }
+    
+    .nav-section { padding: 0 16px; margin-top: 24px; }
+    .nav-title { font-size: 0.7rem; color: #818cf8; text-transform: uppercase; font-weight: bold; margin-bottom: 12px; letter-spacing: 1px; }
+    .nav-link { display: flex; align-items: center; gap: 12px; padding: 10px 16px; color: #d1d5db; text-decoration: none; border-radius: 8px; font-size: 0.85rem; margin-bottom: 4px; transition: background 0.2s; }
+    .nav-link:hover, .nav-link.active { background-color: rgba(255,255,255,0.1); color: #ffffff; font-weight: 500; }
+    
+    .sidebar-footer { padding: 24px; font-size: 0.75rem; color: #a5b4fc; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 8px; }
+    .status-dot { width: 8px; height: 8px; background-color: #a855f7; border-radius: 50%; }
+
+    /* --- MAIN CONTENT --- */
+    .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    
+    /* Top Navbar */
+    .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; border-bottom: 1px solid #f3f4f6; background: white; }
+    .search-small { display: flex; align-items: center; background: #f3f4f6; padding: 8px 16px; border-radius: 8px; width: 300px; }
+    .search-small input { border: none; background: transparent; outline: none; margin-left: 8px; font-size: 0.85rem; width: 100%; }
+    .nav-actions { display: flex; align-items: center; gap: 16px; }
+    .user-profile { display: flex; align-items: center; gap: 12px; font-size: 0.85rem; font-weight: 600; }
+    .avatar { width: 32px; height: 32px; background: #eef2ff; color: #4f46e5; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.8rem; }
+
+    /* Page Content */
+    .page-padding { padding: 40px; max-width: 1200px; margin: 0 auto; width: 100%; }
+    
+    .welcome-text { font-size: 0.75rem; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .page-title { font-size: 2rem; color: #111827; margin: 8px 0 24px; text-transform: capitalize; }
+
+    /* Big Search Banner */
+    .search-banner { background-color: #362248; border-radius: 12px; padding: 32px; color: white; display: flex; flex-direction: column; gap: 16px; margin-bottom: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    .search-banner h3 { font-size: 1.25rem; font-weight: 500; }
+    .search-banner p { font-size: 0.85rem; color: #d1d5db; }
+    .big-search-bar { display: flex; background: white; border-radius: 8px; padding: 8px; align-items: center; }
+    .big-search-bar input { flex: 1; border: none; padding: 8px 16px; font-size: 1rem; outline: none; }
+    .btn-search { background: #4f46e5; color: white; border: none; padding: 10px 24px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+
+    /* Section Headers */
+    .section-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; }
+    .section-header h4 { font-size: 1.1rem; color: #111827; }
+    .section-header p { font-size: 0.8rem; color: #6b7280; margin-top: 4px; }
+    .view-all { font-size: 0.85rem; color: #4f46e5; text-decoration: none; font-weight: 500; }
+
+    /* Ticket Stats Grid */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 40px; }
+    .stat-card { background: white; border: 1px solid #e5e7eb; padding: 24px; border-radius: 8px; display: flex; flex-direction: column; gap: 12px; }
+    .stat-header { display: flex; justify-content: space-between; font-size: 0.85rem; color: #6b7280; font-weight: 600; text-transform: uppercase; }
+    .stat-value { font-size: 2rem; font-weight: bold; color: #111827; }
+
+    /* Quick Help Grid (Reused for Admin Actions) */
+    .quick-help-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px; }
+    .help-card { background: white; border: 1px solid #e5e7eb; padding: 16px; border-radius: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: 0.2s; }
+    .help-card:hover { border-color: #a5b4fc; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    .help-icon { padding: 10px; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; }
+    .help-text h5 { font-size: 0.85rem; color: #111827; margin-bottom: 2px; }
+    .help-text p { font-size: 0.7rem; color: #6b7280; }
+    
+    /* Login Warning Banner */
+    #loginWarning { display: none; background-color: #fee2e2; color: #b91c1c; padding: 12px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fca5a5; font-weight: 600; text-align: center; font-size: 0.9rem; }
+  
+    .profile { position: relative; }
+    .profile-button { background: transparent; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit; }
+    .profile-dropdown-menu { position: absolute; top: 100%; right: 0; margin-top: 8px; width: 190px; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12); display: none; flex-direction: column; padding: 8px 0; z-index: 1000; }
+    .profile-dropdown-menu.show { display: flex !important; }
+    .dropdown-label { font-size: 10px; color: #8b968f; padding: 4px 16px 6px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .role-switch-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 16px; border: none; background: transparent; text-align: left; font-size: 0.85rem; color: #374151; cursor: pointer; transition: background 0.2s ease; }
+    .role-switch-btn i { width: 16px; text-align: center; color: #6b7280; }
+    .role-switch-btn:hover { background: #f3f4f6; }
+    .role-switch-btn.active { background: #eef2ff; color: #4f46e5; font-weight: 600; }
+    .role-switch-btn.active i { color: #4f46e5; }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 <body>
 
-<aside class="sidebar">
-    <div class="brand">
-        <div class="brand-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-        <div><h2>TicketGenie</h2><span>Executive Management</span></div>
-    </div>
-
-    <nav class="navigation">
-        <div class="nav-title">WORKSPACE</div>
-        <a href="../index.html" class="nav-item">
-            <i class="fa-solid fa-arrow-left"></i><span>Employee Hub</span>
-        </a>
-        <a href="management-portal.html" class="nav-item active">
-            <i class="fa-solid fa-briefcase"></i><span>Management Dashboard</span>
-        </a>
-    </nav>
-
-    <div class="sidebar-bottom">
-        <div class="system-status">
-            <div class="status-dot"></div>
-            <div><strong>All systems operational</strong><small>Executive Portal</small></div>
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-header">
+        <div style="background: white; padding: 4px; border-radius: 6px; font-size: 1.2rem;">🧞</div>
+        <div>
+          <h2>TicketGenie</h2>
+          <span id="sidebarRole">Unified Portal</span>
         </div>
-    </div>
-</aside>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-title">Workspace</div>
+        <a href="management-portal.html" class="nav-link active">📊 My Dashboard</a>
+      </div>
 
-<main class="main-content">
-    <header class="topbar">
-        <div class="header-left" style="display: flex; align-items: center; gap: 20px;">
-            <button class="icon-button" id="sidebarToggle" type="button" aria-label="Toggle Sidebar">
-                <i class="fa-solid fa-bars"></i>
+      <div class="nav-section">
+        <div class="nav-title">Ticketing System</div>
+        <a href="management-submit-ticket.html" class="nav-link">➕ Submit New Ticket</a>
+        <a href="management-inbox.html" class="nav-link">📥 Team Inbox</a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-title">Workforce</div>
+        <a href="management-onboarding.html" class="nav-link">🚀 Onboarding & Visas</a>
+      </div>
+
+      <div class="nav-section" id="adminNav" style="display: none;">
+        <div class="nav-title">Administration</div>
+        <a href="management-knowledge-base.html" class="nav-link">📚 AI Knowledge Base</a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-title">Account</div>
+        <a href="../index.html" class="nav-link">🏠 Employee View</a>
+        <a href="management-settings.html" class="nav-link">⚙️ Settings</a>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="status-dot"></div>
+      <div>
+        <div style="color: white; font-weight: 600;">All systems operational</div>
+        <div>TicketGenie is online</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    
+    <div class="top-nav">
+      <div class="search-small">
+        <span>🔍</span>
+        <input type="text" placeholder="Search ticket IDs...">
+      </div>
+      <div class="nav-actions">
+        <span style="cursor: pointer;">🌙</span>
+        <span style="cursor: pointer;">🔔</span>
+        <div class="profile">
+          <button class="profile-button" id="profileDropdownTrigger">
+            <div class="avatar" id="navAvatar">M</div>
+            <div style="text-align: left;">
+              <div id="navName" style="font-weight: 600; font-size: 0.85rem; color: #111827;">Management User</div>
+              <div id="currentRoleDisplay" style="font-size: 0.7rem; color: #6b7280;">Management</div>
+            </div>
+            <i class="fa-solid fa-chevron-down" style="font-size: 0.75rem; color: #6b7280; margin-left: 4px;"></i>
+          </button>
+          <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu" aria-labelledby="profileDropdownTrigger">
+            <span class="dropdown-label">Switch View</span>
+            <button type="button" class="role-switch-btn" data-role="Employee" role="menuitem" onclick="localStorage.setItem('portalUser', JSON.stringify({name: 'Employee User', role: 'Employee', email: 'employee@ticketgenie.com'})); window.location.href='../index.html';">
+              <i class="fa-regular fa-user"></i> Employee View
             </button>
-            <div class="page-title">
-                <span>EXECUTIVE</span>
-                <h1>Management Portal</h1>
-            </div>
+            <button type="button" class="role-switch-btn active" data-role="Management" role="menuitem" onclick="localStorage.setItem('portalUser', JSON.stringify({name: 'Management User', role: 'Management', email: 'management@ticketgenie.com'})); window.location.href='management-portal.html';">
+              <i class="fa-solid fa-briefcase"></i> Management View
+            </button>
+          </div>
         </div>
-
-        <div class="topbar-actions">
-            <div class="profile">
-                <div class="avatar">MG</div>
-                <div class="profile-info"><strong>Manager</strong><span>Executive</span></div>
-            </div>
-        </div>
-    </header>
-
-    <section class="welcome-section">
-        <div class="eyebrow">EXECUTIVE OVERVIEW</div>
-        <h2>Management Portal</h2>
-        <p>High-level metrics, ticket escalations, and department performance indicators.</p>
-    </section>
-
-    <div class="stats-grid">
-        <div class="stat-card">
-            <h3>Total Org Tickets</h3>
-            <span class="stat-number">142</span>
-        </div>
-        <div class="stat-card border-red">
-            <h3>Escalations</h3>
-            <span class="stat-number">3</span>
-        </div>
-        <div class="stat-card border-green">
-            <h3>SLA Compliance</h3>
-            <span class="stat-number">98.4%</span>
-        </div>
+      </div>
     </div>
-</main>
 
-<script src="../js/script.js"></script>
+    <div class="page-padding">
+      
+      <div id="loginWarning">⚠️ You are not logged in! Please start at index.html to see your personalized dashboard.</div>
+      
+      <div class="welcome-text">Operations Overview</div>
+      <h1 class="page-title" id="welcomeMessage">Unified Portal Dashboard</h1>
+
+      <div class="search-banner">
+        <div>
+          <h3>Locate a Ticket or Policy</h3>
+          <p>Instantly search across employee requests, AI knowledge bases, and approval workflows.</p>
+        </div>
+        <div class="big-search-bar">
+          <span style="padding-left: 12px; color: #9ca3af;">🔍</span>
+          <input type="text" placeholder="e.g., 'Ticket #T-992' or 'OPT Policy'">
+          <button class="btn-search">Search</button>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <div>
+          <h4>Operations Metrics</h4>
+          <p>Live view of your department's load and AI triage status</p>
+        </div>
+        <a href="management-inbox.html" class="view-all">Go to Inbox →</a>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-header"><span>My Open Tickets</span> <span>📁</span></div>
+          <div class="stat-value">12</div>
+          <div style="font-size: 0.75rem; color: #4f46e5; font-weight: 600;">4 need immediate action</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header"><span>Pending Approvals</span> <span>📝</span></div>
+          <div class="stat-value">5</div>
+          <div style="font-size: 0.75rem; color: #6b7280;">Awaiting your sign-off</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header"><span style="color: #b91c1c;">SLA Alerts</span> <span>⚠️</span></div>
+          <div class="stat-value" style="color: #b91c1c;">2</div>
+          <div style="font-size: 0.75rem; color: #b91c1c;">Approaching breach</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header"><span style="color: #7e22ce;">AI Auto-Resolved</span> <span>✨</span></div>
+          <div class="stat-value">45%</div>
+          <div style="font-size: 0.75rem; color: #7e22ce;">Department-wide this week</div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <div>
+          <h4>Quick Actions</h4>
+          <p>Jump straight into the most common tasks</p>
+        </div>
+      </div>
+
+      <div class="quick-help-grid">
+        <div class="help-card" onclick="location.href='management-submit-ticket.html'">
+          <div class="help-icon" style="background: #eef2ff; color: #4f46e5;">➕</div>
+          <div class="help-text">
+            <h5>Submit Ticket</h5>
+            <p>Create a new internal request</p>
+          </div>
+        </div>
+        <div class="help-card" onclick="location.href='management-inbox.html'">
+          <div class="help-icon" style="background: #ecfdf5; color: #059669;">📥</div>
+          <div class="help-text">
+            <h5>Team Inbox</h5>
+            <p>Manage and resolve tickets</p>
+          </div>
+        </div>
+        <div class="help-card" onclick="location.href='management-onboarding.html'">
+          <div class="help-icon" style="background: #fff7ed; color: #ea580c;">🚀</div>
+          <div class="help-text">
+            <h5>Onboarding & Visas</h5>
+            <p>Employee onboarding workflows</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+  <script src="../js/script.js"></script>
 </body>
 </html>

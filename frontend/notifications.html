@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notifications | TicketGenie</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 <body>
 
@@ -13,25 +13,17 @@
     <div class="brand" style="position: relative; justify-content: space-between; width: 100%; padding-right: 15px;">
         <div style="display: flex; align-items: center; gap: 12px;">
             <div class="brand-icon">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <i class="fa-solid fa-ticket"></i>
             </div>
             <div>
                 <h2>TicketGenie</h2>
-                <span>Employee Support</span>
+                <span>Employee Portal</span>
             </div>
         </div>
         
         <button id="brandMenuToggle" class="brand-menu-toggle" aria-label="Toggle Pages">
             <i class="fa-solid fa-bars"></i>
         </button>
-
-        <div id="brandDropdown" class="brand-dropdown">
-            <a href="index.html"><i class="fa-solid fa-house"></i> Help & Support</a>
-            <a href="my-tickets.html"><i class="fa-solid fa-ticket"></i> My Tickets</a>
-            <a href="new-request.html"><i class="fa-solid fa-plus"></i> New Request</a>
-            <a href="knowledge-base.html"><i class="fa-solid fa-book-open"></i> Knowledge Base</a>
-            <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
-        </div>
     </div>
 
     <nav class="navigation">
@@ -45,20 +37,26 @@
         <a href="new-request.html" class="nav-item">
             <i class="fa-solid fa-plus"></i><span>New Request</span>
         </a>
+        <a href="chat-history.html" class="nav-item">
+            <i class="fa-regular fa-comments"></i><span>Chat History</span>
+        </a>
 
         <div class="nav-title">RESOURCES</div>
         <a href="knowledge-base.html" class="nav-item">
             <i class="fa-solid fa-book-open"></i><span>Knowledge Base</span>
         </a>
         <a href="notifications.html" class="nav-item active">
-            <i class="fa-solid fa-bell"></i><span>Notifications</span><span class="notification-count">3</span>
+            <i class="fa-solid fa-bell"></i><span>Notifications</span><span class="notification-count" id="badgeCount">3</span>
         </a>
     </nav>
 
     <div class="sidebar-bottom">
         <div class="system-status">
-            <div class="status-dot"></div>
-            <div><strong>All systems operational</strong><small>TicketGenie is online</small></div>
+            <span class="status-dot"></span>
+            <div>
+                <strong>All systems operational</strong>
+                <small>TicketGenie is online</small>
+            </div>
         </div>
     </div>
 </aside>
@@ -70,7 +68,6 @@
                 <i class="fa-solid fa-bars"></i>
             </button>
             <div class="page-title">
-                <span>WORKSPACE</span>
                 <h1>Notifications</h1>
             </div>
         </div>
@@ -78,18 +75,30 @@
         <div class="topbar-actions">
             <div class="search-box">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" placeholder="Search help..." id="globalSearch">
+                <input type="text" placeholder="Search..." id="globalSearch">
                 <span class="shortcut">⌘ K</span>
             </div>
-            <button class="icon-button" type="button">
-                <i class="fa-regular fa-bell"></i><span class="notification-dot"></span>
+
+            <!-- Dark Mode Toggle Button -->
+            <button class="icon-button" id="darkModeToggle" type="button" aria-label="Toggle Dark Mode">
+                <i class="fa-solid fa-moon" id="darkModeIcon"></i>
             </button>
+
+            <button class="icon-button" type="button">
+                <i class="fa-regular fa-bell"></i>
+                <span class="notification-dot"></span>
+            </button>
+
             <div class="profile">
                 <button class="profile-button" id="profileDropdownTrigger" aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdownMenu">
                     <div class="avatar">NM</div>
-                    <div class="profile-info"><strong>Nishita</strong><span id="currentRoleDisplay">Employee</span></div>
+                    <div class="profile-info">
+                        <strong>Nishita</strong>
+                        <span id="currentRoleDisplay">Employee</span>
+                    </div>
                     <i class="fa-solid fa-chevron-down"></i>
                 </button>
+
                 <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu" aria-labelledby="profileDropdownTrigger">
                     <span class="dropdown-label">Switch View</span>
                     <button type="button" class="role-switch-btn active" data-role="Employee" role="menuitem">
@@ -104,99 +113,142 @@
     </header>
 
     <section class="welcome-section">
-        <p class="eyebrow">ACTIVITY CENTER</p>
-        <h2>Notifications</h2>
-        <p>Stay updated on your support requests and important employee information.</p>
+        <p class="eyebrow">ACTIVITY & UPDATES</p>
+        <h2>Your Notifications</h2>
+        <p>Stay up to date with request statuses, departmental replies, and system alerts.</p>
     </section>
 
-    <section class="section">
-        <div class="section-header">
-            <div><h3>Recent Activity</h3><p>Your latest TicketGenie updates.</p></div>
-            <a href="#" id="markAllRead">Mark all as read <i class="fa-solid fa-check-double"></i></a>
+    <!-- Controls Row -->
+    <div class="notification-actions-top">
+        <div class="ticket-filter" style="display: inline-flex; align-items: center; background: white; border: 1px solid #dfe5e1; border-radius: 7px; padding: 0 12px; height: 38px;">
+            <select id="notificationFilter" style="border: none; outline: none; background: transparent; font-size: 10px; color: #626c65; cursor: pointer;">
+                <option value="all">All Notifications</option>
+                <option value="unread">Unread Only</option>
+            </select>
+        </div>
+        <button class="mark-all-read-btn" id="markAllReadBtn" type="button">
+            <i class="fa-solid fa-check-double"></i> Mark all as read
+        </button>
+    </div>
+
+    <!-- Notifications List -->
+    <div class="notifications-container" id="notificationsList">
+        
+        <div class="notification-card unread" data-read="false">
+            <div class="notification-icon-wrap">
+                <i class="fa-solid fa-ticket"></i>
+            </div>
+            <div class="notification-content">
+                <div class="notification-header-row">
+                    <span class="notification-title">Ticket Status Updated</span>
+                    <span class="notification-time">10 mins ago</span>
+                </div>
+                <p class="notification-desc">Your ticket <strong>#HD-1024 (Payroll Issue)</strong> has been moved to <strong>In Progress</strong> by HR Support.</p>
+            </div>
         </div>
 
-        <div class="notification-list">
-            <div class="notification-card unread">
-                <div class="notification-icon notification-green"><i class="fa-solid fa-circle-check"></i></div>
-                <div class="notification-content">
-                    <strong>Your ticket has been updated</strong>
-                    <p>Ticket #HD-1024 is currently being reviewed by the Payroll team.</p>
-                    <span>Today · 10 minutes ago</span>
-                </div>
-                <span class="notification-unread-dot"></span>
+        <div class="notification-card unread" data-read="false">
+            <div class="notification-icon-wrap">
+                <i class="fa-regular fa-comments"></i>
             </div>
-            <div class="notification-card unread">
-                <div class="notification-icon notification-blue"><i class="fa-solid fa-ticket"></i></div>
-                <div class="notification-content">
-                    <strong>New ticket created</strong>
-                    <p>Your request #HD-1029 was successfully submitted.</p>
-                    <span>Today · 32 minutes ago</span>
+            <div class="notification-content">
+                <div class="notification-header-row">
+                    <span class="notification-title">New Message from Department Leader</span>
+                    <span class="notification-time">1 hour ago</span>
                 </div>
-                <span class="notification-unread-dot"></span>
-            </div>
-            <div class="notification-card unread">
-                <div class="notification-icon notification-orange"><i class="fa-solid fa-message"></i></div>
-                <div class="notification-content">
-                    <strong>Support team responded</strong>
-                    <p>There is a new response available for your Benefits request.</p>
-                    <span>Yesterday · 3:42 PM</span>
-                </div>
-                <span class="notification-unread-dot"></span>
-            </div>
-            <div class="notification-card">
-                <div class="notification-icon notification-purple"><i class="fa-solid fa-book-open"></i></div>
-                <div class="notification-content">
-                    <strong>New knowledge article available</strong>
-                    <p>A new guide about employee device security is now available.</p>
-                    <span>Aug 6 · 11:20 AM</span>
-                </div>
-            </div>
-            <div class="notification-card">
-                <div class="notification-icon notification-green"><i class="fa-solid fa-circle-check"></i></div>
-                <div class="notification-content">
-                    <strong>Ticket resolved</strong>
-                    <p>Your Laptop Request #HD-1026 has been marked as resolved.</p>
-                    <span>Aug 5 · 2:15 PM</span>
-                </div>
+                <p class="notification-desc">Michael Reynolds replied to your inquiry regarding workplace equipment policy. Check your Chat History to review.</p>
             </div>
         </div>
-    </section>
 
-    <section class="section">
-        <div class="response-card">
-            <div><i class="fa-regular fa-bell"></i></div>
-            <section>
-                <strong>You're all caught up</strong>
-                <span>New ticket updates and important support notifications will appear here.</span>
-            </section>
+        <div class="notification-card unread" data-read="false">
+            <div class="notification-icon-wrap">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div class="notification-content">
+                <div class="notification-header-row">
+                    <span class="notification-title">Security Policy Acknowledgment Required</span>
+                    <span class="notification-time">Yesterday</span>
+                </div>
+                <p class="notification-desc">Please review the updated Information Security & Data Privacy guidelines in the Knowledge Base.</p>
+            </div>
         </div>
-    </section>
+
+    </div>
 </main>
 
-<div class="genie-container">
-    <button class="genie-button" id="genieButton" type="button"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Ask Genie</span></button>
-    
-    <div class="genie-chat" id="genieChat">
-        <div class="genie-chat-header">
-            <div class="genie-header-info">
-                <div class="genie-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                <div><strong>Genie AI</strong><span><span class="genie-status-dot"></span> Online</span></div>
+<button class="genie-button" id="genieButton" type="button">
+    <i class="fa-solid fa-wand-magic-sparkles"></i>
+    <span>Ask Genie</span>
+</button>
+
+<div class="genie-chat" id="genieChat">
+    <div class="genie-chat-header">
+        <div class="genie-header-info">
+            <div class="genie-avatar">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
             </div>
-            <button class="genie-close" id="closeGenieButton" type="button"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="genie-messages" id="genieMessages">
-            <div class="genie-message">
-                <div class="genie-message-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                <div class="genie-bubble">Hi! I'm Genie, your AI support agent. I can help you understand your notifications or find the right support resource.</div>
+            <div>
+                <strong>Genie AI</strong>
+                <span><span class="genie-status-dot"></span> Online</span>
             </div>
         </div>
-        <div class="genie-input-area">
-            <input type="text" id="genieInput" placeholder="Ask Genie something..." autocomplete="off">
-            <button id="genieSendButton" type="button"><i class="fa-solid fa-arrow-up"></i></button>
+        <button class="genie-close" id="closeGenieButton" type="button">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <div class="genie-messages" id="genieMessages">
+        <div class="genie-message">
+            <div class="genie-message-avatar">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div class="genie-bubble">
+                Hi! I can help you check notification details or find related support tickets.
+            </div>
         </div>
-        <div class="genie-disclaimer">Genie may occasionally provide inaccurate information.</div>
+    </div>
+    <div class="genie-input-area">
+        <input type="text" id="genieInput" placeholder="Ask about notifications..." autocomplete="off">
+        <button id="genieSendButton" type="button">
+            <i class="fa-solid fa-arrow-up"></i>
+        </button>
+    </div>
+    <div class="genie-disclaimer">
+        Genie may occasionally provide inaccurate information.
     </div>
 </div>
+
+<!-- Interactive script for Mark as Read & Filtering -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const markAllBtn = document.getElementById('markAllReadBtn');
+        const cards = document.querySelectorAll('.notification-card');
+        const badge = document.getElementById('badgeCount');
+        const filterSelect = document.getElementById('notificationFilter');
+
+        if (markAllBtn) {
+            markAllBtn.addEventListener('click', () => {
+                cards.forEach(card => {
+                    card.classList.remove('unread');
+                    card.dataset.read = 'true';
+                });
+                if (badge) badge.style.display = 'none';
+            });
+        }
+
+        if (filterSelect) {
+            filterSelect.addEventListener('change', (e) => {
+                const val = e.target.value;
+                cards.forEach(card => {
+                    if (val === 'unread' && card.dataset.read === 'true') {
+                        card.style.display = 'none';
+                    } else {
+                        card.style.display = 'flex';
+                    }
+                });
+            });
+        }
+    });
+</script>
 
 <script src="js/script.js"></script>
 </body>
