@@ -13,7 +13,7 @@
     <div class="brand" style="position: relative; justify-content: space-between; width: 100%; padding-right: 15px;">
         <div style="display: flex; align-items: center; gap: 12px;">
             <div class="brand-icon">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <i class="fa-solid fa-ticket"></i>
             </div>
             <div>
                 <h2>TicketGenie</h2>
@@ -24,14 +24,6 @@
         <button id="brandMenuToggle" class="brand-menu-toggle" aria-label="Toggle Pages">
             <i class="fa-solid fa-bars"></i>
         </button>
-
-        <div id="brandDropdown" class="brand-dropdown">
-            <a href="index.html"><i class="fa-solid fa-house"></i> Help & Support</a>
-            <a href="my-tickets.html"><i class="fa-solid fa-ticket"></i> My Tickets</a>
-            <a href="new-request.html"><i class="fa-solid fa-plus"></i> New Request</a>
-            <a href="knowledge-base.html"><i class="fa-solid fa-book-open"></i> Knowledge Base</a>
-            <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
-        </div>
     </div>
 
     <nav class="navigation">
@@ -39,11 +31,16 @@
         <a href="index.html" class="nav-item">
             <i class="fa-solid fa-house"></i><span>Help & Support</span>
         </a>
-        <a href="my-tickets.html" class="nav-item active">
+        <a href="my-tickets.html" class="nav-item">
             <i class="fa-solid fa-ticket"></i><span>My Tickets</span>
         </a>
         <a href="new-request.html" class="nav-item">
             <i class="fa-solid fa-plus"></i><span>New Request</span>
+        </a>
+        
+        <!-- ADD THIS NEW LINK RIGHT HERE -->
+        <a href="chat-history.html" class="nav-item">
+            <i class="fa-regular fa-comments"></i><span>Chat History</span>
         </a>
 
         <div class="nav-title">RESOURCES</div>
@@ -69,10 +66,6 @@
             <button class="icon-button" id="sidebarToggle" type="button" aria-label="Toggle Sidebar">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <div class="page-title">
-                <span>WORKSPACE</span>
-                <h1>My Tickets</h1>
-            </div>
         </div>
 
         <div class="topbar-actions">
@@ -81,21 +74,25 @@
                 <input type="text" placeholder="Search tickets..." id="globalSearch">
                 <span class="shortcut">⌘ K</span>
             </div>
+            <!-- Dark Mode Toggle Button -->
+            <button class="icon-button" id="darkModeToggle" type="button" aria-label="Toggle Dark Mode">
+                <i class="fa-solid fa-moon" id="darkModeIcon"></i>
+            </button>
             <button class="icon-button" type="button">
                 <i class="fa-regular fa-bell"></i><span class="notification-dot"></span>
             </button>
-                        <div class="profile">
-                <button class="profile-button" id="profileDropdownTrigger">
+            <div class="profile">
+                <button class="profile-button" id="profileDropdownTrigger" aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdownMenu">
                     <div class="avatar">NM</div>
                     <div class="profile-info"><strong>Nishita</strong><span id="currentRoleDisplay">Employee</span></div>
                     <i class="fa-solid fa-chevron-down"></i>
                 </button>
                 <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu" aria-labelledby="profileDropdownTrigger">
                     <span class="dropdown-label">Switch View</span>
-                    <button type="button" class="role-switch-btn active" data-role="Employee" role="menuitem" onclick="localStorage.setItem('portalUser', JSON.stringify({name: 'Employee User', role: 'Employee', email: 'employee@ticketgenie.com'})); window.location.href='index.html';">
+                    <button type="button" class="role-switch-btn active" data-role="Employee" role="menuitem">
                         <i class="fa-regular fa-user"></i> Employee View
                     </button>
-                    <button type="button" class="role-switch-btn" data-role="Management" role="menuitem" onclick="localStorage.setItem('portalUser', JSON.stringify({name: 'Management User', role: 'Management', email: 'management@ticketgenie.com'})); window.location.href='pages/management-portal.html';">
+                    <button type="button" class="role-switch-btn" data-role="Management" role="menuitem">
                         <i class="fa-solid fa-briefcase"></i> Management View
                     </button>
                 </div>
@@ -135,7 +132,7 @@
     <section class="section">
         <div class="tickets-table">
             <div class="table-header">
-                <span>REQUEST</span><span>STATUS</span><span>PRIORITY</span><span>CREATED</span><span></span>
+                <span>REQUEST</span><span>DEPARTMENT</span><span>STATUS</span><span>CATEGORIZATION</span><span>DATE</span>
             </div>
             <div id="myTicketsList"></div>
         </div>
@@ -151,7 +148,7 @@
     </section>
 </main>
 
-<div class="ticket-modal" id="ticketModal">
+<div class="ticket-modal" id="ticketModal" style="display: none;">
     <div class="ticket-modal-content">
         <button class="ticket-modal-close" id="ticketModalClose" type="button" aria-label="Close ticket"><i class="fa-solid fa-xmark"></i></button>
         <div class="eyebrow">TICKET DETAILS</div>

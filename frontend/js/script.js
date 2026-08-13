@@ -8,10 +8,17 @@ const STORAGE_KEY = "ticketGenieTickets";
 /* =========================================================
    LOCAL STORAGE & DEFAULT DATA
    ========================================================= */
-function getLocalTickets() {
+function getTickets() {
     const tickets = localStorage.getItem(STORAGE_KEY);
     if (!tickets) {
-        return [];
+        const defaultTickets = [
+            { id: "HD-1024", title: "Payroll Issue", category: "Payroll", priority: "High", status: "In Progress", description: "Having an issue with my latest paycheck.", date: "2026-08-08", createdAt: "2026-08-08T10:00:00" },
+            { id: "HD-1025", title: "Benefits Question", category: "Benefits", priority: "Medium", status: "Open", description: "I have a question about my benefits.", date: "2026-08-07", createdAt: "2026-08-07T10:00:00" },
+            { id: "HD-1026", title: "Laptop Request", category: "IT Support", priority: "Low", status: "Resolved", description: "Requesting a replacement laptop.", date: "2026-08-05", createdAt: "2026-08-05T10:00:00" },
+            { id: "HD-1027", title: "PTO Request", category: "Time Off", priority: "Medium", status: "Pending", description: "Requesting PTO.", date: "2026-08-04", createdAt: "2026-08-04T10:00:00" },
+            { id: "HD-1028", title: "Expense Reimbursement", category: "Payroll", priority: "Low", status: "Resolved", description: "Submitting an expense reimbursement.", date: "2026-08-02", createdAt: "2026-08-02T10:00:00" }
+        ];
+        return defaultTickets;
     }
     try {
         return JSON.parse(tickets);
@@ -20,13 +27,13 @@ function getLocalTickets() {
     }
 }
 
-function saveLocalTickets(tickets) {
+function saveTickets(tickets) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
 }
 
 function generateTicketId() {
-    const tickets = getLocalTickets();
-    let highestNumber = 1000;
+    const tickets = getTickets();
+    let highestNumber = 1028;
     tickets.forEach(ticket => {
         const number = parseInt(String(ticket.id).replace("HD-", ""), 10);
         if (!isNaN(number) && number > highestNumber) {
@@ -54,7 +61,7 @@ async function apiFetchTickets(params = {}) {
     } catch (err) {
         console.warn("Backend API not reachable, using local storage tickets:", err);
     }
-    return getLocalTickets();
+    return getTickets();
 }
 
 async function apiCreateTicket(ticketPayload) {
@@ -70,7 +77,7 @@ async function apiCreateTicket(ticketPayload) {
     } catch (err) {
         console.warn("Backend API POST failed, creating ticket locally:", err);
     }
-    const tickets = getLocalTickets();
+    const tickets = getTickets();
     const newTicket = {
         id: generateTicketId(),
         title: ticketPayload.subject || ticketPayload.title,
@@ -78,11 +85,11 @@ async function apiCreateTicket(ticketPayload) {
         priority: ticketPayload.priority || "Medium",
         status: "Open",
         description: ticketPayload.description,
-        date: ticketPayload.preferredDate || "",
+        date: ticketPayload.preferredDate || ticketPayload.date || "",
         createdAt: new Date().toISOString()
     };
     tickets.unshift(newTicket);
-    saveLocalTickets(tickets);
+    saveTickets(tickets);
     return newTicket;
 }
 
@@ -106,20 +113,19 @@ async function apiSendGenieChat(message) {
 }
 
 /* =========================================================
-   UI INITIALIZERS & COMPONENTS
+   NAVIGATION & ROLE SWITCHING
    ========================================================= */
-
 function initializeSidebarToggle() {
-    const sidebarToggle = document.getElementById("sidebarToggle");
-    const sidebar = document.querySelector(".sidebar");
-    const mainContent = document.querySelector(".main-content");
+    const topbarToggle = document.getElementById('sidebarToggle');
+    const brandToggle = document.getElementById('brandMenuToggle');
 
-    if (sidebarToggle && sidebar && mainContent) {
-        sidebarToggle.addEventListener("click", () => {
-            sidebar.classList.toggle("collapsed");
-            mainContent.classList.toggle("expanded");
-        });
+    function toggleSidebar(e) {
+        if (e) e.stopPropagation();
+        document.body.classList.toggle('sidebar-closed');
     }
+
+    if (topbarToggle) topbarToggle.addEventListener('click', toggleSidebar);
+    if (brandToggle) brandToggle.addEventListener('click', toggleSidebar);
 }
 
 function initializeBrandDropdown() {
@@ -131,7 +137,6 @@ function initializeBrandDropdown() {
             event.stopPropagation();
             const isShowing = brandDropdown.classList.toggle('show');
             const icon = brandToggleBtn.querySelector('i');
-            
             if (icon) {
                 if (isShowing) {
                     icon.classList.remove('fa-bars');
@@ -157,29 +162,38 @@ function initializeBrandDropdown() {
 }
 
 function initializeProfileDropdown() {
-    const trigger = document.getElementById('profileDropdownTrigger');
-    const menu = document.getElementById('profileDropdownMenu');
-    const display = document.getElementById('currentRoleDisplay');
+    const profileBtn = document.getElementById('profileDropdownTrigger');
+    const profileMenu = document.getElementById('profileDropdownMenu');
+    const roleButtons = document.querySelectorAll('.role-switch-btn');
+    const currentRoleDisplay = document.getElementById('currentRoleDisplay');
 
-    if (trigger && menu) {
-        trigger.onclick = (e) => {
-            e.preventDefault();
+    if (profileBtn && profileMenu) {
+        profileBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            menu.classList.toggle('show');
-        };
+            const isShowing = profileMenu.classList.toggle('show');
+            profileBtn.setAttribute('aria-expanded', isShowing);
+        });
 
-        document.onclick = (e) => {
-            if (!trigger.contains(e.target) && !menu.contains(e.target)) {
-                menu.classList.remove('show');
+        document.addEventListener('click', (e) => {
+            if (!profileBtn.contains(e.target) && !profileMenu.contains(e.target)) {
+                profileMenu.classList.remove('show');
+                profileBtn.setAttribute('aria-expanded', 'false');
             }
-        };
+        });
 
-        const roleButtons = menu.querySelectorAll('.role-switch-btn');
         roleButtons.forEach(btn => {
-            btn.onclick = (e) => {
+            btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const selectedRole = btn.getAttribute('data-role');
-                menu.classList.remove('show');
+                const selectedRole = btn.getAttribute('data-role') || btn.dataset.role;
+                roleButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                if (currentRoleDisplay) {
+                    currentRoleDisplay.textContent = selectedRole;
+                }
+
+                profileMenu.classList.remove('show');
+                profileBtn.setAttribute('aria-expanded', 'false');
 
                 const inPagesDir = window.location.pathname.includes('/pages/');
                 if (selectedRole === 'Management') {
@@ -189,83 +203,124 @@ function initializeProfileDropdown() {
                     localStorage.setItem('portalUser', JSON.stringify({ name: 'Employee User', role: 'Employee', email: 'employee@ticketgenie.com' }));
                     window.location.href = inPagesDir ? '../index.html' : 'index.html';
                 }
-            };
+            });
         });
     }
 }
 
+/* =========================================================
+   DARK MODE TOGGLE
+   ========================================================= */
+function initializeDarkMode() {
+    const toggleBtn = document.getElementById('darkModeToggle');
+    const darkIcon = document.getElementById('darkModeIcon');
+    
+    const savedTheme = localStorage.getItem('ticketGenieTheme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        if (darkIcon) {
+            darkIcon.classList.remove('fa-moon');
+            darkIcon.classList.add('fa-sun');
+        }
+    }
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('ticketGenieTheme', isDark ? 'dark' : 'light');
+            
+            if (darkIcon) {
+                if (isDark) {
+                    darkIcon.classList.remove('fa-moon');
+                    darkIcon.classList.add('fa-sun');
+                } else {
+                    darkIcon.classList.remove('fa-sun');
+                    darkIcon.classList.add('fa-moon');
+                }
+            }
+        });
+    }
+}
+
+/* =========================================================
+   NEW REQUEST FORM (STANDARDIZED, ANONYMOUS, LEAVE)
+   ========================================================= */
 function initializeNewRequestForm() {
-    const form = document.getElementById("newTicketForm") || document.querySelector(".request-form-card form");
-    if (!form) return;
+    const forms = document.querySelectorAll(".request-form-card form");
+    if (!forms || forms.length === 0) return;
 
-    const textarea = document.getElementById("ticketDescription");
-    const charCount = document.getElementById("characterCount");
-    if (textarea && charCount) {
-        textarea.addEventListener("input", () => {
-            const count = textarea.value.length;
-            charCount.textContent = `${count} / 1000`;
+    forms.forEach(form => {
+        form.addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            let title = "";
+            let category = "General";
+            let description = "";
+            let preferredDate = "";
+            let isAnonymous = false;
+
+            if (form.id === "newTicketForm") {
+                title = (document.getElementById("ticketSubject")?.value || "").trim();
+                category = document.getElementById("ticketCategory")?.value || "General";
+                description = (document.getElementById("ticketDescription")?.value || "").trim();
+                preferredDate = document.getElementById("preferredDate")?.value || "";
+            } else if (form.id === "anonTicketForm") {
+                title = (document.getElementById("anonTicketSubject")?.value || "").trim();
+                category = document.getElementById("anonTicketCategory")?.value || "General";
+                description = (document.getElementById("anonTicketDescription")?.value || "").trim();
+                isAnonymous = true;
+            } else if (form.id === "leaveTicketForm") {
+                const leaveType = document.getElementById("leaveType")?.value || "PTO";
+                const startDate = document.getElementById("leaveStartDate")?.value || "";
+                const endDate = document.getElementById("leaveEndDate")?.value || "";
+                const leaveDesc = (document.getElementById("leaveDescription")?.value || "").trim();
+
+                title = `Leave Request: ${leaveType}`;
+                category = "Time Off";
+                description = `Type: ${leaveType}\nDates: ${startDate} to ${endDate}\nReason: ${leaveDesc}`;
+                preferredDate = startDate;
+            } else {
+                const titleElement = form.querySelector('input[name="subject"]') || form.querySelector('input[type="text"]');
+                const categoryElement = form.querySelector('select[name="category"]');
+                const descriptionElement = form.querySelector('textarea');
+                title = titleElement ? titleElement.value.trim() : "New Request";
+                category = categoryElement ? categoryElement.value : "General";
+                description = descriptionElement ? descriptionElement.value.trim() : "";
+            }
+
+            if (!title || !category || !description) { 
+                showFormError("Please fill out all required fields."); 
+                return; 
+            }
+
+            const oldError = document.getElementById("formErrorMessage");
+            if (oldError) oldError.style.display = "none";
+
+            const submitBtn = form.querySelector('.submit-request-button');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
+                submitBtn.classList.add('loading');
+                submitBtn.disabled = true;
+            }
+
+            const ticketPayload = {
+                title: title,
+                subject: title,
+                category: category,
+                priority: "Medium",
+                description: description,
+                preferredDate: preferredDate,
+                isAnonymous: isAnonymous
+            };
+
+            const createdTicket = await apiCreateTicket(ticketPayload);
+            showSuccessMessage(createdTicket);
+
+            setTimeout(() => {
+                window.location.href = "my-tickets.html";
+            }, 1800);
         });
-    }
-
-    const browseBtn = document.getElementById("browseButton");
-    const fileInput = document.getElementById("fileUpload");
-    const selectedFilesContainer = document.getElementById("selectedFiles");
-
-    if (browseBtn && fileInput) {
-        browseBtn.addEventListener("click", () => fileInput.click());
-        fileInput.addEventListener("change", () => {
-            if (!selectedFilesContainer) return;
-            selectedFilesContainer.innerHTML = "";
-            Array.from(fileInput.files).forEach(file => {
-                const fileTag = document.createElement("small");
-                fileTag.style.display = "inline-block";
-                fileTag.style.margin = "4px 6px 0 0";
-                fileTag.style.padding = "4px 8px";
-                fileTag.style.background = "#e7f0e9";
-                fileTag.style.borderRadius = "4px";
-                fileTag.style.color = "#527d66";
-                fileTag.textContent = file.name;
-                selectedFilesContainer.appendChild(fileTag);
-            });
-        });
-    }
-
-    form.addEventListener("submit", async function(event) {
-        event.preventDefault();
-
-        const titleElement = document.getElementById("ticketSubject");
-        const categoryElement = document.getElementById("ticketCategory");
-        const priorityElement = document.getElementById("ticketPriority");
-        const descriptionElement = document.getElementById("ticketDescription");
-        const preferredDateElement = document.getElementById("preferredDate");
-
-        const title = titleElement ? titleElement.value.trim() : "";
-        const category = categoryElement ? categoryElement.value : "";
-        const priority = priorityElement ? priorityElement.value : "Medium";
-        const description = descriptionElement ? descriptionElement.value.trim() : "";
-        const preferredDate = preferredDateElement ? preferredDateElement.value : "";
-
-        if (!title) { showFormError("Please enter a request title."); if (titleElement) titleElement.focus(); return; }
-        if (!category) { showFormError("Please select a category."); if (categoryElement) categoryElement.focus(); return; }
-        if (!description) { showFormError("Please provide a description."); if (descriptionElement) descriptionElement.focus(); return; }
-
-        const oldError = document.getElementById("formErrorMessage");
-        if (oldError) oldError.style.display = "none";
-
-        const submitBtn = document.getElementById("submitRequestButton");
-        if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Submitting...`; }
-
-        const newTicket = await apiCreateTicket({
-            subject: title,
-            title: title,
-            category: category,
-            priority: priority,
-            description: description,
-            preferredDate: preferredDate
-        });
-
-        showSuccessMessage(newTicket);
-        setTimeout(() => { window.location.href = "my-tickets.html"; }, 2500);
     });
 }
 
@@ -286,12 +341,11 @@ function showSuccessMessage(ticket) {
         document.body.appendChild(success);
     }
 
-    const ticketId = ticket.id ? ticket.id : "Submitted";
     success.innerHTML = `
         <div class="success-icon"><i class="fa-solid fa-check"></i></div>
         <div>
             <strong>Request submitted successfully</strong>
-            <span>Ticket #${escapeHTML(ticketId)} has been created.</span>
+            <span>Ticket #${escapeHTML(ticket.id || "HD-1000")} has been created.</span>
         </div>
     `;
 
@@ -300,72 +354,196 @@ function showSuccessMessage(ticket) {
 }
 
 /* =========================================================
-   MY TICKETS & OVERVIEW
+   ENHANCED FILE UPLOADS
    ========================================================= */
-async function initializeMyTickets() {
-    const myTicketsList = document.getElementById("myTicketsList");
-    if (!myTicketsList) return;
+function initializeFileUploads() {
+    const uploadAreas = document.querySelectorAll('.upload-area');
+    
+    uploadAreas.forEach(area => {
+        const fileInput = area.querySelector('input[type="file"]');
+        const browseBtn = area.querySelector('.browse-button');
+        const fileListContainer = area.nextElementSibling; 
+        
+        let dataTransfer = new DataTransfer();
 
-    await renderTickets();
+        if (browseBtn) {
+            browseBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (fileInput) fileInput.click();
+            });
+        }
 
-    const searchInput = document.getElementById("ticketSearch");
+        area.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            area.classList.add('drag-over');
+        });
+
+        area.addEventListener('dragleave', () => {
+            area.classList.remove('drag-over');
+        });
+
+        area.addEventListener('drop', (e) => {
+            e.preventDefault();
+            area.classList.remove('drag-over');
+            if (e.dataTransfer.files.length > 0) {
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+
+        if (fileInput) {
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length > 0) {
+                    handleFiles(fileInput.files);
+                }
+            });
+        }
+
+        function handleFiles(files) {
+            for (let i = 0; i < files.length; i++) {
+                dataTransfer.items.add(files[i]);
+            }
+            if (fileInput) fileInput.files = dataTransfer.files;
+            renderFileList();
+        }
+
+        function renderFileList() {
+            if (!fileListContainer) return;
+            fileListContainer.innerHTML = '';
+            if (dataTransfer.files.length === 0) return;
+            
+            const list = document.createElement('div');
+            list.className = 'file-list';
+            
+            Array.from(dataTransfer.files).forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                
+                let iconClass = 'fa-file';
+                if (file.type.includes('image')) iconClass = 'fa-file-image';
+                else if (file.type.includes('pdf')) iconClass = 'fa-file-pdf';
+                else if (file.type.includes('word')) iconClass = 'fa-file-word';
+                else if (file.type.includes('video')) iconClass = 'fa-file-video';
+
+                fileItem.innerHTML = `
+                    <div class="file-item-info">
+                        <i class="fa-regular ${iconClass}"></i>
+                        <span>${escapeHTML(file.name)}</span>
+                    </div>
+                    <button type="button" class="file-remove-btn" data-index="${index}" aria-label="Remove file">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                `;
+                list.appendChild(fileItem);
+            });
+            
+            fileListContainer.appendChild(list);
+            
+            const removeBtns = list.querySelectorAll('.file-remove-btn');
+            removeBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const indexToRemove = parseInt(this.getAttribute('data-index'), 10);
+                    removeFile(indexToRemove);
+                });
+            });
+        }
+
+        function removeFile(index) {
+            const dt = new DataTransfer();
+            const files = dataTransfer.files;
+            for (let i = 0; i < files.length; i++) {
+                if (i !== index) {
+                    dt.items.add(files[i]);
+                }
+            }
+            dataTransfer = dt;
+            if (fileInput) fileInput.files = dataTransfer.files;
+            renderFileList();
+        }
+    });
+}
+
+/* =========================================================
+   MY TICKETS & OVERVIEW METRICS
+   ========================================================= */
+function initializeMyTickets() {
+    const table = document.querySelector(".tickets-table") || document.getElementById("myTicketsList");
+    if (!table) return;
+
+    renderTickets();
+
+    const searchInput = document.getElementById("ticketSearch") || document.getElementById("globalSearch");
     if (searchInput) {
-        searchInput.addEventListener("input", () => renderTickets());
+        searchInput.addEventListener("input", renderTickets);
     }
 
-    const statusFilter = document.getElementById("ticketStatusFilter");
-    const priorityFilter = document.getElementById("ticketPriorityFilter");
-
-    if (statusFilter) statusFilter.addEventListener("change", () => renderTickets());
-    if (priorityFilter) priorityFilter.addEventListener("change", () => renderTickets());
+    const filters = document.querySelectorAll(".ticket-filter");
+    filters.forEach(filter => {
+        filter.addEventListener("change", renderTickets);
+    });
 }
 
 async function renderTickets() {
-    const myTicketsList = document.getElementById("myTicketsList");
-    if (!myTicketsList) return;
+    const table = document.querySelector(".tickets-table") || document.getElementById("myTicketsList");
+    if (!table) return;
 
-    const searchInput = document.getElementById("ticketSearch");
+    const searchInput = document.getElementById("ticketSearch") || document.getElementById("globalSearch");
+    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
+
     const statusFilter = document.getElementById("ticketStatusFilter");
     const priorityFilter = document.getElementById("ticketPriorityFilter");
 
-    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
-    const status = statusFilter ? statusFilter.value : "all";
-    const priority = priorityFilter ? priorityFilter.value : "all";
+    const statusValue = statusFilter ? statusFilter.value : "all";
+    const priorityValue = priorityFilter ? priorityFilter.value : "all";
 
-    const tickets = await apiFetchTickets({ search: searchTerm, status: status, priority: priority });
+    const apiTickets = await apiFetchTickets({ search: searchTerm, status: statusValue, priority: priorityValue });
+    let tickets = apiTickets && apiTickets.length > 0 ? apiTickets : getTickets();
 
-    const filtered = tickets.filter(t => {
-        const matchesSearch = !searchTerm || 
-            (t.title && t.title.toLowerCase().includes(searchTerm)) || 
-            (t.id && t.id.toLowerCase().includes(searchTerm)) || 
-            (t.category && t.category.toLowerCase().includes(searchTerm));
-        const matchesStatus = (status === "all") || (t.status === status);
-        const matchesPriority = (priority === "all") || (t.priority === priority);
-        return matchesSearch && matchesStatus && matchesPriority;
-    });
-
-    myTicketsList.innerHTML = "";
-
-    if (filtered.length === 0) {
-        myTicketsList.innerHTML = `
-            <div class="ticket-empty-state">
-                <i class="fa-solid fa-ticket-simple" style="font-size: 28px; margin-bottom: 8px;"></i>
-                <strong>No tickets found</strong>
-                <p>Try adjusting your search or filters.</p>
-            </div>
-        `;
-        return;
+    if (searchTerm) {
+        tickets = tickets.filter(ticket => {
+            const title = (ticket.title || ticket.subject || "").toLowerCase();
+            const id = (ticket.id || "").toLowerCase();
+            const cat = (ticket.category || "").toLowerCase();
+            return title.includes(searchTerm) || id.includes(searchTerm) || cat.includes(searchTerm);
+        });
     }
 
-    filtered.forEach(ticket => {
+    if (statusValue && statusValue !== "all") {
+        tickets = tickets.filter(ticket => ticket.status === statusValue);
+    }
+
+    if (priorityValue && priorityValue !== "all") {
+        tickets = tickets.filter(ticket => ticket.priority === priorityValue);
+    }
+
+    tickets.sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0));
+
+    const listContainer = document.getElementById("myTicketsList") || table;
+    const header = table.querySelector(".table-header");
+
+    if (listContainer === table) {
+        table.innerHTML = "";
+        if (header) table.appendChild(header);
+    } else {
+        listContainer.innerHTML = "";
+    }
+
+    tickets.forEach(ticket => {
         const row = createTicketRow(ticket);
-        myTicketsList.appendChild(row);
+        listContainer.appendChild(row);
     });
 
-    const paginationText = document.getElementById("ticketPaginationText");
-    if (paginationText) {
-        paginationText.textContent = `Showing ${filtered.length} of ${tickets.length} tickets`;
+    if (tickets.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "ticket-empty-state";
+        empty.innerHTML = `
+            <i class="fa-regular fa-folder-open"></i>
+            <strong>No tickets found</strong>
+            <span>Try changing your search or filters.</span>
+        `;
+        listContainer.appendChild(empty);
     }
+
+    updateTicketOverview(tickets);
 }
 
 function createTicketRow(ticket) {
@@ -373,19 +551,18 @@ function createTicketRow(ticket) {
     row.className = "table-row ticket-clickable";
     const icon = getTicketIcon(ticket.category);
     const updated = formatTicketDate(ticket.createdAt || ticket.date);
-    const ticketId = ticket.id ? (ticket.id.startsWith("HD-") ? ticket.id : `HD-${ticket.id}`) : "HD-1000";
 
     row.innerHTML = `
         <div class="request-info">
             <div class="request-icon"><i class="${icon}"></i></div>
             <div>
-                <strong>${escapeHTML(ticket.title || ticket.subject || "Support Ticket")}</strong>
-                <span>#${escapeHTML(ticketId)}</span>
+                <strong>${escapeHTML(ticket.title || ticket.subject || "Request")}</strong>
+                <span>#${escapeHTML(ticket.id || "HD-1000")}</span>
             </div>
         </div>
         <span>${escapeHTML(ticket.category || "General")}</span>
         <span class="status ${getStatusClass(ticket.status || "Open")}">${escapeHTML(ticket.status || "Open")}</span>
-        <span class="priority ${(ticket.priority || "Medium").toLowerCase().replace(/\s+/g, "-")}">${escapeHTML(ticket.priority || "Medium")}</span>
+        <span class="priority ${String(ticket.priority || "Medium").toLowerCase().replace(/\s+/g, "-")}">${escapeHTML(ticket.priority || "Medium")}</span>
         <span>${updated}</span>
     `;
 
@@ -400,8 +577,8 @@ function getTicketIcon(category) {
         "Payroll": "fa-solid fa-receipt",
         "Payroll & Benefits": "fa-solid fa-receipt",
         "Benefits": "fa-solid fa-shield-heart",
-        "HR": "fa-solid fa-users",
         "Human Resources": "fa-solid fa-users",
+        "HR & Workforce Operations": "fa-solid fa-users",
         "Employee Services": "fa-solid fa-user",
         "Time Off": "fa-solid fa-calendar-check",
         "Access & Permissions": "fa-solid fa-lock",
@@ -426,11 +603,11 @@ function formatTicketDate(dateString) {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-async function updateTicketOverview() {
-    const tickets = await apiFetchTickets();
-    const open = tickets.filter(ticket => (ticket.status === "Open" || !ticket.status)).length;
-    const inProgress = tickets.filter(ticket => ticket.status === "In Progress" || ticket.status === "Pending").length;
-    const resolved = tickets.filter(ticket => ticket.status === "Resolved").length;
+async function updateTicketOverview(optionalTickets) {
+    const tickets = optionalTickets || await apiFetchTickets();
+    const open = tickets.filter(t => (t.status || "").toLowerCase() === "open").length;
+    const inProgress = tickets.filter(t => (t.status || "").toLowerCase() === "in progress" || (t.status || "").toLowerCase() === "pending").length;
+    const resolved = tickets.filter(t => (t.status || "").toLowerCase() === "resolved").length;
 
     const openCount = document.getElementById("openCount");
     const inProgressCount = document.getElementById("inProgressCount");
@@ -451,25 +628,20 @@ async function updateTicketOverview() {
 }
 
 function showTicketDetails(ticket) {
-    const existingModal = document.querySelector(".ticket-modal");
-    if (existingModal) existingModal.remove();
-
     const modal = document.createElement("div");
     modal.className = "ticket-modal";
-    const ticketId = ticket.id ? (ticket.id.startsWith("HD-") ? ticket.id : `HD-${ticket.id}`) : "HD-1000";
-
     modal.innerHTML = `
         <div class="ticket-modal-content">
             <button class="ticket-modal-close" type="button" aria-label="Close ticket details">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            <p class="eyebrow">TICKET #${escapeHTML(ticketId)}</p>
-            <h2>${escapeHTML(ticket.title || ticket.subject || "Support Ticket")}</h2>
+            <p class="eyebrow">TICKET #${escapeHTML(ticket.id || "HD-1000")}</p>
+            <h2>${escapeHTML(ticket.title || ticket.subject || "Ticket Details")}</h2>
             <div class="ticket-detail-grid">
                 <div><span>Category</span><strong>${escapeHTML(ticket.category || "General")}</strong></div>
-                <div><span>Priority</span><strong class="priority ${(ticket.priority || "Medium").toLowerCase().replace(/\s+/g, "-")}">${escapeHTML(ticket.priority || "Medium")}</strong></div>
+                <div><span>Priority</span><strong class="priority ${String(ticket.priority || "Medium").toLowerCase().replace(/\s+/g, "-")}">${escapeHTML(ticket.priority || "Medium")}</strong></div>
                 <div><span>Status</span><strong class="status ${getStatusClass(ticket.status || "Open")}">${escapeHTML(ticket.status || "Open")}</strong></div>
-                <div><span>Preferred Date</span><strong>${ticket.date ? formatPreferredDate(ticket.date) : "Not specified"}</strong></div>
+                <div><span>Preferred Date</span><strong>${ticket.date || ticket.preferredDate ? formatPreferredDate(ticket.date || ticket.preferredDate) : "Not specified"}</strong></div>
             </div>
             <div class="ticket-description">
                 <span>Description</span>
@@ -507,7 +679,7 @@ function showTicketDetails(ticket) {
 
 function formatPreferredDate(dateString) {
     if (!dateString) return "Not specified";
-    const date = new Date(dateString + "T00:00:00");
+    const date = new Date(dateString.includes("T") ? dateString : dateString + "T00:00:00");
     if (isNaN(date.getTime())) return dateString;
     return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 }
@@ -535,57 +707,41 @@ function initializeGenie() {
     if (genieButton) genieButton.addEventListener("click", openGenie);
     if (closeButton) closeButton.addEventListener("click", closeGenie);
 
-    const genieNav = document.querySelector(".genie-nav-link");
-    if (genieNav) genieNav.addEventListener("click", event => { event.preventDefault(); openGenie(); });
-
-    const knowledgeGenieButton = document.getElementById("knowledgeGenieButton");
-    if (knowledgeGenieButton) knowledgeGenieButton.addEventListener("click", openGenie);
-
     const openGenieFromRequest = document.getElementById("openGenieFromRequest");
     if (openGenieFromRequest) openGenieFromRequest.addEventListener("click", openGenie);
 
-    async function sendGenieMessage() {
-        if (!genieInput) return;
-        const message = genieInput.value.trim();
-        if (!message) return;
-
-        addGenieMessage(message, "user");
-        genieInput.value = "";
+    async function handleSend(userMessage) {
+        if (!userMessage) return;
+        addGenieMessage(userMessage, "user");
+        if (genieInput) genieInput.value = "";
 
         const thinking = addGenieThinking();
-        const response = await apiSendGenieChat(message);
+        const response = await apiSendGenieChat(userMessage);
         if (thinking) thinking.remove();
         addGenieMessage(response, "agent");
     }
 
-    if (genieSendButton) genieSendButton.addEventListener("click", sendGenieMessage);
+    if (genieSendButton) {
+        genieSendButton.addEventListener("click", () => {
+            if (genieInput) handleSend(genieInput.value.trim());
+        });
+    }
+
     if (genieInput) {
         genieInput.addEventListener("keydown", event => {
-            if (event.key === "Enter") { event.preventDefault(); sendGenieMessage(); }
+            if (event.key === "Enter") {
+                event.preventDefault();
+                handleSend(genieInput.value.trim());
+            }
         });
     }
 
     const suggestions = document.querySelectorAll(".genie-suggestion");
     suggestions.forEach(suggestion => {
-        suggestion.addEventListener("click", async () => {
+        suggestion.addEventListener("click", () => {
             const message = suggestion.textContent.trim();
-            if (!message) return;
-            addGenieMessage(message, "user");
-            const thinking = addGenieThinking();
-            const response = await apiSendGenieChat(message);
-            if (thinking) thinking.remove();
-            addGenieMessage(response, "agent");
+            handleSend(message);
         });
-    });
-
-    document.addEventListener("click", event => {
-        if (!genieChat.classList.contains("open")) return;
-        const clickedInside = genieChat.contains(event.target);
-        const clickedButton = genieButton && genieButton.contains(event.target);
-        const clickedNav = genieNav && genieNav.contains(event.target);
-        const clickedHelp = openGenieFromRequest && openGenieFromRequest.contains(event.target);
-        const clickedKGenie = knowledgeGenieButton && knowledgeGenieButton.contains(event.target);
-        if (!clickedInside && !clickedButton && !clickedNav && !clickedHelp && !clickedKGenie) closeGenie();
     });
 }
 
@@ -637,7 +793,7 @@ function addGenieMessage(message, sender) {
 }
 
 function escapeHTML(value) {
-    return String(value || "")
+    return String(value)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
@@ -646,7 +802,7 @@ function escapeHTML(value) {
 }
 
 /* =========================================================
-   KNOWLEDGE BASE
+   KNOWLEDGE BASE & CHAT HISTORY
    ========================================================= */
 function initializeKnowledgeBase() {
     const searchInput = document.getElementById("knowledgeSearch");
@@ -654,10 +810,10 @@ function initializeKnowledgeBase() {
     const articles = document.querySelectorAll(".knowledge-article");
     const categories = document.querySelectorAll(".knowledge-category");
 
-    if (!searchInput && articles.length === 0) return;
+    if (!searchInput) return;
 
     function searchArticles() {
-        const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
+        const searchTerm = searchInput.value.toLowerCase().trim();
         articles.forEach(article => {
             const articleText = article.textContent.toLowerCase();
             if (!searchTerm || articleText.includes(searchTerm)) {
@@ -669,77 +825,54 @@ function initializeKnowledgeBase() {
     }
 
     if (searchButton) searchButton.addEventListener("click", searchArticles);
-    if (searchInput) {
-        searchInput.addEventListener("keydown", event => {
-            if (event.key === "Enter") { event.preventDefault(); searchArticles(); }
-        });
-    }
+    searchInput.addEventListener("keydown", event => {
+        if (event.key === "Enter") { event.preventDefault(); searchArticles(); }
+    });
 
     categories.forEach(category => {
         category.addEventListener("click", () => {
-            const selectedCategory = category.getAttribute("data-category");
+            const selectedCategory = category.dataset.category;
             articles.forEach(article => {
-                const articleCategory = article.getAttribute("data-category");
-                if (!selectedCategory || articleCategory === selectedCategory) {
+                const articleCategory = article.dataset.category;
+                if (articleCategory === selectedCategory) {
                     article.style.display = "flex";
                 } else {
                     article.style.display = "none";
                 }
             });
-            if (searchInput && selectedCategory) searchInput.value = selectedCategory;
+            searchInput.value = selectedCategory;
         });
     });
 }
 
-/* =========================================================
-   NOTIFICATIONS
-   ========================================================= */
-function initializeNotifications() {
-    const markAllRead = document.getElementById("markAllRead");
-    if (!markAllRead) return;
-
-    markAllRead.addEventListener("click", (e) => {
-        e.preventDefault();
-        const unreadCards = document.querySelectorAll(".notification-card.unread");
-        unreadCards.forEach(card => card.classList.remove("unread"));
-        const dots = document.querySelectorAll(".notification-unread-dot");
-        dots.forEach(dot => dot.remove());
-        const count = document.querySelector(".notification-count");
-        if (count) count.textContent = "0";
-    });
-}
-
-/* =========================================================
-   GLOBAL SHORTCUTS
-   ========================================================= */
-function initializeShortcuts() {
-    document.addEventListener("keydown", (e) => {
-        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-            e.preventDefault();
-            const globalSearch = document.getElementById("globalSearch") || document.getElementById("helpSearch") || document.getElementById("ticketSearch") || document.getElementById("knowledgeSearch");
-            if (globalSearch) globalSearch.focus();
-        }
+function initializeChatHistory() {
+    const summaryBtns = document.querySelectorAll(".toggle-summary");
+    summaryBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            const card = btn.closest(".chat-card");
+            if (card) {
+                const summaryBox = card.querySelector(".ai-summary-box");
+                if (summaryBox) {
+                    summaryBox.classList.toggle("active");
+                }
+            }
+        });
     });
 }
 
 /* =========================================================
    INITIALIZE EVERYTHING
    ========================================================= */
-function initApp() {
-    initializeSidebarToggle();
-    initializeBrandDropdown();
+document.addEventListener("DOMContentLoaded", () => {
     initializeProfileDropdown();
+    initializeBrandDropdown();
+    initializeSidebarToggle();
+    initializeDarkMode();
     initializeNewRequestForm();
+    initializeFileUploads();
     initializeMyTickets();
     initializeGenie();
     initializeKnowledgeBase();
-    initializeNotifications();
-    initializeShortcuts();
+    initializeChatHistory();
     updateTicketOverview();
-}
-
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initApp);
-} else {
-    initApp();
-}
+});
