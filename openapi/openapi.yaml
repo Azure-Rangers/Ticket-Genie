@@ -21,7 +21,8 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/TicketResponse'
         '422':
           description: Validation Error
           content:
@@ -63,7 +64,11 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TicketResponse'
+                title: Response List Tickets Api Tickets Get
         '422':
           description: Validation Error
           content:
@@ -88,7 +93,8 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/TicketResponse'
         '422':
           description: Validation Error
           content:
@@ -118,7 +124,8 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/TicketResponse'
         '422':
           description: Validation Error
           content:
@@ -250,6 +257,56 @@ components:
       - title
       - description
       title: TicketCreate
+    TicketResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        category:
+          type: string
+          title: Category
+        priority:
+          type: string
+          title: Priority
+        status:
+          type: string
+          title: Status
+        department:
+          type: string
+          title: Department
+        description:
+          type: string
+          title: Description
+        date:
+          type: string
+          title: Date
+        createdAt:
+          type: string
+          title: Createdat
+        is_anonymous:
+          type: boolean
+          title: Is Anonymous
+          default: false
+        attachment:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Attachment
+      type: object
+      required:
+      - id
+      - title
+      - category
+      - priority
+      - status
+      - department
+      - description
+      - date
+      - createdAt
+      title: TicketResponse
     TicketUpdate:
       properties:
         title:
