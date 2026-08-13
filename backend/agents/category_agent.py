@@ -1,81 +1,103 @@
-from backend.services.ai_service import ai_service
+from enum import Enum
+
+from pydantic import BaseModel, Field
+
+from backend.services.ai_service import ai_service as default_ai_service
 
 
-def predict_category(title: str, description: str) -> str:
-    """
-    Use GPT-5.2 to classify a ticket into the appropriate department.
-    """
+class TicketCategory(str, Enum):
+    HR = "HR"
+    IT = "IT"
+    ACCOUNTING = "Accounting"
+    UPPER_MANAGEMENT = "Upper Management"
 
-    prompt = f"""
-You are the category classification agent for an internal company helpdesk.
 
-Classify the ticket into exactly one category:
+class CategoryDecision(BaseModel):
+    category: TicketCategory
+    confidence: float = Field(ge=0.0, le=1.0)
+    rationale: str
 
-HR
-IT
-Accounting
-Upper Management
 
-Use the following routing rules.
+CATEGORY_PROMPT = """
+You are the category classification agent for TicketGenie,
+an internal company helpdesk.
+
+Classify every ticket into exactly one of these departments:
+
+- HR
+- IT
+- Accounting
+- Upper Management
+
+CATEGORY RULES
 
 HR:
 - Benefits and employee policies
 - Hiring, onboarding, offboarding, and termination
-- Employee relations and workplace concerns
+- Employee relations
 - Harassment, discrimination, workplace conduct, or personnel matters
-- General HR questions that do not involve leave requests
+- General HR questions that are not leave requests
 
 IT:
-- Laptops, computers, phones, printers, or company devices
-- Passwords, login problems, accounts, permissions, or technical access
-- Email, Teams, VPN, Wi-Fi, networks, or connectivity
+- Laptops, computers, phones, printers, and company devices
+- Passwords, accounts, login problems, and technical access
+- Email, Teams, VPN, Wi-Fi, networks, and connectivity
 - Software, applications, installations, and technical errors
-- Cybersecurity or suspicious technical activity
+- Cybersecurity and suspicious technical activity
 
 Accounting:
-- Payroll amounts or payroll discrepancies
-- Expense reports and reimbursements
+- Payroll amounts and Payroll discrepancies
+- Incorrect salary or paycheck payments
+- Expenses and reimbursements
 - Invoices, billing, vendor payments, and purchasing
-- Financial transactions or accounting-related issues
+- Financial transactions and accounting questions
 
 Upper Management:
-- ALL leave-related requests, including PTO, vacation, sick leave,
-  maternity/paternity leave, personal leave, or other time-off requests
-- Requests that require management approval
+- ALL leave and time-off requests
+- PTO
+- Vacation requests
+- Sick leave
+- Maternity or paternity leave
+- Personal leave
+- Requests requiring management approval
 - Major organizational or strategic concerns
-- Issues requiring senior leadership or executive review
-- Cross-department matters that cannot reasonably be resolved by HR,
-  IT, or Accounting
-- Serious escalations where executive oversight is genuinely required
+- Matters genuinely requiring executive or senior-management review
 
 CRITICAL BUSINESS RULE:
 Any request for leave, PTO, vacation, sick leave, maternity leave,
-paternity leave, personal leave, or other time off MUST be classified
+paternity leave, personal leave, or other time off MUST be categorized
 as Upper Management.
 
 This rule overrides the normal HR classification.
 
 Examples:
-- "I want to take PTO next Friday" -> Upper Management
+- "I need PTO next Friday" -> Upper Management
 - "I need maternity leave" -> Upper Management
-- "Can I take two sick days next week?" -> Upper Management
-- "What benefits are included in my health plan?" -> HR
+- "What benefits are available?" -> HR
 - "My paycheck amount is incorrect" -> Accounting
-- "I cannot log into the payroll system" -> IT
+- "I cannot log into the payroll website" -> IT
 
-Important rules:
-- Choose the department primarily responsible for resolving the issue.
-- Consider the meaning of the entire ticket, not individual keywords.
-- Urgency does NOT automatically mean Upper Management.
-- Priority and category are separate concepts.
-- Do not invent information.
-- Return ONLY one exact value:
+Important:
+- Category and priority are separate concepts.
+- Do not classify something as Upper Management merely because it is urgent.
+- Determine which department is responsible for resolving the primary issue.
+- Consider the entire ticket rather than individual keywords.
+- Do not invent missing facts.
 
-HR
-IT
-Accounting
-Upper Management
+Return a structured category decision containing:
+- category
+- confidence from 0 to 1
+- a concise rationale
+"""
 
+
+def categorize_ticket(
+    title: str,
+    description: str,
+    *,
+    ai_service=default_ai_service,
+) -> CategoryDecision:
+    user_content = f"""
 Ticket title:
 {title}
 
@@ -83,16 +105,8 @@ Ticket description:
 {description}
 """
 
-    result = ai_service.generate(prompt).strip()
-
-    valid_categories = {
-        "HR",
-        "IT",
-        "Accounting",
-        "Upper Management",
-    }
-
-    if result not in valid_categories:
-        return "HR"
-
-    return result
+    return ai_service.generate(
+        system_prompt=CATEGORY_PROMPT,
+        user_content=user_content,
+        response_model=CategoryDecision,
+    )

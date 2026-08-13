@@ -1,66 +1,91 @@
-from backend.services.ai_service import ai_service
+from enum import Enum
+
+from pydantic import BaseModel, Field
+
+from backend.services.ai_service import ai_service as default_ai_service
 
 
-def predict_priority(title: str, description: str) -> str:
-    """
-    Use GPT-5.2 to classify ticket priority.
-    """
+class TicketPriority(str, Enum):
+    LOW = "Low"
+    MEDIUM = "Medium"
+    HIGH = "High"
 
-    prompt = f"""
-You are the priority classification agent for an internal company helpdesk.
 
-Classify the ticket into exactly one priority level:
+class PriorityDecision(BaseModel):
+    priority: TicketPriority
+    confidence: float = Field(ge=0.0, le=1.0)
+    rationale: str
+    needs_human_review: bool = False
+
+
+PRIORITY_PROMPT = """
+You are the priority classification agent for TicketGenie,
+an internal company helpdesk.
+
+Classify the ticket into exactly one priority:
 
 Low
 Medium
 High
 
-Use the following guidelines:
-
 HIGH:
 - Critical business function is blocked
 - Employee cannot perform essential work
-- Security, account compromise, or serious access risk
-- Payroll or another time-sensitive business process is at risk
+- Active security or account-compromise risk
+- Time-sensitive payroll or business process is at risk
 - Multiple employees or an entire team are affected
-- Major deadline or business impact requires immediate attention
+- Major deadline or significant business impact requires immediate attention
 
 MEDIUM:
-- Employee's work is meaningfully affected but they can continue working
-- Software, hardware, HR, accounting, or workplace issue needs attention
-- Problem is recurring or causing moderate disruption
+- Work is meaningfully affected but can continue
+- Recurring or moderately disruptive issue
+- HR, IT, Accounting, or management matter that needs timely attention
 - There is a reasonable time constraint but no immediate critical impact
 
 LOW:
 - General question or informational request
-- Routine HR, IT, accounting, or management request
-- Minor inconvenience with little business impact
+- Routine request
+- Minor inconvenience
+- Little business impact
 - No meaningful urgency or deadline
 
 Important rules:
 - Judge priority by actual business impact, not emotional wording.
-- Do not classify something as High just because the user says "urgent",
-  "ASAP", or uses strong language.
-- Department does not automatically determine priority.
+- Words such as "urgent" or "ASAP" do not automatically mean High.
+- Category and priority are separate concepts.
 - Upper Management tickets are not automatically High.
-- Consider both title and description.
-- If information is limited, choose the most reasonable priority without
-  inventing facts.
-- Return ONLY one exact value:
-  Low
-  Medium
-  High
+- Do not invent missing facts.
+- Set needs_human_review to true when the ticket is sensitive,
+  ambiguous, high-risk, or would benefit from human judgment.
 
+Return a structured priority decision containing:
+- priority
+- confidence from 0 to 1
+- concise rationale
+- needs_human_review
+"""
+
+
+def prioritize_ticket(
+    title: str,
+    description: str,
+    *,
+    category: str,
+    ai_service=default_ai_service,
+) -> PriorityDecision:
+    user_content = f"""
 Ticket title:
 {title}
 
 Ticket description:
 {description}
+
+Assigned category:
+{category}
 """
 
-    result = ai_service.generate(prompt).strip()
-
-    if result not in {"Low", "Medium", "High"}:
-        return "Medium"
-
-    return result
+    return ai_service.generate(
+        system_prompt=PRIORITY_PROMPT,
+        user_content=user_content,
+        response_model=PriorityDecision,
+    )
