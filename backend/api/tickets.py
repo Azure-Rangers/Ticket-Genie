@@ -1,7 +1,6 @@
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from models.ticket import TicketCreate, TicketResponse, TicketUpdate
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
@@ -11,6 +10,7 @@ from database.crud import (
     get_ticket_by_id,
     update_ticket,
 )
+from models.ticket import TicketCreate, TicketResponse, TicketUpdate
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 

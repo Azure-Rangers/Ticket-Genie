@@ -40,10 +40,14 @@ dev = [
 [tool.ruff]
 target-version = "py311"
 line-length = 88
+src = ["backend", "."]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B"]
 ignore = ["B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["api", "database", "models", "services", "telemetry"]
 
 
 [tool.pytest.ini_options]

@@ -1,11 +1,11 @@
-from api.genie import router as genie_router
-from api.tickets import router as ticket_router
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from telemetry import setup_telemetry
 
+from api.genie import router as genie_router
+from api.tickets import router as ticket_router
 from database.connection import init_db_schema
+from telemetry import setup_telemetry
 
 load_dotenv()
 

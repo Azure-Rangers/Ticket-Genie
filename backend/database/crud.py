@@ -1,12 +1,12 @@
 from datetime import datetime
 from typing import List, Optional
 
-from models.ticket import TicketCreate, TicketUpdate
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from database.connection import SessionLocal
 from database.models_db import TicketDB
+from models.ticket import TicketCreate, TicketUpdate
 
 
 def _generate_next_id(db: Session) -> str:
