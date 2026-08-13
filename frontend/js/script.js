@@ -162,32 +162,34 @@ function initializeProfileDropdown() {
     const display = document.getElementById('currentRoleDisplay');
 
     if (trigger && menu) {
-        trigger.addEventListener('click', (e) => {
+        trigger.onclick = (e) => {
+            e.preventDefault();
             e.stopPropagation();
-            const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
-            trigger.setAttribute('aria-expanded', !isExpanded);
             menu.classList.toggle('show');
-        });
+        };
 
-        document.addEventListener('click', (e) => {
+        document.onclick = (e) => {
             if (!trigger.contains(e.target) && !menu.contains(e.target)) {
                 menu.classList.remove('show');
-                trigger.setAttribute('aria-expanded', 'false');
             }
-        });
+        };
 
         const roleButtons = menu.querySelectorAll('.role-switch-btn');
         roleButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.onclick = (e) => {
                 e.stopPropagation();
-                roleButtons.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                
                 const selectedRole = btn.getAttribute('data-role');
-                if (display) display.textContent = selectedRole;
                 menu.classList.remove('show');
-                trigger.setAttribute('aria-expanded', 'false');
-            });
+
+                const inPagesDir = window.location.pathname.includes('/pages/');
+                if (selectedRole === 'Management') {
+                    localStorage.setItem('portalUser', JSON.stringify({ name: 'Management User', role: 'Management', email: 'management@ticketgenie.com' }));
+                    window.location.href = inPagesDir ? 'management-portal.html' : 'pages/management-portal.html';
+                } else if (selectedRole === 'Employee') {
+                    localStorage.setItem('portalUser', JSON.stringify({ name: 'Employee User', role: 'Employee', email: 'employee@ticketgenie.com' }));
+                    window.location.href = inPagesDir ? '../index.html' : 'index.html';
+                }
+            };
         });
     }
 }
@@ -723,7 +725,7 @@ function initializeShortcuts() {
 /* =========================================================
    INITIALIZE EVERYTHING
    ========================================================= */
-document.addEventListener("DOMContentLoaded", () => {
+function initApp() {
     initializeSidebarToggle();
     initializeBrandDropdown();
     initializeProfileDropdown();
@@ -734,4 +736,10 @@ document.addEventListener("DOMContentLoaded", () => {
     initializeNotifications();
     initializeShortcuts();
     updateTicketOverview();
-});
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initApp);
+} else {
+    initApp();
+}

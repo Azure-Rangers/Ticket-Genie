@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enterprise Portal - Submit Ticket</title>
+  <style>
+    /* --- CSS RESET & BASE STYLES --- */
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { display: flex; height: 100vh; background-color: #f9fafb; color: #1f2937; }
+
+    /* --- SIDEBAR --- */
+    .sidebar { width: 260px; background-color: #1e1b4b; color: #d1d5db; display: flex; flex-direction: column; }
+    .sidebar-header { padding: 24px; border-bottom: 1px solid #312e81; }
+    .sidebar-header h2 { color: #ffffff; font-size: 1.25rem; }
+    
+    .nav-section { padding: 0 16px; margin-top: 24px; }
+    .nav-title { font-size: 0.75rem; color: #6366f1; text-transform: uppercase; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
+    .nav-link { display: block; padding: 10px 16px; color: #d1d5db; text-decoration: none; border-radius: 8px; font-size: 0.9rem; margin-bottom: 4px; transition: background 0.2s; }
+    .nav-link:hover, .nav-link.active { background-color: #312e81; color: #ffffff; }
+
+    /* --- MAIN CONTENT --- */
+    .main-content { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
+    
+    .page-header { width: 100%; max-width: 800px; margin-bottom: 24px; }
+    .page-header h1 { font-size: 1.75rem; color: #111827; }
+    .page-header p { color: #6b7280; font-size: 0.95rem; margin-top: 4px; }
+
+    /* --- FORM CARD --- */
+    .form-card { background-color: #ffffff; width: 100%; max-width: 800px; padding: 32px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+    
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .full-width { grid-column: span 2; }
+
+    .input-group { display: flex; flex-direction: column; gap: 8px; }
+    .input-group label { font-size: 0.85rem; font-weight: 600; color: #374151; }
+    .input-group input, .input-group select, .input-group textarea { padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; outline: none; transition: border 0.2s; font-family: inherit; }
+    .input-group input:focus, .input-group select:focus, .input-group textarea:focus { border-color: #4f46e5; }
+    
+    .input-group textarea { resize: vertical; min-height: 120px; }
+
+    /* File Drag & Drop Mockup */
+    .file-drop { border: 2px dashed #cbd5e1; border-radius: 8px; padding: 24px; text-align: center; color: #64748b; background-color: #f8fafc; cursor: pointer; transition: 0.2s; }
+    .file-drop:hover { border-color: #818cf8; background-color: #eff6ff; }
+
+    /* Buttons */
+    .btn-row { display: flex; justify-content: flex-end; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; }
+    .btn-cancel { padding: 12px 24px; background-color: white; border: 1px solid #d1d5db; border-radius: 8px; color: #374151; font-weight: 600; cursor: pointer; }
+    .btn-submit { padding: 12px 24px; background-color: #4f46e5; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn-submit:hover { background-color: #4338ca; }
+
+    /* Success Overlay (Hidden by default) */
+    .success-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 100; }
+    .success-overlay h2 { color: #16a34a; font-size: 2rem; margin-bottom: 8px; }
+  
+    .profile { position: relative; }
+    .profile-button { background: transparent; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit; }
+    .profile-dropdown-menu { position: absolute; top: 100%; right: 0; margin-top: 8px; width: 190px; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12); display: none; flex-direction: column; padding: 8px 0; z-index: 1000; }
+    .profile-dropdown-menu.show { display: flex !important; }
+    .dropdown-label { font-size: 10px; color: #8b968f; padding: 4px 16px 6px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .role-switch-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 16px; border: none; background: transparent; text-align: left; font-size: 0.85rem; color: #374151; cursor: pointer; transition: background 0.2s ease; }
+    .role-switch-btn i { width: 16px; text-align: center; color: #6b7280; }
+    .role-switch-btn:hover { background: #f3f4f6; }
+    .role-switch-btn.active { background: #eef2ff; color: #4f46e5; font-weight: 600; }
+    .role-switch-btn.active i { color: #4f46e5; }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>Enterprise Portal</h2>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-title">Main</div>
+      <a href="management-portal.html" class="nav-link">📊 My Dashboard</a>
+      <a href="#" class="nav-link">❤️ Company Pulse</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-title">Ticketing System</div>
+      <a href="management-submit-ticket.html" class="nav-link active">➕ Submit New Ticket</a>
+      <a href="management-inbox.html" class="nav-link">📥 Team Inbox</a>
+    </div>
+    <div class="nav-section">
+    <div class="nav-title">Account</div>
+    <a href="../index.html" class="nav-link">🏠 Employee View</a>
+  </div>
+</aside>
+
+  <main class="main-content">
+    <div class="top-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; border-bottom: 1px solid #f3f4f6; background: white;">
+      <div class="search-small" style="display: flex; align-items: center; background: #f3f4f6; padding: 8px 16px; border-radius: 8px; width: 300px;">
+        <span>🔍</span>
+        <input type="text" placeholder="Search..." style="border: none; background: transparent; outline: none; margin-left: 8px; font-size: 0.85rem; width: 100%;">
+      </div>
+      <div class="nav-actions" style="display: flex; align-items: center; gap: 16px;">
+        <span style="cursor: pointer;">🌙</span>
+        <span style="cursor: pointer;">🔔</span>
+        <div class="profile" style="position: relative;">
+          <button class="profile-button" id="profileDropdownTrigger" style="background: transparent; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit;">
+            <div class="avatar" id="navAvatar" style="width: 32px; height: 32px; background: #eef2ff; color: #4f46e5; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 600;">M</div>
+            <div style="text-align: left;">
+              <div id="navName" style="font-weight: 600; font-size: 0.85rem; color: #111827;">Management User</div>
+              <div id="currentRoleDisplay" style="font-size: 0.7rem; color: #6b7280;">Management</div>
+            </div>
+            <i class="fa-solid fa-chevron-down" style="font-size: 0.75rem; color: #6b7280; margin-left: 4px;"></i>
+          </button>
+          <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu" aria-labelledby="profileDropdownTrigger">
+            <span class="dropdown-label">Switch View</span>
+            <button type="button" class="role-switch-btn" data-role="Employee" role="menuitem" onclick="localStorage.setItem('portalUser', JSON.stringify({name: 'Employee User', role: 'Employee', email: 'employee@ticketgenie.com'})); window.location.href='../index.html';">
+              <i class="fa-regular fa-user"></i> Employee View
+            </button>
+            <button type="button" class="role-switch-btn active" data-role="Management" role="menuitem" onclick="localStorage.setItem('portalUser', JSON.stringify({name: 'Management User', role: 'Management', email: 'management@ticketgenie.com'})); window.location.href='management-portal.html';">
+              <i class="fa-solid fa-briefcase"></i> Management View
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="page-header">
+      <h1>Submit a Support Ticket</h1>
+      <p>Need help? Fill out the form below and AI will route your request to the correct department.</p>
+    </div>
+
+    <form class="form-card" id="ticketForm">
+      
+      <div class="form-grid">
+        <div class="input-group">
+          <label>Requestor Name</label>
+          <input type="text" id="reqName" readonly style="background-color: #f3f4f6; color: #6b7280; cursor: not-allowed;">
+        </div>
+        <div class="input-group">
+          <label>Requestor Email</label>
+          <input type="email" id="reqEmail" readonly style="background-color: #f3f4f6; color: #6b7280; cursor: not-allowed;">
+        </div>
+
+        <div class="input-group full-width">
+          <label>Subject / Brief Summary</label>
+          <input type="text" placeholder="e.g., Cannot connect to office Wi-Fi" required>
+        </div>
+
+        <div class="input-group">
+          <label>Route to Department</label>
+          <select required>
+            <option value="" disabled selected>Select department...</option>
+            <option value="IT">IT & Tech Support</option>
+            <option value="HR">Human Resources</option>
+            <option value="ACC">Accounting & Payroll</option>
+            <option value="FAC">Facilities & Maintenance</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label>Urgency Level</label>
+          <select required>
+            <option value="Low">Low - Whenever possible</option>
+            <option value="Medium" selected>Medium - Normal priority</option>
+            <option value="High">High - Blocking my work</option>
+            <option value="Critical">Critical - System down / Security</option>
+          </select>
+        </div>
+
+        <div class="input-group full-width">
+          <label>Detailed Description</label>
+          <textarea placeholder="Please provide as much detail as possible so our team can help you quickly..." required></textarea>
+        </div>
+
+        <div class="input-group full-width">
+          <label>Attachments (Optional)</label>
+          <div class="file-drop" onclick="alert('File browser would open here!')">
+            <span style="font-size: 1.5rem; display: block; margin-bottom: 8px;">📎</span>
+            Click to upload or drag and drop files here<br>
+            <span style="font-size: 0.75rem;">Supports PDF, JPG, PNG, DOCX</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button type="button" class="btn-cancel" onclick="window.location.href='management-portal.html'">Cancel</button>
+        <button type="submit" class="btn-submit">Submit Ticket</button>
+      </div>
+    </form>
+
+  </main>
+
+  <div class="success-overlay" id="successOverlay">
+    <h2>✅ Ticket Submitted!</h2>
+    <p>Routing to the appropriate department...</p>
+  </div>
+
+  <script>
+    // 1. Check who is logged in to auto-fill the form
+    
+    let userDataString = localStorage.getItem('portalUser');
+    if (!userDataString) {
+      const defaultUser = { name: 'Management User', role: 'Management', email: 'management@ticketgenie.com' };
+      localStorage.setItem('portalUser', JSON.stringify(defaultUser));
+      userDataString = JSON.stringify(defaultUser);
+    }
+
+    
+    if (userDataString) {
+      const user = JSON.parse(userDataString);
+      // Fill in the locked fields with the user's data
+      document.getElementById('reqName').value = user.name;
+      document.getElementById('reqEmail').value = user.email;
+    } else {
+      // If not logged in, kick them to the login page
+      window.location.href = '../index.html';
+    }
+
+    // 2. Handle the form submission purely on the frontend
+    document.getElementById('ticketForm').addEventListener('submit', function(e) {
+      e.preventDefault(); // Stop the page from reloading
+      
+      // Show the success overlay
+      const overlay = document.getElementById('successOverlay');
+      overlay.style.display = 'flex';
+
+      // Wait 1.5 seconds to simulate loading, then redirect to the Inbox
+      setTimeout(() => {
+        window.location.href = 'management-inbox.html';
+      }, 1500);
+    });
+  </script>
+  <script src="../js/script.js"></script>
+</body>
+</html>
