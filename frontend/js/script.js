@@ -6,12 +6,19 @@ const API_BASE_URL = "/api";
 const STORAGE_KEY = "ticketGenieTickets";
 
 /* =========================================================
-   LOCAL STORAGE (NO MOCK/DEFAULT TICKETS)
+   BACKEND API CLIENT & STORAGE FALLBACK
    ========================================================= */
 function getTickets() {
     const tickets = localStorage.getItem(STORAGE_KEY);
     if (!tickets) {
-        return [];
+        const defaultTickets = [
+            { id: "HD-1024", title: "Payroll Issue", category: "Payroll", priority: "High", status: "In Progress", description: "Having an issue with my latest paycheck.", date: "2026-08-08", createdAt: "2026-08-08T10:00:00" },
+            { id: "HD-1025", title: "Benefits Question", category: "Benefits", priority: "Medium", status: "Open", description: "I have a question about my benefits.", date: "2026-08-07", createdAt: "2026-08-07T10:00:00" },
+            { id: "HD-1026", title: "Laptop Request", category: "IT Support", priority: "Low", status: "Resolved", description: "Requesting a replacement laptop.", date: "2026-08-05", createdAt: "2026-08-05T10:00:00" },
+            { id: "HD-1027", title: "PTO Request", category: "Time Off", priority: "Medium", status: "Pending", description: "Requesting PTO.", date: "2026-08-04", createdAt: "2026-08-04T10:00:00" },
+            { id: "HD-1028", title: "Expense Reimbursement", category: "Payroll", priority: "Low", status: "Resolved", description: "Submitting an expense reimbursement.", date: "2026-08-02", createdAt: "2026-08-02T10:00:00" }
+        ];
+        return defaultTickets;
     }
     try {
         return JSON.parse(tickets);
@@ -26,7 +33,7 @@ function saveTickets(tickets) {
 
 function generateTicketId() {
     const tickets = getTickets();
-    let highestNumber = 1000;
+    let highestNumber = 1028;
     tickets.forEach(ticket => {
         const number = parseInt(String(ticket.id).replace("HD-", ""), 10);
         if (!isNaN(number) && number > highestNumber) {
@@ -36,9 +43,6 @@ function generateTicketId() {
     return `HD-${highestNumber + 1}`;
 }
 
-/* =========================================================
-   BACKEND API CLIENT
-   ========================================================= */
 async function apiFetchTickets(params = {}) {
     try {
         const query = new URLSearchParams();
@@ -78,7 +82,7 @@ async function apiCreateTicket(ticketPayload) {
         priority: ticketPayload.priority || "Medium",
         status: "Open",
         description: ticketPayload.description,
-        date: ticketPayload.preferredDate || ticketPayload.date || "",
+        date: ticketPayload.date || "",
         createdAt: new Date().toISOString()
     };
     tickets.unshift(newTicket);
@@ -86,74 +90,9 @@ async function apiCreateTicket(ticketPayload) {
     return newTicket;
 }
 
-async function apiSendGenieChat(message) {
-    try {
-        const res = await fetch(`${API_BASE_URL}/genie/chat`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message })
-        });
-        if (res.ok) {
-            const data = await res.json();
-            if (data && (data.reply || data.response || data.message)) {
-                return data.reply || data.response || data.message;
-            }
-        }
-    } catch (err) {
-        console.warn("Genie chat API not available, using offline Genie response:", err);
-    }
-    return getGenieResponse(message);
-}
-
 /* =========================================================
-   NAVIGATION & ROLE SWITCHING
+   PROFILE DROPDOWN MENU & TOP RIGHT PAGE SWITCHING
    ========================================================= */
-function initializeSidebarToggle() {
-    const topbarToggle = document.getElementById('sidebarToggle');
-    const brandToggle = document.getElementById('brandMenuToggle');
-
-    function toggleSidebar(e) {
-        if (e) e.stopPropagation();
-        document.body.classList.toggle('sidebar-closed');
-    }
-
-    if (topbarToggle) topbarToggle.addEventListener('click', toggleSidebar);
-    if (brandToggle) brandToggle.addEventListener('click', toggleSidebar);
-}
-
-function initializeBrandDropdown() {
-    const brandToggleBtn = document.getElementById('brandMenuToggle');
-    const brandDropdown = document.getElementById('brandDropdown');
-
-    if (brandToggleBtn && brandDropdown) {
-        brandToggleBtn.addEventListener('click', (event) => {
-            event.stopPropagation();
-            const isShowing = brandDropdown.classList.toggle('show');
-            const icon = brandToggleBtn.querySelector('i');
-            if (icon) {
-                if (isShowing) {
-                    icon.classList.remove('fa-bars');
-                    icon.classList.add('fa-chevron-right');
-                } else {
-                    icon.classList.remove('fa-chevron-right');
-                    icon.classList.add('fa-bars');
-                }
-            }
-        });
-
-        document.addEventListener('click', (event) => {
-            if (!brandToggleBtn.contains(event.target) && !brandDropdown.contains(event.target)) {
-                brandDropdown.classList.remove('show');
-                const icon = brandToggleBtn.querySelector('i');
-                if (icon) {
-                    icon.classList.remove('fa-chevron-right');
-                    icon.classList.add('fa-bars');
-                }
-            }
-        });
-    }
-}
-
 function initializeProfileDropdown() {
     const profileBtn = document.getElementById('profileDropdownTrigger');
     const profileMenu = document.getElementById('profileDropdownMenu');
@@ -202,118 +141,50 @@ function initializeProfileDropdown() {
 }
 
 /* =========================================================
-   DARK MODE TOGGLE
-   ========================================================= */
-function initializeDarkMode() {
-    const toggleBtn = document.getElementById('darkModeToggle');
-    const darkIcon = document.getElementById('darkModeIcon');
-    
-    const savedTheme = localStorage.getItem('ticketGenieTheme');
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        if (darkIcon) {
-            darkIcon.classList.remove('fa-moon');
-            darkIcon.classList.add('fa-sun');
-        }
-    }
-
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            const isDark = document.body.classList.contains('dark-mode');
-            localStorage.setItem('ticketGenieTheme', isDark ? 'dark' : 'light');
-            
-            if (darkIcon) {
-                if (isDark) {
-                    darkIcon.classList.remove('fa-moon');
-                    darkIcon.classList.add('fa-sun');
-                } else {
-                    darkIcon.classList.remove('fa-sun');
-                    darkIcon.classList.add('fa-moon');
-                }
-            }
-        });
-    }
-}
-
-/* =========================================================
-   NEW REQUEST FORM (STANDARDIZED, ANONYMOUS, LEAVE)
+   NEW REQUEST FORM
    ========================================================= */
 function initializeNewRequestForm() {
-    const forms = document.querySelectorAll(".request-form-card form");
-    if (!forms || forms.length === 0) return;
+    const form = document.querySelector(".request-form-card form");
+    if (!form) return;
 
-    forms.forEach(form => {
-        form.addEventListener("submit", async function(event) {
-            event.preventDefault();
+    form.addEventListener("submit", async function(event) {
+        event.preventDefault();
 
-            let title = "";
-            let category = "General";
-            let description = "";
-            let preferredDate = "";
-            let isAnonymous = false;
+        const titleElement = document.getElementById("ticketSubject") || document.getElementById("anonTicketSubject") || document.getElementById("leaveType");
+        const categoryElement = document.getElementById("ticketCategory") || document.getElementById("anonTicketCategory") || document.getElementById("leaveType");
+        const descriptionElement = document.getElementById("ticketDescription") || document.getElementById("anonTicketDescription") || document.getElementById("leaveDescription");
+        
+        const submitBtn = event.target.querySelector('.submit-request-button');
 
-            if (form.id === "newTicketForm") {
-                title = (document.getElementById("ticketSubject")?.value || "").trim();
-                category = document.getElementById("ticketCategory")?.value || "General";
-                description = (document.getElementById("ticketDescription")?.value || "").trim();
-                preferredDate = document.getElementById("preferredDate")?.value || "";
-            } else if (form.id === "anonTicketForm") {
-                title = (document.getElementById("anonTicketSubject")?.value || "").trim();
-                category = document.getElementById("anonTicketCategory")?.value || "General";
-                description = (document.getElementById("anonTicketDescription")?.value || "").trim();
-                isAnonymous = true;
-            } else if (form.id === "leaveTicketForm") {
-                const leaveType = document.getElementById("leaveType")?.value || "PTO";
-                const startDate = document.getElementById("leaveStartDate")?.value || "";
-                const endDate = document.getElementById("leaveEndDate")?.value || "";
-                const leaveDesc = (document.getElementById("leaveDescription")?.value || "").trim();
+        const title = titleElement ? titleElement.value.trim() : "New Request";
+        const category = categoryElement ? categoryElement.value : "General";
+        const description = descriptionElement ? descriptionElement.value.trim() : "";
 
-                title = `Leave Request: ${leaveType}`;
-                category = "Time Off";
-                description = `Type: ${leaveType}\nDates: ${startDate} to ${endDate}\nReason: ${leaveDesc}`;
-                preferredDate = startDate;
-            } else {
-                const titleElement = form.querySelector('input[name="subject"]') || form.querySelector('input[type="text"]');
-                const categoryElement = form.querySelector('select[name="category"]');
-                const descriptionElement = form.querySelector('textarea');
-                title = titleElement ? titleElement.value.trim() : "New Request";
-                category = categoryElement ? categoryElement.value : "General";
-                description = descriptionElement ? descriptionElement.value.trim() : "";
-            }
+        if (!title || !category || !description) { 
+            showFormError("Please fill out all required fields."); 
+            return; 
+        }
 
-            if (!title || !category || !description) { 
-                showFormError("Please fill out all required fields."); 
-                return; 
-            }
+        const oldError = document.querySelector(".form-error-message");
+        if (oldError) oldError.style.display = "none";
 
-            const oldError = document.getElementById("formErrorMessage");
-            if (oldError) oldError.style.display = "none";
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
+            submitBtn.classList.add('loading');
+        }
 
-            const submitBtn = form.querySelector('.submit-request-button');
-            if (submitBtn) {
-                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
-                submitBtn.classList.add('loading');
-                submitBtn.disabled = true;
-            }
-
-            const ticketPayload = {
-                title: title,
-                subject: title,
-                category: category,
-                priority: "Medium",
-                description: description,
-                preferredDate: preferredDate,
-                isAnonymous: isAnonymous
-            };
-
-            const createdTicket = await apiCreateTicket(ticketPayload);
-            showSuccessMessage(createdTicket);
-
-            setTimeout(() => {
-                window.location.href = "my-tickets.html";
-            }, 1800);
+        const newTicket = await apiCreateTicket({
+            title: title,
+            subject: title,
+            category: category,
+            priority: "Medium",
+            description: description,
+            date: ""
         });
+
+        showSuccessMessage(newTicket);
+
+        setTimeout(() => { window.location.href = "my-tickets.html"; }, 1500);
     });
 }
 
@@ -338,7 +209,7 @@ function showSuccessMessage(ticket) {
         <div class="success-icon"><i class="fa-solid fa-check"></i></div>
         <div>
             <strong>Request submitted successfully</strong>
-            <span>Ticket #${escapeHTML(ticket.id || "HD-1001")} has been created.</span>
+            <span>Ticket #${escapeHTML(ticket.id)} has been created.</span>
         </div>
     `;
 
@@ -347,124 +218,15 @@ function showSuccessMessage(ticket) {
 }
 
 /* =========================================================
-   ENHANCED FILE UPLOADS
-   ========================================================= */
-function initializeFileUploads() {
-    const uploadAreas = document.querySelectorAll('.upload-area');
-    
-    uploadAreas.forEach(area => {
-        const fileInput = area.querySelector('input[type="file"]');
-        const browseBtn = area.querySelector('.browse-button');
-        const fileListContainer = area.nextElementSibling; 
-        
-        let dataTransfer = new DataTransfer();
-
-        if (browseBtn) {
-            browseBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (fileInput) fileInput.click();
-            });
-        }
-
-        area.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            area.classList.add('drag-over');
-        });
-
-        area.addEventListener('dragleave', () => {
-            area.classList.remove('drag-over');
-        });
-
-        area.addEventListener('drop', (e) => {
-            e.preventDefault();
-            area.classList.remove('drag-over');
-            if (e.dataTransfer.files.length > 0) {
-                handleFiles(e.dataTransfer.files);
-            }
-        });
-
-        if (fileInput) {
-            fileInput.addEventListener('change', () => {
-                if (fileInput.files.length > 0) {
-                    handleFiles(fileInput.files);
-                }
-            });
-        }
-
-        function handleFiles(files) {
-            for (let i = 0; i < files.length; i++) {
-                dataTransfer.items.add(files[i]);
-            }
-            if (fileInput) fileInput.files = dataTransfer.files;
-            renderFileList();
-        }
-
-        function renderFileList() {
-            if (!fileListContainer) return;
-            fileListContainer.innerHTML = '';
-            if (dataTransfer.files.length === 0) return;
-            
-            const list = document.createElement('div');
-            list.className = 'file-list';
-            
-            Array.from(dataTransfer.files).forEach((file, index) => {
-                const fileItem = document.createElement('div');
-                fileItem.className = 'file-item';
-                
-                let iconClass = 'fa-file';
-                if (file.type.includes('image')) iconClass = 'fa-file-image';
-                else if (file.type.includes('pdf')) iconClass = 'fa-file-pdf';
-                else if (file.type.includes('word')) iconClass = 'fa-file-word';
-                else if (file.type.includes('video')) iconClass = 'fa-file-video';
-
-                fileItem.innerHTML = `
-                    <div class="file-item-info">
-                        <i class="fa-regular ${iconClass}"></i>
-                        <span>${escapeHTML(file.name)}</span>
-                    </div>
-                    <button type="button" class="file-remove-btn" data-index="${index}" aria-label="Remove file">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                `;
-                list.appendChild(fileItem);
-            });
-            
-            fileListContainer.appendChild(list);
-            
-            const removeBtns = list.querySelectorAll('.file-remove-btn');
-            removeBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const indexToRemove = parseInt(this.getAttribute('data-index'), 10);
-                    removeFile(indexToRemove);
-                });
-            });
-        }
-
-        function removeFile(index) {
-            const dt = new DataTransfer();
-            const files = dataTransfer.files;
-            for (let i = 0; i < files.length; i++) {
-                if (i !== index) {
-                    dt.items.add(files[i]);
-                }
-            }
-            dataTransfer = dt;
-            if (fileInput) fileInput.files = dataTransfer.files;
-            renderFileList();
-        }
-    });
-}
-
-/* =========================================================
-   MY TICKETS & OVERVIEW METRICS
-   ========================================================= */
+   MY TICKETS
+========================================================= */
 function initializeMyTickets() {
-    const table = document.querySelector(".tickets-table") || document.getElementById("myTicketsList");
+    const table = document.querySelector(".tickets-table");
     if (!table) return;
 
     renderTickets();
 
-    const searchInput = document.getElementById("ticketSearch") || document.getElementById("globalSearch");
+    const searchInput = document.getElementById("ticketSearch");
     if (searchInput) {
         searchInput.addEventListener("input", renderTickets);
     }
@@ -476,10 +238,10 @@ function initializeMyTickets() {
 }
 
 async function renderTickets() {
-    const table = document.querySelector(".tickets-table") || document.getElementById("myTicketsList");
+    const table = document.querySelector(".tickets-table");
     if (!table) return;
 
-    const searchInput = document.getElementById("ticketSearch") || document.getElementById("globalSearch");
+    const searchInput = document.getElementById("ticketSearch");
     const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
 
     const statusFilter = document.getElementById("ticketStatusFilter");
@@ -488,37 +250,43 @@ async function renderTickets() {
     const statusValue = statusFilter ? statusFilter.value : "all";
     const priorityValue = priorityFilter ? priorityFilter.value : "all";
 
-    const apiTickets = await apiFetchTickets({ search: searchTerm, status: statusValue, priority: priorityValue });
-    let tickets = apiTickets && Array.isArray(apiTickets) ? apiTickets : getTickets();
+    let tickets = await apiFetchTickets({
+        search: searchTerm,
+        status: statusValue,
+        priority: priorityValue
+    });
 
     if (searchTerm) {
         tickets = tickets.filter(ticket => {
             const title = (ticket.title || ticket.subject || "").toLowerCase();
             const id = (ticket.id || "").toLowerCase();
-            const cat = (ticket.category || "").toLowerCase();
-            return title.includes(searchTerm) || id.includes(searchTerm) || cat.includes(searchTerm);
+            const category = (ticket.category || "").toLowerCase();
+            return title.includes(searchTerm) || id.includes(searchTerm) || category.includes(searchTerm);
         });
     }
 
     if (statusValue && statusValue !== "all") {
-        tickets = tickets.filter(ticket => ticket.status === statusValue);
+        tickets = tickets.filter(ticket => String(ticket.status).toLowerCase() === statusValue.toLowerCase());
     }
 
     if (priorityValue && priorityValue !== "all") {
-        tickets = tickets.filter(ticket => ticket.priority === priorityValue);
+        tickets = tickets.filter(ticket => String(ticket.priority).toLowerCase() === priorityValue.toLowerCase());
     }
 
-    tickets.sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0));
+    tickets.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.created_at || 0);
+        const dateB = new Date(b.createdAt || b.created_at || 0);
+        return dateB - dateA;
+    });
 
-    const listContainer = document.getElementById("myTicketsList") || table;
     const header = table.querySelector(".table-header");
+    table.innerHTML = "";
+    if (header) { table.appendChild(header); }
 
-    if (listContainer === table) {
-        table.innerHTML = "";
-        if (header) table.appendChild(header);
-    } else {
-        listContainer.innerHTML = "";
-    }
+    tickets.forEach(ticket => {
+        const row = createTicketRow(ticket);
+        table.appendChild(row);
+    });
 
     if (tickets.length === 0) {
         const empty = document.createElement("div");
@@ -526,35 +294,30 @@ async function renderTickets() {
         empty.innerHTML = `
             <i class="fa-regular fa-folder-open"></i>
             <strong>No tickets found</strong>
-            <span>Submit a new request or adjust your search filters.</span>
+            <span>Try changing your search or filters.</span>
         `;
-        listContainer.appendChild(empty);
-    } else {
-        tickets.forEach(ticket => {
-            const row = createTicketRow(ticket);
-            listContainer.appendChild(row);
-        });
+        table.appendChild(empty);
     }
 
-    updateTicketOverview(tickets);
+    await updateTicketOverview();
 }
 
 function createTicketRow(ticket) {
     const row = document.createElement("div");
     row.className = "table-row ticket-clickable";
     const icon = getTicketIcon(ticket.category);
-    const updated = formatTicketDate(ticket.createdAt || ticket.date);
+    const updated = formatTicketDate(ticket.createdAt || ticket.created_at);
 
     row.innerHTML = `
         <div class="request-info">
             <div class="request-icon"><i class="${icon}"></i></div>
             <div>
                 <strong>${escapeHTML(ticket.title || ticket.subject || "Request")}</strong>
-                <span>#${escapeHTML(ticket.id || "HD-1001")}</span>
+                <span>#${escapeHTML(ticket.id)}</span>
             </div>
         </div>
         <span>${escapeHTML(ticket.category || "General")}</span>
-        <span class="status ${getStatusClass(ticket.status || "Open")}">${escapeHTML(ticket.status || "Open")}</span>
+        <span class="status ${getStatusClass(ticket.status)}">${escapeHTML(ticket.status || "Open")}</span>
         <span class="priority ${String(ticket.priority || "Medium").toLowerCase().replace(/\s+/g, "-")}">${escapeHTML(ticket.priority || "Medium")}</span>
         <span>${updated}</span>
     `;
@@ -571,7 +334,6 @@ function getTicketIcon(category) {
         "Payroll & Benefits": "fa-solid fa-receipt",
         "Benefits": "fa-solid fa-shield-heart",
         "Human Resources": "fa-solid fa-users",
-        "HR & Workforce Operations": "fa-solid fa-users",
         "Employee Services": "fa-solid fa-user",
         "Time Off": "fa-solid fa-calendar-check",
         "Access & Permissions": "fa-solid fa-lock",
@@ -581,7 +343,7 @@ function getTicketIcon(category) {
 }
 
 function getStatusClass(status) {
-    return String(status).toLowerCase().replace(/\s+/g, "-");
+    return String(status || "open").toLowerCase().replace(/\s+/g, "-");
 }
 
 function formatTicketDate(dateString) {
@@ -596,11 +358,11 @@ function formatTicketDate(dateString) {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-async function updateTicketOverview(optionalTickets) {
-    const tickets = optionalTickets || await apiFetchTickets();
-    const open = tickets.filter(t => (t.status || "").toLowerCase() === "open").length;
-    const inProgress = tickets.filter(t => (t.status || "").toLowerCase() === "in progress" || (t.status || "").toLowerCase() === "pending").length;
-    const resolved = tickets.filter(t => (t.status || "").toLowerCase() === "resolved").length;
+async function updateTicketOverview() {
+    const tickets = await apiFetchTickets();
+    const open = tickets.filter(ticket => String(ticket.status).toLowerCase() === "open").length;
+    const inProgress = tickets.filter(ticket => ["in progress", "pending", "in-progress"].includes(String(ticket.status).toLowerCase())).length;
+    const resolved = tickets.filter(ticket => String(ticket.status).toLowerCase() === "resolved").length;
 
     const openCount = document.getElementById("openCount");
     const inProgressCount = document.getElementById("inProgressCount");
@@ -613,20 +375,10 @@ async function updateTicketOverview(optionalTickets) {
     const recentTickets = document.getElementById("recentTickets");
     if (recentTickets) {
         recentTickets.innerHTML = "";
-        if (tickets.length === 0) {
-            recentTickets.innerHTML = `
-                <div class="ticket-empty-state">
-                    <i class="fa-regular fa-folder-open"></i>
-                    <strong>No support requests found</strong>
-                    <span>Submit a new request to get started.</span>
-                </div>
-            `;
-        } else {
-            tickets.slice(0, 5).forEach(ticket => {
-                const row = createTicketRow(ticket);
-                recentTickets.appendChild(row);
-            });
-        }
+        tickets.slice(0, 5).forEach(ticket => {
+            const row = createTicketRow(ticket);
+            recentTickets.appendChild(row);
+        });
     }
 }
 
@@ -638,20 +390,20 @@ function showTicketDetails(ticket) {
             <button class="ticket-modal-close" type="button" aria-label="Close ticket details">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            <p class="eyebrow">TICKET #${escapeHTML(ticket.id || "HD-1001")}</p>
-            <h2>${escapeHTML(ticket.title || ticket.subject || "Ticket Details")}</h2>
+            <p class="eyebrow">TICKET #${escapeHTML(ticket.id)}</p>
+            <h2>${escapeHTML(ticket.title)}</h2>
             <div class="ticket-detail-grid">
-                <div><span>Category</span><strong>${escapeHTML(ticket.category || "General")}</strong></div>
-                <div><span>Priority</span><strong class="priority ${String(ticket.priority || "Medium").toLowerCase().replace(/\s+/g, "-")}">${escapeHTML(ticket.priority || "Medium")}</strong></div>
-                <div><span>Status</span><strong class="status ${getStatusClass(ticket.status || "Open")}">${escapeHTML(ticket.status || "Open")}</strong></div>
-                <div><span>Preferred Date</span><strong>${ticket.date || ticket.preferredDate ? formatPreferredDate(ticket.date || ticket.preferredDate) : "Not specified"}</strong></div>
+                <div><span>Category</span><strong>${escapeHTML(ticket.category)}</strong></div>
+                <div><span>Priority</span><strong class="priority ${ticket.priority.toLowerCase().replace(/\s+/g, "-")}">${escapeHTML(ticket.priority)}</strong></div>
+                <div><span>Status</span><strong class="status ${getStatusClass(ticket.status)}">${escapeHTML(ticket.status)}</strong></div>
+                <div><span>Preferred Date</span><strong>${ticket.date ? formatPreferredDate(ticket.date) : "Not specified"}</strong></div>
             </div>
             <div class="ticket-description">
                 <span>Description</span>
-                <p>${escapeHTML(ticket.description || "No description provided.")}</p>
+                <p>${escapeHTML(ticket.description)}</p>
             </div>
             <div class="ticket-modal-footer">
-                <span>Created ${formatTicketDate(ticket.createdAt || ticket.date)}</span>
+                <span>Created ${formatTicketDate(ticket.createdAt)}</span>
                 <button class="modal-close-button" type="button">Close</button>
             </div>
         </div>
@@ -682,14 +434,14 @@ function showTicketDetails(ticket) {
 
 function formatPreferredDate(dateString) {
     if (!dateString) return "Not specified";
-    const date = new Date(dateString.includes("T") ? dateString : dateString + "T00:00:00");
+    const date = new Date(dateString + "T00:00:00");
     if (isNaN(date.getTime())) return dateString;
     return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 }
 
 /* =========================================================
    GENIE AI AGENT
-   ========================================================= */
+========================================================= */
 function initializeGenie() {
     const genieChat = document.getElementById("genieChat");
     if (!genieChat) return;
@@ -710,32 +462,35 @@ function initializeGenie() {
     if (genieButton) genieButton.addEventListener("click", openGenie);
     if (closeButton) closeButton.addEventListener("click", closeGenie);
 
+    const genieNav = document.querySelector(".genie-nav-link");
+    if (genieNav) genieNav.addEventListener("click", event => { event.preventDefault(); openGenie(); });
+
+    const knowledgeGenieButton = document.getElementById("knowledgeGenieButton");
+    if (knowledgeGenieButton) knowledgeGenieButton.addEventListener("click", openGenie);
+
     const openGenieFromRequest = document.getElementById("openGenieFromRequest");
     if (openGenieFromRequest) openGenieFromRequest.addEventListener("click", openGenie);
 
-    async function handleSend(userMessage) {
-        if (!userMessage) return;
-        addGenieMessage(userMessage, "user");
-        if (genieInput) genieInput.value = "";
+    function sendGenieMessage() {
+        if (!genieInput) return;
+        const message = genieInput.value.trim();
+        if (!message) return;
+
+        addGenieMessage(message, "user");
+        genieInput.value = "";
 
         const thinking = addGenieThinking();
-        const response = await apiSendGenieChat(userMessage);
-        if (thinking) thinking.remove();
-        addGenieMessage(response, "agent");
+        setTimeout(() => {
+            if (thinking) thinking.remove();
+            const response = getGenieResponse(message);
+            addGenieMessage(response, "agent");
+        }, 700);
     }
 
-    if (genieSendButton) {
-        genieSendButton.addEventListener("click", () => {
-            if (genieInput) handleSend(genieInput.value.trim());
-        });
-    }
-
+    if (genieSendButton) genieSendButton.addEventListener("click", sendGenieMessage);
     if (genieInput) {
         genieInput.addEventListener("keydown", event => {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                handleSend(genieInput.value.trim());
-            }
+            if (event.key === "Enter") { event.preventDefault(); sendGenieMessage(); }
         });
     }
 
@@ -743,8 +498,23 @@ function initializeGenie() {
     suggestions.forEach(suggestion => {
         suggestion.addEventListener("click", () => {
             const message = suggestion.textContent.trim();
-            handleSend(message);
+            if (!message) return;
+            addGenieMessage(message, "user");
+            const thinking = addGenieThinking();
+            setTimeout(() => {
+                if (thinking) thinking.remove();
+                const response = getGenieResponse(message);
+                addGenieMessage(response, "agent");
+            }, 700);
         });
+    });
+
+    document.addEventListener("click", event => {
+        if (!genieChat.classList.contains("open")) return;
+        const clickedInside = genieChat.contains(event.target);
+        const clickedButton = genieButton && genieButton.contains(event.target);
+        const clickedNav = genieNav && genieNav.contains(event.target);
+        if (!clickedInside && !clickedButton && !clickedNav) closeGenie();
     });
 }
 
@@ -805,8 +575,8 @@ function escapeHTML(value) {
 }
 
 /* =========================================================
-   KNOWLEDGE BASE & CHAT HISTORY
-   ========================================================= */
+   KNOWLEDGE BASE
+========================================================= */
 function initializeKnowledgeBase() {
     const searchInput = document.getElementById("knowledgeSearch");
     const searchButton = document.getElementById("knowledgeSearchButton");
@@ -848,34 +618,196 @@ function initializeKnowledgeBase() {
     });
 }
 
-function initializeChatHistory() {
-    const summaryBtns = document.querySelectorAll(".toggle-summary");
-    summaryBtns.forEach(btn => {
-        btn.addEventListener("click", () => {
-            const card = btn.closest(".chat-card");
-            if (card) {
-                const summaryBox = card.querySelector(".ai-summary-box");
-                if (summaryBox) {
-                    summaryBox.classList.toggle("active");
+/* =========================================================
+   SIDEBAR TOGGLE
+========================================================= */
+function initializeSidebarToggle() {
+    const topbarToggle = document.getElementById('sidebarToggle');
+    const brandToggle = document.getElementById('brandMenuToggle');
+
+    function toggleSidebar(e) {
+        if (e) e.stopPropagation();
+        document.body.classList.toggle('sidebar-closed');
+    }
+
+    // Attach to the topbar button (to reopen)
+    if (topbarToggle) topbarToggle.addEventListener('click', toggleSidebar);
+    
+    // Attach to the inside sidebar button (to close)
+    if (brandToggle) brandToggle.addEventListener('click', toggleSidebar);
+}
+
+/* =========================================================
+   ENHANCED FILE UPLOAD
+========================================================= */
+function initializeFileUploads() {
+    // Grab every upload area across all tabs
+    const uploadAreas = document.querySelectorAll('.upload-area');
+    
+    uploadAreas.forEach(area => {
+        const fileInput = area.querySelector('input[type="file"]');
+        const browseBtn = area.querySelector('.browse-button');
+        // The div right after the upload-area is where we display selected files
+        const fileListContainer = area.nextElementSibling; 
+        
+        // DataTransfer object lets us manipulate the file list (add/remove) programmatically
+        let dataTransfer = new DataTransfer();
+
+        // 1. Click to browse
+        if (browseBtn) {
+            browseBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fileInput.click();
+            });
+        }
+
+        // 2. Drag & Drop Visuals
+        area.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            area.classList.add('drag-over');
+        });
+
+        area.addEventListener('dragleave', () => {
+            area.classList.remove('drag-over');
+        });
+
+        // 3. Handle Dropped Files
+        area.addEventListener('drop', (e) => {
+            e.preventDefault();
+            area.classList.remove('drag-over');
+            if (e.dataTransfer.files.length > 0) {
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+
+        // 4. Handle Browsed Files
+        if (fileInput) {
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length > 0) {
+                    handleFiles(fileInput.files);
+                }
+            });
+        }
+
+        // Add files to our DataTransfer and update the UI
+        function handleFiles(files) {
+            for (let i = 0; i < files.length; i++) {
+                dataTransfer.items.add(files[i]);
+            }
+            fileInput.files = dataTransfer.files; // Update the actual hidden input
+            renderFileList();
+        }
+
+        // Build the HTML for the attached files
+        function renderFileList() {
+            if (!fileListContainer) return;
+            fileListContainer.innerHTML = '';
+            if (dataTransfer.files.length === 0) return;
+            
+            const list = document.createElement('div');
+            list.className = 'file-list';
+            
+            Array.from(dataTransfer.files).forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                
+                // Pick a nice icon based on the file type
+                let iconClass = 'fa-file';
+                if (file.type.includes('image')) iconClass = 'fa-file-image';
+                else if (file.type.includes('pdf')) iconClass = 'fa-file-pdf';
+                else if (file.type.includes('word')) iconClass = 'fa-file-word';
+                else if (file.type.includes('video')) iconClass = 'fa-file-video';
+
+                fileItem.innerHTML = `
+                    <div class="file-item-info">
+                        <i class="fa-regular ${iconClass}"></i>
+                        <span>${file.name}</span>
+                    </div>
+                    <button type="button" class="file-remove-btn" data-index="${index}" aria-label="Remove file">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                `;
+                list.appendChild(fileItem);
+            });
+            
+            fileListContainer.appendChild(list);
+            
+            // Attach event listeners to the new "remove" buttons
+            const removeBtns = list.querySelectorAll('.file-remove-btn');
+            removeBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const indexToRemove = parseInt(this.getAttribute('data-index'), 10);
+                    removeFile(indexToRemove);
+                });
+            });
+        }
+
+        // Rebuild the DataTransfer object without the removed file
+        function removeFile(index) {
+            const dt = new DataTransfer();
+            const files = dataTransfer.files;
+            for (let i = 0; i < files.length; i++) {
+                if (i !== index) {
+                    dt.items.add(files[i]);
+                }
+            }
+            dataTransfer = dt;
+            fileInput.files = dataTransfer.files;
+            renderFileList();
+        }
+    });
+}
+/* =========================================================
+   DARK MODE TOGGLE
+========================================================= */
+function initializeDarkMode() {
+    const toggleBtn = document.getElementById('darkModeToggle');
+    const darkIcon = document.getElementById('darkModeIcon');
+    
+    // Check local storage for saved preference on page load
+    const savedTheme = localStorage.getItem('ticketGenieTheme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        if (darkIcon) {
+            darkIcon.classList.remove('fa-moon');
+            darkIcon.classList.add('fa-sun');
+        }
+    }
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            
+            // Save preference
+            localStorage.setItem('ticketGenieTheme', isDark ? 'dark' : 'light');
+            
+            // Switch icon between moon and sun
+            if (darkIcon) {
+                if (isDark) {
+                    darkIcon.classList.remove('fa-moon');
+                    darkIcon.classList.add('fa-sun');
+                } else {
+                    darkIcon.classList.remove('fa-sun');
+                    darkIcon.classList.add('fa-moon');
                 }
             }
         });
-    });
+    }
 }
 
 /* =========================================================
    INITIALIZE EVERYTHING
-   ========================================================= */
+========================================================= */
 document.addEventListener("DOMContentLoaded", () => {
-    initializeProfileDropdown();
-    initializeBrandDropdown();
-    initializeSidebarToggle();
-    initializeDarkMode();
+    initializeProfileDropdown(); 
     initializeNewRequestForm();
-    initializeFileUploads();
     initializeMyTickets();
     initializeGenie();
     initializeKnowledgeBase();
-    initializeChatHistory();
     updateTicketOverview();
+    initializeSidebarToggle();
+    initializeFileUploads();
+    initializeDarkMode();
 });
+
