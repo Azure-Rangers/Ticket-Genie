@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TicketGenie | Help & Support</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <title>Help & Support | TicketGenie</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 <body>
 
@@ -13,25 +13,17 @@
     <div class="brand" style="position: relative; justify-content: space-between; width: 100%; padding-right: 15px;">
         <div style="display: flex; align-items: center; gap: 12px;">
             <div class="brand-icon">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <i class="fa-solid fa-ticket"></i>
             </div>
             <div>
                 <h2>TicketGenie</h2>
-                <span>Employee Support</span>
+                <span>Employee Portal</span>
             </div>
         </div>
         
         <button id="brandMenuToggle" class="brand-menu-toggle" aria-label="Toggle Pages">
             <i class="fa-solid fa-bars"></i>
         </button>
-
-        <div id="brandDropdown" class="brand-dropdown">
-            <a href="index.html"><i class="fa-solid fa-house"></i> Help & Support</a>
-            <a href="my-tickets.html"><i class="fa-solid fa-ticket"></i> My Tickets</a>
-            <a href="new-request.html"><i class="fa-solid fa-plus"></i> New Request</a>
-            <a href="knowledge-base.html"><i class="fa-solid fa-book-open"></i> Knowledge Base</a>
-            <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
-        </div>
     </div>
 
     <nav class="navigation">
@@ -45,6 +37,9 @@
         <a href="new-request.html" class="nav-item">
             <i class="fa-solid fa-plus"></i><span>New Request</span>
         </a>
+        <a href="chat-history.html" class="nav-item">
+            <i class="fa-regular fa-comments"></i><span>Chat History</span>
+        </a>
 
         <div class="nav-title">RESOURCES</div>
         <a href="knowledge-base.html" class="nav-item">
@@ -57,8 +52,11 @@
 
     <div class="sidebar-bottom">
         <div class="system-status">
-            <div class="status-dot"></div>
-            <div><strong>All systems operational</strong><small>TicketGenie is online</small></div>
+            <span class="status-dot"></span>
+            <div>
+                <strong>All systems operational</strong>
+                <small>TicketGenie is online</small>
+            </div>
         </div>
     </div>
 </aside>
@@ -69,33 +67,41 @@
             <button class="icon-button" id="sidebarToggle" type="button" aria-label="Toggle Sidebar">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <div class="page-title">
-                <span>WORKSPACE</span>
-                <h1>Help & Support</h1>
-            </div>
         </div>
 
         <div class="topbar-actions">
             <div class="search-box">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" placeholder="Search help..." id="globalSearch">
+                <input type="text" placeholder="Search..." id="globalSearch">
                 <span class="shortcut">⌘ K</span>
             </div>
-            <button class="icon-button" type="button">
-                <i class="fa-regular fa-bell"></i><span class="notification-dot"></span>
+
+            <!-- Dark Mode Toggle Button -->
+            <button class="icon-button" id="darkModeToggle" type="button" aria-label="Toggle Dark Mode">
+                <i class="fa-solid fa-moon" id="darkModeIcon"></i>
             </button>
-                        <div class="profile">
-                <button class="profile-button" id="profileDropdownTrigger">
+
+            <button class="icon-button" type="button">
+                <i class="fa-regular fa-bell"></i>
+                <span class="notification-dot"></span>
+            </button>
+
+            <div class="profile">
+                <button class="profile-button" id="profileDropdownTrigger" aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdownMenu">
                     <div class="avatar">NM</div>
-                    <div class="profile-info"><strong>Nishita</strong><span id="currentRoleDisplay">Employee</span></div>
+                    <div class="profile-info">
+                        <strong>Nishita</strong>
+                        <span id="currentRoleDisplay">Employee</span>
+                    </div>
                     <i class="fa-solid fa-chevron-down"></i>
                 </button>
+
                 <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu" aria-labelledby="profileDropdownTrigger">
                     <span class="dropdown-label">Switch View</span>
-                    <button type="button" class="role-switch-btn active" data-role="Employee" role="menuitem" onclick="localStorage.setItem('portalUser', JSON.stringify({name: 'Employee User', role: 'Employee', email: 'employee@ticketgenie.com'})); window.location.href='index.html';">
+                    <button type="button" class="role-switch-btn active" data-role="Employee" role="menuitem">
                         <i class="fa-regular fa-user"></i> Employee View
                     </button>
-                    <button type="button" class="role-switch-btn" data-role="Management" role="menuitem" onclick="localStorage.setItem('portalUser', JSON.stringify({name: 'Management User', role: 'Management', email: 'management@ticketgenie.com'})); window.location.href='pages/management-portal.html';">
+                    <button type="button" class="role-switch-btn" data-role="Management" role="menuitem">
                         <i class="fa-solid fa-briefcase"></i> Management View
                     </button>
                 </div>
@@ -104,115 +110,102 @@
     </header>
 
     <section class="welcome-section">
-        <div class="eyebrow">WELCOME BACK</div>
-        <h2>How can we help you?</h2>
-        <p>Find answers, explore resources, or submit a support request.</p>
+        <p class="eyebrow">PORTAL OVERVIEW</p>
+        <h2>Welcome back, Nishita</h2>
+        <p>Manage your active requests, browse solutions, and track ticket resolutions.</p>
     </section>
 
-    <section class="help-search">
-        <div class="help-search-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
-        <div class="help-search-content">
-            <h3>Search the Help Center</h3>
-            <p>Search for answers, guides, and support resources.</p>
-            <div class="large-search">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="helpSearch" placeholder="What can we help you find?">
-                <button type="button" id="helpSearchButton">Search</button>
-            </div>
-        </div>
-    </section>
-
+    <!-- Overview Cards Section -->
     <section class="section">
-        <div class="section-header">
-            <div><h3>Quick Help</h3><p>Find support by topic</p></div>
-            <a href="knowledge-base.html">View all <i class="fa-solid fa-arrow-right"></i></a>
-        </div>
-        <div class="help-categories">
-            <div class="category-card" data-category="IT Support">
-                <div class="category-icon"><i class="fa-solid fa-laptop"></i></div>
-                <div><h4>IT & Technology</h4><p>Systems, software & access</p></div>
-                <i class="fa-solid fa-chevron-right arrow"></i>
-            </div>
-            <div class="category-card" data-category="Payroll">
-                <div class="category-icon"><i class="fa-solid fa-wallet"></i></div>
-                <div><h4>Payroll & Benefits</h4><p>Pay, benefits & deductions</p></div>
-                <i class="fa-solid fa-chevron-right arrow"></i>
-            </div>
-            <div class="category-card" data-category="Time Off">
-                <div class="category-icon"><i class="fa-solid fa-calendar-days"></i></div>
-                <div><h4>Time Off</h4><p>Leave & time-off requests</p></div>
-                <i class="fa-solid fa-chevron-right arrow"></i>
-            </div>
-            <div class="category-card" data-category="Employee Services">
-                <div class="category-icon"><i class="fa-solid fa-user"></i></div>
-                <div><h4>Employee Services</h4><p>General employee support</p></div>
-                <i class="fa-solid fa-chevron-right arrow"></i>
-            </div>
-        </div>
-    </section>
-
-    <section class="section">
-        <div class="section-header">
-            <div><h3>Your Tickets</h3><p>Keep track of your support requests</p></div>
-            <a href="my-tickets.html">View tickets <i class="fa-solid fa-arrow-right"></i></a>
-        </div>
         <div class="ticket-overview">
             <div class="overview-card">
-                <div class="overview-top"><span>Open</span><div class="overview-icon purple"><i class="fa-regular fa-folder-open"></i></div></div>
-                <strong id="openCount">0</strong><p>Currently being reviewed</p>
+                <div class="overview-top">
+                    <span style="color: #6f4b82; font-weight: 600;">Open</span>
+                    <div class="overview-icon purple"><i class="fa-solid fa-folder-open"></i></div>
+                </div>
+                <strong id="openCount" style="color: #402a4a;">0</strong>
+                <p>Currently being reviewed</p>
             </div>
             <div class="overview-card">
-                <div class="overview-top"><span>In Progress</span><div class="overview-icon green"><i class="fa-solid fa-spinner"></i></div></div>
-                <strong id="inProgressCount">0</strong><p>Being actively worked on</p>
+                <div class="overview-top">
+                    <span style="color: #6f4b82; font-weight: 600;">In Progress</span>
+                    <div class="overview-icon purple"><i class="fa-solid fa-spinner"></i></div>
+                </div>
+                <strong id="inProgressCount" style="color: #402a4a;">0</strong>
+                <p>Being actively worked on</p>
             </div>
             <div class="overview-card">
-                <div class="overview-top"><span>Resolved</span><div class="overview-icon green"><i class="fa-solid fa-circle-check"></i></div></div>
-                <strong id="resolvedCount">0</strong><p>Successfully completed</p>
+                <div class="overview-top">
+                    <span style="color: #6f4b82; font-weight: 600;">Resolved</span>
+                    <div class="overview-icon purple"><i class="fa-solid fa-circle-check"></i></div>
+                </div>
+                <strong id="resolvedCount" style="color: #402a4a;">0</strong>
+                <p>Successfully completed</p>
             </div>
         </div>
     </section>
 
+    <!-- Recent Tickets Section -->
     <section class="section">
         <div class="section-header">
-            <div><h3>Recent Tickets</h3><p>Your latest support activity</p></div>
-            <a href="new-request.html"><i class="fa-solid fa-plus"></i> New request</a>
+            <div>
+                <h3>Recent Support Requests</h3>
+                <p>Track the status of your submitted tickets.</p>
+            </div>
+            <a href="my-tickets.html">View all tickets <i class="fa-solid fa-arrow-right"></i></a>
         </div>
+
         <div class="tickets-table">
             <div class="table-header">
-                <span>REQUEST</span><span>STATUS</span><span>PRIORITY</span><span>CREATED</span><span></span>
+                <div>Request</div>
+                <div>Category</div>
+                <div>Status</div>
+                <div>Priority</div>
+                <div>Created</div>
             </div>
             <div id="recentTickets"></div>
         </div>
     </section>
 </main>
 
-<div class="genie-container">
-    <button class="genie-button" id="genieButton" type="button"><i class="fa-solid fa-wand-magic-sparkles"></i> Ask Genie</button>
-    <div class="genie-chat" id="genieChat">
-        <div class="genie-chat-header">
-            <div class="genie-header-info">
-                <div class="genie-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                <div><strong>Genie AI</strong><span><span class="genie-status-dot"></span> Online</span></div>
+<button class="genie-button" id="genieButton" type="button">
+    <i class="fa-solid fa-wand-magic-sparkles"></i>
+    <span>Ask Genie</span>
+</button>
+
+<div class="genie-chat" id="genieChat">
+    <div class="genie-chat-header">
+        <div class="genie-header-info">
+            <div class="genie-avatar">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
             </div>
-            <button class="genie-close" id="closeGenieButton" type="button"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="genie-messages" id="genieMessages">
-            <div class="genie-message">
-                <div class="genie-message-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                <div class="genie-bubble">Hi! I'm Genie. I can help you find answers, understand your tickets, or figure out where to submit a request.</div>
-            </div>
-            <div class="genie-suggestions">
-                <button class="genie-suggestion" type="button">Check my tickets</button>
-                <button class="genie-suggestion" type="button">IT help</button>
-                <button class="genie-suggestion" type="button">Payroll help</button>
-                <button class="genie-suggestion" type="button">Time off</button>
+            <div>
+                <strong>Genie AI</strong>
+                <span><span class="genie-status-dot"></span> Online</span>
             </div>
         </div>
-        <div class="genie-input-area">
-            <input type="text" id="genieInput" placeholder="Ask Genie something..." autocomplete="off">
-            <button type="button" id="genieSendButton"><i class="fa-solid fa-arrow-up"></i></button>
+        <button class="genie-close" id="closeGenieButton" type="button">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <div class="genie-messages" id="genieMessages">
+        <div class="genie-message">
+            <div class="genie-message-avatar">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div class="genie-bubble">
+                Hi! I'm Genie, your AI support assistant. How can I help you today?
+            </div>
         </div>
-        <div class="genie-disclaimer">Genie may occasionally provide inaccurate information.</div>
+    </div>
+    <div class="genie-input-area">
+        <input type="text" id="genieInput" placeholder="Ask a question..." autocomplete="off">
+        <button id="genieSendButton" type="button">
+            <i class="fa-solid fa-arrow-up"></i>
+        </button>
+    </div>
+    <div class="genie-disclaimer">
+        Genie may occasionally provide inaccurate information.
     </div>
 </div>
 

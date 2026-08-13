@@ -6,12 +6,19 @@ const API_BASE_URL = "/api";
 const STORAGE_KEY = "ticketGenieTickets";
 
 /* =========================================================
-   LOCAL STORAGE & DEFAULT DATA
+   BACKEND API CLIENT & STORAGE FALLBACK
    ========================================================= */
-function getLocalTickets() {
+function getTickets() {
     const tickets = localStorage.getItem(STORAGE_KEY);
     if (!tickets) {
-        return [];
+        const defaultTickets = [
+            { id: "HD-1024", title: "Payroll Issue", category: "Payroll", priority: "High", status: "In Progress", description: "Having an issue with my latest paycheck.", date: "2026-08-08", createdAt: "2026-08-08T10:00:00" },
+            { id: "HD-1025", title: "Benefits Question", category: "Benefits", priority: "Medium", status: "Open", description: "I have a question about my benefits.", date: "2026-08-07", createdAt: "2026-08-07T10:00:00" },
+            { id: "HD-1026", title: "Laptop Request", category: "IT Support", priority: "Low", status: "Resolved", description: "Requesting a replacement laptop.", date: "2026-08-05", createdAt: "2026-08-05T10:00:00" },
+            { id: "HD-1027", title: "PTO Request", category: "Time Off", priority: "Medium", status: "Pending", description: "Requesting PTO.", date: "2026-08-04", createdAt: "2026-08-04T10:00:00" },
+            { id: "HD-1028", title: "Expense Reimbursement", category: "Payroll", priority: "Low", status: "Resolved", description: "Submitting an expense reimbursement.", date: "2026-08-02", createdAt: "2026-08-02T10:00:00" }
+        ];
+        return defaultTickets;
     }
     try {
         return JSON.parse(tickets);
@@ -20,13 +27,13 @@ function getLocalTickets() {
     }
 }
 
-function saveLocalTickets(tickets) {
+function saveTickets(tickets) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
 }
 
 function generateTicketId() {
-    const tickets = getLocalTickets();
-    let highestNumber = 1000;
+    const tickets = getTickets();
+    let highestNumber = 1028;
     tickets.forEach(ticket => {
         const number = parseInt(String(ticket.id).replace("HD-", ""), 10);
         if (!isNaN(number) && number > highestNumber) {
@@ -36,9 +43,6 @@ function generateTicketId() {
     return `HD-${highestNumber + 1}`;
 }
 
-/* =========================================================
-   BACKEND API CLIENT
-   ========================================================= */
 async function apiFetchTickets(params = {}) {
     try {
         const query = new URLSearchParams();
@@ -54,7 +58,7 @@ async function apiFetchTickets(params = {}) {
     } catch (err) {
         console.warn("Backend API not reachable, using local storage tickets:", err);
     }
-    return getLocalTickets();
+    return getTickets();
 }
 
 async function apiCreateTicket(ticketPayload) {
@@ -70,7 +74,7 @@ async function apiCreateTicket(ticketPayload) {
     } catch (err) {
         console.warn("Backend API POST failed, creating ticket locally:", err);
     }
-    const tickets = getLocalTickets();
+    const tickets = getTickets();
     const newTicket = {
         id: generateTicketId(),
         title: ticketPayload.subject || ticketPayload.title,
@@ -78,108 +82,50 @@ async function apiCreateTicket(ticketPayload) {
         priority: ticketPayload.priority || "Medium",
         status: "Open",
         description: ticketPayload.description,
-        date: ticketPayload.preferredDate || "",
+        date: ticketPayload.date || "",
         createdAt: new Date().toISOString()
     };
     tickets.unshift(newTicket);
-    saveLocalTickets(tickets);
+    saveTickets(tickets);
     return newTicket;
 }
 
-async function apiSendGenieChat(message) {
-    try {
-        const res = await fetch(`${API_BASE_URL}/genie/chat`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message })
-        });
-        if (res.ok) {
-            const data = await res.json();
-            if (data && (data.reply || data.response || data.message)) {
-                return data.reply || data.response || data.message;
-            }
-        }
-    } catch (err) {
-        console.warn("Genie chat API not available, using offline Genie response:", err);
-    }
-    return getGenieResponse(message);
-}
-
 /* =========================================================
-   UI INITIALIZERS & COMPONENTS
+   PROFILE DROPDOWN MENU & TOP RIGHT PAGE SWITCHING
    ========================================================= */
-
-function initializeSidebarToggle() {
-    const sidebarToggle = document.getElementById("sidebarToggle");
-    const sidebar = document.querySelector(".sidebar");
-    const mainContent = document.querySelector(".main-content");
-
-    if (sidebarToggle && sidebar && mainContent) {
-        sidebarToggle.addEventListener("click", () => {
-            sidebar.classList.toggle("collapsed");
-            mainContent.classList.toggle("expanded");
-        });
-    }
-}
-
-function initializeBrandDropdown() {
-    const brandToggleBtn = document.getElementById('brandMenuToggle');
-    const brandDropdown = document.getElementById('brandDropdown');
-
-    if (brandToggleBtn && brandDropdown) {
-        brandToggleBtn.addEventListener('click', (event) => {
-            event.stopPropagation();
-            const isShowing = brandDropdown.classList.toggle('show');
-            const icon = brandToggleBtn.querySelector('i');
-            
-            if (icon) {
-                if (isShowing) {
-                    icon.classList.remove('fa-bars');
-                    icon.classList.add('fa-chevron-right');
-                } else {
-                    icon.classList.remove('fa-chevron-right');
-                    icon.classList.add('fa-bars');
-                }
-            }
-        });
-
-        document.addEventListener('click', (event) => {
-            if (!brandToggleBtn.contains(event.target) && !brandDropdown.contains(event.target)) {
-                brandDropdown.classList.remove('show');
-                const icon = brandToggleBtn.querySelector('i');
-                if (icon) {
-                    icon.classList.remove('fa-chevron-right');
-                    icon.classList.add('fa-bars');
-                }
-            }
-        });
-    }
-}
-
 function initializeProfileDropdown() {
-    const trigger = document.getElementById('profileDropdownTrigger');
-    const menu = document.getElementById('profileDropdownMenu');
-    const display = document.getElementById('currentRoleDisplay');
+    const profileBtn = document.getElementById('profileDropdownTrigger');
+    const profileMenu = document.getElementById('profileDropdownMenu');
+    const roleButtons = document.querySelectorAll('.role-switch-btn');
+    const currentRoleDisplay = document.getElementById('currentRoleDisplay');
 
-    if (trigger && menu) {
-        trigger.onclick = (e) => {
-            e.preventDefault();
+    if (profileBtn && profileMenu) {
+        profileBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            menu.classList.toggle('show');
-        };
+            const isShowing = profileMenu.classList.toggle('show');
+            profileBtn.setAttribute('aria-expanded', isShowing);
+        });
 
-        document.onclick = (e) => {
-            if (!trigger.contains(e.target) && !menu.contains(e.target)) {
-                menu.classList.remove('show');
+        document.addEventListener('click', (e) => {
+            if (!profileBtn.contains(e.target) && !profileMenu.contains(e.target)) {
+                profileMenu.classList.remove('show');
+                profileBtn.setAttribute('aria-expanded', 'false');
             }
-        };
+        });
 
-        const roleButtons = menu.querySelectorAll('.role-switch-btn');
         roleButtons.forEach(btn => {
-            btn.onclick = (e) => {
+            btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const selectedRole = btn.getAttribute('data-role');
-                menu.classList.remove('show');
+                const selectedRole = btn.getAttribute('data-role') || btn.dataset.role;
+                roleButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                if (currentRoleDisplay) {
+                    currentRoleDisplay.textContent = selectedRole;
+                }
+
+                profileMenu.classList.remove('show');
+                profileBtn.setAttribute('aria-expanded', 'false');
 
                 const inPagesDir = window.location.pathname.includes('/pages/');
                 if (selectedRole === 'Management') {
@@ -189,83 +135,56 @@ function initializeProfileDropdown() {
                     localStorage.setItem('portalUser', JSON.stringify({ name: 'Employee User', role: 'Employee', email: 'employee@ticketgenie.com' }));
                     window.location.href = inPagesDir ? '../index.html' : 'index.html';
                 }
-            };
+            });
         });
     }
 }
 
+/* =========================================================
+   NEW REQUEST FORM
+   ========================================================= */
 function initializeNewRequestForm() {
-    const form = document.getElementById("newTicketForm") || document.querySelector(".request-form-card form");
+    const form = document.querySelector(".request-form-card form");
     if (!form) return;
-
-    const textarea = document.getElementById("ticketDescription");
-    const charCount = document.getElementById("characterCount");
-    if (textarea && charCount) {
-        textarea.addEventListener("input", () => {
-            const count = textarea.value.length;
-            charCount.textContent = `${count} / 1000`;
-        });
-    }
-
-    const browseBtn = document.getElementById("browseButton");
-    const fileInput = document.getElementById("fileUpload");
-    const selectedFilesContainer = document.getElementById("selectedFiles");
-
-    if (browseBtn && fileInput) {
-        browseBtn.addEventListener("click", () => fileInput.click());
-        fileInput.addEventListener("change", () => {
-            if (!selectedFilesContainer) return;
-            selectedFilesContainer.innerHTML = "";
-            Array.from(fileInput.files).forEach(file => {
-                const fileTag = document.createElement("small");
-                fileTag.style.display = "inline-block";
-                fileTag.style.margin = "4px 6px 0 0";
-                fileTag.style.padding = "4px 8px";
-                fileTag.style.background = "#e7f0e9";
-                fileTag.style.borderRadius = "4px";
-                fileTag.style.color = "#527d66";
-                fileTag.textContent = file.name;
-                selectedFilesContainer.appendChild(fileTag);
-            });
-        });
-    }
 
     form.addEventListener("submit", async function(event) {
         event.preventDefault();
 
-        const titleElement = document.getElementById("ticketSubject");
-        const categoryElement = document.getElementById("ticketCategory");
-        const priorityElement = document.getElementById("ticketPriority");
-        const descriptionElement = document.getElementById("ticketDescription");
-        const preferredDateElement = document.getElementById("preferredDate");
+        const titleElement = document.getElementById("ticketSubject") || document.getElementById("anonTicketSubject") || document.getElementById("leaveType");
+        const categoryElement = document.getElementById("ticketCategory") || document.getElementById("anonTicketCategory") || document.getElementById("leaveType");
+        const descriptionElement = document.getElementById("ticketDescription") || document.getElementById("anonTicketDescription") || document.getElementById("leaveDescription");
+        
+        const submitBtn = event.target.querySelector('.submit-request-button');
 
-        const title = titleElement ? titleElement.value.trim() : "";
-        const category = categoryElement ? categoryElement.value : "";
-        const priority = priorityElement ? priorityElement.value : "Medium";
+        const title = titleElement ? titleElement.value.trim() : "New Request";
+        const category = categoryElement ? categoryElement.value : "General";
         const description = descriptionElement ? descriptionElement.value.trim() : "";
-        const preferredDate = preferredDateElement ? preferredDateElement.value : "";
 
-        if (!title) { showFormError("Please enter a request title."); if (titleElement) titleElement.focus(); return; }
-        if (!category) { showFormError("Please select a category."); if (categoryElement) categoryElement.focus(); return; }
-        if (!description) { showFormError("Please provide a description."); if (descriptionElement) descriptionElement.focus(); return; }
+        if (!title || !category || !description) { 
+            showFormError("Please fill out all required fields."); 
+            return; 
+        }
 
-        const oldError = document.getElementById("formErrorMessage");
+        const oldError = document.querySelector(".form-error-message");
         if (oldError) oldError.style.display = "none";
 
-        const submitBtn = document.getElementById("submitRequestButton");
-        if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Submitting...`; }
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
+            submitBtn.classList.add('loading');
+        }
 
         const newTicket = await apiCreateTicket({
-            subject: title,
             title: title,
+            subject: title,
             category: category,
-            priority: priority,
+            priority: "Medium",
             description: description,
-            preferredDate: preferredDate
+            date: ""
         });
 
         showSuccessMessage(newTicket);
-        setTimeout(() => { window.location.href = "my-tickets.html"; }, 2500);
+
+        setTimeout(() => { window.location.href = "my-tickets.html"; }, 1500);
     });
 }
 
@@ -286,12 +205,11 @@ function showSuccessMessage(ticket) {
         document.body.appendChild(success);
     }
 
-    const ticketId = ticket.id ? ticket.id : "Submitted";
     success.innerHTML = `
         <div class="success-icon"><i class="fa-solid fa-check"></i></div>
         <div>
             <strong>Request submitted successfully</strong>
-            <span>Ticket #${escapeHTML(ticketId)} has been created.</span>
+            <span>Ticket #${escapeHTML(ticket.id)} has been created.</span>
         </div>
     `;
 
@@ -300,92 +218,107 @@ function showSuccessMessage(ticket) {
 }
 
 /* =========================================================
-   MY TICKETS & OVERVIEW
-   ========================================================= */
-async function initializeMyTickets() {
-    const myTicketsList = document.getElementById("myTicketsList");
-    if (!myTicketsList) return;
+   MY TICKETS
+========================================================= */
+function initializeMyTickets() {
+    const table = document.querySelector(".tickets-table");
+    if (!table) return;
 
-    await renderTickets();
+    renderTickets();
 
     const searchInput = document.getElementById("ticketSearch");
     if (searchInput) {
-        searchInput.addEventListener("input", () => renderTickets());
+        searchInput.addEventListener("input", renderTickets);
     }
 
-    const statusFilter = document.getElementById("ticketStatusFilter");
-    const priorityFilter = document.getElementById("ticketPriorityFilter");
-
-    if (statusFilter) statusFilter.addEventListener("change", () => renderTickets());
-    if (priorityFilter) priorityFilter.addEventListener("change", () => renderTickets());
+    const filters = document.querySelectorAll(".ticket-filter");
+    filters.forEach(filter => {
+        filter.addEventListener("change", renderTickets);
+    });
 }
 
 async function renderTickets() {
-    const myTicketsList = document.getElementById("myTicketsList");
-    if (!myTicketsList) return;
+    const table = document.querySelector(".tickets-table");
+    if (!table) return;
 
     const searchInput = document.getElementById("ticketSearch");
+    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
+
     const statusFilter = document.getElementById("ticketStatusFilter");
     const priorityFilter = document.getElementById("ticketPriorityFilter");
 
-    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
-    const status = statusFilter ? statusFilter.value : "all";
-    const priority = priorityFilter ? priorityFilter.value : "all";
+    const statusValue = statusFilter ? statusFilter.value : "all";
+    const priorityValue = priorityFilter ? priorityFilter.value : "all";
 
-    const tickets = await apiFetchTickets({ search: searchTerm, status: status, priority: priority });
-
-    const filtered = tickets.filter(t => {
-        const matchesSearch = !searchTerm || 
-            (t.title && t.title.toLowerCase().includes(searchTerm)) || 
-            (t.id && t.id.toLowerCase().includes(searchTerm)) || 
-            (t.category && t.category.toLowerCase().includes(searchTerm));
-        const matchesStatus = (status === "all") || (t.status === status);
-        const matchesPriority = (priority === "all") || (t.priority === priority);
-        return matchesSearch && matchesStatus && matchesPriority;
+    let tickets = await apiFetchTickets({
+        search: searchTerm,
+        status: statusValue,
+        priority: priorityValue
     });
 
-    myTicketsList.innerHTML = "";
-
-    if (filtered.length === 0) {
-        myTicketsList.innerHTML = `
-            <div class="ticket-empty-state">
-                <i class="fa-solid fa-ticket-simple" style="font-size: 28px; margin-bottom: 8px;"></i>
-                <strong>No tickets found</strong>
-                <p>Try adjusting your search or filters.</p>
-            </div>
-        `;
-        return;
+    if (searchTerm) {
+        tickets = tickets.filter(ticket => {
+            const title = (ticket.title || ticket.subject || "").toLowerCase();
+            const id = (ticket.id || "").toLowerCase();
+            const category = (ticket.category || "").toLowerCase();
+            return title.includes(searchTerm) || id.includes(searchTerm) || category.includes(searchTerm);
+        });
     }
 
-    filtered.forEach(ticket => {
+    if (statusValue && statusValue !== "all") {
+        tickets = tickets.filter(ticket => String(ticket.status).toLowerCase() === statusValue.toLowerCase());
+    }
+
+    if (priorityValue && priorityValue !== "all") {
+        tickets = tickets.filter(ticket => String(ticket.priority).toLowerCase() === priorityValue.toLowerCase());
+    }
+
+    tickets.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.created_at || 0);
+        const dateB = new Date(b.createdAt || b.created_at || 0);
+        return dateB - dateA;
+    });
+
+    const header = table.querySelector(".table-header");
+    table.innerHTML = "";
+    if (header) { table.appendChild(header); }
+
+    tickets.forEach(ticket => {
         const row = createTicketRow(ticket);
-        myTicketsList.appendChild(row);
+        table.appendChild(row);
     });
 
-    const paginationText = document.getElementById("ticketPaginationText");
-    if (paginationText) {
-        paginationText.textContent = `Showing ${filtered.length} of ${tickets.length} tickets`;
+    if (tickets.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "ticket-empty-state";
+        empty.innerHTML = `
+            <i class="fa-regular fa-folder-open"></i>
+            <strong>No tickets found</strong>
+            <span>Try changing your search or filters.</span>
+        `;
+        table.appendChild(empty);
     }
+
+    await updateTicketOverview();
 }
 
 function createTicketRow(ticket) {
     const row = document.createElement("div");
     row.className = "table-row ticket-clickable";
     const icon = getTicketIcon(ticket.category);
-    const updated = formatTicketDate(ticket.createdAt || ticket.date);
-    const ticketId = ticket.id ? (ticket.id.startsWith("HD-") ? ticket.id : `HD-${ticket.id}`) : "HD-1000";
+    const updated = formatTicketDate(ticket.createdAt || ticket.created_at);
 
     row.innerHTML = `
         <div class="request-info">
             <div class="request-icon"><i class="${icon}"></i></div>
             <div>
-                <strong>${escapeHTML(ticket.title || ticket.subject || "Support Ticket")}</strong>
-                <span>#${escapeHTML(ticketId)}</span>
+                <strong>${escapeHTML(ticket.title || ticket.subject || "Request")}</strong>
+                <span>#${escapeHTML(ticket.id)}</span>
             </div>
         </div>
         <span>${escapeHTML(ticket.category || "General")}</span>
-        <span class="status ${getStatusClass(ticket.status || "Open")}">${escapeHTML(ticket.status || "Open")}</span>
-        <span class="priority ${(ticket.priority || "Medium").toLowerCase().replace(/\s+/g, "-")}">${escapeHTML(ticket.priority || "Medium")}</span>
+        <span class="status ${getStatusClass(ticket.status)}">${escapeHTML(ticket.status || "Open")}</span>
+        <span class="priority ${String(ticket.priority || "Medium").toLowerCase().replace(/\s+/g, "-")}">${escapeHTML(ticket.priority || "Medium")}</span>
         <span>${updated}</span>
     `;
 
@@ -400,7 +333,6 @@ function getTicketIcon(category) {
         "Payroll": "fa-solid fa-receipt",
         "Payroll & Benefits": "fa-solid fa-receipt",
         "Benefits": "fa-solid fa-shield-heart",
-        "HR": "fa-solid fa-users",
         "Human Resources": "fa-solid fa-users",
         "Employee Services": "fa-solid fa-user",
         "Time Off": "fa-solid fa-calendar-check",
@@ -411,7 +343,7 @@ function getTicketIcon(category) {
 }
 
 function getStatusClass(status) {
-    return String(status).toLowerCase().replace(/\s+/g, "-");
+    return String(status || "open").toLowerCase().replace(/\s+/g, "-");
 }
 
 function formatTicketDate(dateString) {
@@ -428,9 +360,9 @@ function formatTicketDate(dateString) {
 
 async function updateTicketOverview() {
     const tickets = await apiFetchTickets();
-    const open = tickets.filter(ticket => (ticket.status === "Open" || !ticket.status)).length;
-    const inProgress = tickets.filter(ticket => ticket.status === "In Progress" || ticket.status === "Pending").length;
-    const resolved = tickets.filter(ticket => ticket.status === "Resolved").length;
+    const open = tickets.filter(ticket => String(ticket.status).toLowerCase() === "open").length;
+    const inProgress = tickets.filter(ticket => ["in progress", "pending", "in-progress"].includes(String(ticket.status).toLowerCase())).length;
+    const resolved = tickets.filter(ticket => String(ticket.status).toLowerCase() === "resolved").length;
 
     const openCount = document.getElementById("openCount");
     const inProgressCount = document.getElementById("inProgressCount");
@@ -451,32 +383,27 @@ async function updateTicketOverview() {
 }
 
 function showTicketDetails(ticket) {
-    const existingModal = document.querySelector(".ticket-modal");
-    if (existingModal) existingModal.remove();
-
     const modal = document.createElement("div");
     modal.className = "ticket-modal";
-    const ticketId = ticket.id ? (ticket.id.startsWith("HD-") ? ticket.id : `HD-${ticket.id}`) : "HD-1000";
-
     modal.innerHTML = `
         <div class="ticket-modal-content">
             <button class="ticket-modal-close" type="button" aria-label="Close ticket details">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            <p class="eyebrow">TICKET #${escapeHTML(ticketId)}</p>
-            <h2>${escapeHTML(ticket.title || ticket.subject || "Support Ticket")}</h2>
+            <p class="eyebrow">TICKET #${escapeHTML(ticket.id)}</p>
+            <h2>${escapeHTML(ticket.title)}</h2>
             <div class="ticket-detail-grid">
-                <div><span>Category</span><strong>${escapeHTML(ticket.category || "General")}</strong></div>
-                <div><span>Priority</span><strong class="priority ${(ticket.priority || "Medium").toLowerCase().replace(/\s+/g, "-")}">${escapeHTML(ticket.priority || "Medium")}</strong></div>
-                <div><span>Status</span><strong class="status ${getStatusClass(ticket.status || "Open")}">${escapeHTML(ticket.status || "Open")}</strong></div>
+                <div><span>Category</span><strong>${escapeHTML(ticket.category)}</strong></div>
+                <div><span>Priority</span><strong class="priority ${ticket.priority.toLowerCase().replace(/\s+/g, "-")}">${escapeHTML(ticket.priority)}</strong></div>
+                <div><span>Status</span><strong class="status ${getStatusClass(ticket.status)}">${escapeHTML(ticket.status)}</strong></div>
                 <div><span>Preferred Date</span><strong>${ticket.date ? formatPreferredDate(ticket.date) : "Not specified"}</strong></div>
             </div>
             <div class="ticket-description">
                 <span>Description</span>
-                <p>${escapeHTML(ticket.description || "No description provided.")}</p>
+                <p>${escapeHTML(ticket.description)}</p>
             </div>
             <div class="ticket-modal-footer">
-                <span>Created ${formatTicketDate(ticket.createdAt || ticket.date)}</span>
+                <span>Created ${formatTicketDate(ticket.createdAt)}</span>
                 <button class="modal-close-button" type="button">Close</button>
             </div>
         </div>
@@ -514,7 +441,7 @@ function formatPreferredDate(dateString) {
 
 /* =========================================================
    GENIE AI AGENT
-   ========================================================= */
+========================================================= */
 function initializeGenie() {
     const genieChat = document.getElementById("genieChat");
     if (!genieChat) return;
@@ -544,7 +471,7 @@ function initializeGenie() {
     const openGenieFromRequest = document.getElementById("openGenieFromRequest");
     if (openGenieFromRequest) openGenieFromRequest.addEventListener("click", openGenie);
 
-    async function sendGenieMessage() {
+    function sendGenieMessage() {
         if (!genieInput) return;
         const message = genieInput.value.trim();
         if (!message) return;
@@ -553,9 +480,11 @@ function initializeGenie() {
         genieInput.value = "";
 
         const thinking = addGenieThinking();
-        const response = await apiSendGenieChat(message);
-        if (thinking) thinking.remove();
-        addGenieMessage(response, "agent");
+        setTimeout(() => {
+            if (thinking) thinking.remove();
+            const response = getGenieResponse(message);
+            addGenieMessage(response, "agent");
+        }, 700);
     }
 
     if (genieSendButton) genieSendButton.addEventListener("click", sendGenieMessage);
@@ -567,14 +496,16 @@ function initializeGenie() {
 
     const suggestions = document.querySelectorAll(".genie-suggestion");
     suggestions.forEach(suggestion => {
-        suggestion.addEventListener("click", async () => {
+        suggestion.addEventListener("click", () => {
             const message = suggestion.textContent.trim();
             if (!message) return;
             addGenieMessage(message, "user");
             const thinking = addGenieThinking();
-            const response = await apiSendGenieChat(message);
-            if (thinking) thinking.remove();
-            addGenieMessage(response, "agent");
+            setTimeout(() => {
+                if (thinking) thinking.remove();
+                const response = getGenieResponse(message);
+                addGenieMessage(response, "agent");
+            }, 700);
         });
     });
 
@@ -583,9 +514,7 @@ function initializeGenie() {
         const clickedInside = genieChat.contains(event.target);
         const clickedButton = genieButton && genieButton.contains(event.target);
         const clickedNav = genieNav && genieNav.contains(event.target);
-        const clickedHelp = openGenieFromRequest && openGenieFromRequest.contains(event.target);
-        const clickedKGenie = knowledgeGenieButton && knowledgeGenieButton.contains(event.target);
-        if (!clickedInside && !clickedButton && !clickedNav && !clickedHelp && !clickedKGenie) closeGenie();
+        if (!clickedInside && !clickedButton && !clickedNav) closeGenie();
     });
 }
 
@@ -637,7 +566,7 @@ function addGenieMessage(message, sender) {
 }
 
 function escapeHTML(value) {
-    return String(value || "")
+    return String(value)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
@@ -647,17 +576,17 @@ function escapeHTML(value) {
 
 /* =========================================================
    KNOWLEDGE BASE
-   ========================================================= */
+========================================================= */
 function initializeKnowledgeBase() {
     const searchInput = document.getElementById("knowledgeSearch");
     const searchButton = document.getElementById("knowledgeSearchButton");
     const articles = document.querySelectorAll(".knowledge-article");
     const categories = document.querySelectorAll(".knowledge-category");
 
-    if (!searchInput && articles.length === 0) return;
+    if (!searchInput) return;
 
     function searchArticles() {
-        const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
+        const searchTerm = searchInput.value.toLowerCase().trim();
         articles.forEach(article => {
             const articleText = article.textContent.toLowerCase();
             if (!searchTerm || articleText.includes(searchTerm)) {
@@ -669,77 +598,216 @@ function initializeKnowledgeBase() {
     }
 
     if (searchButton) searchButton.addEventListener("click", searchArticles);
-    if (searchInput) {
-        searchInput.addEventListener("keydown", event => {
-            if (event.key === "Enter") { event.preventDefault(); searchArticles(); }
-        });
-    }
+    searchInput.addEventListener("keydown", event => {
+        if (event.key === "Enter") { event.preventDefault(); searchArticles(); }
+    });
 
     categories.forEach(category => {
         category.addEventListener("click", () => {
-            const selectedCategory = category.getAttribute("data-category");
+            const selectedCategory = category.dataset.category;
             articles.forEach(article => {
-                const articleCategory = article.getAttribute("data-category");
-                if (!selectedCategory || articleCategory === selectedCategory) {
+                const articleCategory = article.dataset.category;
+                if (articleCategory === selectedCategory) {
                     article.style.display = "flex";
                 } else {
                     article.style.display = "none";
                 }
             });
-            if (searchInput && selectedCategory) searchInput.value = selectedCategory;
+            searchInput.value = selectedCategory;
         });
     });
 }
 
 /* =========================================================
-   NOTIFICATIONS
-   ========================================================= */
-function initializeNotifications() {
-    const markAllRead = document.getElementById("markAllRead");
-    if (!markAllRead) return;
+   SIDEBAR TOGGLE
+========================================================= */
+function initializeSidebarToggle() {
+    const topbarToggle = document.getElementById('sidebarToggle');
+    const brandToggle = document.getElementById('brandMenuToggle');
 
-    markAllRead.addEventListener("click", (e) => {
-        e.preventDefault();
-        const unreadCards = document.querySelectorAll(".notification-card.unread");
-        unreadCards.forEach(card => card.classList.remove("unread"));
-        const dots = document.querySelectorAll(".notification-unread-dot");
-        dots.forEach(dot => dot.remove());
-        const count = document.querySelector(".notification-count");
-        if (count) count.textContent = "0";
-    });
+    function toggleSidebar(e) {
+        if (e) e.stopPropagation();
+        document.body.classList.toggle('sidebar-closed');
+    }
+
+    // Attach to the topbar button (to reopen)
+    if (topbarToggle) topbarToggle.addEventListener('click', toggleSidebar);
+    
+    // Attach to the inside sidebar button (to close)
+    if (brandToggle) brandToggle.addEventListener('click', toggleSidebar);
 }
 
 /* =========================================================
-   GLOBAL SHORTCUTS
-   ========================================================= */
-function initializeShortcuts() {
-    document.addEventListener("keydown", (e) => {
-        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+   ENHANCED FILE UPLOAD
+========================================================= */
+function initializeFileUploads() {
+    // Grab every upload area across all tabs
+    const uploadAreas = document.querySelectorAll('.upload-area');
+    
+    uploadAreas.forEach(area => {
+        const fileInput = area.querySelector('input[type="file"]');
+        const browseBtn = area.querySelector('.browse-button');
+        // The div right after the upload-area is where we display selected files
+        const fileListContainer = area.nextElementSibling; 
+        
+        // DataTransfer object lets us manipulate the file list (add/remove) programmatically
+        let dataTransfer = new DataTransfer();
+
+        // 1. Click to browse
+        if (browseBtn) {
+            browseBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fileInput.click();
+            });
+        }
+
+        // 2. Drag & Drop Visuals
+        area.addEventListener('dragover', (e) => {
             e.preventDefault();
-            const globalSearch = document.getElementById("globalSearch") || document.getElementById("helpSearch") || document.getElementById("ticketSearch") || document.getElementById("knowledgeSearch");
-            if (globalSearch) globalSearch.focus();
+            area.classList.add('drag-over');
+        });
+
+        area.addEventListener('dragleave', () => {
+            area.classList.remove('drag-over');
+        });
+
+        // 3. Handle Dropped Files
+        area.addEventListener('drop', (e) => {
+            e.preventDefault();
+            area.classList.remove('drag-over');
+            if (e.dataTransfer.files.length > 0) {
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+
+        // 4. Handle Browsed Files
+        if (fileInput) {
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length > 0) {
+                    handleFiles(fileInput.files);
+                }
+            });
+        }
+
+        // Add files to our DataTransfer and update the UI
+        function handleFiles(files) {
+            for (let i = 0; i < files.length; i++) {
+                dataTransfer.items.add(files[i]);
+            }
+            fileInput.files = dataTransfer.files; // Update the actual hidden input
+            renderFileList();
+        }
+
+        // Build the HTML for the attached files
+        function renderFileList() {
+            if (!fileListContainer) return;
+            fileListContainer.innerHTML = '';
+            if (dataTransfer.files.length === 0) return;
+            
+            const list = document.createElement('div');
+            list.className = 'file-list';
+            
+            Array.from(dataTransfer.files).forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                
+                // Pick a nice icon based on the file type
+                let iconClass = 'fa-file';
+                if (file.type.includes('image')) iconClass = 'fa-file-image';
+                else if (file.type.includes('pdf')) iconClass = 'fa-file-pdf';
+                else if (file.type.includes('word')) iconClass = 'fa-file-word';
+                else if (file.type.includes('video')) iconClass = 'fa-file-video';
+
+                fileItem.innerHTML = `
+                    <div class="file-item-info">
+                        <i class="fa-regular ${iconClass}"></i>
+                        <span>${file.name}</span>
+                    </div>
+                    <button type="button" class="file-remove-btn" data-index="${index}" aria-label="Remove file">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                `;
+                list.appendChild(fileItem);
+            });
+            
+            fileListContainer.appendChild(list);
+            
+            // Attach event listeners to the new "remove" buttons
+            const removeBtns = list.querySelectorAll('.file-remove-btn');
+            removeBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const indexToRemove = parseInt(this.getAttribute('data-index'), 10);
+                    removeFile(indexToRemove);
+                });
+            });
+        }
+
+        // Rebuild the DataTransfer object without the removed file
+        function removeFile(index) {
+            const dt = new DataTransfer();
+            const files = dataTransfer.files;
+            for (let i = 0; i < files.length; i++) {
+                if (i !== index) {
+                    dt.items.add(files[i]);
+                }
+            }
+            dataTransfer = dt;
+            fileInput.files = dataTransfer.files;
+            renderFileList();
         }
     });
+}
+/* =========================================================
+   DARK MODE TOGGLE
+========================================================= */
+function initializeDarkMode() {
+    const toggleBtn = document.getElementById('darkModeToggle');
+    const darkIcon = document.getElementById('darkModeIcon');
+    
+    // Check local storage for saved preference on page load
+    const savedTheme = localStorage.getItem('ticketGenieTheme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        if (darkIcon) {
+            darkIcon.classList.remove('fa-moon');
+            darkIcon.classList.add('fa-sun');
+        }
+    }
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            
+            // Save preference
+            localStorage.setItem('ticketGenieTheme', isDark ? 'dark' : 'light');
+            
+            // Switch icon between moon and sun
+            if (darkIcon) {
+                if (isDark) {
+                    darkIcon.classList.remove('fa-moon');
+                    darkIcon.classList.add('fa-sun');
+                } else {
+                    darkIcon.classList.remove('fa-sun');
+                    darkIcon.classList.add('fa-moon');
+                }
+            }
+        });
+    }
 }
 
 /* =========================================================
    INITIALIZE EVERYTHING
-   ========================================================= */
-function initApp() {
-    initializeSidebarToggle();
-    initializeBrandDropdown();
-    initializeProfileDropdown();
+========================================================= */
+document.addEventListener("DOMContentLoaded", () => {
+    initializeProfileDropdown(); 
     initializeNewRequestForm();
     initializeMyTickets();
     initializeGenie();
     initializeKnowledgeBase();
-    initializeNotifications();
-    initializeShortcuts();
     updateTicketOverview();
-}
+    initializeSidebarToggle();
+    initializeFileUploads();
+    initializeDarkMode();
+});
 
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initApp);
-} else {
-    initApp();
-}
