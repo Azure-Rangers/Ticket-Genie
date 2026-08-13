@@ -14,6 +14,17 @@ class TicketCreate(BaseModel):
     attachment: Optional[str] = None
 
 
+class TicketUpdate(BaseModel):
+    title: Optional[str] = Field(None, min_length=3, max_length=200)
+    category: Optional[str] = None
+    priority: Optional[str] = None
+    status: Optional[str] = None
+    department: Optional[str] = None
+    description: Optional[str] = Field(None, min_length=5)
+    is_anonymous: Optional[bool] = None
+    attachment: Optional[str] = None
+
+
 class TicketResponse(BaseModel):
     id: str
     title: str

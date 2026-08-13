@@ -5,6 +5,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from telemetry import setup_telemetry
 
+from database.connection import init_db_schema
+
 load_dotenv()
 
 app = FastAPI(
@@ -12,6 +14,9 @@ app = FastAPI(
     description="AI-powered HR & IT Helpdesk System",
     version="1.0",
 )
+
+# Initialize Database Schema
+init_db_schema()
 
 # Enable CORS for frontend dynamic requests
 app.add_middleware(

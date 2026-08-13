@@ -95,6 +95,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+    put:
+      tags:
+      - tickets
+      summary: Handle Update Ticket
+      operationId: handle_update_ticket_api_tickets__ticket_id__put
+      parameters:
+      - name: ticket_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticket Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/genie/chat:
     post:
       tags:
@@ -220,6 +250,53 @@ components:
       - title
       - description
       title: TicketCreate
+    TicketUpdate:
+      properties:
+        title:
+          anyOf:
+          - type: string
+            maxLength: 200
+            minLength: 3
+          - type: 'null'
+          title: Title
+        category:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Category
+        priority:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Priority
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+        department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Department
+        description:
+          anyOf:
+          - type: string
+            minLength: 5
+          - type: 'null'
+          title: Description
+        is_anonymous:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Anonymous
+        attachment:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Attachment
+      type: object
+      title: TicketUpdate
     ValidationError:
       properties:
         loc:
