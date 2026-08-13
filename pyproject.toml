@@ -25,6 +25,7 @@ backend = [
     "pyyaml>=6.0.0",
     "sqlalchemy>=2.0.0",
     "pyodbc>=5.0.0",
+    "openai>=2.8.0",
 ]
 dev = [
     "ruff>=0.3.0",
