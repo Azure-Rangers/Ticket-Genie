@@ -7,7 +7,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/workspace:/workspace/backend
 
-
 WORKDIR /workspace
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -16,9 +15,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml .
-COPY backend/ ./backend/
-RUN pip install --no-cache-dir .[backend]
+RUN mkdir -p backend && touch backend/__init__.py \
+    && pip install --no-cache-dir .[backend]
 
+COPY backend/ ./backend/
+RUN pip install --no-cache-dir --no-deps .
 
 EXPOSE 8000
 
