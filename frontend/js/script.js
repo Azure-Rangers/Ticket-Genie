@@ -11,15 +11,7 @@ const STORAGE_KEY = "ticketGenieTickets";
 function getLocalTickets() {
     const tickets = localStorage.getItem(STORAGE_KEY);
     if (!tickets) {
-        const defaultTickets = [
-            { id: "HD-1024", title: "Payroll Issue", category: "Payroll", priority: "High", status: "In Progress", description: "Having an issue with my latest paycheck.", date: "2026-08-08", createdAt: "2026-08-08T10:00:00" },
-            { id: "HD-1025", title: "Benefits Question", category: "Benefits", priority: "Medium", status: "Open", description: "I have a question about my health insurance benefits.", date: "2026-08-07", createdAt: "2026-08-07T10:00:00" },
-            { id: "HD-1026", title: "Laptop Replacement Request", category: "IT Support", priority: "Low", status: "Resolved", description: "Requesting a replacement developer laptop.", date: "2026-08-05", createdAt: "2026-08-05T10:00:00" },
-            { id: "HD-1027", title: "PTO Request", category: "Time Off", priority: "Medium", status: "Pending", description: "Requesting vacation PTO for upcoming holiday.", date: "2026-08-04", createdAt: "2026-08-04T10:00:00" },
-            { id: "HD-1028", title: "Expense Reimbursement", category: "Payroll", priority: "Low", status: "Resolved", description: "Submitting travel expense reimbursement.", date: "2026-08-02", createdAt: "2026-08-02T10:00:00" }
-        ];
-        saveLocalTickets(defaultTickets);
-        return defaultTickets;
+        return [];
     }
     try {
         return JSON.parse(tickets);
@@ -34,7 +26,7 @@ function saveLocalTickets(tickets) {
 
 function generateTicketId() {
     const tickets = getLocalTickets();
-    let highestNumber = 1028;
+    let highestNumber = 1000;
     tickets.forEach(ticket => {
         const number = parseInt(String(ticket.id).replace("HD-", ""), 10);
         if (!isNaN(number) && number > highestNumber) {
@@ -58,8 +50,7 @@ async function apiFetchTickets(params = {}) {
         const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
-        const tickets = Array.isArray(data) ? data : (data.tickets || []);
-        if (tickets.length > 0) return tickets;
+        return Array.isArray(data) ? data : (data.tickets || []);
     } catch (err) {
         console.warn("Backend API not reachable, using local storage tickets:", err);
     }

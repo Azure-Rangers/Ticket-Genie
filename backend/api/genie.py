@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from models.ticket import GenieChatRequest, GenieChatResponse
 
 router = APIRouter(prefix="/genie", tags=["genie"])

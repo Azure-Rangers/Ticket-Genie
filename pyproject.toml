@@ -23,6 +23,8 @@ backend = [
     "azure-monitor-opentelemetry>=1.6.0",
     "opentelemetry-instrumentation-fastapi>=0.45b0",
     "pyyaml>=6.0.0",
+    "sqlalchemy>=2.0.0",
+    "pyodbc>=5.0.0",
 ]
 dev = [
     "ruff>=0.3.0",
@@ -38,9 +40,15 @@ dev = [
 [tool.ruff]
 target-version = "py311"
 line-length = 88
+src = ["backend", "."]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B"]
+ignore = ["B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["api", "database", "models", "services", "telemetry"]
+
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

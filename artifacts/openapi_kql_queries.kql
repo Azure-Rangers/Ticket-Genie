@@ -65,6 +65,20 @@ requests
 | render timechart
 
 
+// Route: PUT /api/tickets/{ticket_id} (tickets)
+
+requests
+| where timestamp > ago(1h) and name == "PUT /api/tickets/{ticket_id}"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
 // Route: POST /api/genie/chat (genie)
 
 requests
