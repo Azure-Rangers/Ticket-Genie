@@ -84,18 +84,18 @@
             <button class="icon-button" type="button">
                 <i class="fa-regular fa-bell"></i><span class="notification-dot"></span>
             </button>
-            <div class="profile">
-                <button class="profile-button" id="profileDropdownTrigger" aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdownMenu">
+                        <div class="profile">
+                <button class="profile-button" id="profileDropdownTrigger">
                     <div class="avatar">NM</div>
                     <div class="profile-info"><strong>Nishita</strong><span id="currentRoleDisplay">Employee</span></div>
                     <i class="fa-solid fa-chevron-down"></i>
                 </button>
                 <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu" aria-labelledby="profileDropdownTrigger">
                     <span class="dropdown-label">Switch View</span>
-                    <button type="button" class="role-switch-btn active" data-role="Employee" role="menuitem">
+                    <button type="button" class="role-switch-btn active" data-role="Employee" role="menuitem" onclick="localStorage.setItem('portalUser', JSON.stringify({name: 'Employee User', role: 'Employee', email: 'employee@ticketgenie.com'})); window.location.href='index.html';">
                         <i class="fa-regular fa-user"></i> Employee View
                     </button>
-                    <button type="button" class="role-switch-btn" data-role="Management" role="menuitem">
+                    <button type="button" class="role-switch-btn" data-role="Management" role="menuitem" onclick="localStorage.setItem('portalUser', JSON.stringify({name: 'Management User', role: 'Management', email: 'management@ticketgenie.com'})); window.location.href='pages/management-portal.html';">
                         <i class="fa-solid fa-briefcase"></i> Management View
                     </button>
                 </div>
