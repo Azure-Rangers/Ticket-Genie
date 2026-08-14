@@ -368,7 +368,19 @@
     </div>
 </div>
 
-<script src="../js/script.js"></script>
+<script>
+    // Unified Auth Check
+    const userDataString = localStorage.getItem('portalUser');
+    
+    // If no user is found, kick them back to the login screen
+    if (!userDataString) { 
+      window.location.href = '../index.html'; 
+    } else {
+      // Optional: If your partner's UI has a place for the user's name, you can inject it here!
+      const user = JSON.parse(userDataString);
+      // document.getElementById('employeeNameDisplay').innerText = user.name;
+    }
+  </script>
 
 <!-- Added logic to handle Tab Switching locally -->
 <script>

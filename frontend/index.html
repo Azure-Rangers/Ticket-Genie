@@ -76,9 +76,13 @@
       if (roleType === 'Admin_AV') {
         localStorage.setItem('portalUser', JSON.stringify({ email: 'av@company.com', role: 'IT', name: 'Admin AV' }));
         window.location.href = 'admin_AV/admin_dashboard.html';
+        
       } else if (roleType === 'Employee_NM') {
         localStorage.setItem('portalUser', JSON.stringify({ email: 'nm@company.com', role: 'Employee', name: 'Employee NM' }));
-        window.location.href = 'employee_NM/my-tickets.html'; 
+        
+        // FIXED: This now routes directly to the employee dashboard
+        window.location.href = 'employee_NM/employee_dashboard.html'; 
+        
       } else if (roleType === 'SuperAdmin_SS') {
         localStorage.setItem('portalUser', JSON.stringify({ email: 'ss@company.com', role: 'Management', name: 'SuperAdmin SS' }));
         window.location.href = 'admin_AV/admin_dashboard.html';
