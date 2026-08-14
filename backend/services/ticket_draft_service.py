@@ -182,9 +182,7 @@ def _combined_text(message: str, history_user_messages: List[str]) -> str:
     return " ".join([*history_user_messages, message]).strip()
 
 
-def _accumulate_description(
-    draft: TicketDraft, message: str, combined: str
-) -> str:
+def _accumulate_description(draft: TicketDraft, message: str, combined: str) -> str:
     """
     Fold a new message into the draft's running description without losing
     earlier turns, even if the caller doesn't resend full chat history.
