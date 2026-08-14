@@ -3,212 +3,145 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ticket Genie - Onboarding & Immigration</title>
+  <title>TicketGenie - Onboarding & Immigration</title>
   <style>
-    /* --- CSS RESET & BASE STYLES --- */
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { display: flex; height: 100vh; background-color: #f9fafb; color: #1f2937; margin: 0; }
-
-    /* --- SIDEBAR --- */
-    .sidebar { width: 260px; background-color: #1e1b4b; color: #d1d5db; display: flex; flex-direction: column; flex-shrink: 0; }
-    .sidebar-header { padding: 24px; border-bottom: 1px solid #312e81; }
-    .sidebar-header h2 { color: #ffffff; font-size: 1.25rem; display: flex; align-items: center; gap: 8px; }
-    
+    body { display: flex; height: 100vh; background-color: #fdfdfd; color: #1f2937; margin: 0; overflow: hidden; }
+    /* --- SIDEBAR & NAV --- */
+    .sidebar { width: 250px; background-color: #2b1b38; color: #d1d5db; display: flex; flex-direction: column; flex-shrink: 0; justify-content: space-between; }
+    .sidebar-top { flex: 1; }
+    .sidebar-header { padding: 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .sidebar-header h2 { color: #ffffff; font-size: 1.2rem; margin-bottom: 2px;}
+    .sidebar-header span { display: block; font-size: 0.65rem; color: #a5b4fc; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+    .bot-icon { background: white; padding: 6px; border-radius: 8px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
     .nav-section { padding: 0 16px; margin-top: 24px; }
-    .nav-title { font-size: 0.75rem; color: #6366f1; text-transform: uppercase; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
-    .nav-link { display: block; padding: 10px 16px; color: #d1d5db; text-decoration: none; border-radius: 8px; font-size: 0.9rem; margin-bottom: 4px; transition: background 0.2s; }
-    .nav-link:hover, .nav-link.active { background-color: #312e81; color: #ffffff; }
-
-    /* --- MAIN CONTENT --- */
-    .main-content { flex: 1; padding: 32px; overflow-y: auto; }
-    
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
-    .page-header h1 { font-size: 1.75rem; color: #111827; }
-    .page-header p { color: #6b7280; font-size: 0.9rem; margin-top: 4px; }
+    .nav-title { font-size: 0.7rem; color: #818cf8; text-transform: uppercase; font-weight: bold; margin-bottom: 12px; letter-spacing: 1px; }
+    .nav-link { display: flex; align-items: center; gap: 12px; padding: 10px 16px; color: #d1d5db; text-decoration: none; border-radius: 8px; font-size: 0.85rem; margin-bottom: 4px; transition: background 0.2s; }
+    .nav-link:hover, .nav-link.active { background-color: rgba(255,255,255,0.1); color: #ffffff; font-weight: 500; border-left: 3px solid #818cf8; padding-left: 13px; }
+    .sidebar-footer { padding: 24px; font-size: 0.75rem; color: #a5b4fc; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 8px; }
+    .status-dot { width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; }
+    .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; position: relative; }
+    .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; border-bottom: 1px solid #f3f4f6; background: white; }
+    .search-small { display: flex; align-items: center; background: #f3f4f6; padding: 8px 16px; border-radius: 8px; width: 300px; }
+    .search-small input { border: none; background: transparent; outline: none; margin-left: 8px; font-size: 0.85rem; width: 100%; }
+    .nav-actions { display: flex; align-items: center; gap: 16px; }
+    .user-profile { display: flex; align-items: center; gap: 12px; font-size: 0.85rem; font-weight: 600; }
+    .avatar { width: 32px; height: 32px; background: #eef2ff; color: #4f46e5; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.8rem; }
+    /* --- ONBOARDING SPECIFIC --- */
+    .page-padding { padding: 40px; max-width: 1200px; margin: 0 auto; width: 100%; }
+    .welcome-text { font-size: 0.75rem; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .page-header { display: flex; justify-content: space-between; align-items: flex-end; margin: 8px 0 32px; }
+    .page-title { font-size: 2rem; color: #111827; }
     .btn-primary { background-color: #4f46e5; color: #ffffff; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; }
     .btn-primary:hover { background-color: #4338ca; }
-
-    /* --- METRICS CARDS --- */
     .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; margin-bottom: 32px; }
-    .card { background-color: #ffffff; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .card { background-color: #ffffff; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
     .card-title { font-size: 0.85rem; color: #6b7280; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; }
     .card-value { font-size: 2rem; font-weight: bold; color: #111827; margin-bottom: 4px; }
-
-    /* --- PIPELINE TABLE --- */
-    .pipeline-card { background: white; border-radius: 12px; border: 1px solid #e5e7eb; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .pipeline-card { background: white; border-radius: 12px; border: 1px solid #e5e7eb; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
     .pipeline-card h3 { font-size: 1.1rem; color: #111827; margin-bottom: 16px; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; }
-    
     table { width: 100%; border-collapse: collapse; }
     th { text-align: left; font-size: 0.75rem; color: #6b7280; text-transform: uppercase; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb; }
     td { padding: 16px 0; border-bottom: 1px solid #f3f4f6; font-size: 0.9rem; color: #374151; vertical-align: middle; }
-    
     .employee-info { display: flex; align-items: center; gap: 12px; }
-    .avatar { width: 36px; height: 36px; background-color: #e0e7ff; color: #4f46e5; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 0.9rem; }
+    .avatar-sm { width: 36px; height: 36px; background-color: #e0e7ff; color: #4f46e5; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 0.9rem; }
     .emp-name { font-weight: 600; color: #111827; }
     .emp-role { font-size: 0.75rem; color: #6b7280; }
-
-    /* Tags */
     .tag { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
     .tag-onboard { background: #dcfce7; color: #15803d; }
     .tag-offboard { background: #f3f4f6; color: #475569; }
     .tag-visa { background: #fef08a; color: #854d0e; }
-    
-    /* Genie Status */
     .genie-status { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 500; }
     .genie-good { color: #16a34a; }
     .genie-warn { color: #ea580c; }
     .action-link { color: #4f46e5; text-decoration: none; font-weight: 600; font-size: 0.85rem; }
-    .action-link:hover { text-decoration: underline; }
-
   </style>
 </head>
 <body>
-
   <aside class="sidebar">
-    <div class="sidebar-header">
-      <h2>🧞 Ticket Genie</h2>
+    <div class="sidebar-top">
+      <div class="sidebar-header"><div class="bot-icon">🤖</div><div><h2>TicketGenie</h2><span id="sidebarRole">Unified Portal</span></div></div>
+      <div class="nav-section"><div class="nav-title">Workspace</div><a href="dashboard.html" class="nav-link">📊 My Dashboard</a></div>
+      <div class="nav-section"><div class="nav-title">Ticketing System</div><a href="submit-ticket.html" class="nav-link">➕ Submit New Ticket</a><a href="inbox.html" class="nav-link">📥 Team Inbox</a></div>
+      <div class="nav-section"><div class="nav-title">Workforce</div><a href="onboarding.html" class="nav-link active">🚀 Onboarding & Visas</a></div>
+      <div class="nav-section" id="adminNav" style="display: none;"><div class="nav-title">Administration</div><a href="knowledge-base.html" class="nav-link">📚 AI Knowledge Base</a><a href="analytics.html" class="nav-link">📈 Analytics</a></div>
+      <div class="nav-section"><div class="nav-title">Account</div><a href="settings.html" class="nav-link">⚙️ Settings</a></div>
     </div>
-    
-    <div class="nav-section">
-      <div class="nav-title">Main</div>
-      <a href="dashboard.html" class="nav-link">📊 My Dashboard</a>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-title">Ticketing System</div>
-      <a href="submit-ticket.html" class="nav-link">➕ Submit New Ticket</a>
-      <a href="inbox.html" class="nav-link">📥 Team Inbox</a>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-title">Workforce</div>
-      <a href="onboarding.html" class="nav-link active">🚀 Onboarding & Visas</a>
-    </div>
-
-    <div class="nav-section" id="adminNav" style="display: none;">
-      <div class="nav-title">Administration</div>
-      <a href="knowledge-base.html" class="nav-link">📚 AI Knowledge Base</a>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-title">Account</div>
-      <a href="settings.html" class="nav-link">⚙️ Settings</a>
-    </div>
+    <div class="sidebar-footer"><div class="status-dot"></div><div><div style="color: white; font-weight: 600;">All systems operational</div><div>TicketGenie is online</div></div></div>
   </aside>
 
   <main class="main-content">
-    
-    <header class="page-header">
-      <div>
-        <h1>Onboarding & Immigration Pipeline</h1>
-        <p>Track new hires, departures, and let Genie AI verify OPT and Visa documents.</p>
-      </div>
-      <button class="btn-primary">+ Start New Process</button>
-    </header>
-
-    <div class="metrics-grid">
-      <div class="card">
-        <div class="card-title">Active Onboardings</div>
-        <div class="card-value">8</div>
-        <div style="font-size: 0.75rem; color: #16a34a; font-weight: 600;">3 starting this week</div>
-      </div>
-      <div class="card">
-        <div class="card-title">Pending Visas / OPT</div>
-        <div class="card-value">4</div>
-        <div style="font-size: 0.75rem; color: #ea580c; font-weight: 600;">⚠️ 1 requires India Team</div>
-      </div>
-      <div class="card">
-        <div class="card-title">Offboardings</div>
-        <div class="card-value">2</div>
-        <div style="font-size: 0.75rem; color: #6b7280; font-weight: 600;">IT equipment return pending</div>
+    <div class="top-nav">
+      <div class="search-small"><span>🔍</span><input type="text" placeholder="Search employees..."></div>
+      <div class="nav-actions"><span>🌙</span><span>🔔</span>
+        <div class="user-profile"><div class="avatar" id="navAvatar">U</div><div><div id="navName">User</div><div id="navSubRole" style="font-size: 0.7rem; color: #6b7280; font-weight: normal;">Role</div></div></div>
       </div>
     </div>
 
-    <div class="pipeline-card">
-      <h3>Active Employee Pipeline</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Employee</th>
-            <th>Process Type</th>
-            <th>Genie AI Document Check</th>
-            <th>Handoff Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>
-              <div class="employee-info">
-                <div class="avatar">AK</div>
-                <div>
-                  <div class="emp-name">Aarav Kumar</div>
-                  <div class="emp-role">Software Engineer</div>
-                </div>
-              </div>
-            </td>
-            <td><span class="tag tag-visa">Immigration (H1B)</span></td>
-            <td>
-              <div class="genie-status genie-warn">
-                <span>🧞</span> ⚠️ LCA Document missing signature
-              </div>
-            </td>
-            <td style="font-size: 0.85rem; color: #475569;">Assigned to: <strong>India Team</strong></td>
-            <td><a href="#" class="action-link">Review Docs</a></td>
-          </tr>
-          <tr>
-            <td>
-              <div class="employee-info">
-                <div class="avatar">SJ</div>
-                <div>
-                  <div class="emp-name">Sarah Jenkins</div>
-                  <div class="emp-role">Marketing Manager</div>
-                </div>
-              </div>
-            </td>
-            <td><span class="tag tag-onboard">New Hire Onboarding</span></td>
-            <td>
-              <div class="genie-status genie-good">
-                <span>✅</span> I-9 & Tax Forms Verified
-              </div>
-            </td>
-            <td style="font-size: 0.85rem; color: #475569;">Assigned to: <strong>US HR</strong></td>
-            <td><a href="#" class="action-link">Approve</a></td>
-          </tr>
-          <tr>
-            <td>
-              <div class="employee-info">
-                <div class="avatar" style="background: #f3f4f6; color: #475569;">MR</div>
-                <div>
-                  <div class="emp-name">Michael Ross</div>
-                  <div class="emp-role">Senior Accountant</div>
-                </div>
-              </div>
-            </td>
-            <td><span class="tag tag-offboard">Offboarding</span></td>
-            <td>
-              <div class="genie-status genie-good">
-                <span>✅</span> Exit Interview Completed
-              </div>
-            </td>
-            <td style="font-size: 0.85rem; color: #475569;">Assigned to: <strong>IT Dept (Hardware)</strong></td>
-            <td><a href="#" class="action-link">Track Progress</a></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <div class="page-padding">
+      <div class="page-header">
+        <div>
+          <div class="welcome-text">Workforce Operations</div>
+          <h1 class="page-title" style="margin-bottom:0;">Onboarding & Immigration</h1>
+        </div>
+        <button class="btn-primary">+ Start New Process</button>
+      </div>
 
+      <div class="metrics-grid">
+        <div class="card"><div class="card-title">Active Onboardings</div><div class="card-value">8</div><div style="font-size: 0.75rem; color: #16a34a; font-weight: 600;">3 starting this week</div></div>
+        <div class="card"><div class="card-title">Pending Visas / OPT</div><div class="card-value">4</div><div style="font-size: 0.75rem; color: #ea580c; font-weight: 600;">⚠️ 1 requires India Team</div></div>
+        <div class="card"><div class="card-title">Offboardings</div><div class="card-value">2</div><div style="font-size: 0.75rem; color: #6b7280; font-weight: 600;">IT equipment return pending</div></div>
+      </div>
+
+      <div class="pipeline-card">
+        <h3>Active Employee Pipeline</h3>
+        <table>
+          <thead>
+            <tr><th>Employee</th><th>Process Type</th><th>Genie AI Document Check</th><th>Handoff Status</th><th>Action</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="employee-info"><div class="avatar-sm">AK</div><div><div class="emp-name">Aarav Kumar</div><div class="emp-role">Software Engineer</div></div></div></td>
+              <td><span class="tag tag-visa">Immigration (H1B)</span></td>
+              <td><div class="genie-status genie-warn"><span>🧞</span> ⚠️ LCA Document missing signature</div></td>
+              <td style="font-size: 0.85rem; color: #475569;">Assigned to: <strong>India Team</strong></td>
+              <td><a href="#" class="action-link">Review Docs</a></td>
+            </tr>
+            <tr>
+              <td><div class="employee-info"><div class="avatar-sm">SJ</div><div><div class="emp-name">Sarah Jenkins</div><div class="emp-role">Marketing Manager</div></div></div></td>
+              <td><span class="tag tag-onboard">New Hire Onboarding</span></td>
+              <td><div class="genie-status genie-good"><span>✅</span> I-9 & Tax Forms Verified</div></td>
+              <td style="font-size: 0.85rem; color: #475569;">Assigned to: <strong>US HR</strong></td>
+              <td><a href="#" class="action-link">Approve</a></td>
+            </tr>
+            <tr>
+              <td><div class="employee-info"><div class="avatar-sm" style="background: #f3f4f6; color: #475569;">MR</div><div><div class="emp-name">Michael Ross</div><div class="emp-role">Senior Accountant</div></div></div></td>
+              <td><span class="tag tag-offboard">Offboarding</span></td>
+              <td><div class="genie-status genie-good"><span>✅</span> Exit Interview Completed</div></td>
+              <td style="font-size: 0.85rem; color: #475569;">Assigned to: <strong>IT Dept (Hardware)</strong></td>
+              <td><a href="#" class="action-link">Track Progress</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </main>
 
   <script>
-    // Access control: Ensure the Admin link shows up if they are HR/Management
     const userDataString = localStorage.getItem('portalUser');
     if (userDataString) {
       const user = JSON.parse(userDataString);
+      document.getElementById('sidebarRole').innerText = `${user.role} Portal`;
+      document.getElementById('navName').innerText = user.name;
+      document.getElementById('navSubRole').innerText = user.role;
+      document.getElementById('navAvatar').innerText = user.name.charAt(0).toUpperCase();
       if (user.role === 'HR' || user.role === 'Management') {
         document.getElementById('adminNav').style.display = 'block';
+      } else {
+        alert('You do not have administrative access to this page.');
+        window.location.href = 'dashboard.html';
       }
-    }
+    } else { window.location.href = 'index.html'; }
   </script>
 </body>
 </html>

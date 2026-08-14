@@ -3,212 +3,516 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ticket Genie - Smart Inbox</title>
+  <title>TicketGenie - Interactive Inbox</title>
   <style>
-    /* --- CSS RESET & BASE STYLES --- */
+    /* --- SHARED CORE STYLES --- */
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { display: flex; height: 100vh; background-color: #f9fafb; color: #1f2937; margin: 0; overflow: hidden; }
+    body { display: flex; height: 100vh; background-color: #f4f5f8; color: #1f2937; margin: 0; overflow: hidden; }
 
-    /* --- SIDEBAR --- */
-    .sidebar { width: 260px; background-color: #1e1b4b; color: #d1d5db; display: flex; flex-direction: column; flex-shrink: 0; }
-    .sidebar-header { padding: 24px; border-bottom: 1px solid #312e81; }
-    .sidebar-header h2 { color: #ffffff; font-size: 1.25rem; display: flex; align-items: center; gap: 8px; }
+    /* COLLAPSIBLE SIDEBAR */
+    .sidebar { width: 260px; background-color: #2b1b38; color: #d1d5db; display: flex; flex-direction: column; flex-shrink: 0; justify-content: space-between; z-index: 10; transition: width 0.3s ease; white-space: nowrap; overflow-x: hidden; }
+    .sidebar.collapsed { width: 80px; }
+    .sidebar-top { flex: 1; }
+    .sidebar-header { padding: 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .bot-icon { background: rgba(255,255,255,0.1); color: white; padding: 6px; border-radius: 8px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .sidebar-brand-text h2 { color: #ffffff; font-size: 1.1rem; font-weight: 600; margin-bottom: 2px; }
+    .sidebar-brand-text span { display: block; font-size: 0.65rem; color: #a5b4fc; text-transform: uppercase; letter-spacing: 1px; }
     
-    .nav-section { padding: 0 16px; margin-top: 24px; }
-    .nav-title { font-size: 0.75rem; color: #6366f1; text-transform: uppercase; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
-    .nav-link { display: block; padding: 10px 16px; color: #d1d5db; text-decoration: none; border-radius: 8px; font-size: 0.9rem; margin-bottom: 4px; transition: background 0.2s; }
-    .nav-link:hover, .nav-link.active { background-color: #312e81; color: #ffffff; }
+    .nav-section { margin-top: 24px; }
+    .nav-title { font-size: 0.65rem; color: #818cf8; text-transform: uppercase; font-weight: 700; margin: 0 16px 8px; letter-spacing: 1px; transition: opacity 0.2s; }
+    .nav-link { display: flex; align-items: center; gap: 12px; padding: 10px 16px; margin: 0 8px 4px; color: #d1d5db; text-decoration: none; font-size: 0.85rem; border-radius: 8px; transition: 0.2s; }
+    
+    /* Hover Glows for Nav */
+    .nav-link:hover { background-color: rgba(255,255,255,0.05); color: #ffffff; }
+    .nav-link.active { background-color: rgba(255,255,255,0.1); color: #ffffff; font-weight: 500; }
+    .menu-icon { font-size: 1.1rem; flex-shrink: 0; display: flex; justify-content: center; width: 24px; }
+    
+    .sidebar-footer { padding: 24px; font-size: 0.75rem; color: #a5b4fc; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 8px; }
+    .status-dot { width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; flex-shrink: 0; }
 
-    /* --- SPLIT PANE LAYOUT --- */
-    .inbox-container { display: flex; flex: 1; height: 100%; background-color: #ffffff; }
+    .sidebar.collapsed .sidebar-brand-text, .sidebar.collapsed .nav-title, .sidebar.collapsed .sidebar-footer-text { display: none; }
+    .sidebar.collapsed .sidebar-header { justify-content: center; padding: 24px 0; }
+    .sidebar.collapsed .nav-link { justify-content: center; padding: 14px 0; margin: 0 8px 8px; }
+    .sidebar.collapsed .nav-link span:not(.menu-icon) { display: none; }
+    .sidebar.collapsed .sidebar-footer { justify-content: center; padding: 24px 0; }
 
-    /* --- LEFT: TICKET LIST & CAPACITY --- */
-    .ticket-list-pane { width: 380px; background-color: #ffffff; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; z-index: 5; box-shadow: 1px 0 10px rgba(0,0,0,0.02); }
-    .pane-header { padding: 24px; border-bottom: 1px solid #e5e7eb; background: #f9fafb; }
-    .pane-header h2 { font-size: 1.25rem; margin-bottom: 16px; text-transform: capitalize; color: #111827; }
+    /* MAIN CONTENT & TOP NAV */
+    .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+    .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 32px; background: #ffffff; border-bottom: 1px solid #e5e7eb; z-index: 5; }
+    .nav-left-cluster { display: flex; align-items: center; gap: 16px; }
     
-    /* Capacity Tracker */
-    .capacity-tracker { background: #ffffff; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-    .capacity-tracker p { font-size: 0.75rem; font-weight: 700; color: #475569; display: flex; justify-content: space-between; margin-bottom: 8px; text-transform: uppercase; }
-    .progress-bar { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
-    .progress-fill { height: 100%; background: #4f46e5; width: 85%; }
+    /* Top Nav Buttons Glow */
+    .btn-hamburger { background: white; border: 1px solid #e5e7eb; border-radius: 8px; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #6b7280; transition: all 0.2s; }
+    .btn-hamburger:hover { background: #f3f4f6; color: #111827; box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.15); border-color: #d1d5db; }
     
+    .nav-actions { display: flex; align-items: center; gap: 16px; }
+    .nav-icon-btn { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: #6b7280; transition: 0.2s; border-radius: 50%; padding: 4px; }
+    .nav-icon-btn:hover { color: #111827; background: #f3f4f6; box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.1); }
+    .user-profile { display: flex; align-items: center; gap: 12px; font-size: 0.85rem; padding-left: 16px; border-left: 1px solid #e5e7eb; }
+    .avatar { width: 32px; height: 32px; background: #eef2ff; color: #4f46e5; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.75rem; font-weight: bold; }
+
+    /* --- INBOX LAYOUT & RESIZER --- */
+    .inbox-container { display: flex; flex: 1; overflow: hidden; background: #f4f5f8; }
+    
+    /* LEFT PANE: QUEUE */
+    .ticket-list-pane { width: 380px; min-width: 280px; max-width: 600px; background: #ffffff; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; z-index: 2; flex-shrink: 0; }
+    
+    /* DRAG RESIZER */
+    .resizer { width: 6px; background: transparent; cursor: col-resize; transition: background 0.2s; flex-shrink: 0; z-index: 10; position: relative; margin-left: -3px; margin-right: -3px; }
+    .resizer:hover, .resizer.dragging { background: #a5b4fc; }
+
+    .pane-header { padding: 24px; border-bottom: 1px solid #e5e7eb; }
+    .pane-header h2 { font-size: 1.2rem; margin-bottom: 16px; color: #111827; font-weight: 600; }
+    
+    .filter-tabs { display: flex; gap: 8px; margin-bottom: 8px; }
+    .filter-tab { padding: 8px 12px; font-size: 0.8rem; font-weight: 600; border-radius: 6px; cursor: pointer; border: 1px solid transparent; transition: 0.2s; }
+    .filter-tab.active { background: #eef2ff; color: #4f46e5; border-color: #c7d2fe; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1); }
+    .filter-tab.inactive { color: #6b7280; }
+    .filter-tab.inactive:hover { background: #f3f4f6; }
+
     .ticket-list { flex: 1; overflow-y: auto; }
     .ticket-item { padding: 20px 24px; border-bottom: 1px solid #f3f4f6; cursor: pointer; transition: background 0.2s; }
-    .ticket-item:hover { background-color: #f9fafb; }
-    .ticket-item.active { background-color: #eef2ff; border-left: 4px solid #4f46e5; padding-left: 20px; }
-    
+    .ticket-item:hover { background: #f9fafb; }
+    .ticket-item.active { background: #f4f5f8; border-left: 4px solid #4f46e5; padding-left: 20px; }
     .ticket-meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: #6b7280; margin-bottom: 8px; font-weight: 500; }
-    .ticket-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 8px; color: #111827; line-height: 1.4; }
+    .ticket-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; color: #111827; line-height: 1.4; }
     
-    .tag { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; margin-right: 6px; margin-bottom: 4px; }
-    .tag-approval { background: #fef08a; color: #854d0e; }
-    .tag-india { background: #e0e7ff; color: #3730a3; }
-    .tag-secure { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+    .tag { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; margin-right: 4px; margin-bottom: 4px; }
+    .tag-priority-high { background: #fee2e2; color: #b91c1c; }
+    .tag-priority-med { background: #fef08a; color: #854d0e; }
+    .tag-dept { background: #e0f2fe; color: #0284c7; }
+    .tag-hr { background: #f3e8ff; color: #7e22ce; }
 
-    /* --- RIGHT: TICKET DETAILS & WORKFLOW --- */
-    .ticket-detail-pane { flex: 1; display: flex; flex-direction: column; background-color: #f8fafc; }
+    /* RIGHT PANE: DETAILED TICKET VIEW */
+    .ticket-detail-pane { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 32px 40px; }
     
-    .detail-header { padding: 32px 40px 24px; background-color: #ffffff; border-bottom: 1px solid #e5e7eb; }
-    .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
-    .header-top h1 { font-size: 1.75rem; color: #111827; margin-top: 6px; }
+    .detail-header { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+    .detail-top-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+    .detail-top-row h1 { font-size: 1.4rem; color: #111827; font-weight: 600; margin: 0; }
     
-    /* Action Bar (Reorganized!) */
-    .action-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-    .btn-action { padding: 10px 18px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: 1px solid #d1d5db; background: white; transition: 0.2s; display: flex; align-items: center; gap: 8px; color: #374151; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-    .btn-action:hover { background: #f3f4f6; border-color: #9ca3af; }
-    .btn-approve { background: #16a34a; color: white; border: none; }
-    .btn-approve:hover { background: #15803d; }
-    .btn-handoff { background: #4f46e5; color: white; border: none; }
-    .btn-handoff:hover { background: #4338ca; }
+    .ticket-info-bar { display: flex; flex-wrap: wrap; gap: 24px; font-size: 0.85rem; color: #4b5563; padding-top: 16px; border-top: 1px solid #f3f4f6; }
+    .info-item span { color: #9ca3af; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px; }
+    .info-item strong { color: #111827; font-weight: 600; }
 
-    /* Visual Status Chain (Reorganized!) */
-    .status-chain-wrapper { background: #ffffff; padding: 16px 40px; border-bottom: 1px solid #e5e7eb; }
-    .status-chain { display: inline-flex; align-items: center; gap: 12px; background: #f8fafc; padding: 8px 16px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.8rem; color: #475569; }
-    .chain-node { display: flex; align-items: center; gap: 8px; font-weight: 500; }
-    .chain-arrow { color: #cbd5e1; font-weight: bold; }
-    .node-active { color: #4f46e5; font-weight: 700; background: #eef2ff; padding: 4px 10px; border-radius: 6px; border: 1px solid #c7d2fe; }
+    .detail-body { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    
+    /* Thread Column */
+    .thread-column { display: flex; flex-direction: column; gap: 20px; }
+    .message-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+    .msg-header { display: flex; justify-content: space-between; margin-bottom: 16px; align-items: center; border-bottom: 1px solid #f3f4f6; padding-bottom: 12px; }
+    .msg-author { display: flex; align-items: center; gap: 12px; font-weight: 600; color: #111827; font-size: 0.95rem; }
+    .msg-author-avatar { width: 32px; height: 32px; background: #eef2ff; color: #4f46e5; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.8rem; }
+    .msg-time { font-size: 0.75rem; color: #6b7280; }
+    .msg-content { font-size: 0.9rem; color: #374151; line-height: 1.6; }
+    
+    .message-card.private-note { background: #fffbeb; border-color: #fde047; }
+    .message-card.private-note .msg-author-avatar { background: #fef08a; color: #854d0e; }
+    
+    .msg-system { background: #f8fafc; border: 1px dashed #cbd5e1; padding: 12px 20px; border-radius: 8px; font-size: 0.8rem; color: #475569; display: flex; align-items: center; gap: 12px; justify-content: center; font-style: italic; }
 
-    /* Chat Area */
-    .chat-area { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
+    /* Reply Box & Buttons */
+    .reply-box { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+    .reply-textarea { width: 100%; border: 1px solid #d1d5db; border-radius: 8px; min-height: 100px; padding: 12px; font-size: 0.9rem; outline: none; margin-bottom: 16px; font-family: inherit; resize: vertical; transition: 0.2s; }
+    .reply-textarea:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+    .reply-actions { display: flex; justify-content: space-between; align-items: center; }
     
-    .message { max-width: 85%; padding: 24px; border-radius: 12px; font-size: 0.95rem; line-height: 1.6; background-color: #ffffff; border: 1px solid #e5e7eb; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    /* --- BUTTON STYLES & GLOW EFFECTS --- */
+    button { transition: all 0.2s ease; cursor: pointer; position: relative; }
     
-    /* Genie AI Special Styling */
-    .msg-genie { border-left: 4px solid #4f46e5; background: linear-gradient(to right, #f5f3ff, #ffffff); }
+    .btn-send { background: #2b1b38; color: white; border: none; padding: 10px 24px; border-radius: 6px; font-weight: 600; }
+    .btn-send:hover { background: #4f46e5; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2); }
     
-    /* Private Note Styling */
-    .msg-private { align-self: flex-end; background-color: #fefce8; border: 1px solid #fef08a; border-left: 4px solid #eab308; }
+    .btn-secondary { background: white; color: #374151; border: 1px solid #d1d5db; padding: 10px 16px; border-radius: 6px; font-weight: 600; }
+    .btn-secondary:hover { background: #f3f4f6; border-color: #9ca3af; box-shadow: 0 0 0 4px rgba(107, 114, 128, 0.15); }
+
+    .btn-panel { width: 100%; text-align: left; padding: 10px 16px; background: white; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.85rem; font-weight: 500; color: #374151; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .btn-panel:hover { background: #f9fafb; border-color: #9ca3af; box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.15); }
     
-    .msg-meta { font-size: 0.75rem; color: #6b7280; margin-bottom: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #f3f4f6; padding-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .btn-panel.resolve-btn { background: #eef2ff; color: #4f46e5; font-weight: 600; border-color: #c7d2fe; }
+    .btn-panel.resolve-btn:hover { background: #e0e7ff; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2); }
+
+    .btn-panel.escalate-btn { color: #b91c1c; border-color: #fca5a5; background: #fef2f2; }
+    .btn-panel.escalate-btn:hover { background: #fee2e2; box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.2); }
+
+    /* --- LOADING SPINNER ANIMATION --- */
+    .btn-loading { color: transparent !important; pointer-events: none; }
+    .btn-loading::after {
+      content: ""; position: absolute; width: 18px; height: 18px;
+      top: 0; left: 0; right: 0; bottom: 0; margin: auto;
+      border: 3px solid rgba(0,0,0,0.1); border-top-color: currentColor; border-radius: 50%;
+      animation: button-spin 0.6s linear infinite;
+    }
+    .btn-send.btn-loading::after, .btn-panel.resolve-btn.btn-loading::after { border-top-color: #ffffff; border-color: rgba(255,255,255,0.3); border-top-color: #ffffff; }
+    .btn-secondary.btn-loading::after, .btn-panel.btn-loading::after { border-top-color: #4f46e5; border-color: rgba(79,70,229,0.2); border-top-color: #4f46e5; }
+    
+    @keyframes button-spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* AI Insight Column */
+    .insight-column { display: flex; flex-direction: column; gap: 24px; }
+    .ai-card { background: linear-gradient(to bottom, #ffffff, #fcfcff); border: 1px solid #c7d2fe; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(79, 70, 229, 0.05); }
+    .ai-header { display: flex; align-items: center; gap: 8px; font-weight: 700; color: #371b58; font-size: 0.95rem; margin-bottom: 16px; border-bottom: 1px solid #e0e7ff; padding-bottom: 12px; }
+    .ai-field { margin-bottom: 16px; }
+    .ai-field-label { font-size: 0.75rem; color: #6b7280; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; display: block; }
+    .ai-field-text { font-size: 0.85rem; color: #374151; line-height: 1.5; }
+    .sentiment-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+    
+    /* Action Panel */
+    .action-panel { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 4px; }
+    .action-panel-title { font-size: 0.8rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+
+    /* Empty State */
+    .empty-state { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #6b7280; padding: 40px; text-align: center; }
+    .empty-state span { font-size: 3rem; margin-bottom: 16px; opacity: 0.5; }
   </style>
 </head>
 <body>
 
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <h2>🧞 Ticket Genie</h2>
+  <aside class="sidebar" id="appSidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-header"><div class="bot-icon">🎫</div><div class="sidebar-brand-text"><h2>TicketGenie</h2><span id="sidebarRole">Unified Portal</span></div></div>
+      <div class="nav-section"><div class="nav-title">Workspace</div><a href="dashboard.html" class="nav-link"><span class="menu-icon">📊</span><span class="menu-text">My Dashboard</span></a></div>
+      <div class="nav-section"><div class="nav-title">Ticketing System</div><a href="submit-ticket.html" class="nav-link"><span class="menu-icon">➕</span><span class="menu-text">Submit Request</span></a><a href="inbox.html" class="nav-link active"><span class="menu-icon">📥</span><span class="menu-text">Team Inbox</span></a></div>
+      <div class="nav-section"><div class="nav-title">Workforce</div><a href="onboarding.html" class="nav-link"><span class="menu-icon">🚀</span><span class="menu-text">Onboarding & Visas</span></a></div>
+      <div class="nav-section" id="adminNav" style="display: none;"><div class="nav-title">Administration</div><a href="knowledge-base.html" class="nav-link"><span class="menu-icon">📚</span><span class="menu-text">Policy Library</span></a><a href="analytics.html" class="nav-link"><span class="menu-icon">📈</span><span class="menu-text">Analytics</span></a><a href="archive.html" class="nav-link"><span class="menu-icon">🗄️</span><span class="menu-text">Ticket Archive</span></a></div>
+      <div class="nav-section"><div class="nav-title">Account</div><a href="settings.html" class="nav-link"><span class="menu-icon">⚙️</span><span class="menu-text">Settings</span></a></div>
     </div>
-    
-    <div class="nav-section">
-      <div class="nav-title">Main</div>
-      <a href="dashboard.html" class="nav-link">📊 My Dashboard</a>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-title">Ticketing System</div>
-      <a href="submit-ticket.html" class="nav-link">➕ Submit New Ticket</a>
-      <a href="inbox.html" class="nav-link active">📥 Team Inbox</a>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-title">Workforce</div>
-      <a href="onboarding.html" class="nav-link">🚀 Onboarding & Visas</a>
-    </div>
-
-    <div class="nav-section" id="adminNav" style="display: none;">
-      <div class="nav-title">Administration</div>
-      <a href="knowledge-base.html" class="nav-link">📚 AI Knowledge Base</a>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-title">Account</div>
-      <a href="settings.html" class="nav-link">⚙️ Settings</a>
-    </div>
+    <div class="sidebar-footer"><div class="status-dot"></div><div class="sidebar-footer-text"><div style="color: white; font-weight: 600;">Systems operational</div></div></div>
   </aside>
 
-  <div class="inbox-container">
-    
-    <div class="ticket-list-pane">
-      <div class="pane-header">
-        <h2 id="inboxTitle">Team Inbox</h2>
-        
-        <div class="capacity-tracker" title="Total hours logged by team this month">
-          <p><span>Team Capacity Limit</span> <span>145 / 170 Hrs</span></p>
-          <div class="progress-bar">
-            <div class="progress-fill"></div>
-          </div>
-          <p style="font-size: 0.75rem; color: #ef4444; margin-top: 10px; margin-bottom: 0; text-transform: none; font-weight: 600;">⚠️ Approaching monthly maximum</p>
-        </div>
+  <main class="main-content">
+    <div class="top-nav">
+      <div class="nav-left-cluster">
+        <button class="btn-hamburger" onclick="toggleSidebar()">☰</button>
+        <div style="font-size: 0.85rem; color: #6b7280; font-weight: 600;">TEAM INBOX</div>
       </div>
-      
-      <div class="ticket-list">
-        <div class="ticket-item active">
-          <div class="ticket-meta"><span>#T-992 • Immigration (OPT)</span> <span>10m ago</span></div>
-          <div class="ticket-title">OPT Extension Documents Need Review</div>
-          <div>
-            <span class="tag tag-secure">🔒 Deal/Person Specific</span>
-            <span class="tag tag-approval">Needs Approval</span>
-          </div>
-        </div>
-
-        <div class="ticket-item">
-          <div class="ticket-meta"><span>#T-993 • IT-Related</span> <span>1h ago</span></div>
-          <div class="ticket-title">Onboarding: New Hire Hardware Setup</div>
-          <div>
-            <span class="tag tag-india">Assigned: India Team</span>
-          </div>
+      <div class="nav-actions">
+        <div class="user-profile">
+          <div style="text-align: right;"><div id="navName" style="color: #111827;">User</div><div id="navSubRole" style="font-size: 0.7rem; color: #6b7280;">Role</div></div>
+          <div class="avatar" id="navAvatar">U</div>
         </div>
       </div>
     </div>
 
-    <div class="ticket-detail-pane">
+    <div class="inbox-container">
       
-      <div class="detail-header">
-        <div class="header-top">
-          <div>
-            <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 8px; font-weight: 600;">Ticket #T-992 &nbsp;•&nbsp; <span style="color: #b91c1c;">🔒 Restricted Visibility</span></div>
-            <h1>OPT Extension Documents Need Review</h1>
+      <div class="ticket-list-pane" id="queuePane">
+        <div class="pane-header">
+          <h2>My Queue</h2>
+          <div class="filter-tabs" id="filterTabs">
+            <div class="filter-tab active" onclick="switchTab('Open')">Open</div>
+            <div class="filter-tab inactive" onclick="switchTab('Pending')">Pending</div>
+            <div class="filter-tab inactive" onclick="switchTab('Resolved')">Resolved</div>
           </div>
         </div>
-        
-        <div class="action-bar">
-          <button class="btn-action btn-approve" onclick="alert('Document Approved. Logging 0.5 hours to team capacity.')">✅ Approve Document</button>
-          <button class="btn-action btn-handoff" onclick="alert('Ticket reassigned and routed to HR India Team.')">✈️ Route to India Team</button>
-          <button class="btn-action" onclick="alert('Reassigning to IT Department...')">🔄 Send to IT Dept</button>
-          <div style="flex: 1;"></div>
-          <button class="btn-action">⏱️ Log Time</button>
-        </div>
+        <div class="ticket-list" id="ticketListContainer">
+          </div>
       </div>
 
-      <div class="status-chain-wrapper">
-        <div class="status-chain">
-          <strong style="color: #111827; margin-right: 8px;">Ticket Journey:</strong>
-          <div class="chain-node">👤 Employee Submitted</div>
-          <div class="chain-arrow">➔</div>
-          <div class="chain-node node-active">🇺🇸 US HR Review</div>
-          <div class="chain-arrow">➔</div>
-          <div class="chain-node" style="opacity: 0.5;">🇮🇳 India Team Processing</div>
+      <div class="resizer" id="dragResizer"></div>
+      
+      <div class="ticket-detail-pane" id="ticketDetailContainer">
         </div>
-      </div>
-
-      <div class="chat-area">
-        
-        <div class="message msg-genie">
-          <div class="msg-meta"><span style="font-size: 1.1rem;">🧞</span> Genie AI Analysis</div>
-          <div>Employee has uploaded their I-765 and STEM OPT training plan. <br><br><strong>Action Required:</strong> US HR must approve the training plan before it is routed to the India immigration team for final processing and filing. Please review the attached sensitive documents.</div>
-        </div>
-
-        <div class="message msg-private">
-          <div class="msg-meta" style="color: #ca8a04; border-bottom-color: #fef08a;">🔒 Private Internal Note • You</div>
-          <div>I have reviewed the training plan. It looks correct, but I need to log 0.5 hours against our capacity before I formally hit approve and send it to India.</div>
-        </div>
-
-      </div>
 
     </div>
-  </div>
+  </main>
 
   <script>
+    // --- SIDEBAR TOGGLE ---
+    function toggleSidebar() { document.getElementById('appSidebar').classList.toggle('collapsed'); }
+    
+    // --- USER SETUP ---
+    let loggedInUser = "Admin";
     const userDataString = localStorage.getItem('portalUser');
     if (userDataString) {
       const user = JSON.parse(userDataString);
-      document.getElementById('inboxTitle').innerText = `${user.role} Team Inbox`;
-      
-      if (user.role === 'HR' || user.role === 'Management') {
-        document.getElementById('adminNav').style.display = 'block';
-      }
+      loggedInUser = user.name;
+      document.getElementById('sidebarRole').innerText = `${user.role} Portal`;
+      document.getElementById('navName').innerText = user.name;
+      document.getElementById('navSubRole').innerText = `${user.role} Admin`;
+      document.getElementById('navAvatar').innerText = user.name.charAt(0).toUpperCase();
+      if (user.role === 'HR' || user.role === 'Management') document.getElementById('adminNav').style.display = 'block';
+    } else { 
+      window.location.href = 'index.html'; 
     }
+
+    // --- RESIZABLE QUEUE PANE LOGIC ---
+    const resizer = document.getElementById('dragResizer');
+    const leftPane = document.getElementById('queuePane');
+    let x = 0; let w = 0;
+
+    const mouseDownHandler = function(e) {
+        x = e.clientX;
+        const styles = window.getComputedStyle(leftPane);
+        w = parseInt(styles.width, 10);
+        document.addEventListener('mousemove', mouseMoveHandler);
+        document.addEventListener('mouseup', mouseUpHandler);
+        resizer.classList.add('dragging');
+    };
+
+    const mouseMoveHandler = function(e) {
+        const dx = e.clientX - x;
+        leftPane.style.width = `${w + dx}px`;
+    };
+
+    const mouseUpHandler = function() {
+        document.removeEventListener('mousemove', mouseMoveHandler);
+        document.removeEventListener('mouseup', mouseUpHandler);
+        resizer.classList.remove('dragging');
+    };
+
+    resizer.addEventListener('mousedown', mouseDownHandler);
+
+    // --- MOCK DATABASE ---
+    let tickets = [
+      {
+        id: "T-1045", status: "Open", subject: "Missing overtime pay on last check", dept: "HR - Payroll", priority: "High", priorityClass: "tag-priority-high",
+        requester: "Sarah Jenkins", time: "10:30 AM", created: "Today, 10:30 AM",
+        aiSummary: "Employee is missing 8 hours of overtime pay on the current payroll cycle.",
+        aiAction: "Verify attached timesheet. Process off-cycle adjustment if valid.",
+        sentiment: "😟 Frustrated / Urgent", sentimentBg: "#fffbeb", sentimentBorder: "#fde047", sentimentColor: "#9a3412",
+        thread: [
+          { type: 'user', author: 'Sarah Jenkins', avatar: 'SJ', time: 'Today, 10:30 AM', content: "Hi HR,<br><br>I just checked my paystub for this period and the 8 hours of overtime I worked last Saturday aren't showing up. This has happened before. Can someone look into this immediately? I've attached my approved timesheet.<br><br>Thanks,<br>Sarah" }
+        ]
+      },
+      {
+        id: "T-1044", status: "Open", subject: "Need access to Azure SQL Database", dept: "IT - IAM", priority: "Medium", priorityClass: "tag-priority-med",
+        requester: "Mark Thomas", time: "Yesterday", created: "Yesterday, 3:15 PM",
+        aiSummary: "User is requesting read/write access to the Azure SQL Database for the new reporting project.",
+        aiAction: "Verify user's security clearance matrix. Grant access via Azure Active Directory if approved.",
+        sentiment: "😐 Neutral", sentimentBg: "#f3f4f6", sentimentBorder: "#e5e7eb", sentimentColor: "#374151",
+        thread: [
+          { type: 'user', author: 'Mark Thomas', avatar: 'MT', time: 'Yesterday, 3:15 PM', content: "Hello IT team, I need access to the Azure SQL Database to start pulling data for the Q3 analytics report. My manager approved it." }
+        ]
+      },
+      {
+        id: "T-1039", status: "Pending", subject: "New Hire Hardware Setup", dept: "IT - Hardware", priority: "Medium", priorityClass: "tag-priority-med",
+        requester: "HR System", time: "Aug 11", created: "Aug 11, 9:00 AM",
+        aiSummary: "Automated ticket generated for new hire starting next Monday. Needs a Mac laptop and 2 monitors.",
+        aiAction: "Deploy hardware from inventory. Awaiting confirmation of shipping address.",
+        sentiment: "🤖 Automated", sentimentBg: "#eef2ff", sentimentBorder: "#c7d2fe", sentimentColor: "#4f46e5",
+        thread: [
+          { type: 'user', author: 'HR Automation', avatar: '🤖', time: 'Aug 11, 9:00 AM', content: "New hire 'Alex Rivera' is scheduled to start next Monday. Please provision standard Engineering hardware package." },
+          { type: 'system', content: `[Audit Trail] Status changed to Pending by IT Admin. Awaiting home address from user.` }
+        ]
+      },
+      {
+        id: "T-1022", status: "Resolved", subject: "Company Card Limit Increase", dept: "Accounting", priority: "Medium", priorityClass: "tag-priority-med",
+        requester: "David Kim", time: "Aug 05", created: "Aug 05, 11:00 AM",
+        aiSummary: "User requested temporary card limit increase for an upcoming conference.",
+        aiAction: "Resolved. Limit increased to $5,000 for 7 days.",
+        sentiment: "😐 Neutral", sentimentBg: "#f3f4f6", sentimentBorder: "#e5e7eb", sentimentColor: "#374151",
+        thread: [
+          { type: 'user', author: 'David Kim', avatar: 'DK', time: 'Aug 05, 11:00 AM', content: "I'm heading to AWS Ignite next week. Can we bump my corporate card limit up to $5k to cover hotels?" },
+          { type: 'private', author: `Private Note • Finance`, avatar: '🔒', time: 'Aug 05, 1:00 PM', content: "Approved by VP. Limit updated in portal." },
+          { type: 'system', content: `[Audit Trail] Ticket closed by TicketGenie AI.` }
+        ]
+      }
+    ];
+
+    let currentTab = "Open";
+    let selectedTicketId = "T-1045";
+
+    // --- TAB RENDERING ---
+    function switchTab(tabName) {
+      currentTab = tabName;
+      const tabs = document.getElementById('filterTabs').children;
+      for(let t of tabs) {
+        if(t.innerText.includes(tabName)) {
+          t.className = "filter-tab active";
+        } else {
+          t.className = "filter-tab inactive";
+        }
+      }
+      renderTicketList();
+    }
+
+    function renderTicketList() {
+      const listContainer = document.getElementById('ticketListContainer');
+      listContainer.innerHTML = "";
+      
+      const filteredTickets = tickets.filter(t => t.status === currentTab);
+      
+      if (filteredTickets.length === 0) {
+        listContainer.innerHTML = `<div style="padding: 24px; text-align: center; color: #9ca3af; font-size: 0.85rem;">No ${currentTab.toLowerCase()} tickets found.</div>`;
+        document.getElementById('ticketDetailContainer').innerHTML = `<div class="empty-state"><span>📭</span><h2>No Ticket Selected</h2><p>Select a ticket from your queue to view details.</p></div>`;
+        return;
+      }
+
+      if (!filteredTickets.find(t => t.id === selectedTicketId)) {
+        selectedTicketId = filteredTickets[0].id;
+      }
+
+      filteredTickets.forEach(ticket => {
+        const isActive = ticket.id === selectedTicketId ? "active" : "";
+        const html = `
+          <div class="ticket-item ${isActive}" onclick="selectTicket('${ticket.id}')">
+            <div class="ticket-meta"><span>${ticket.id} • ${ticket.dept}</span> <span>${ticket.time}</span></div>
+            <div class="ticket-title">${ticket.subject}</div>
+            <div>
+              <span class="tag ${ticket.priorityClass}">${ticket.priority}</span>
+            </div>
+          </div>
+        `;
+        listContainer.innerHTML += html;
+      });
+
+      renderTicketDetail();
+    }
+
+    // --- TICKET DETAIL RENDERING ---
+    function selectTicket(id) {
+      selectedTicketId = id;
+      renderTicketList();
+    }
+
+    function renderTicketDetail() {
+      const ticket = tickets.find(t => t.id === selectedTicketId);
+      if (!ticket) return;
+
+      const detailContainer = document.getElementById('ticketDetailContainer');
+      
+      let threadHTML = "";
+      ticket.thread.forEach(msg => {
+        if (msg.type === 'system') {
+          threadHTML += `<div class="msg-system"><span>➔</span> ${msg.content}</div>`;
+        } else if (msg.type === 'private') {
+          threadHTML += `
+            <div class="message-card private-note">
+              <div class="msg-header" style="border-bottom-color: #fef08a;">
+                <div class="msg-author"><div class="msg-author-avatar">🔒</div> ${msg.author}</div>
+                <div class="msg-time">${msg.time}</div>
+              </div>
+              <div class="msg-content">${msg.content}</div>
+            </div>`;
+        } else {
+          threadHTML += `
+            <div class="message-card">
+              <div class="msg-header">
+                <div class="msg-author"><div class="msg-author-avatar">${msg.avatar}</div> ${msg.author}</div>
+                <div class="msg-time">${msg.time}</div>
+              </div>
+              <div class="msg-content">${msg.content}</div>
+            </div>`;
+        }
+      });
+
+      let replyBoxHTML = "";
+      if (ticket.status !== 'Resolved') {
+        replyBoxHTML = `
+          <div class="reply-box">
+            <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; color: #111827;">Add a response or internal note:</div>
+            <textarea id="replyText" class="reply-textarea" placeholder="Type your message here..."></textarea>
+            <div class="reply-actions">
+              <button class="btn-secondary" onclick="addNote(this)">🔒 Add Private Note</button>
+              <button class="btn-send" onclick="sendReply(this)">Send Reply</button>
+            </div>
+          </div>
+        `;
+      }
+
+      detailContainer.innerHTML = `
+        <div class="detail-header">
+          <div class="detail-top-row">
+            <h1>Ticket ${ticket.id}: ${ticket.subject}</h1>
+            <span class="tag ${ticket.priorityClass}" style="font-size: 0.8rem; padding: 6px 12px;">${ticket.priority} Priority</span>
+          </div>
+          <div class="ticket-info-bar">
+            <div class="info-item"><span>Requester</span><strong>${ticket.requester}</strong></div>
+            <div class="info-item"><span>Department Route</span><strong>${ticket.dept}</strong></div>
+            <div class="info-item"><span>Created</span><strong>${ticket.created}</strong></div>
+            <div class="info-item"><span>Status</span><strong>${ticket.status}</strong></div>
+          </div>
+        </div>
+
+        <div class="detail-body">
+          <div class="thread-column" id="threadColumn">
+            ${threadHTML}
+            ${replyBoxHTML}
+          </div>
+
+          <div class="insight-column">
+            <div class="ai-card">
+              <div class="ai-header"><span style="font-size: 1.2rem;">✨</span> Genie AI Analysis</div>
+              <div class="ai-field"><span class="ai-field-label">Issue Summary</span><div class="ai-field-text">${ticket.aiSummary}</div></div>
+              <div class="ai-field"><span class="ai-field-label">Suggested Action</span><div class="ai-field-text">${ticket.aiAction}</div></div>
+              <div class="ai-field">
+                <span class="ai-field-label">Detected Sentiment</span>
+                <div class="sentiment-badge" style="background:${ticket.sentimentBg}; border-color:${ticket.sentimentBorder}; color:${ticket.sentimentColor};">${ticket.sentiment}</div>
+              </div>
+            </div>
+
+            ${ticket.status !== 'Resolved' ? `
+            <div class="action-panel">
+              <div class="action-panel-title">Ticket Actions (Inter-Department)</div>
+              <button class="btn-panel" onclick="simulateAction('Reassign to IT', this)">🔄 Route to IT Dept <span>›</span></button>
+              <button class="btn-panel" onclick="simulateAction('Reassign to Payroll', this)">🔄 Route to Payroll <span>›</span></button>
+              <button class="btn-panel escalate-btn" onclick="simulateAction('Escalate to Manager', this)">⚠️ Escalate to Management <span>›</span></button>
+              <button class="btn-panel resolve-btn" onclick="simulateAction('Resolve Ticket', this)">✅ Mark as Resolved</button>
+            </div>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    // --- SIMULATE LOADING & ACTIONS ---
+    
+    // Wrapper to add loading state to buttons
+    function withLoading(btnElement, callback) {
+      if (!btnElement) { callback(); return; }
+      const originalText = btnElement.innerHTML;
+      btnElement.classList.add('btn-loading');
+      
+      // Simulate network request delay (800ms)
+      setTimeout(() => {
+        btnElement.classList.remove('btn-loading');
+        callback();
+      }, 800);
+    }
+
+    function simulateAction(actionName, btnElement) {
+      withLoading(btnElement, () => {
+        const ticket = tickets.find(t => t.id === selectedTicketId);
+        ticket.thread.push({ 
+          type: 'system', 
+          content: `[Audit Trail] <strong>${loggedInUser}</strong> performed action: <em>${actionName}</em>.` 
+        });
+
+        if (actionName === 'Resolve Ticket') {
+          ticket.status = 'Resolved';
+        }
+
+        renderTicketList();
+      });
+    }
+
+    function addNote(btnElement) {
+      const text = document.getElementById('replyText').value.trim();
+      if(!text) return;
+      
+      withLoading(btnElement, () => {
+        const ticket = tickets.find(t => t.id === selectedTicketId);
+        ticket.thread.push({ type: 'private', author: `Private Note • ${loggedInUser}`, time: 'Just now', content: text });
+        renderTicketDetail();
+      });
+    }
+
+    function sendReply(btnElement) {
+      const text = document.getElementById('replyText').value.trim();
+      if(!text) return;
+      
+      withLoading(btnElement, () => {
+        const ticket = tickets.find(t => t.id === selectedTicketId);
+        ticket.thread.push({ type: 'user', author: loggedInUser, avatar: loggedInUser.charAt(0).toUpperCase(), time: 'Just now', content: text });
+        renderTicketDetail();
+      });
+    }
+
+    // Initialize the page!
+    renderTicketList();
+
   </script>
 </body>
 </html>

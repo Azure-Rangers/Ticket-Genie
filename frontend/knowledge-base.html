@@ -3,224 +3,132 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enterprise Portal - AI Knowledge Base</title>
+  <title>TicketGenie - Knowledge Base</title>
   <style>
-    /* --- CSS RESET & BASE STYLES --- */
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { display: flex; height: 100vh; background-color: #f9fafb; color: #1f2937; overflow: hidden; }
-
-    /* --- SIDEBAR --- */
-    .sidebar { width: 260px; background-color: #1e1b4b; color: #d1d5db; display: flex; flex-direction: column; }
-    .sidebar-header { padding: 24px; border-bottom: 1px solid #312e81; }
-    .sidebar-header h2 { color: #ffffff; font-size: 1.25rem; }
-    
+    body { display: flex; height: 100vh; background-color: #fdfdfd; color: #1f2937; margin: 0; overflow: hidden; }
+    /* --- SIDEBAR & NAV --- */
+    .sidebar { width: 250px; background-color: #2b1b38; color: #d1d5db; display: flex; flex-direction: column; flex-shrink: 0; justify-content: space-between; }
+    .sidebar-top { flex: 1; }
+    .sidebar-header { padding: 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .sidebar-header h2 { color: #ffffff; font-size: 1.2rem; margin-bottom: 2px;}
+    .sidebar-header span { display: block; font-size: 0.65rem; color: #a5b4fc; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+    .bot-icon { background: white; padding: 6px; border-radius: 8px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
     .nav-section { padding: 0 16px; margin-top: 24px; }
-    .nav-title { font-size: 0.75rem; color: #6366f1; text-transform: uppercase; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
-    .nav-link { display: block; padding: 10px 16px; color: #d1d5db; text-decoration: none; border-radius: 8px; font-size: 0.9rem; margin-bottom: 4px; transition: background 0.2s; }
-    .nav-link:hover, .nav-link.active { background-color: #312e81; color: #ffffff; }
-
-    /* --- MAIN CONTENT --- */
-    .main-content { flex: 1; padding: 32px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
-    
-    .header { display: flex; justify-content: space-between; align-items: flex-end; }
-    .header h1 { font-size: 1.75rem; color: #111827; margin-bottom: 8px; }
-    .header p { color: #6b7280; font-size: 0.95rem; }
-
-    /* --- GRID LAYOUT --- */
+    .nav-title { font-size: 0.7rem; color: #818cf8; text-transform: uppercase; font-weight: bold; margin-bottom: 12px; letter-spacing: 1px; }
+    .nav-link { display: flex; align-items: center; gap: 12px; padding: 10px 16px; color: #d1d5db; text-decoration: none; border-radius: 8px; font-size: 0.85rem; margin-bottom: 4px; transition: background 0.2s; }
+    .nav-link:hover, .nav-link.active { background-color: rgba(255,255,255,0.1); color: #ffffff; font-weight: 500; border-left: 3px solid #818cf8; padding-left: 13px; }
+    .sidebar-footer { padding: 24px; font-size: 0.75rem; color: #a5b4fc; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 8px; }
+    .status-dot { width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; }
+    .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; position: relative; }
+    .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; border-bottom: 1px solid #f3f4f6; background: white; }
+    .search-small { display: flex; align-items: center; background: #f3f4f6; padding: 8px 16px; border-radius: 8px; width: 300px; }
+    .search-small input { border: none; background: transparent; outline: none; margin-left: 8px; font-size: 0.85rem; width: 100%; }
+    .nav-actions { display: flex; align-items: center; gap: 16px; }
+    .user-profile { display: flex; align-items: center; gap: 12px; font-size: 0.85rem; font-weight: 600; }
+    .avatar { width: 32px; height: 32px; background: #eef2ff; color: #4f46e5; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.8rem; }
+    /* --- KB SPECIFIC --- */
+    .page-padding { padding: 40px; max-width: 1400px; margin: 0 auto; width: 100%; }
+    .welcome-text { font-size: 0.75rem; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .page-title { font-size: 2rem; color: #111827; margin: 8px 0 32px; }
     .content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
-
-    /* --- DOCUMENT TABLE (Left Column) --- */
-    .card { background: white; border-radius: 12px; border: 1px solid #e5e7eb; padding: 24px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .card h2 { font-size: 1.1rem; color: #111827; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; }
-    
-    /* Upload Section */
-    .upload-container { display: flex; gap: 16px; align-items: stretch; }
-    .upload-zone { flex: 1; border: 2px dashed #cbd5e1; border-radius: 8px; padding: 24px; text-align: center; background-color: #f8fafc; cursor: pointer; transition: 0.2s; }
-    .upload-zone:hover { border-color: #818cf8; background-color: #eff6ff; }
-    
-    .upload-settings { width: 250px; display: flex; flex-direction: column; gap: 12px; justify-content: center; }
-    .upload-settings select { padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.85rem; outline: none; }
-    
-    /* Table */
+    .card { background: white; border-radius: 12px; border: 1px solid #e5e7eb; padding: 32px; display: flex; flex-direction: column; gap: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+    .card h2 { font-size: 1.2rem; color: #111827; border-bottom: 1px solid #f3f4f6; padding-bottom: 16px; font-weight: 600; }
+    .upload-container { display: flex; gap: 24px; align-items: stretch; }
+    .upload-zone { flex: 1; border: 2px dashed #cbd5e1; border-radius: 8px; padding: 32px; text-align: center; background-color: #f8fafc; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    .upload-zone:hover { border-color: #818cf8; background-color: #eef2ff; }
+    .upload-settings { width: 280px; display: flex; flex-direction: column; gap: 16px; justify-content: center; }
+    .input-group { display: flex; flex-direction: column; gap: 6px; }
+    .input-group label { font-size: 0.8rem; font-weight: 600; color: #374151; }
+    .upload-settings select { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem; outline: none; background: #fdfdfd; }
     table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-    th { text-align: left; font-size: 0.75rem; color: #6b7280; text-transform: uppercase; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb; }
+    th { text-align: left; font-size: 0.75rem; color: #6b7280; text-transform: uppercase; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb; letter-spacing: 0.5px; }
     td { padding: 16px 0; border-bottom: 1px solid #f3f4f6; font-size: 0.9rem; color: #374151; }
-    
-    .doc-name { font-weight: 600; color: #111827; }
+    .doc-name { font-weight: 600; color: #111827; margin-bottom: 4px; }
     .doc-cat { font-size: 0.75rem; color: #6b7280; }
-    
-    /* Tags */
-    .tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+    .tag { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
     .tag-public { background: #dcfce7; color: #15803d; }
-    .tag-restricted { background: #fee2e2; color: #b91c1c; } /* Deal/Person specific */
-    .tag-sensitive { background: #fef08a; color: #854d0e; } /* No AI Summary allowed */
-
-    /* --- AI TESTING SANDBOX (Right Column) --- */
-    .sandbox-card { background: linear-gradient(to bottom, #ffffff, #f5f3ff); border-color: #c7d2fe; }
-    .sandbox-chat { flex: 1; border: 1px solid #e5e7eb; border-radius: 8px; background: white; padding: 16px; display: flex; flex-direction: column; gap: 12px; height: 350px; overflow-y: auto; margin-bottom: 12px; }
-    
-    .msg { font-size: 0.85rem; padding: 10px 14px; border-radius: 8px; line-height: 1.4; max-width: 90%; }
-    .msg-user { background: #f3f4f6; color: #374151; align-self: flex-end; border-bottom-right-radius: 2px; }
+    .tag-sensitive { background: #fef08a; color: #854d0e; }
+    .sandbox-card { background: #ffffff; border-color: #e5e7eb; display: flex; flex-direction: column; }
+    .sandbox-header { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #f3f4f6; padding-bottom: 16px; margin-bottom: 16px; }
+    .sandbox-header h2 { border: none; padding: 0; margin: 0; }
+    .sandbox-chat { flex: 1; border: 1px solid #f3f4f6; border-radius: 8px; background: #f9fafb; padding: 20px; display: flex; flex-direction: column; gap: 16px; height: 400px; overflow-y: auto; margin-bottom: 16px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+    .msg { font-size: 0.9rem; padding: 12px 16px; border-radius: 8px; line-height: 1.5; max-width: 90%; }
+    .msg-user { background: #ffffff; color: #374151; align-self: flex-end; border: 1px solid #e5e7eb; border-bottom-right-radius: 2px; }
     .msg-ai { background: #4f46e5; color: white; align-self: flex-start; border-bottom-left-radius: 2px; }
-    .msg-ai.sensitive { background: #1e1b4b; border-left: 3px solid #facc15; } /* Special styling for un-summarized legal text */
-    
-    .msg-src { font-size: 0.7rem; color: #a5b4fc; margin-top: 6px; display: block; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 4px; }
-
-    .sandbox-input { display: flex; gap: 8px; }
-    .sandbox-input input { flex: 1; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.85rem; outline: none; }
-    .sandbox-input button { background: #4f46e5; color: white; border: none; padding: 0 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    .msg-ai.sensitive { background: #2b1b38; border-left: 4px solid #facc15; }
+    .msg-src { font-size: 0.75rem; color: #a5b4fc; margin-top: 8px; display: block; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 6px; }
+    .sandbox-input { display: flex; gap: 12px; }
+    .sandbox-input input { flex: 1; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.9rem; outline: none; }
+    .sandbox-input button { background: #4f46e5; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
   </style>
 </head>
 <body>
-
   <aside class="sidebar">
-    <div class="sidebar-header">
-      <h2>Enterprise Portal</h2>
+    <div class="sidebar-top">
+      <div class="sidebar-header"><div class="bot-icon">🤖</div><div><h2>TicketGenie</h2><span id="sidebarRole">Unified Portal</span></div></div>
+      <div class="nav-section"><div class="nav-title">Workspace</div><a href="dashboard.html" class="nav-link">📊 My Dashboard</a></div>
+      <div class="nav-section"><div class="nav-title">Ticketing System</div><a href="submit-ticket.html" class="nav-link">➕ Submit New Ticket</a><a href="inbox.html" class="nav-link">📥 Team Inbox</a></div>
+      <div class="nav-section"><div class="nav-title">Workforce</div><a href="onboarding.html" class="nav-link">🚀 Onboarding & Visas</a></div>
+      <div class="nav-section" id="adminNav" style="display: none;"><div class="nav-title">Administration</div><a href="knowledge-base.html" class="nav-link active">📚 AI Knowledge Base</a><a href="analytics.html" class="nav-link">📈 Analytics</a></div>
+      <div class="nav-section"><div class="nav-title">Account</div><a href="settings.html" class="nav-link">⚙️ Settings</a></div>
     </div>
-    
-    <div class="nav-section">
-      <div class="nav-title">Main</div>
-      <a href="dashboard.html" class="nav-link">📊 My Dashboard</a>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-title">Ticketing System</div>
-      <a href="submit-ticket.html" class="nav-link">➕ Submit New Ticket</a>
-      <a href="inbox.html" class="nav-link">📥 Team Inbox</a>
-    </div>
-
-    <div class="nav-section" id="adminNav" style="display: none;">
-      <div class="nav-title">Administration</div>
-      <a href="knowledge-base.html" class="nav-link active">📚 AI Knowledge Base</a>
-    </div>
+    <div class="sidebar-footer"><div class="status-dot"></div><div><div style="color: white; font-weight: 600;">All systems operational</div><div>TicketGenie is online</div></div></div>
   </aside>
 
   <main class="main-content">
-    
-    <div class="header">
-      <div>
-        <h1>AI Policy & Document Database</h1>
-        <p>Manage standard policies and restricted deals. Control how AI reads and summaries legal/immigration documents.</p>
+    <div class="top-nav">
+      <div class="search-small"><span>🔍</span><input type="text" placeholder="Search policies..."></div>
+      <div class="nav-actions"><span>🌙</span><span>🔔</span>
+        <div class="user-profile"><div class="avatar" id="navAvatar">U</div><div><div id="navName">User</div><div id="navSubRole" style="font-size: 0.7rem; color: #6b7280; font-weight: normal;">Role</div></div></div>
       </div>
     </div>
 
-    <div class="content-grid">
-      
-      <div class="card">
-        <h2>Upload New Policy / Deal Document</h2>
-        
-        <div class="upload-container">
-          <div class="upload-zone" onclick="alert('File browser opened!')">
-            <div style="font-size: 2rem; color: #94a3b8; margin-bottom: 8px;">📄</div>
-            <h4 style="color: #334155;">Drag & Drop files here</h4>
+    <div class="page-padding">
+      <div class="welcome-text">RAG Document Management</div>
+      <h1 class="page-title">AI Policy & Document Library</h1>
+      <div class="content-grid">
+        <div class="card">
+          <h2>Upload New Policy / Guideline</h2>
+          <div class="upload-container">
+            <div class="upload-zone" onclick="alert('File browser opened!')"><div style="font-size: 2.5rem; color: #a5b4fc; margin-bottom: 12px;">📄</div><h4 style="color: #374151; margin-bottom: 4px;">Drag & Drop files here</h4><p style="font-size: 0.8rem; color: #6b7280;">Supports PDF, DOCX for Azure AI Search Indexing</p></div>
+            <div class="upload-settings">
+              <div class="input-group"><label>Document Category</label><select><option>Immigration (OPT, Visas)</option><option>IT Policy & Hardware</option><option>HR / Onboarding</option></select></div>
+              <div class="input-group"><label>Employee Access Level</label><select><option>Public (All Employees)</option><option>Restricted (HR/Admins Only)</option></select></div>
+              <label style="font-size: 0.85rem; color: #475569; display: flex; align-items: center; gap: 8px; margin-top: 8px; font-weight: 600;"><input type="checkbox" style="width: 16px; height: 16px;"> Mark as Sensitive (No AI Summary)</label>
+            </div>
           </div>
-          
-          <div class="upload-settings">
-            <select>
-              <option disabled selected>Category...</option>
-              <option>Immigration (OPT, Visas)</option>
-              <option>IT Policy</option>
-              <option>HR / Onboarding</option>
-            </select>
-            <select>
-              <option disabled selected>Access Level...</option>
-              <option>Public (All Employees)</option>
-              <option>Restricted (Deal-Specific/HR Only)</option>
-            </select>
-            <label style="font-size: 0.75rem; color: #475569; display: flex; align-items: center; gap: 4px;">
-              <input type="checkbox"> Sensitive (Disable AI Summary)
-            </label>
-          </div>
+          <table>
+            <thead><tr><th>Document Name</th><th>Access Level</th><th>AI Treatment</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr><td><div class="doc-name">OPT_Onboarding_Guidelines.pdf</div><div class="doc-cat">Category: Immigration</div></td><td><span class="tag tag-public">Public</span></td><td><span class="tag tag-sensitive">Full Text Only (No Summary)</span></td><td><a href="#" style="color: #4f46e5; text-decoration: none; font-size: 0.85rem; font-weight: 600;">Edit</a></td></tr>
+              <tr><td><div class="doc-name">IT_Equipment_Policy_2026.pdf</div><div class="doc-cat">Category: IT-Related</div></td><td><span class="tag tag-public">Public</span></td><td><span class="tag tag-public">Standard RAG Summary</span></td><td><a href="#" style="color: #4f46e5; text-decoration: none; font-size: 0.85rem; font-weight: 600;">Edit</a></td></tr>
+            </tbody>
+          </table>
         </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Document Name</th>
-              <th>Access Level</th>
-              <th>AI Treatment</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <div class="doc-name">OPT_Onboarding_Guidelines.pdf</div>
-                <div class="doc-cat">Category: Immigration</div>
-              </td>
-              <td><span class="tag tag-public">Public</span></td>
-              <td><span class="tag tag-sensitive">Full Text Only (No Summary)</span></td>
-              <td><a href="#" style="color: #4f46e5; text-decoration: none; font-size: 0.85rem;">Edit Access</a></td>
-            </tr>
-            <tr>
-              <td>
-                <div class="doc-name">Project_Zeus_Merger_Details.pdf</div>
-                <div class="doc-cat">Category: Other (Legal)</div>
-              </td>
-              <td><span class="tag tag-restricted">Deal-Specific</span></td>
-              <td><span class="tag tag-public">Standard RAG Summary</span></td>
-              <td><a href="#" style="color: #4f46e5; text-decoration: none; font-size: 0.85rem;">Manage Users</a></td>
-            </tr>
-            <tr>
-              <td>
-                <div class="doc-name">IT_Equipment_Policy_2026.pdf</div>
-                <div class="doc-cat">Category: IT-Related</div>
-              </td>
-              <td><span class="tag tag-public">Public</span></td>
-              <td><span class="tag tag-public">Standard RAG Summary</span></td>
-              <td><a href="#" style="color: #4f46e5; text-decoration: none; font-size: 0.85rem;">Edit Access</a></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="card sandbox-card">
-        <h2>✨ AI Policy Tester</h2>
-        <p style="font-size: 0.75rem; color: #6b7280; margin-bottom: 8px;">Test how the AI answers questions based on document security settings.</p>
-        
-        <div class="sandbox-chat">
-          <div class="msg msg-user">What is the policy on getting a new laptop?</div>
-          <div class="msg msg-ai">
-            Employees are eligible for a hardware refresh every 3 years. You must submit a ticket to IT for approval.
-            <span class="msg-src">Source: IT_Equipment_Policy_2026.pdf</span>
+        <div class="card sandbox-card">
+          <div class="sandbox-header"><span style="font-size: 1.5rem;">✨</span><div><h2>RAG Policy Sandbox</h2><p style="font-size: 0.75rem; color: #6b7280; margin-top: 2px;">Test how the AI retrieves answers from your uploaded documents.</p></div></div>
+          <div class="sandbox-chat">
+            <div class="msg msg-user">What is the policy on getting a new laptop?</div>
+            <div class="msg msg-ai">Employees are eligible for a hardware refresh every 3 years. You must submit a ticket to IT for approval.<span class="msg-src">Source: IT_Equipment_Policy_2026.pdf</span></div>
+            <div class="msg msg-user">What are the rules for my OPT timeline?</div>
+            <div class="msg msg-ai sensitive"><strong>[SENSITIVE DOC DETECTED - RAW TEXT PROVIDED]</strong><br><br>"F-1 students must apply for post-completion OPT up to 90 days before their program end date..."<span class="msg-src">Source: OPT_Onboarding_Guidelines.pdf (Page 2)</span></div>
           </div>
-
-          <div class="msg msg-user">What are the rules for my OPT timeline?</div>
-          <div class="msg msg-ai sensitive">
-            <strong>[SENSITIVE DOC DETECTED - RAW TEXT PROVIDED]</strong><br><br>
-            "F-1 students must apply for post-completion OPT up to 90 days before their program end date and no later than 60 days after their program end date. Employment must be directly related to the student's major area of study."
-            <span class="msg-src">Source: OPT_Onboarding_Guidelines.pdf (Page 2)</span>
-          </div>
-        </div>
-
-        <div class="sandbox-input">
-          <input type="text" placeholder="Test a query here...">
-          <button>Ask</button>
+          <div class="sandbox-input"><input type="text" placeholder="Test an employee query here..."><button>Test</button></div>
         </div>
       </div>
-
     </div>
-
   </main>
-
   <script>
-    // 1. Check user login
     const userDataString = localStorage.getItem('portalUser');
-    
     if (userDataString) {
       const user = JSON.parse(userDataString);
-      
-      // 2. Only show this page link to HR and Management! IT/Accounting shouldn't mess with policy docs.
-      if (user.role === 'HR' || user.role === 'Management') {
-        document.getElementById('adminNav').style.display = 'block';
-      } else {
-        // Kick them back to dashboard if they don't have permission
-        alert('You do not have administrative access to the Knowledge Base.');
-        window.location.href = 'dashboard.html';
-      }
-    } else {
-      window.location.href = 'index.html';
-    }
+      document.getElementById('sidebarRole').innerText = `${user.role} Portal`;
+      document.getElementById('navName').innerText = user.name;
+      document.getElementById('navSubRole').innerText = user.role;
+      document.getElementById('navAvatar').innerText = user.name.charAt(0).toUpperCase();
+      if (user.role === 'HR' || user.role === 'Management') { document.getElementById('adminNav').style.display = 'block'; } else { alert('Access Denied'); window.location.href = 'dashboard.html'; }
+    } else { window.location.href = 'index.html'; }
   </script>
 </body>
 </html>

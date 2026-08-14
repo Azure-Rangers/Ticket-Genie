@@ -3,176 +3,142 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enterprise Portal - Submit Ticket</title>
+  <title>TicketGenie - Submit Ticket</title>
   <style>
-    /* --- CSS RESET & BASE STYLES --- */
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { display: flex; height: 100vh; background-color: #f9fafb; color: #1f2937; }
-
-    /* --- SIDEBAR --- */
-    .sidebar { width: 260px; background-color: #1e1b4b; color: #d1d5db; display: flex; flex-direction: column; }
-    .sidebar-header { padding: 24px; border-bottom: 1px solid #312e81; }
-    .sidebar-header h2 { color: #ffffff; font-size: 1.25rem; }
-    
+    body { display: flex; height: 100vh; background-color: #fdfdfd; color: #1f2937; margin: 0; overflow: hidden; }
+    /* --- SIDEBAR & NAV --- */
+    .sidebar { width: 250px; background-color: #2b1b38; color: #d1d5db; display: flex; flex-direction: column; flex-shrink: 0; justify-content: space-between; }
+    .sidebar-top { flex: 1; }
+    .sidebar-header { padding: 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .sidebar-header h2 { color: #ffffff; font-size: 1.2rem; margin-bottom: 2px;}
+    .sidebar-header span { display: block; font-size: 0.65rem; color: #a5b4fc; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+    .bot-icon { background: white; padding: 6px; border-radius: 8px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
     .nav-section { padding: 0 16px; margin-top: 24px; }
-    .nav-title { font-size: 0.75rem; color: #6366f1; text-transform: uppercase; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
-    .nav-link { display: block; padding: 10px 16px; color: #d1d5db; text-decoration: none; border-radius: 8px; font-size: 0.9rem; margin-bottom: 4px; transition: background 0.2s; }
-    .nav-link:hover, .nav-link.active { background-color: #312e81; color: #ffffff; }
-
-    /* --- MAIN CONTENT --- */
-    .main-content { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
-    
-    .page-header { width: 100%; max-width: 800px; margin-bottom: 24px; }
-    .page-header h1 { font-size: 1.75rem; color: #111827; }
-    .page-header p { color: #6b7280; font-size: 0.95rem; margin-top: 4px; }
-
-    /* --- FORM CARD --- */
-    .form-card { background-color: #ffffff; width: 100%; max-width: 800px; padding: 32px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-    
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .nav-title { font-size: 0.7rem; color: #818cf8; text-transform: uppercase; font-weight: bold; margin-bottom: 12px; letter-spacing: 1px; }
+    .nav-link { display: flex; align-items: center; gap: 12px; padding: 10px 16px; color: #d1d5db; text-decoration: none; border-radius: 8px; font-size: 0.85rem; margin-bottom: 4px; transition: background 0.2s; }
+    .nav-link:hover, .nav-link.active { background-color: rgba(255,255,255,0.1); color: #ffffff; font-weight: 500; border-left: 3px solid #818cf8; padding-left: 13px; }
+    .sidebar-footer { padding: 24px; font-size: 0.75rem; color: #a5b4fc; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 8px; }
+    .status-dot { width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; }
+    .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; position: relative; }
+    .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; border-bottom: 1px solid #f3f4f6; background: white; }
+    .search-small { display: flex; align-items: center; background: #f3f4f6; padding: 8px 16px; border-radius: 8px; width: 300px; }
+    .search-small input { border: none; background: transparent; outline: none; margin-left: 8px; font-size: 0.85rem; width: 100%; }
+    .nav-actions { display: flex; align-items: center; gap: 16px; }
+    .user-profile { display: flex; align-items: center; gap: 12px; font-size: 0.85rem; font-weight: 600; }
+    .avatar { width: 32px; height: 32px; background: #eef2ff; color: #4f46e5; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.8rem; }
+    /* --- FORM SPECIFIC --- */
+    .page-padding { padding: 40px; max-width: 1000px; margin: 0 auto; width: 100%; }
+    .welcome-text { font-size: 0.75rem; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .page-title { font-size: 2rem; color: #111827; margin: 8px 0 32px; text-transform: capitalize; }
+    .form-card { background-color: #ffffff; padding: 32px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+    .form-section-title { font-size: 1.1rem; color: #111827; border-bottom: 1px solid #f3f4f6; padding-bottom: 12px; margin-bottom: 24px; font-weight: 600; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
     .full-width { grid-column: span 2; }
-
     .input-group { display: flex; flex-direction: column; gap: 8px; }
     .input-group label { font-size: 0.85rem; font-weight: 600; color: #374151; }
-    .input-group input, .input-group select, .input-group textarea { padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; outline: none; transition: border 0.2s; font-family: inherit; }
-    .input-group input:focus, .input-group select:focus, .input-group textarea:focus { border-color: #4f46e5; }
-    
+    .input-group input, .input-group select, .input-group textarea { padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; outline: none; transition: border 0.2s; font-family: inherit; background-color: #fdfdfd; }
+    .input-group input:focus, .input-group select:focus, .input-group textarea:focus { border-color: #4f46e5; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
     .input-group textarea { resize: vertical; min-height: 120px; }
-
-    /* File Drag & Drop Mockup */
-    .file-drop { border: 2px dashed #cbd5e1; border-radius: 8px; padding: 24px; text-align: center; color: #64748b; background-color: #f8fafc; cursor: pointer; transition: 0.2s; }
-    .file-drop:hover { border-color: #818cf8; background-color: #eff6ff; }
-
-    /* Buttons */
-    .btn-row { display: flex; justify-content: flex-end; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; }
-    .btn-cancel { padding: 12px 24px; background-color: white; border: 1px solid #d1d5db; border-radius: 8px; color: #374151; font-weight: 600; cursor: pointer; }
-    .btn-submit { padding: 12px 24px; background-color: #4f46e5; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; transition: 0.2s; }
-    .btn-submit:hover { background-color: #4338ca; }
-
-    /* Success Overlay (Hidden by default) */
-    .success-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 100; }
-    .success-overlay h2 { color: #16a34a; font-size: 2rem; margin-bottom: 8px; }
+    optgroup { font-weight: bold; color: #4f46e5; background: #f9fafb; }
+    option { font-weight: normal; color: #1f2937; background: #ffffff; }
+    .file-drop { border: 2px dashed #cbd5e1; border-radius: 8px; padding: 24px; text-align: center; color: #64748b; background-color: #f8fafc; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .file-drop:hover { border-color: #818cf8; background-color: #eef2ff; color: #4f46e5; }
+    .file-drop span.icon { font-size: 2rem; margin-bottom: 8px; color: #a5b4fc; }
+    .btn-row { display: flex; justify-content: flex-end; gap: 16px; margin-top: 16px; padding-top: 24px; border-top: 1px solid #e5e7eb; }
+    .btn-cancel { padding: 12px 24px; background-color: white; border: 1px solid #d1d5db; border-radius: 8px; color: #374151; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn-cancel:hover { background-color: #f3f4f6; }
+    .btn-submit { padding: 12px 28px; background-color: #4f46e5; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2); }
+    .btn-submit:hover { background-color: #4338ca; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(79, 70, 229, 0.3); }
+    .success-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(253, 253, 253, 0.95); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 1000; }
+    .success-overlay h2 { color: #4f46e5; font-size: 2.5rem; margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
+    .success-overlay p { color: #6b7280; font-size: 1.1rem; }
   </style>
 </head>
 <body>
-
   <aside class="sidebar">
-    <div class="sidebar-header">
-      <h2>Enterprise Portal</h2>
+    <div class="sidebar-top">
+      <div class="sidebar-header"><div class="bot-icon">🤖</div><div><h2>TicketGenie</h2><span id="sidebarRole">Unified Portal</span></div></div>
+      <div class="nav-section"><div class="nav-title">Workspace</div><a href="dashboard.html" class="nav-link">📊 My Dashboard</a></div>
+      <div class="nav-section"><div class="nav-title">Ticketing System</div><a href="submit-ticket.html" class="nav-link active">➕ Submit New Ticket</a><a href="inbox.html" class="nav-link">📥 Team Inbox</a></div>
+      <div class="nav-section"><div class="nav-title">Workforce</div><a href="onboarding.html" class="nav-link">🚀 Onboarding & Visas</a></div>
+      <div class="nav-section" id="adminNav" style="display: none;"><div class="nav-title">Administration</div><a href="knowledge-base.html" class="nav-link">📚 AI Knowledge Base</a><a href="analytics.html" class="nav-link">📈 Analytics</a></div>
+      <div class="nav-section"><div class="nav-title">Account</div><a href="settings.html" class="nav-link">⚙️ Settings</a></div>
     </div>
-    
-    <div class="nav-section">
-      <div class="nav-title">Main</div>
-      <a href="dashboard.html" class="nav-link">📊 My Dashboard</a>
-      <a href="#" class="nav-link">❤️ Company Pulse</a>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-title">Ticketing System</div>
-      <a href="submit-ticket.html" class="nav-link active">➕ Submit New Ticket</a>
-      <a href="inbox.html" class="nav-link">📥 Team Inbox</a>
-    </div>
+    <div class="sidebar-footer"><div class="status-dot"></div><div><div style="color: white; font-weight: 600;">All systems operational</div><div>TicketGenie is online</div></div></div>
   </aside>
 
   <main class="main-content">
-    
-    <div class="page-header">
-      <h1>Submit a Support Ticket</h1>
-      <p>Need help? Fill out the form below and AI will route your request to the correct department.</p>
+    <div class="top-nav">
+      <div class="search-small"><span>🔍</span><input type="text" placeholder="Search ticket IDs..."></div>
+      <div class="nav-actions"><span>🌙</span><span>🔔</span>
+        <div class="user-profile"><div class="avatar" id="navAvatar">U</div><div><div id="navName">User</div><div id="navSubRole" style="font-size: 0.7rem; color: #6b7280; font-weight: normal;">Role</div></div></div>
+      </div>
     </div>
 
-    <form class="form-card" id="ticketForm">
-      
-      <div class="form-grid">
-        <div class="input-group">
-          <label>Requestor Name</label>
-          <input type="text" id="reqName" readonly style="background-color: #f3f4f6; color: #6b7280; cursor: not-allowed;">
+    <div class="page-padding">
+      <div class="welcome-text">Intelligent Routing</div>
+      <h1 class="page-title">Submit Manual Request</h1>
+      <form class="form-card" id="ticketForm">
+        <div class="form-section-title">Requestor Information</div>
+        <div class="form-grid">
+          <div class="input-group"><label>Admin Submitting</label><input type="text" id="reqName" readonly style="background-color: #f3f4f6; color: #6b7280; cursor: not-allowed; border-color: #e5e7eb;"></div>
+          <div class="input-group"><label>Affected Employee Email (Optional)</label><input type="email" placeholder="employee@company.com"></div>
         </div>
-        <div class="input-group">
-          <label>Requestor Email</label>
-          <input type="email" id="reqEmail" readonly style="background-color: #f3f4f6; color: #6b7280; cursor: not-allowed;">
-        </div>
-
-        <div class="input-group full-width">
-          <label>Subject / Brief Summary</label>
-          <input type="text" placeholder="e.g., Cannot connect to office Wi-Fi" required>
-        </div>
-
-        <div class="input-group">
-          <label>Route to Department</label>
-          <select required>
-            <option value="" disabled selected>Select department...</option>
-            <option value="IT">IT & Tech Support</option>
-            <option value="HR">Human Resources</option>
-            <option value="ACC">Accounting & Payroll</option>
-            <option value="FAC">Facilities & Maintenance</option>
-          </select>
-        </div>
-
-        <div class="input-group">
-          <label>Urgency Level</label>
-          <select required>
-            <option value="Low">Low - Whenever possible</option>
-            <option value="Medium" selected>Medium - Normal priority</option>
-            <option value="High">High - Blocking my work</option>
-            <option value="Critical">Critical - System down / Security</option>
-          </select>
-        </div>
-
-        <div class="input-group full-width">
-          <label>Detailed Description</label>
-          <textarea placeholder="Please provide as much detail as possible so our team can help you quickly..." required></textarea>
-        </div>
-
-        <div class="input-group full-width">
-          <label>Attachments (Optional)</label>
-          <div class="file-drop" onclick="alert('File browser would open here!')">
-            <span style="font-size: 1.5rem; display: block; margin-bottom: 8px;">📎</span>
-            Click to upload or drag and drop files here<br>
-            <span style="font-size: 0.75rem;">Supports PDF, JPG, PNG, DOCX</span>
+        <div class="form-section-title">Ticket Details</div>
+        <div class="form-grid">
+          <div class="input-group full-width"><label>Subject / Brief Summary</label><input type="text" placeholder="e.g., Laptop screen cracked, needs replacement" required></div>
+          <div class="input-group">
+            <label>Category & Routing</label>
+            <select required>
+              <option value="" disabled selected>Select specific category...</option>
+              <optgroup label="Information Technology (IT)"><option value="IT-Hard">Hardware Issues</option><option value="IT-IAM">Identity & Access Mgmt (IAM)</option><option value="IT-Soft">Software Licensing</option></optgroup>
+              <optgroup label="Human Resources (HR)"><option value="HR-Rel">Employee Relationships</option><option value="HR-On">Onboarding / Offboarding</option><option value="HR-Ben">Benefit Inquiries</option><option value="HR-Leave">Leave Requests</option></optgroup>
+              <optgroup label="Workplace Operations"><option value="Ops-Furn">Furniture Request (Table, Chair)</option><option value="Ops-Maint">General Maintenance</option><option value="Ops-Badge">Badge Registration</option></optgroup>
+              <optgroup label="Finance & Accounting"><option value="Fin-Card">New Company Card Issuance</option><option value="Fin-Limit">Company Card Limit Increase</option><option value="Fin-Receipt">Receipt Submission / Expense</option></optgroup>
+            </select>
+          </div>
+          <div class="input-group">
+            <label>System Priority Level</label>
+            <select required>
+              <option value="Low">Low - Whenever possible (No SLA)</option>
+              <option value="Medium" selected>Medium - Normal workflow (48h SLA)</option>
+              <option value="High">High - Blocking work (12h SLA)</option>
+              <option value="Critical">Critical - System down / Escalation (2h SLA)</option>
+            </select>
+          </div>
+          <div class="input-group full-width"><label>Detailed Description</label><textarea placeholder="Provide full context here. AI will summarize this for the assignee automatically..." required></textarea></div>
+          <div class="input-group full-width">
+            <label>Supporting Documents</label>
+            <div class="file-drop" onclick="alert('File browser would open here!')"><span class="icon">📄</span><span style="font-weight: 600; color: #374151;">Click or drag files to upload</span><span style="font-size: 0.75rem; margin-top: 4px;">Supports PDF, JPG, PNG, DOCX (Max 20MB)</span></div>
           </div>
         </div>
-      </div>
-
-      <div class="btn-row">
-        <button type="button" class="btn-cancel" onclick="window.location.href='dashboard.html'">Cancel</button>
-        <button type="submit" class="btn-submit">Submit Ticket</button>
-      </div>
-    </form>
-
+        <div class="btn-row">
+          <button type="button" class="btn-cancel" onclick="window.location.href='dashboard.html'">Cancel</button>
+          <button type="submit" class="btn-submit">Route Ticket ✨</button>
+        </div>
+      </form>
+    </div>
   </main>
-
-  <div class="success-overlay" id="successOverlay">
-    <h2>✅ Ticket Submitted!</h2>
-    <p>Routing to the appropriate department...</p>
-  </div>
+  <div class="success-overlay" id="successOverlay"><h2><span>✨</span> Ticket Captured Successfully</h2><p>TicketGenie AI is summarizing and routing to the correct department...</p></div>
 
   <script>
-    // 1. Check who is logged in to auto-fill the form
     const userDataString = localStorage.getItem('portalUser');
-    
     if (userDataString) {
       const user = JSON.parse(userDataString);
-      // Fill in the locked fields with the user's data
-      document.getElementById('reqName').value = user.name;
-      document.getElementById('reqEmail').value = user.email;
+      document.getElementById('sidebarRole').innerText = `${user.role} Portal`;
+      document.getElementById('navName').innerText = user.name;
+      document.getElementById('navSubRole').innerText = user.role;
+      document.getElementById('navAvatar').innerText = user.name.charAt(0).toUpperCase();
+      document.getElementById('reqName').value = `${user.name} (${user.role} Admin)`;
+      if (user.role === 'HR' || user.role === 'Management') document.getElementById('adminNav').style.display = 'block';
     } else {
-      // If not logged in, kick them to the login page
       window.location.href = 'index.html';
     }
-
-    // 2. Handle the form submission purely on the frontend
     document.getElementById('ticketForm').addEventListener('submit', function(e) {
-      e.preventDefault(); // Stop the page from reloading
-      
-      // Show the success overlay
-      const overlay = document.getElementById('successOverlay');
-      overlay.style.display = 'flex';
-
-      // Wait 1.5 seconds to simulate loading, then redirect to the Inbox
-      setTimeout(() => {
-        window.location.href = 'inbox.html';
-      }, 1500);
+      e.preventDefault(); 
+      document.getElementById('successOverlay').style.display = 'flex';
+      setTimeout(() => { window.location.href = 'inbox.html'; }, 1800);
     });
   </script>
 </body>
