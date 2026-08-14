@@ -127,6 +127,7 @@ function initializeProfileDropdown() {
                 profileMenu.classList.remove('show');
                 profileBtn.setAttribute('aria-expanded', 'false');
 
+<<<<<<< HEAD
                 const currentPath = window.location.pathname;
 
                 if (selectedRole === 'Management') {
@@ -164,6 +165,15 @@ function initializeProfileDropdown() {
                     else {
                         window.location.href = 'index.html';
                     }
+=======
+                const inPagesDir = window.location.pathname.includes('/pages/');
+                if (selectedRole === 'Management') {
+                    localStorage.setItem('portalUser', JSON.stringify({ name: 'Management User', role: 'Management', email: 'management@ticketgenie.com' }));
+                    window.location.href = inPagesDir ? 'management-portal.html' : 'pages/management-portal.html';
+                } else if (selectedRole === 'Employee') {
+                    localStorage.setItem('portalUser', JSON.stringify({ name: 'Employee User', role: 'Employee', email: 'employee@ticketgenie.com' }));
+                    window.location.href = inPagesDir ? '../index.html' : 'index.html';
+>>>>>>> 8a0cb186d9a97324d7e72bb1b070f48fdc7f470e
                 }
             });
         });

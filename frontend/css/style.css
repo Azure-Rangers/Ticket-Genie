@@ -986,6 +986,7 @@ small,
 .category-card p {
     font-size: 13px !important;
     line-height: 1.5 !important;
+<<<<<<< HEAD
 }
 
 .admin-page .menu-icon {
@@ -994,4 +995,6 @@ small,
 
 .employee-page .menu-icon {
     color: #a5b4fc;
+=======
+>>>>>>> 8a0cb186d9a97324d7e72bb1b070f48fdc7f470e
 }
