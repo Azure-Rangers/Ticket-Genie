@@ -4,10 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TicketGenie | My Tickets</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="../css/style.css">
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
 </head>
-<body>
+<body class="employee-page">
 
 <aside class="sidebar">
     <div class="brand" style="position: relative; justify-content: space-between; width: 100%; padding-right: 15px;">
@@ -27,30 +31,41 @@
     </div>
 
     <nav class="navigation">
-        <div class="nav-title">WORKSPACE</div>
-        <a href="index.html" class="nav-item">
-            <i class="fa-solid fa-house"></i><span>Help & Support</span>
-        </a>
-        <a href="my-tickets.html" class="nav-item">
-            <i class="fa-solid fa-ticket"></i><span>My Tickets</span>
-        </a>
-        <a href="new-request.html" class="nav-item">
-            <i class="fa-solid fa-plus"></i><span>New Request</span>
-        </a>
-        
-        <!-- ADD THIS NEW LINK RIGHT HERE -->
-        <a href="chat-history.html" class="nav-item">
-            <i class="fa-regular fa-comments"></i><span>Chat History</span>
-        </a>
 
-        <div class="nav-title">RESOURCES</div>
-        <a href="knowledge-base.html" class="nav-item">
-            <i class="fa-solid fa-book-open"></i><span>Knowledge Base</span>
-        </a>
-        <a href="notifications.html" class="nav-item">
-            <i class="fa-solid fa-bell"></i><span>Notifications</span><span class="notification-count">3</span>
-        </a>
-    </nav>
+    <div class="nav-title">
+        WORKSPACE
+    </div>
+
+    <a href="../index.html" class="nav-item">
+        <i class="fa-solid fa-house"></i>
+        <span>Help & Support</span>
+    </a>
+
+    <a href="my-tickets.html" class="nav-item active">
+        <i class="fa-solid fa-ticket"></i>
+        <span>My Tickets</span>
+    </a>
+
+    <a href="new-request.html" class="nav-item">
+        <i class="fa-solid fa-plus"></i>
+        <span>New Request</span>
+    </a>
+
+    <a href="chat-history.html" class="nav-item">
+        <i class="fa-regular fa-comments"></i>
+        <span>Chat History</span>
+    </a>
+
+    <div class="nav-title">
+        RESOURCES
+    </div>
+
+    <a href="notifications.html" class="nav-item">
+        <i class="fa-solid fa-bell"></i>
+        <span>Notifications</span>
+    </a>
+
+</nav>
 
     <div class="sidebar-bottom">
         <div class="system-status">
@@ -199,6 +214,7 @@
     </div>
 </div>
 
-<script src="js/script.js"></script>
+<link rel="stylesheet" href="../css/style.css">
+<script src="../js/script.js"></script>
 </body>
 </html>

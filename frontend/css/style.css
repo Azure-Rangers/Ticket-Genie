@@ -987,3 +987,11 @@ small,
     font-size: 13px !important;
     line-height: 1.5 !important;
 }
+
+.admin-page .menu-icon {
+    color: #a5b4fc;
+}
+
+.employee-page .menu-icon {
+    color: #a5b4fc;
+}

@@ -1,279 +1,601 @@
-<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TicketGenie - Login</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { height: 100vh; background-color: #f9fafb; display: flex; justify-content: center; align-items: center; }
-    .login-wrapper { width: 100%; max-width: 420px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; overflow: hidden; }
-    .login-header { background-color: #2b1b38; padding: 32px 24px; text-align: center; color: white; }
-    .login-header h1 { font-size: 1.5rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; }
-    .login-header p { color: #a5b4fc; font-size: 0.85rem; }
-    .bot-icon { background: rgba(255,255,255,0.1); padding: 6px 8px; border-radius: 8px; font-size: 1.2rem; }
-    .form-container { padding: 32px 24px; display: flex; flex-direction: column; gap: 20px; }
-    .input-group { display: flex; flex-direction: column; gap: 6px; }
-    .input-group label { font-size: 0.8rem; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.5px; }
-    .input-group input, .input-group select { padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; outline: none; background: #fdfdfd; transition: 0.2s; }
-    .input-group input:focus, .input-group select:focus { border-color: #4f46e5; background: white; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
-    .btn-submit { background-color: #2b1b38; color: white; border: none; padding: 14px; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; margin-top: 10px; transition: 0.2s; }
-    .btn-submit:hover { background-color: #4f46e5; }
-  </style>
-</head>
-<body>
-  <div class="login-wrapper">
-    <div class="login-header">
-      <h1><span class="bot-icon">🎫</span> TicketGenie</h1>
-      <p>Unified Operations Portal</p>
-    </div>
-    <form class="form-container" id="loginForm">
-      <div class="input-group">
-        <label>Work Email</label>
-        <input type="email" id="userEmail" placeholder="name@company.com" required>
-      </div>
-      <div class="input-group">
-        <label>Department / Role</label>
-        <select id="userRole" required>
-          <option value="" disabled selected>Select your department...</option>
-          <option value="HR">Human Resources</option>
-          <option value="IT">Information Technology</option>
-          <option value="Accounting">Accounting & Finance</option>
-          <option value="Management">Upper Management</option>
-        </select>
-      </div>
-      <div class="input-group">
-        <label>Full Name</label>
-        <input type="text" id="userName" placeholder="e.g. Jane Doe" required>
-      </div>
-      <button type="submit" class="btn-submit">Sign In</button>
-    </form>
-  </div>
-  <script>
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
-      e.preventDefault(); 
-      const email = document.getElementById('userEmail').value;
-      const role = document.getElementById('userRole').value;
-      const name = document.getElementById('userName').value;
-      localStorage.setItem('portalUser', JSON.stringify({ email, role, name }));
-      window.location.href = 'dashboard.html';
-    });
-  </script>
-</body>
-=======
-<!DOCTYPE html>
-<html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Help & Support | TicketGenie</title>
+
+    <!-- Main stylesheet -->
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <!-- Font Awesome icons -->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
 </head>
+
 <body>
 
-<aside class="sidebar">
-    <div class="brand" style="position: relative; justify-content: space-between; width: 100%; padding-right: 15px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <div class="brand-icon">
-                <i class="fa-solid fa-ticket"></i>
+    <!-- =====================================================
+         SIDEBAR
+         ===================================================== -->
+    <aside class="sidebar">
+
+        <div
+            class="brand"
+            style="position: relative; justify-content: space-between; width: 100%; padding-right: 15px;"
+        >
+
+            <div style="display: flex; align-items: center; gap: 12px;">
+
+                <div class="brand-icon">
+                    <i class="fa-solid fa-ticket"></i>
+                </div>
+
+                <div>
+                    <h2>TicketGenie</h2>
+                    <span>Employee Portal</span>
+                </div>
+
             </div>
-            <div>
-                <h2>TicketGenie</h2>
-                <span>Employee Portal</span>
-            </div>
-        </div>
-        
-        <button id="brandMenuToggle" class="brand-menu-toggle" aria-label="Toggle Pages">
-            <i class="fa-solid fa-bars"></i>
-        </button>
-    </div>
 
-    <nav class="navigation">
-        <div class="nav-title">WORKSPACE</div>
-        <a href="index.html" class="nav-item active">
-            <i class="fa-solid fa-house"></i><span>Help & Support</span>
-        </a>
-        <a href="my-tickets.html" class="nav-item">
-            <i class="fa-solid fa-ticket"></i><span>My Tickets</span>
-        </a>
-        <a href="new-request.html" class="nav-item">
-            <i class="fa-solid fa-plus"></i><span>New Request</span>
-        </a>
-        <a href="chat-history.html" class="nav-item">
-            <i class="fa-regular fa-comments"></i><span>Chat History</span>
-        </a>
-
-        <div class="nav-title">RESOURCES</div>
-        <a href="knowledge-base.html" class="nav-item">
-            <i class="fa-solid fa-book-open"></i><span>Knowledge Base</span>
-        </a>
-        <a href="notifications.html" class="nav-item">
-            <i class="fa-solid fa-bell"></i><span>Notifications</span><span class="notification-count">3</span>
-        </a>
-    </nav>
-
-    <div class="sidebar-bottom">
-        <div class="system-status">
-            <span class="status-dot"></span>
-            <div>
-                <strong>All systems operational</strong>
-                <small>TicketGenie is online</small>
-            </div>
-        </div>
-    </div>
-</aside>
-
-<main class="main-content">
-    <header class="topbar">
-        <div class="header-left" style="display: flex; align-items: center; gap: 20px;">
-            <button class="icon-button" id="sidebarToggle" type="button" aria-label="Toggle Sidebar">
+            <button
+                id="brandMenuToggle"
+                class="brand-menu-toggle"
+                type="button"
+                aria-label="Toggle Sidebar"
+            >
                 <i class="fa-solid fa-bars"></i>
             </button>
+
         </div>
 
-        <div class="topbar-actions">
-            <div class="search-box">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" placeholder="Search..." id="globalSearch">
-                <span class="shortcut">⌘ K</span>
+
+        <!-- Navigation -->
+        <nav class="navigation">
+
+            <div class="nav-title">
+                WORKSPACE
             </div>
 
-            <!-- Dark Mode Toggle Button -->
-            <button class="icon-button" id="darkModeToggle" type="button" aria-label="Toggle Dark Mode">
-                <i class="fa-solid fa-moon" id="darkModeIcon"></i>
-            </button>
+            <a href="../index.html" class="nav-item active">
+                <i class="fa-solid fa-house"></i>
+                <span>Help & Support</span>
+            </a>
 
-            <button class="icon-button" type="button">
-                <i class="fa-regular fa-bell"></i>
-                <span class="notification-dot"></span>
-            </button>
+            <a href="employee(NM)/my-tickets.html" class="nav-item">
+                <i class="fa-solid fa-ticket"></i>
+                <span>My Tickets</span>
+            </a>
 
-            <div class="profile">
-                <button class="profile-button" id="profileDropdownTrigger" aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdownMenu">
-                    <div class="avatar">NM</div>
-                    <div class="profile-info">
-                        <strong>Nishita</strong>
-                        <span id="currentRoleDisplay">Employee</span>
-                    </div>
-                    <i class="fa-solid fa-chevron-down"></i>
+            <a href="employee(NM)/new-request.html" class="nav-item">
+                <i class="fa-solid fa-plus"></i>
+                <span>New Request</span>
+            </a>
+
+            <a href="employee(NM)/chat-history.html" class="nav-item">
+                <i class="fa-regular fa-comments"></i>
+                <span>Chat History</span>
+            </a>
+
+
+            <div class="nav-title">
+                RESOURCES
+            </div>
+
+            <a href="employee(NM)/knowledge-base.html" class="nav-item">
+                <i class="fa-solid fa-book-open"></i>
+                <span>Knowledge Base</span>
+            </a>
+
+            <a href="employee(NM)/notifications.html" class="nav-item">
+                <i class="fa-solid fa-bell"></i>
+                <span>Notifications</span>
+                <span class="notification-count">3</span>
+            </a>
+
+        </nav>
+
+
+        <!-- Sidebar status -->
+        <div class="sidebar-bottom">
+
+            <div class="system-status">
+
+                <span class="status-dot"></span>
+
+                <div>
+                    <strong>All systems operational</strong>
+                    <small>TicketGenie is online</small>
+                </div>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+
+    <!-- =====================================================
+         MAIN CONTENT
+         ===================================================== -->
+    <main class="main-content">
+
+
+        <!-- =================================================
+             TOP BAR
+             ================================================= -->
+        <header class="topbar">
+
+            <div
+                class="header-left"
+                style="display: flex; align-items: center; gap: 20px;"
+            >
+
+                <button
+                    class="icon-button"
+                    id="sidebarToggle"
+                    type="button"
+                    aria-label="Toggle Sidebar"
+                >
+                    <i class="fa-solid fa-bars"></i>
                 </button>
 
-                <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu" aria-labelledby="profileDropdownTrigger">
-                    <span class="dropdown-label">Switch View</span>
-                    <button type="button" class="role-switch-btn active" data-role="Employee" role="menuitem">
-                        <i class="fa-regular fa-user"></i> Employee View
+            </div>
+
+
+            <div class="topbar-actions">
+
+
+                <!-- Search -->
+                <div class="search-box">
+
+                    <i class="fa-solid fa-magnifying-glass"></i>
+
+                    <input
+                        type="text"
+                        placeholder="Search..."
+                        id="globalSearch"
+                    >
+
+                    <span class="shortcut">
+                        ⌘ K
+                    </span>
+
+                </div>
+
+
+                <!-- Dark mode -->
+                <button
+                    class="icon-button"
+                    id="darkModeToggle"
+                    type="button"
+                    aria-label="Toggle Dark Mode"
+                >
+                    <i
+                        class="fa-solid fa-moon"
+                        id="darkModeIcon"
+                    ></i>
+                </button>
+
+
+                <!-- Notifications -->
+                <button
+                    class="icon-button"
+                    type="button"
+                    aria-label="Notifications"
+                >
+
+                    <i class="fa-regular fa-bell"></i>
+
+                    <span class="notification-dot"></span>
+
+                </button>
+
+
+                <!-- Profile -->
+                <div class="profile">
+
+                    <button
+                        class="profile-button"
+                        id="profileDropdownTrigger"
+                        type="button"
+                        aria-haspopup="menu"
+                        aria-expanded="false"
+                        aria-controls="profileDropdownMenu"
+                    >
+
+                        <div class="avatar">
+                            NM
+                        </div>
+
+                        <div class="profile-info">
+
+                            <strong>
+                                Nishita
+                            </strong>
+
+                            <span id="currentRoleDisplay">
+                                Employee
+                            </span>
+
+                        </div>
+
+                        <i class="fa-solid fa-chevron-down"></i>
+
                     </button>
-                    <button type="button" class="role-switch-btn" data-role="Management" role="menuitem">
-                        <i class="fa-solid fa-briefcase"></i> Management View
-                    </button>
+
+
+                    <!-- Role switch dropdown -->
+                    <div
+                        class="profile-dropdown-menu"
+                        id="profileDropdownMenu"
+                        role="menu"
+                        aria-labelledby="profileDropdownTrigger"
+                    >
+
+                        <span class="dropdown-label">
+                            Switch View
+                        </span>
+
+
+                        <button
+                            type="button"
+                            class="role-switch-btn active"
+                            data-role="Employee"
+                            role="menuitem"
+                        >
+
+                            <i class="fa-regular fa-user"></i>
+
+                            Employee View
+
+                        </button>
+
+
+                        <button
+                            type="button"
+                            class="role-switch-btn"
+                            data-role="Management"
+                            role="menuitem"
+                        >
+
+                            <i class="fa-solid fa-briefcase"></i>
+
+                            Management View
+
+                        </button>
+
+                    </div>
+
                 </div>
+
             </div>
-        </div>
-    </header>
 
-    <section class="welcome-section">
-        <p class="eyebrow">PORTAL OVERVIEW</p>
-        <h2>Welcome back, Nishita</h2>
-        <p>Manage your active requests, browse solutions, and track ticket resolutions.</p>
-    </section>
+        </header>
 
-    <!-- Overview Cards Section -->
-    <section class="section">
-        <div class="ticket-overview">
-            <div class="overview-card">
-                <div class="overview-top">
-                    <span style="color: #6f4b82; font-weight: 600;">Open</span>
-                    <div class="overview-icon purple"><i class="fa-solid fa-folder-open"></i></div>
+
+        <!-- =================================================
+             WELCOME SECTION
+             ================================================= -->
+        <section class="welcome-section">
+
+            <p class="eyebrow">
+                PORTAL OVERVIEW
+            </p>
+
+            <h2>
+                Welcome back, Nishita
+            </h2>
+
+            <p>
+                Manage your active requests, browse solutions,
+                and track ticket resolutions.
+            </p>
+
+        </section>
+
+
+        <!-- =================================================
+             TICKET OVERVIEW
+             ================================================= -->
+        <section class="section">
+
+            <div class="ticket-overview">
+
+
+                <!-- Open -->
+                <div class="overview-card">
+
+                    <div class="overview-top">
+
+                        <span style="color: #6f4b82; font-weight: 600;">
+                            Open
+                        </span>
+
+                        <div class="overview-icon purple">
+                            <i class="fa-solid fa-folder-open"></i>
+                        </div>
+
+                    </div>
+
+                    <strong
+                        id="openCount"
+                        style="color: #402a4a;"
+                    >
+                        0
+                    </strong>
+
+                    <p>
+                        Currently being reviewed
+                    </p>
+
                 </div>
-                <strong id="openCount" style="color: #402a4a;">0</strong>
-                <p>Currently being reviewed</p>
-            </div>
-            <div class="overview-card">
-                <div class="overview-top">
-                    <span style="color: #6f4b82; font-weight: 600;">In Progress</span>
-                    <div class="overview-icon purple"><i class="fa-solid fa-spinner"></i></div>
+
+
+                <!-- In Progress -->
+                <div class="overview-card">
+
+                    <div class="overview-top">
+
+                        <span style="color: #6f4b82; font-weight: 600;">
+                            In Progress
+                        </span>
+
+                        <div class="overview-icon purple">
+                            <i class="fa-solid fa-spinner"></i>
+                        </div>
+
+                    </div>
+
+                    <strong
+                        id="inProgressCount"
+                        style="color: #402a4a;"
+                    >
+                        0
+                    </strong>
+
+                    <p>
+                        Being actively worked on
+                    </p>
+
                 </div>
-                <strong id="inProgressCount" style="color: #402a4a;">0</strong>
-                <p>Being actively worked on</p>
-            </div>
-            <div class="overview-card">
-                <div class="overview-top">
-                    <span style="color: #6f4b82; font-weight: 600;">Resolved</span>
-                    <div class="overview-icon purple"><i class="fa-solid fa-circle-check"></i></div>
+
+
+                <!-- Resolved -->
+                <div class="overview-card">
+
+                    <div class="overview-top">
+
+                        <span style="color: #6f4b82; font-weight: 600;">
+                            Resolved
+                        </span>
+
+                        <div class="overview-icon purple">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+
+                    </div>
+
+                    <strong
+                        id="resolvedCount"
+                        style="color: #402a4a;"
+                    >
+                        0
+                    </strong>
+
+                    <p>
+                        Successfully completed
+                    </p>
+
                 </div>
-                <strong id="resolvedCount" style="color: #402a4a;">0</strong>
-                <p>Successfully completed</p>
-            </div>
-        </div>
-    </section>
 
-    <!-- Recent Tickets Section -->
-    <section class="section">
-        <div class="section-header">
-            <div>
-                <h3>Recent Support Requests</h3>
-                <p>Track the status of your submitted tickets.</p>
             </div>
-            <a href="my-tickets.html">View all tickets <i class="fa-solid fa-arrow-right"></i></a>
+
+        </section>
+
+
+        <!-- =================================================
+             RECENT TICKETS
+             ================================================= -->
+        <section class="section">
+
+            <div class="section-header">
+
+                <div>
+
+                    <h3>
+                        Recent Support Requests
+                    </h3>
+
+                    <p>
+                        Track the status of your submitted tickets.
+                    </p>
+
+                </div>
+
+
+                <a href="employee(NM)/my-tickets.html">
+                    View all tickets
+                    <i class="fa-solid fa-arrow-right"></i>
+                </a>
+
+            </div>
+
+
+            <div class="tickets-table">
+
+                <!-- Table Header -->
+                <div class="table-header">
+
+                    <div>
+                        Request
+                    </div>
+
+                    <div>
+                        Category
+                    </div>
+
+                    <div>
+                        Status
+                    </div>
+
+                    <div>
+                        Priority
+                    </div>
+
+                    <div>
+                        Created
+                    </div>
+
+                </div>
+
+
+                <!-- Tickets are inserted by script.js -->
+                <div id="recentTickets"></div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =====================================================
+         GENIE BUTTON
+         ===================================================== -->
+    <button
+        class="genie-button"
+        id="genieButton"
+        type="button"
+    >
+
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+
+        <span>
+            Ask Genie
+        </span>
+
+    </button>
+
+
+    <!-- =====================================================
+         GENIE CHAT
+         ===================================================== -->
+    <div
+        class="genie-chat"
+        id="genieChat"
+    >
+
+        <!-- Chat Header -->
+        <div class="genie-chat-header">
+
+            <div class="genie-header-info">
+
+                <div class="genie-avatar">
+
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+
+                </div>
+
+                <div>
+
+                    <strong>
+                        Genie AI
+                    </strong>
+
+                    <span>
+                        <span class="genie-status-dot"></span>
+                        Online
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <button
+                class="genie-close"
+                id="closeGenieButton"
+                type="button"
+                aria-label="Close Genie"
+            >
+
+                <i class="fa-solid fa-xmark"></i>
+
+            </button>
+
         </div>
 
-        <div class="tickets-table">
-            <div class="table-header">
-                <div>Request</div>
-                <div>Category</div>
-                <div>Status</div>
-                <div>Priority</div>
-                <div>Created</div>
-            </div>
-            <div id="recentTickets"></div>
-        </div>
-    </section>
-</main>
 
-<button class="genie-button" id="genieButton" type="button">
-    <i class="fa-solid fa-wand-magic-sparkles"></i>
-    <span>Ask Genie</span>
-</button>
+        <!-- Messages -->
+        <div
+            class="genie-messages"
+            id="genieMessages"
+        >
 
-<div class="genie-chat" id="genieChat">
-    <div class="genie-chat-header">
-        <div class="genie-header-info">
-            <div class="genie-avatar">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <div class="genie-message">
+
+                <div class="genie-message-avatar">
+
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+
+                </div>
+
+                <div class="genie-bubble">
+
+                    Hi! I'm Genie, your AI support assistant.
+                    How can I help you today?
+
+                </div>
+
             </div>
-            <div>
-                <strong>Genie AI</strong>
-                <span><span class="genie-status-dot"></span> Online</span>
-            </div>
+
         </div>
-        <button class="genie-close" id="closeGenieButton" type="button">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
+
+
+        <!-- Input -->
+        <div class="genie-input-area">
+
+            <input
+                type="text"
+                id="genieInput"
+                placeholder="Ask a question..."
+                autocomplete="off"
+            >
+
+            <button
+                id="genieSendButton"
+                type="button"
+                aria-label="Send message"
+            >
+
+                <i class="fa-solid fa-arrow-up"></i>
+
+            </button>
+
+        </div>
+
+
+        <!-- Disclaimer -->
+        <div class="genie-disclaimer">
+
+            Genie may occasionally provide inaccurate information.
+
+        </div>
+
     </div>
-    <div class="genie-messages" id="genieMessages">
-        <div class="genie-message">
-            <div class="genie-message-avatar">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
-            </div>
-            <div class="genie-bubble">
-                Hi! I'm Genie, your AI support assistant. How can I help you today?
-            </div>
-        </div>
-    </div>
-    <div class="genie-input-area">
-        <input type="text" id="genieInput" placeholder="Ask a question..." autocomplete="off">
-        <button id="genieSendButton" type="button">
-            <i class="fa-solid fa-arrow-up"></i>
-        </button>
-    </div>
-    <div class="genie-disclaimer">
-        Genie may occasionally provide inaccurate information.
-    </div>
-</div>
 
-<script src="js/script.js"></script>
+
+    <!-- =====================================================
+         SHARED JAVASCRIPT
+         ===================================================== -->
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/script.js"></script>
+
 </body>
->>>>>>> main
+
 </html>

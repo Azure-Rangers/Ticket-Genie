@@ -127,13 +127,43 @@ function initializeProfileDropdown() {
                 profileMenu.classList.remove('show');
                 profileBtn.setAttribute('aria-expanded', 'false');
 
-                const inPagesDir = window.location.pathname.includes('/pages/');
+                const currentPath = window.location.pathname;
+
                 if (selectedRole === 'Management') {
-                    localStorage.setItem('portalUser', JSON.stringify({ name: 'Management User', role: 'Management', email: 'management@ticketgenie.com' }));
-                    window.location.href = inPagesDir ? 'management-portal.html' : 'pages/management-portal.html';
+
+                    localStorage.setItem('portalUser', JSON.stringify({
+                        name: 'Management User',
+                        role: 'Management',
+                        email: 'management@ticketgenie.com'
+                    }));
+
+                    // Employee page → Admin dashboard
+                    if (currentPath.includes('/employee(NM)/')) {
+                        window.location.href = '../admin(AV)/admin_dashboard.html';
+                    }
+
+                    // Main index.html → Admin dashboard
+                    else {
+                        window.location.href = 'admin(AV)/admin_dashboard.html';
+                    }
+
                 } else if (selectedRole === 'Employee') {
-                    localStorage.setItem('portalUser', JSON.stringify({ name: 'Employee User', role: 'Employee', email: 'employee@ticketgenie.com' }));
-                    window.location.href = inPagesDir ? '../index.html' : 'index.html';
+
+                    localStorage.setItem('portalUser', JSON.stringify({
+                        name: 'Employee User',
+                        role: 'Employee',
+                        email: 'employee@ticketgenie.com'
+                    }));
+
+                    // Admin page → Employee homepage
+                    if (currentPath.includes('/admin(AV)/')) {
+                        window.location.href = '../index.html';
+                    }
+
+                    // Already on main Employee homepage
+                    else {
+                        window.location.href = 'index.html';
+                    }
                 }
             });
         });
