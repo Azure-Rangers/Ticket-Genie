@@ -3,10 +3,10 @@ name: Pull Request Checks
 on:
   pull_request:
     branches:
-      - main
+      - '**'
   push:
     branches:
-      - main
+      - '**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -57,6 +57,31 @@ jobs:
         run: |
           pip install .[backend,dev]
 
+
+      - name: Verify OpenAPI & Monitoring Specs Are Up to Date
+        run: |
+          python scripts/export_openapi.py
+          python scripts/generate_openapi_monitoring.py
+          if ! git diff --exit-code openapi/ artifacts/ terraform/openapi_alerts.tf; then
+            echo ""
+            echo "=========================================================================="
+            echo "❌ ERROR: OpenAPI Spec & Azure Monitor Artifacts are Out of Date!"
+            echo "=========================================================================="
+            echo "The FastAPI backend code was modified, but openapi/ specs or monitoring rules"
+            echo "were not updated to reflect your code changes."
+            echo ""
+            echo "🛠️  HOW TO FIX THIS:"
+            echo "1. Run the following commands locally on your branch:"
+            echo "   python scripts/export_openapi.py"
+            echo "   python scripts/generate_openapi_monitoring.py"
+            echo ""
+            echo "2. Stage, commit, and push the updated files:"
+            echo "   git add openapi/ artifacts/ terraform/openapi_alerts.tf"
+            echo "   git commit -m \"fix: update openapi spec and azure monitor rules\""
+            echo "   git push"
+            echo "=========================================================================="
+            exit 1
+          fi
 
       - name: Run Pytest
         run: pytest tests/

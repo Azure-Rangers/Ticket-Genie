@@ -1,0 +1,382 @@
+openapi: 3.1.0
+info:
+  title: TicketGenie API
+  description: AI-powered HR & IT Helpdesk System
+  version: '1.0'
+paths:
+  /api/tickets:
+    post:
+      tags:
+      - tickets
+      summary: Handle Create Ticket
+      operationId: handle_create_ticket_api_tickets_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - tickets
+      summary: List Tickets
+      operationId: list_tickets_api_tickets_get
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      - name: priority
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Priority
+      - name: search
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Search
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TicketResponse'
+                title: Response List Tickets Api Tickets Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/tickets/{ticket_id}:
+    get:
+      tags:
+      - tickets
+      summary: Get Ticket
+      operationId: get_ticket_api_tickets__ticket_id__get
+      parameters:
+      - name: ticket_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticket Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    put:
+      tags:
+      - tickets
+      summary: Handle Update Ticket
+      operationId: handle_update_ticket_api_tickets__ticket_id__put
+      parameters:
+      - name: ticket_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticket Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/genie/chat:
+    post:
+      tags:
+      - genie
+      summary: Genie Chat
+      operationId: genie_chat_api_genie_chat_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenieChatRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenieChatResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /:
+    get:
+      summary: Root
+      operationId: root__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /health:
+    get:
+      summary: Health Check
+      operationId: health_check_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+components:
+  schemas:
+    GenieChatRequest:
+      properties:
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+      - message
+      title: GenieChatRequest
+    GenieChatResponse:
+      properties:
+        reply:
+          type: string
+          title: Reply
+        suggestions:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Suggestions
+      type: object
+      required:
+      - reply
+      title: GenieChatResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    TicketCreate:
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          minLength: 3
+          title: Title
+        category:
+          type: string
+          title: Category
+          default: IT Support
+        priority:
+          type: string
+          title: Priority
+          default: Medium
+        department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Department
+          default: IT
+        description:
+          type: string
+          minLength: 5
+          title: Description
+        preferredDate:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Preferreddate
+        is_anonymous:
+          type: boolean
+          title: Is Anonymous
+          default: false
+        attachment:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Attachment
+      type: object
+      required:
+      - title
+      - description
+      title: TicketCreate
+    TicketResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        category:
+          type: string
+          title: Category
+        priority:
+          type: string
+          title: Priority
+        status:
+          type: string
+          title: Status
+        department:
+          type: string
+          title: Department
+        description:
+          type: string
+          title: Description
+        date:
+          type: string
+          title: Date
+        createdAt:
+          type: string
+          title: Createdat
+        is_anonymous:
+          type: boolean
+          title: Is Anonymous
+          default: false
+        attachment:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Attachment
+      type: object
+      required:
+      - id
+      - title
+      - category
+      - priority
+      - status
+      - department
+      - description
+      - date
+      - createdAt
+      title: TicketResponse
+    TicketUpdate:
+      properties:
+        title:
+          anyOf:
+          - type: string
+            maxLength: 200
+            minLength: 3
+          - type: 'null'
+          title: Title
+        category:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Category
+        priority:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Priority
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+        department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Department
+        description:
+          anyOf:
+          - type: string
+            minLength: 5
+          - type: 'null'
+          title: Description
+        is_anonymous:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Anonymous
+        attachment:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Attachment
+      type: object
+      title: TicketUpdate
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError

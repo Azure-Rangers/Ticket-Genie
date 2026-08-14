@@ -3,13 +3,11 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "streamlit-azure-app"
+name = "ticket-genie"
 version = "0.1.0"
-description = "Full-stack Streamlit app running on Azure"
+description = "Ticket-Genie Application on Azure"
 requires-python = ">=3.11"
 dependencies = [
-    "streamlit>=1.32.0",
-    "pandas>=2.2.0",
     "requests>=2.31.0",
     "azure-identity>=1.15.0",
     "azure-keyvault-secrets>=4.8.0",
@@ -22,6 +20,12 @@ backend = [
     "uvicorn[standard]>=0.28.0",
     "pydantic>=2.6.0",
     "python-dotenv>=1.0.0",
+    "azure-monitor-opentelemetry>=1.6.0",
+    "opentelemetry-instrumentation-fastapi>=0.45b0",
+    "pyyaml>=6.0.0",
+    "sqlalchemy>=2.0.0",
+    "pyodbc>=5.0.0",
+    "openai>=2.8.0",
 ]
 dev = [
     "ruff>=0.3.0",
@@ -37,9 +41,15 @@ dev = [
 [tool.ruff]
 target-version = "py311"
 line-length = 88
+src = ["backend", "."]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B"]
+ignore = ["B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["api", "database", "models", "services", "telemetry"]
+
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -50,4 +60,4 @@ pythonpath = [".", "backend"]
 package-dir = {"" = "."}
 
 [tool.setuptools.packages.find]
-include = ["app*"]
+include = ["backend*"]

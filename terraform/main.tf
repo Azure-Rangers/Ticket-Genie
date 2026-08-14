@@ -76,9 +76,11 @@ resource "azurerm_linux_web_app" "backend" {
   }
 
   app_settings = {
-    "DATABASE_URL"                        = "Server=tcp:${azurerm_mssql_server.sql.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.db.name};Persist Security Info=False;User ID=${azurerm_mssql_server.sql.administrator_login};Password=${random_password.db_password.result};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
-    "WEBSITES_PORT"                       = "8000"
-    "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "false"
+    "DATABASE_URL"                               = "Server=tcp:${azurerm_mssql_server.sql.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.db.name};Persist Security Info=False;User ID=${azurerm_mssql_server.sql.administrator_login};Password=${random_password.db_password.result};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+    "WEBSITES_PORT"                              = "8000"
+    "WEBSITES_ENABLE_APP_SERVICE_STORAGE"        = "false"
+    "APPLICATIONINSIGHTS_CONNECTION_STRING"      = azurerm_application_insights.appi.connection_string
+    "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
   }
 
   lifecycle {
@@ -88,7 +90,7 @@ resource "azurerm_linux_web_app" "backend" {
   }
 }
 
-# 2. Frontend Web App (Streamlit UI) - Port 8501
+# 2. Frontend Web App (Nginx UI with Reverse Proxy) - Port 80
 resource "azurerm_linux_web_app" "frontend" {
   name                = "webapp-prod-frontend-ticketgenie"
   resource_group_name = data.azurerm_resource_group.rg.name
@@ -108,7 +110,7 @@ resource "azurerm_linux_web_app" "frontend" {
 
   app_settings = {
     "BACKEND_API_URL"                     = "https://${azurerm_linux_web_app.backend.default_hostname}"
-    "WEBSITES_PORT"                       = "8501"
+    "WEBSITES_PORT"                       = "80"
     "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "false"
   }
 

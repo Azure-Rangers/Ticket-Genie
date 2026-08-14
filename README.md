@@ -8,10 +8,10 @@ Ticket-Genie enforces a strict security boundary by separating the frontend UI a
 ```text
                                  ┌──────────────────────────────────────────────┐
                                  │   webapp-prod-frontend-ticketgenie           │
-  User Browser ────────────────► │   - Streamlit UI (Port 8501)                 │
-                                 │   - Holds NO database or API secrets         │
+  User Browser ────────────────► │   - Nginx UI (Port 80)                       │
+                                 │   - HTML / CSS / JS Portal Assets            │
                                  └──────────────────────┬───────────────────────┘
-                                                        │ REST API Calls
+                                                        │ Reverse Proxy /api/
                                                         ▼
                                  ┌──────────────────────────────────────────────┐
                                  │   webapp-prod-backend-ticketgenie            │
@@ -25,8 +25,8 @@ Ticket-Genie enforces a strict security boundary by separating the frontend UI a
                                            └─────────────────────────┘
 ```
 
-- **Frontend App**: `webapp-prod-frontend-ticketgenie` (Streamlit on port 8501). Contains zero database or AI secrets and connects to the backend API via `BACKEND_API_URL`.
-- **Backend App**: `webapp-prod-backend-ticketgenie` (FastAPI on port 8000). Serves API endpoints and securely accesses Azure SQL Database and Key Vault.
+- **Frontend App**: `webapp-prod-frontend-ticketgenie` (Nginx UI on port 80). Serves static HTML/CSS/JS portals and reverse-proxies `/api/` traffic to the backend.
+- **Backend App**: `webapp-prod-backend-ticketgenie` (FastAPI on port 8000). Serves API endpoints and securely accesses Azure SQL Database, OpenAI agents, and Key Vault.
 
 ---
 
@@ -64,31 +64,46 @@ Both the **Streamlit Frontend** (`app/main.py`) and **FastAPI Backend** (`backen
 
 ## How to Run
 
-### Option 1: Run with Docker (Recommended)
+### Option 1: Run with Docker Compose (Recommended)
 
-The project uses a multi-stage Dockerfile to build either the FastAPI backend or the Streamlit frontend container.
+Launch both the Nginx Frontend UI and FastAPI Backend API together in a single command:
 
-#### Run FastAPI Backend Container (Port 8000)
 ```bash
-# Build the FastAPI backend container image
-docker build --target backend -t ticket-genie-backend .
-
-# Run the backend container with local .env configuration at http://localhost:8000
-docker run --env-file .env -p 8000:8000 ticket-genie-backend
+# Build and start both backend and frontend containers
+docker compose up --build -d
 ```
 
-#### Run Streamlit Frontend Container (Port 8501)
-```bash
-# Build the Streamlit frontend container image
-docker build --target frontend -t ticket-genie-frontend .
+- **Frontend Application UI:** [http://localhost:8080](http://localhost:8080)
+- **FastAPI Backend Swagger Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
+- **FastAPI Health Check:** [http://localhost:8000/health](http://localhost:8000/health)
 
-# Run the frontend container with local .env configuration at http://localhost:8501
-docker run --env-file .env -p 8501:8501 ticket-genie-frontend
+To stop the containers:
+```bash
+docker compose down
 ```
 
 ---
 
-### Option 2: Run Natively
+### Option 2: Run Containers Manually with Docker
+
+```bash
+# 1. Build backend and frontend images
+docker build --target backend -t ticketgenie-backend .
+docker build --target frontend -t ticketgenie-frontend .
+
+# 2. Create Docker network
+docker network create ticketgenie-net
+
+# 3. Run Backend container on Port 8000
+docker run -d --name backend --network ticketgenie-net -p 8000:8000 ticketgenie-backend
+
+# 4. Run Frontend container on Port 8080
+docker run -d --name frontend --network ticketgenie-net -p 8080:80 ticketgenie-frontend
+```
+
+---
+
+### Option 3: Run Natively
 
 For local development without Docker:
 
@@ -96,23 +111,8 @@ For local development without Docker:
 # Install core, backend, and dev dependencies
 pip install -e '.[backend,dev]'
 
-# Fetch secrets from Azure Key Vault into .env
-az login
-python fetch_secrets.py
-```
-
-#### Launch FastAPI Backend API
-```bash
-# Start Uvicorn dev server at http://localhost:8000
+# Launch Uvicorn dev server at http://localhost:8000
 uvicorn backend.main:app --reload --port 8000
-```
-- API Health Check: `http://localhost:8000/health`
-- Interactive Swagger Docs: `http://localhost:8000/docs`
-
-#### Launch Streamlit Frontend App
-```bash
-# Launch Streamlit app at http://localhost:8501
-streamlit run app/main.py
 ```
 
 ---
@@ -120,13 +120,25 @@ streamlit run app/main.py
 ### Running Tests and Quality Checks
 
 ```bash
-# Run pytest test suite (includes app, backend, and secret fetcher tests)
+# Run pytest test suite (includes app, backend, secret fetcher, and openapi monitoring tests)
 pytest
 
 # Run Ruff linter and formatting check
 ruff check .
 ruff format --check .
 ```
+
+### Updating OpenAPI Spec & Monitoring Artifacts
+
+When modifying API endpoints in `backend/`, re-generate and commit the updated specs and monitoring rules:
+
+```bash
+python scripts/export_openapi.py
+python scripts/generate_openapi_monitoring.py
+git add openapi/ artifacts/ terraform/openapi_alerts.tf
+```
+
+---
 
 ## Branching Strategy
 
@@ -145,39 +157,49 @@ Ticket-Genie/
 ├── .github/
 │   ├── PULL_REQUEST_TEMPLATE.md
 │   └── workflows/
-│       ├── pr-checks.yml       # Ruff linting, pytest, & Docker smoke testing
+│       ├── pr-checks.yml       # Ruff linting, pytest, OpenAPI drift check, & Docker smoke testing
 │       └── deploy-prod.yml     # ACR build/push & Azure handoff
-├── app/                        # Streamlit Frontend
-│   ├── main.py                 # Main Streamlit entrypoint (Home page)
-│   ├── pages/                  # Multi-page Streamlit views
-│   │   ├── 1_dashboard.py
-│   │   └── 2_settings.py
-│   ├── components/             # Custom UI component functions
-│   └── services/               # UI backend logic & API integration
+├── artifacts/                  # Generated Azure Monitor Artifacts
+│   ├── openapi_kql_queries.kql # Pre-built Application Insights KQL queries
+│   └── openapi_workbook.json   # Azure Application Insights Workbook dashboard JSON
 ├── backend/                    # FastAPI Backend Service
 │   ├── main.py                 # FastAPI application entrypoint
-│   ├── api/                    # API route controllers
+│   ├── telemetry.py            # Azure Monitor OpenTelemetry setup
+│   ├── api/                    # API route controllers (tickets, genie)
 │   ├── models/                 # Pydantic data schemas
-│   ├── services/               # Business logic services
+│   ├── services/               # Business logic & AI classification services
 │   ├── database/               # Database connection & CRUD handlers
 │   └── requirements.txt        # Backend dependencies (-e .[backend])
+├── frontend/                   # Nginx HTML/CSS/JS Frontend UI
+│   ├── index.html              # Main dashboard view
+│   ├── css/                    # Custom stylesheets
+│   ├── js/                     # Client JavaScript API integration
+│   └── pages/                  # Portal pages (HR, IT, Knowledge Base, My Tickets)
+├── openapi/                    # Exported OpenAPI 3.0 Contract Specifications
+│   ├── openapi.json
+│   └── openapi.yaml
 ├── scripts/
-│   └── fetch_secrets.py        # Entrypoint for fetching Key Vault secrets
+│   ├── export_openapi.py       # OpenAPI schema exporter script
+│   ├── fetch_secrets.py        # Entrypoint for fetching Key Vault secrets
+│   └── generate_openapi_monitoring.py # OpenAPI-driven Azure Monitor generator script
 ├── terraform/                  # Infrastructure definitions for Azure
 │   ├── main.tf
+│   ├── monitoring.tf           # Log Analytics Workspace & App Insights definitions
+│   ├── openapi_alerts.tf       # Auto-generated Azure Monitor Metric Alerts
 │   ├── outputs.tf
 │   └── variables.tf
 ├── tests/
-│   ├── test_app.py
 │   ├── test_backend_api.py     # FastAPI endpoint tests
 │   ├── test_fetch_secrets.py   # Secret fetcher tests
-│   └── test_services.py
+│   └── test_openapi_monitoring.py # Telemetry & OpenAPI monitoring generator tests
 ├── .dockerignore
 ├── .gitignore
-├── Dockerfile                  # Multi-stage Docker build file (backend & frontend)
+├── Dockerfile                  # Multi-stage Docker build file (backend & Nginx frontend)
+├── docker-compose.yml          # Multi-container orchestration config
+├── nginx.conf                  # Nginx static server & /api/ reverse proxy config
 ├── fetch_secrets.py            # Cross-platform Azure Key Vault to .env fetcher script
 ├── pyproject.toml              # Central config for dependencies, Ruff, pytest
 └── README.md
 ```
 
-The repository follows a monorepo structure with a Streamlit frontend under `app/` and a FastAPI REST API backend service under `backend/`.
+The repository follows a monorepo structure with an Nginx HTML/CSS/JS frontend under `frontend/` and a FastAPI REST API backend service under `backend/`.
