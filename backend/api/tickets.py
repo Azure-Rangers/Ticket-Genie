@@ -12,7 +12,6 @@ from database.crud import (
 from models.ticket import TicketCreate, TicketResponse, TicketUpdate
 from services.ticket_service import process_new_ticket
 
-
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
 
