@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TicketGenie - Knowledge Base</title>
+  <title>TicketGenie - Ticket Archive</title>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -47,23 +47,27 @@
     .user-profile { display: flex; align-items: center; gap: 12px; font-size: 0.85rem; padding-left: 16px; border-left: 1px solid #e5e7eb; }
     .avatar { width: 32px; height: 32px; background: #eef2ff; color: #4f46e5; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.75rem; font-weight: bold; }
 
-    /* KB STYLES */
-    .page-padding { padding: 40px; max-width: 1400px; margin: 0 auto; width: 100%; }
+    /* ARCHIVE STYLES */
+    .page-padding { padding: 40px; max-width: 1200px; margin: 0 auto; width: 100%; }
     .eyebrow-text { font-size: 0.7rem; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-    .page-title { font-size: 1.75rem; color: #111827; font-weight: 600; margin-bottom: 32px; }
+    .page-title { font-size: 1.75rem; color: #111827; font-weight: 600; margin-bottom: 24px; }
     
-    .content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
-    .card { background: white; border-radius: 8px; border: 1px solid #e5e7eb; padding: 32px; display: flex; flex-direction: column; gap: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
-    .card h2 { font-size: 1.1rem; color: #111827; border-bottom: 1px solid #f3f4f6; padding-bottom: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-    .upload-zone { border: 2px dashed #cbd5e1; border-radius: 8px; padding: 32px; text-align: center; background: #f9fafb; cursor: pointer; transition: 0.2s; }
-    .upload-zone:hover { border-color: #818cf8; background: #eef2ff; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; background: white; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; }
+    .search-large { display: flex; align-items: center; background: #f9fafb; border: 1px solid #d1d5db; padding: 10px 16px; border-radius: 8px; width: 400px; }
+    .search-large input { border: none; background: transparent; outline: none; margin-left: 8px; font-size: 0.9rem; width: 100%; }
+    .filter-group { display: flex; gap: 12px; }
+    .filter-group select { padding: 10px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.85rem; outline: none; background: white; cursor: pointer; }
+    .btn-export { background: #ffffff; color: #374151; border: 1px solid #d1d5db; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
+    .btn-export:hover { background: #f3f4f6; }
+
+    .table-card { background: white; border-radius: 8px; border: 1px solid #e5e7eb; overflow: hidden; }
     table { width: 100%; border-collapse: collapse; }
-    th { text-align: left; font-size: 0.75rem; color: #6b7280; text-transform: uppercase; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb; }
-    td { padding: 16px 0; border-bottom: 1px solid #f3f4f6; font-size: 0.85rem; }
-    .sandbox-chat { flex: 1; border: 1px solid #e5e7eb; border-radius: 8px; background: #fdfdfd; padding: 20px; display: flex; flex-direction: column; gap: 16px; height: 350px; overflow-y: auto; }
-    .msg { font-size: 0.85rem; padding: 12px; border-radius: 8px; max-width: 90%; }
-    .msg-user { background: white; border: 1px solid #e5e7eb; align-self: flex-end; border-bottom-right-radius: 2px; }
-    .msg-ai { background: #f3f4f6; color: #1f2937; align-self: flex-start; border-bottom-left-radius: 2px; }
+    th { text-align: left; font-size: 0.75rem; color: #6b7280; text-transform: uppercase; padding: 16px 24px; border-bottom: 1px solid #e5e7eb; background: #f9fafb; letter-spacing: 0.5px; }
+    td { padding: 16px 24px; border-bottom: 1px solid #f3f4f6; font-size: 0.85rem; color: #374151; vertical-align: top; }
+    
+    .ticket-id { font-family: monospace; color: #6b7280; font-size: 0.8rem; }
+    .ticket-subject { font-weight: 600; color: #111827; margin-bottom: 4px; display: block; font-size: 0.95rem; }
+    .ai-summary { background: #f8fafc; border-left: 3px solid #4f46e5; padding: 10px 12px; font-size: 0.8rem; color: #475569; margin-top: 8px; border-radius: 0 4px 4px 0; }
   </style>
 </head>
 <body>
@@ -86,9 +90,9 @@
       </div>
       <div class="nav-section" id="adminNav" style="display: none;">
         <div class="nav-title">Administration</div>
-        <a href="knowledge-base.html" class="nav-link active"><span class="menu-icon"><i class="ph-duotone ph-books"></i></span><span class="menu-text">Policy Library</span></a>
+        <a href="knowledge-base.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-books"></i></span><span class="menu-text">Policy Library</span></a>
         <a href="analytics.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-trend-up"></i></span><span class="menu-text">Analytics</span></a>
-        <a href="archive.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-archive"></i></span><span class="menu-text">Ticket Archive</span></a>
+        <a href="archive.html" class="nav-link active"><span class="menu-icon"><i class="ph-duotone ph-archive"></i></span><span class="menu-text">Ticket Archive</span></a>
       </div>
       <div class="nav-section">
         <div class="nav-title">Account</div>
@@ -111,29 +115,41 @@
     </div>
 
     <div class="page-padding">
-      <div class="eyebrow-text">RAG Document Management</div>
-      <h1 class="page-title">Policy Library</h1>
-      
-      <div class="content-grid">
-        <div class="card">
-          <h2><i class="ph-duotone ph-upload-simple"></i> Upload Guideline</h2>
-          <div class="upload-zone"><i class="ph-duotone ph-file-pdf" style="font-size: 2.5rem; color: #a5b4fc; margin-bottom: 8px; display:block;"></i>Drop files for Azure AI indexing</div>
-          <table>
-            <thead><tr><th>Document</th><th>AI Treatment</th></tr></thead>
-            <tbody>
-              <tr><td><strong>OPT_Guidelines.pdf</strong></td><td><span style="color:#b91c1c; font-size:0.75rem; font-weight:600; padding:4px 8px; background:#fee2e2; border-radius:6px;">No Summary (Sensitive)</span></td></tr>
-              <tr><td><strong>IT_Policy.pdf</strong></td><td><span style="color:#15803d; font-size:0.75rem; font-weight:600; padding:4px 8px; background:#dcfce7; border-radius:6px;">Standard RAG</span></td></tr>
-            </tbody>
-          </table>
+      <div class="eyebrow-text">Compliance & Security</div>
+      <h1 class="page-title">Audit Trail & Closed Records</h1>
+
+      <div class="toolbar">
+        <div class="search-large">
+          <i class="ph-bold ph-magnifying-glass" style="color: #9ca3af;"></i>
+          <input type="text" placeholder="Search by email, ID, or keyword...">
         </div>
-        
-        <div class="card">
-          <h2><i class="ph-fill ph-magic-wand" style="color:#facc15;"></i> RAG Sandbox</h2>
-          <div class="sandbox-chat">
-            <div class="msg msg-user">Laptop policy?</div>
-            <div class="msg msg-ai">Refresh every 3 years. <span style="display:block; font-size:0.7rem; color:#6b7280; margin-top:4px;">Source: IT_Policy.pdf</span></div>
-          </div>
+        <div class="filter-group">
+          <select><option>All Departments</option><option>Human Resources</option><option>IT Support</option><option>Finance</option></select>
+          <select><option>Last 30 Days</option><option>Last Year</option></select>
+          <button class="btn-export" onclick="alert('Exporting securely via Azure Blob Storage...')"><i class="ph-bold ph-download-simple"></i> Export CSV</button>
         </div>
+      </div>
+
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr><th>Ticket Info</th><th>Department</th><th>Resolution Detail & AI Summary</th><th>Closed By</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="ticket-id">#T-842</span><span class="ticket-subject">Direct Deposit Update</span><div style="font-size: 0.75rem; color: #6b7280;">j.doe@company.com</div></td>
+              <td>Accounting</td>
+              <td><span style="font-weight: 600; color: #4f46e5; font-size: 0.75rem;"><i class="ph-fill ph-magic-wand"></i> AI Auto-Resolved</span><div class="ai-summary">Employee unable to update routing number. AI provided guide and verified successful update via API.</div></td>
+              <td>TicketGenie System<br><span style="font-size: 0.75rem; color: #6b7280;">Aug 12, 2026</span></td>
+            </tr>
+            <tr>
+              <td><span class="ticket-id">#T-840</span><span class="ticket-subject">Harassment Complaint</span><div style="font-size: 0.75rem; color: #6b7280;">[Anonymous]</div></td>
+              <td>HR - Relations<br><span style="font-size:0.7rem; color:#b91c1c; font-weight:bold;">🔒 SENSITIVE</span></td>
+              <td><span style="font-weight: 600; color: #374151; font-size: 0.75rem;"><i class="ph-fill ph-user"></i> Human Resolved</span><div class="ai-summary" style="border-color: #b91c1c; background: #fef2f2;"><strong>Audit Note:</strong> AI summarization disabled for compliance. Resolution details archived in secure vault.</div></td>
+              <td>Sarah Jenkins (HR)<br><span style="font-size: 0.75rem; color: #6b7280;">Aug 10, 2026</span></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </main>

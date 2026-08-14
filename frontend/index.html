@@ -6,25 +6,26 @@
   <title>TicketGenie - Login</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { height: 100vh; background-color: #fdfdfd; display: flex; justify-content: center; align-items: center; }
-    .login-wrapper { width: 100%; max-width: 420px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); overflow: hidden; border: 1px solid #e5e7eb; }
+    body { height: 100vh; background-color: #f9fafb; display: flex; justify-content: center; align-items: center; }
+    .login-wrapper { width: 100%; max-width: 420px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; overflow: hidden; }
     .login-header { background-color: #2b1b38; padding: 32px 24px; text-align: center; color: white; }
-    .login-header h1 { font-size: 1.5rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .login-header p { color: #a5b4fc; font-size: 0.9rem; }
+    .login-header h1 { font-size: 1.5rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; }
+    .login-header p { color: #a5b4fc; font-size: 0.85rem; }
+    .bot-icon { background: rgba(255,255,255,0.1); padding: 6px 8px; border-radius: 8px; font-size: 1.2rem; }
     .form-container { padding: 32px 24px; display: flex; flex-direction: column; gap: 20px; }
     .input-group { display: flex; flex-direction: column; gap: 6px; }
-    .input-group label { font-size: 0.85rem; font-weight: 600; color: #374151; }
-    .input-group input, .input-group select { padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; outline: none; background: #fdfdfd; }
-    .input-group input:focus, .input-group select:focus { border-color: #4f46e5; background: white; }
-    .btn-submit { background-color: #4f46e5; color: white; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 10px; transition: 0.2s; }
-    .btn-submit:hover { background-color: #4338ca; }
+    .input-group label { font-size: 0.8rem; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.5px; }
+    .input-group input, .input-group select { padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; outline: none; background: #fdfdfd; transition: 0.2s; }
+    .input-group input:focus, .input-group select:focus { border-color: #4f46e5; background: white; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+    .btn-submit { background-color: #2b1b38; color: white; border: none; padding: 14px; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+    .btn-submit:hover { background-color: #4f46e5; }
   </style>
 </head>
 <body>
   <div class="login-wrapper">
     <div class="login-header">
-      <h1><span style="background: white; padding: 4px; border-radius: 6px; font-size: 1.2rem;">🤖</span> TicketGenie</h1>
-      <p>Secure Enterprise Portal Sign-in</p>
+      <h1><span class="bot-icon">🎫</span> TicketGenie</h1>
+      <p>Unified Operations Portal</p>
     </div>
     <form class="form-container" id="loginForm">
       <div class="input-group">
@@ -42,10 +43,10 @@
         </select>
       </div>
       <div class="input-group">
-        <label>Full Name (Username)</label>
+        <label>Full Name</label>
         <input type="text" id="userName" placeholder="e.g. Jane Doe" required>
       </div>
-      <button type="submit" class="btn-submit">Login to Portal</button>
+      <button type="submit" class="btn-submit">Sign In</button>
     </form>
   </div>
   <script>
