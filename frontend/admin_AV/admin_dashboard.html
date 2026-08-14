@@ -5,95 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TicketGenie - Dashboard</title>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <style>
-    /* --- SHARED CORE STYLES --- */
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { display: flex; height: 100vh; background-color: #f9fafb; color: #1f2937; margin: 0; overflow: hidden; }
-
-    /* --- SIDEBAR --- */
-    .sidebar { width: 260px; background-color: #2b1b38; color: #d1d5db; display: flex; flex-direction: column; flex-shrink: 0; justify-content: space-between; z-index: 10; transition: width 0.3s ease; white-space: nowrap; overflow-x: hidden; }
-    .sidebar.collapsed { width: 80px; }
-    .sidebar-top { flex: 1; }
-    
-    .sidebar-header { padding: 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .bot-icon { background: rgba(255,255,255,0.1); color: #facc15; padding: 8px; border-radius: 8px; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .sidebar-brand-text h2 { color: #ffffff; font-size: 1.1rem; font-weight: 600; margin-bottom: 2px; }
-    .sidebar-brand-text span { display: block; font-size: 0.65rem; color: #a5b4fc; text-transform: uppercase; letter-spacing: 1px; }
-    
-    .nav-section { margin-top: 24px; }
-    .nav-title { font-size: 0.65rem; color: #818cf8; text-transform: uppercase; font-weight: 700; margin: 0 16px 8px; letter-spacing: 1px; transition: opacity 0.2s; }
-    .nav-link { display: flex; align-items: center; gap: 12px; padding: 10px 16px; margin: 0 8px 4px; color: #d1d5db; text-decoration: none; font-size: 0.85rem; border-radius: 8px; transition: 0.2s; }
-    .nav-link:hover { background-color: rgba(255,255,255,0.05); color: #ffffff; }
-    .nav-link.active { background-color: rgba(255,255,255,0.1); color: #ffffff; font-weight: 500; }
-    
-    .menu-icon { font-size: 1.25rem; flex-shrink: 0; display: flex; justify-content: center; width: 24px; }
-    .nav-link.active .menu-icon { color: #818cf8; }
-    
-    .sidebar-footer { padding: 24px; font-size: 0.75rem; color: #a5b4fc; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 8px; }
-    .status-dot { width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; flex-shrink: 0; }
-
-    .sidebar.collapsed .sidebar-brand-text, .sidebar.collapsed .nav-title, .sidebar.collapsed .menu-text, .sidebar.collapsed .sidebar-footer-text { display: none; }
-    .sidebar.collapsed .sidebar-header { justify-content: center; padding: 24px 0; }
-    .sidebar.collapsed .nav-link { justify-content: center; padding: 14px 0; margin: 0 8px 8px; }
-    .sidebar.collapsed .sidebar-footer { justify-content: center; padding: 24px 0; }
-
-    /* --- MAIN CONTENT & TOP NAV --- */
-    .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; position: relative; }
-    .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 32px; background: #ffffff; border-bottom: 1px solid #e5e7eb; }
-    
-    .nav-left-cluster { display: flex; align-items: center; gap: 24px; }
-    .btn-hamburger { background: white; border: 1px solid #e5e7eb; border-radius: 8px; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #6b7280; transition: 0.2s; }
-    .btn-hamburger:hover { background: #f3f4f6; color: #111827; box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.15); border-color: #d1d5db; }
-    
-    .search-small { display: flex; align-items: center; background: #f9fafb; border: 1px solid #e5e7eb; padding: 8px 16px; border-radius: 8px; width: 300px; transition: 0.2s; }
-    .search-small:focus-within { background: white; border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
-    .search-small i { color: #6366f1; font-size: 1.1rem; }
-    .search-small input { border: none; background: transparent; outline: none; margin-left: 8px; font-size: 0.85rem; width: 100%; color: #374151; }
-    
-    .nav-actions { display: flex; align-items: center; gap: 16px; }
-    .nav-icon-btn { background: none; border: none; font-size: 1.3rem; cursor: pointer; color: #6b7280; transition: 0.2s; display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 50%; }
-    .nav-icon-btn:hover { color: #f59e0b; background: #fffbeb; }
-    
-    .user-profile { display: flex; align-items: center; gap: 12px; font-size: 0.85rem; padding-left: 16px; border-left: 1px solid #e5e7eb; }
-    .avatar { width: 32px; height: 32px; background: #eef2ff; color: #4f46e5; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.75rem; font-weight: bold; }
-
-    /* --- PAGE CONTENT --- */
-    .page-padding { padding: 40px; max-width: 1200px; margin: 0 auto; width: 100%; }
-    .eyebrow-text { font-size: 0.7rem; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-    .page-title { font-size: 1.75rem; color: #111827; font-weight: 600; margin-bottom: 32px; }
-    
-    .section-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; }
-    .section-header h4 { font-size: 1.1rem; color: #111827; font-weight: 600; }
-    .section-header p { font-size: 0.85rem; color: #6b7280; margin-top: 4px; }
-    .view-all { font-size: 0.85rem; color: #4f46e5; text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 4px; }
-    .view-all:hover { text-decoration: underline; }
-
-    .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 40px; }
-    .metric-card { background: #ffffff; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
-    .metric-info { display: flex; flex-direction: column; gap: 8px; }
-    .metric-title { font-size: 0.85rem; color: #4b5563; font-weight: 500; }
-    .metric-value { font-size: 2rem; font-weight: 700; color: #111827; line-height: 1; }
-    .metric-sub { font-size: 0.75rem; color: #6b7280; }
-    
-    .icon-box { width: 36px; height: 36px; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 1.4rem; }
-    .icon-purple { background: #eef2ff; color: #4f46e5; }
-    .icon-orange { background: #fff7ed; color: #ea580c; }
-    .icon-red { background: #fef2f2; color: #dc2626; }
-    .icon-green { background: #f0fdf4; color: #16a34a; }
-    .icon-blue { background: #f0f9ff; color: #0284c7; }
-
-    .quick-actions-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px; }
-    .action-card { background: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
-    .action-card:hover { border-color: #a5b4fc; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transform: translateY(-2px); }
-    .action-card h5 { font-size: 0.95rem; color: #111827; font-weight: 600; margin-bottom: 4px; }
-    .action-card p { font-size: 0.8rem; color: #6b7280; }
-
-    #loginWarning { display: none; background-color: #fee2e2; color: #b91c1c; padding: 12px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fca5a5; font-weight: 600; text-align: center; font-size: 0.85rem; }
-    
-    .fab-genie { position: fixed; bottom: 32px; right: 32px; background: #2b1b38; color: white; border: none; padding: 14px 24px; border-radius: 30px; font-size: 0.95rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; z-index: 100; transition: 0.2s; }
-    .fab-genie i { font-size: 1.2rem; color: #facc15; }
-    .fab-genie:hover { background: #4f46e5; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(79,70,229,0.3); }
-  </style>
+  <link rel="stylesheet" href="admin.css">
 </head>
 <body class="admin-page">
 
@@ -109,7 +21,7 @@
 
       <div class="nav-section">
         <div class="nav-title">Workspace</div>
-        <a href="dashboard.html" class="nav-link active">
+        <a href="admin_dashboard.html" class="nav-link active">
           <span class="menu-icon"><i class="ph-duotone ph-chart-pie-slice"></i></span>
           <span class="menu-text">My Dashboard</span>
         </a>
@@ -209,60 +121,54 @@
       <div class="metrics-grid">
         <div class="metric-card">
           <div class="metric-info">
-            <div class="metric-title">Open Tickets</div>
-            <div class="metric-value">12</div>
-            <div class="metric-sub" style="color:#4f46e5;">4 need action</div>
+            <span class="metric-title">Open Tickets</span>
+            <span class="metric-value" id="openCount">--</span>
+            <span class="metric-sub">Pending assignment</span>
           </div>
-          <div class="icon-box icon-purple"><i class="ph-duotone ph-clipboard-text"></i></div>
+          <div class="icon-box icon-purple"><i class="ph-duotone ph-tray"></i></div>
         </div>
-        
         <div class="metric-card">
           <div class="metric-info">
-            <div class="metric-title">Approvals</div>
-            <div class="metric-value">5</div>
-            <div class="metric-sub">Awaiting sign-off</div>
+            <span class="metric-title">In Progress</span>
+            <span class="metric-value" id="inProgressCount">--</span>
+            <span class="metric-sub">Active support</span>
           </div>
-          <div class="icon-box icon-orange"><i class="ph-duotone ph-check-circle"></i></div>
+          <div class="icon-box icon-orange"><i class="ph-duotone ph-clock"></i></div>
         </div>
-        
         <div class="metric-card">
           <div class="metric-info">
-            <div class="metric-title">SLA Alerts</div>
-            <div class="metric-value" style="color: #dc2626;">2</div>
-            <div class="metric-sub" style="color:#dc2626;">Approaching breach</div>
+            <span class="metric-title">Resolved</span>
+            <span class="metric-value" id="resolvedCount">--</span>
+            <span class="metric-sub">Completed</span>
           </div>
-          <div class="icon-box icon-red"><i class="ph-duotone ph-warning-circle"></i></div>
+          <div class="icon-box icon-green"><i class="ph-duotone ph-check-circle"></i></div>
         </div>
-        
         <div class="metric-card">
           <div class="metric-info">
-            <div class="metric-title">Resolved Today</div>
-            <div class="metric-value">24</div>
-            <div class="metric-sub" style="color:#16a34a;">14 by AI</div>
+            <span class="metric-title">System Status</span>
+            <span class="metric-value" style="font-size: 1.3rem; color: #16a34a;">Operational</span>
+            <span class="metric-sub">All services live</span>
           </div>
-          <div class="icon-box icon-green"><i class="ph-duotone ph-check-square-offset"></i></div>
+          <div class="icon-box icon-blue"><i class="ph-duotone ph-shield-check"></i></div>
         </div>
       </div>
 
       <div class="section-header">
         <div>
           <h4>Quick Actions</h4>
-          <p>Jump straight into common tasks</p>
+          <p>Common operational shortcuts</p>
         </div>
       </div>
-      
+
       <div class="quick-actions-grid">
         <div class="action-card" onclick="window.location.href='inbox.html'">
-          <div class="icon-box icon-blue"><i class="ph-duotone ph-tray"></i></div>
+          <div class="icon-box icon-purple"><i class="ph-duotone ph-tray"></i></div>
           <div>
-            <h5>Triage Help Desk</h5>
-            <p>Assign & resolve tickets</p>
+            <h5>Team Inbox</h5>
+            <p>Review and route open requests</p>
           </div>
         </div>
-        
         <div class="action-card" onclick="window.location.href='submit-ticket.html'">
-          <div class="icon-box icon-purple"><i class="ph-duotone ph-plus-circle"></i></div>
-          <div>
             <h5>Create Request</h5>
             <p>Submit manual ticket</p>
           </div>
@@ -302,11 +208,39 @@
       </div>
     </div>
 
-    <button class="fab-genie" onclick="alert('Genie AI Activated!')">
+    <!-- Floating Genie Widget Button -->
+    <button class="fab-genie" id="genieButton" type="button" title="Ask Genie AI">
       <i class="ph-fill ph-magic-wand"></i> Ask Genie
     </button>
+
+    <!-- Genie AI Chat Panel -->
+    <div class="genie-chat" id="genieChat">
+      <div class="genie-chat-header">
+        <div class="genie-header-info">
+          <div class="genie-avatar"><i class="ph-fill ph-magic-wand"></i></div>
+          <div><strong>Genie AI Assistant</strong><span><span class="genie-status-dot"></span> Online</span></div>
+        </div>
+        <button class="genie-close" id="closeGenieButton" type="button" aria-label="Close"><i class="ph-bold ph-x"></i></button>
+      </div>
+      <div class="genie-messages" id="genieMessages">
+        <div class="genie-message">
+          <div class="genie-message-avatar"><i class="ph-fill ph-magic-wand"></i></div>
+          <div class="genie-bubble">Hi! I'm Genie, your AI Assistant. How can I help you manage tickets, policies, or workspace requests today?</div>
+        </div>
+      </div>
+      <div class="genie-suggestions">
+        <button type="button" class="genie-suggestion">Show open ticket queue</button>
+        <button type="button" class="genie-suggestion">How do I route tickets?</button>
+      </div>
+      <div class="genie-input-area">
+        <input type="text" id="genieInput" placeholder="Ask Genie something..." autocomplete="off">
+        <button type="button" id="genieSendButton" aria-label="Send"><i class="ph-bold ph-paper-plane-right"></i></button>
+      </div>
+      <div class="genie-disclaimer">TicketGenie AI Assistant • Operations Help</div>
+    </div>
   </main>
 
+  <script src="../js/script.js"></script>
   <script>
     function toggleSidebar() { 
       document.getElementById('appSidebar').classList.toggle('collapsed'); 

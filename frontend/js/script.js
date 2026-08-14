@@ -136,9 +136,10 @@ function initializeProfileDropdown() {
                         email: 'management@ticketgenie.com'
                     }));
 
-                    // Route to new Admin folder
                     if (currentPath.includes('/employee_NM/')) {
                         window.location.href = '../admin_AV/admin_dashboard.html';
+                    } else if (currentPath.includes('/admin_AV/')) {
+                        window.location.href = 'admin_dashboard.html';
                     } else {
                         window.location.href = 'admin_AV/admin_dashboard.html';
                     }
@@ -150,9 +151,10 @@ function initializeProfileDropdown() {
                         email: 'employee@ticketgenie.com'
                     }));
 
-                    // Route to new Employee folder
                     if (currentPath.includes('/admin_AV/')) {
                         window.location.href = '../employee_NM/my-tickets.html';
+                    } else if (currentPath.includes('/employee_NM/')) {
+                        window.location.href = 'my-tickets.html';
                     } else {
                         window.location.href = 'employee_NM/my-tickets.html';
                     }

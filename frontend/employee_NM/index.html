@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notifications | TicketGenie</title>
+    <title>Help & Support | TicketGenie</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
-<body class="employee-page">
+<body>
 
 <aside class="sidebar">
     <div class="brand" style="position: relative; justify-content: space-between; width: 100%; padding-right: 15px;">
@@ -17,7 +17,7 @@
             </div>
             <div>
                 <h2>TicketGenie</h2>
-                <span>Employee Portal</span>
+                <span>Employee Support</span>
             </div>
         </div>
         
@@ -28,7 +28,7 @@
 
     <nav class="navigation">
         <div class="nav-title">WORKSPACE</div>
-        <a href="index.html" class="nav-item">
+        <a href="index.html" class="nav-item active">
             <i class="fa-solid fa-house"></i><span>Help & Support</span>
         </a>
         <a href="my-tickets.html" class="nav-item">
@@ -45,8 +45,8 @@
         <a href="knowledge-base.html" class="nav-item">
             <i class="fa-solid fa-book-open"></i><span>Knowledge Base</span>
         </a>
-        <a href="notifications.html" class="nav-item active">
-            <i class="fa-solid fa-bell"></i><span>Notifications</span><span class="notification-count" id="badgeCount">3</span>
+        <a href="notifications.html" class="nav-item">
+            <i class="fa-solid fa-bell"></i><span>Notifications</span><span class="notification-count">3</span>
         </a>
     </nav>
 
@@ -67,9 +67,6 @@
             <button class="icon-button" id="sidebarToggle" type="button" aria-label="Toggle Sidebar">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <div class="page-title">
-                <h1>Notifications</h1>
-            </div>
         </div>
 
         <div class="topbar-actions">
@@ -113,67 +110,62 @@
     </header>
 
     <section class="welcome-section">
-        <p class="eyebrow">ACTIVITY & UPDATES</p>
-        <h2>Your Notifications</h2>
-        <p>Stay up to date with request statuses, departmental replies, and system alerts.</p>
+        <p class="eyebrow">PORTAL OVERVIEW</p>
+        <h2>Welcome back, Nishita</h2>
+        <p>Manage your active requests, browse solutions, and track ticket resolutions.</p>
     </section>
 
-    <!-- Controls Row -->
-    <div class="notification-actions-top">
-        <div class="ticket-filter" style="display: inline-flex; align-items: center; background: white; border: 1px solid #dfe5e1; border-radius: 7px; padding: 0 12px; height: 38px;">
-            <select id="notificationFilter" style="border: none; outline: none; background: transparent; font-size: 10px; color: #626c65; cursor: pointer;">
-                <option value="all">All Notifications</option>
-                <option value="unread">Unread Only</option>
-            </select>
-        </div>
-        <button class="mark-all-read-btn" id="markAllReadBtn" type="button">
-            <i class="fa-solid fa-check-double"></i> Mark all as read
-        </button>
-    </div>
-
-    <!-- Notifications List -->
-    <div class="notifications-container" id="notificationsList">
-        
-        <div class="notification-card unread" data-read="false">
-            <div class="notification-icon-wrap">
-                <i class="fa-solid fa-ticket"></i>
-            </div>
-            <div class="notification-content">
-                <div class="notification-header-row">
-                    <span class="notification-title">Ticket Status Updated</span>
-                    <span class="notification-time">10 mins ago</span>
+    <!-- Overview Cards Section -->
+    <section class="section">
+        <div class="ticket-overview">
+            <div class="overview-card">
+                <div class="overview-top">
+                    <span style="color: #6f4b82; font-weight: 600;">Open</span>
+                    <div class="overview-icon purple"><i class="fa-solid fa-folder-open"></i></div>
                 </div>
-                <p class="notification-desc">Your ticket <strong>#HD-1024 (Payroll Issue)</strong> has been moved to <strong>In Progress</strong> by HR Support.</p>
+                <strong id="openCount" style="color: #402a4a;">0</strong>
+                <p>Currently being reviewed</p>
             </div>
-        </div>
-
-        <div class="notification-card unread" data-read="false">
-            <div class="notification-icon-wrap">
-                <i class="fa-regular fa-comments"></i>
-            </div>
-            <div class="notification-content">
-                <div class="notification-header-row">
-                    <span class="notification-title">New Message from Department Leader</span>
-                    <span class="notification-time">1 hour ago</span>
+            <div class="overview-card">
+                <div class="overview-top">
+                    <span style="color: #6f4b82; font-weight: 600;">In Progress</span>
+                    <div class="overview-icon purple"><i class="fa-solid fa-spinner"></i></div>
                 </div>
-                <p class="notification-desc">Michael Reynolds replied to your inquiry regarding workplace equipment policy. Check your Chat History to review.</p>
+                <strong id="inProgressCount" style="color: #402a4a;">0</strong>
+                <p>Being actively worked on</p>
             </div>
-        </div>
-
-        <div class="notification-card unread" data-read="false">
-            <div class="notification-icon-wrap">
-                <i class="fa-solid fa-shield-halved"></i>
-            </div>
-            <div class="notification-content">
-                <div class="notification-header-row">
-                    <span class="notification-title">Security Policy Acknowledgment Required</span>
-                    <span class="notification-time">Yesterday</span>
+            <div class="overview-card">
+                <div class="overview-top">
+                    <span style="color: #6f4b82; font-weight: 600;">Resolved</span>
+                    <div class="overview-icon purple"><i class="fa-solid fa-circle-check"></i></div>
                 </div>
-                <p class="notification-desc">Please review the updated Information Security & Data Privacy guidelines in the Knowledge Base.</p>
+                <strong id="resolvedCount" style="color: #402a4a;">0</strong>
+                <p>Successfully completed</p>
             </div>
         </div>
+    </section>
 
-    </div>
+    <!-- Recent Tickets Section -->
+    <section class="section">
+        <div class="section-header">
+            <div>
+                <h3>Recent Support Requests</h3>
+                <p>Track the status of your submitted tickets.</p>
+            </div>
+            <a href="my-tickets.html">View all tickets <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+
+        <div class="tickets-table">
+            <div class="table-header">
+                <div>Request</div>
+                <div>Category</div>
+                <div>Status</div>
+                <div>Priority</div>
+                <div>Created</div>
+            </div>
+            <div id="recentTickets"></div>
+        </div>
+    </section>
 </main>
 
 <button class="genie-button" id="genieButton" type="button">
@@ -202,12 +194,12 @@
                 <i class="fa-solid fa-wand-magic-sparkles"></i>
             </div>
             <div class="genie-bubble">
-                Hi! I can help you check notification details or find related support tickets.
+                Hi! I'm Genie, your AI support assistant. How can I help you today?
             </div>
         </div>
     </div>
     <div class="genie-input-area">
-        <input type="text" id="genieInput" placeholder="Ask about notifications..." autocomplete="off">
+        <input type="text" id="genieInput" placeholder="Ask a question..." autocomplete="off">
         <button id="genieSendButton" type="button">
             <i class="fa-solid fa-arrow-up"></i>
         </button>
@@ -217,51 +209,6 @@
     </div>
 </div>
 
-<!-- Interactive script for Mark as Read & Filtering -->
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const markAllBtn = document.getElementById('markAllReadBtn');
-        const cards = document.querySelectorAll('.notification-card');
-        const badge = document.getElementById('badgeCount');
-        const filterSelect = document.getElementById('notificationFilter');
-
-        if (markAllBtn) {
-            markAllBtn.addEventListener('click', () => {
-                cards.forEach(card => {
-                    card.classList.remove('unread');
-                    card.dataset.read = 'true';
-                });
-                if (badge) badge.style.display = 'none';
-            });
-        }
-
-        if (filterSelect) {
-            filterSelect.addEventListener('change', (e) => {
-                const val = e.target.value;
-                cards.forEach(card => {
-                    if (val === 'unread' && card.dataset.read === 'true') {
-                        card.style.display = 'none';
-                    } else {
-                        card.style.display = 'flex';
-                    }
-                });
-            });
-        }
-    });
-</script>
-
-<script>
-    // Unified Auth Check
-    const userDataString = localStorage.getItem('portalUser');
-    
-    // If no user is found, kick them back to the login screen
-    if (!userDataString) { 
-      window.location.href = '../index.html'; 
-    } else {
-      // Optional: If your partner's UI has a place for the user's name, you can inject it here!
-      const user = JSON.parse(userDataString);
-      // document.getElementById('employeeNameDisplay').innerText = user.name;
-    }
-  </script>
+<script src="../js/script.js"></script>
 </body>
 </html>
