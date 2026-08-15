@@ -69,9 +69,20 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def init_db_schema():
-    """Create database tables if they do not exist."""
+    """Create database tables if they do not exist and ensure missing columns are added."""
     try:
         Base.metadata.create_all(bind=engine)
+        # Handle SQLite column additions gracefully if table pre-existed
+        if engine.dialect.name == "sqlite":
+            with engine.connect() as conn:
+                existing_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(tickets)")).fetchall()]
+                if "queue" not in existing_cols:
+                    conn.execute(text("ALTER TABLE tickets ADD COLUMN queue VARCHAR(100) DEFAULT 'IT - Service Desk'"))
+                if "parent_ticket_id" not in existing_cols:
+                    conn.execute(text("ALTER TABLE tickets ADD COLUMN parent_ticket_id VARCHAR(50)"))
+                if "auto_resolved" not in existing_cols:
+                    conn.execute(text("ALTER TABLE tickets ADD COLUMN auto_resolved BOOLEAN DEFAULT 0"))
+                conn.commit()
     except Exception as e:
         print(f"⚠️ Error creating database schema: {e}")
 

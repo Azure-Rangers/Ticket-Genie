@@ -252,4 +252,75 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* =========================================================
-   INITIALIZE EVERYTHING
+   P0 FEATURE API EXTENSIONS (ReAct, Document Export, Exec Actions, Comments)
+   ========================================================= */
+
+async function apiRunReAct(message, role = "Super Admin") {
+    try {
+        const res = await fetch(`${API_BASE_URL}/genie/react`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message, role }),
+        });
+        return await res.json();
+    } catch (err) {
+        console.error("ReAct agent execution failed:", err);
+        return { reply: "ReAct Agent Engine execution failed. Check backend connection." };
+    }
+}
+
+async function apiRunExecAction(command) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/genie/exec-agent`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ command }),
+        });
+        return await res.json();
+    } catch (err) {
+        console.error("Executive action failed:", err);
+        return { executive_response: "Executive command execution failed." };
+    }
+}
+
+function getExportUrl(ticketId, format = "pdf") {
+    return `${API_BASE_URL}/tickets/${ticketId}/export?format=${format}`;
+}
+
+async function apiGetComments(ticketId) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/tickets/${ticketId}/comments`);
+        if (!res.ok) return [];
+        return await res.json();
+    } catch (err) {
+        return [];
+    }
+}
+
+async function apiPostComment(ticketId, message, senderRole = "Employee") {
+    try {
+        const res = await fetch(`${API_BASE_URL}/tickets/${ticketId}/comments`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message, sender_role: senderRole }),
+        });
+        return await res.json();
+    } catch (err) {
+        console.error("Failed to post comment:", err);
+        return null;
+    }
+}
+
+async function apiIngestKnowledge(category, title, content) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/knowledge/ingest`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ category, title, content }),
+        });
+        return await res.json();
+    } catch (err) {
+        console.error("Failed to ingest knowledge:", err);
+        return { success: false };
+    }
+}
