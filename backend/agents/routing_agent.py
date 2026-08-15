@@ -1,121 +1,35 @@
-from pydantic import BaseModel
+"""Routing validation helpers.
 
-from agents.category_agent import TicketCategory
-from services.ai_service import ai_service as default_ai_service
-
-
-class RoutingDecision(BaseModel):
-    destination: TicketCategory
-    queue: str
-    escalation_required: bool
-    rationale: str
-
-
-ROUTING_PROMPT = """
-You are the routing agent for TicketGenie, an internal company helpdesk.
-
-Your job is to determine the most appropriate support queue for a ticket
-using its assigned category, priority, title, and description.
-
-The ticket has already been categorized. Do not unnecessarily change
-the assigned department.
-
-AVAILABLE DEPARTMENTS AND EXAMPLE QUEUES:
-
-HR:
-- HR - Employee Relations
-- HR - Benefits
-- HR - General Support
-
-IT:
-- IT - Service Desk
-- IT - Security
-- IT - Access Management
-- IT - Infrastructure
-
-Accounting:
-- Accounting - Payroll
-- Accounting - Expenses
-- Accounting - Billing
-- Accounting - General Support
-
-Upper Management:
-- Upper Management - Leave Approval
-- Upper Management - Executive Review
-- Upper Management - General Approval
-
-ROUTING RULES:
-
-- Leave, PTO, vacation, sick leave, maternity leave, paternity leave,
-  personal leave, and other time-off requests must be routed to
-  Upper Management - Leave Approval.
-
-- Password, login, device, software, VPN, Wi-Fi, and normal technical
-  issues should generally route to IT - Service Desk or the appropriate
-  specialized IT queue.
-
-- Security incidents, suspicious logins, account compromise, or other
-  cybersecurity concerns should route to IT - Security.
-
-- Payroll discrepancies, incorrect paycheck amounts, expense reports,
-  reimbursements, invoices, and similar financial matters should route
-  to the appropriate Accounting queue.
-
-- Major organizational matters or issues genuinely requiring senior
-  leadership review should route to Upper Management.
-
-ESCALATION RULES:
-
-Set escalation_required to true when:
-- The issue presents significant security or business risk
-- Immediate senior review is appropriate
-- The ticket describes a serious or sensitive escalation
-- The situation cannot reasonably be handled through the normal queue
-
-Important:
-- High priority does NOT automatically mean Upper Management.
-- Upper Management is a department, not a synonym for urgency.
-- Category and priority are separate concepts.
-- Do not invent facts that are not present in the ticket.
-- Choose the queue that is primarily responsible for resolving the issue.
-
-Return a structured routing decision containing:
-- destination
-- queue
-- escalation_required
-- concise rationale
+Confirms a (department, category, priority) triple is internally consistent
+before a classification result is trusted. This module never touches the
+database — it is pure validation logic.
 """
 
+from __future__ import annotations
 
-def route_ticket(
-    title: str,
-    description: str,
-    *,
-    category: TicketCategory | str,
-    priority: str,
-    ai_service=default_ai_service,
-) -> RoutingDecision:
+from agents.category_agent import is_valid_category, is_valid_department
+from agents.priority_agent import is_valid_priority
+
+
+def validate_routing(department: str, category: str, priority: str) -> list[str]:
+    """Return a list of human-readable validation errors.
+
+    An empty list means the (department, category, priority) triple is
+    valid and consistent.
     """
-    Determine the appropriate department queue for a ticket.
-    """
+    errors: list[str] = []
 
-    # Works whether category is already a string
-    # or a TicketCategory enum.
-    category_value = getattr(category, "value", category)
+    if not is_valid_department(department):
+        errors.append(f"'{department}' is not an allowed department.")
+    elif not is_valid_category(department, category):
+        errors.append(f"'{category}' is not a valid category for department '{department}'.")
 
-    user_content = f"""
-Ticket title:
-{title}
+    if not is_valid_priority(priority):
+        errors.append(f"'{priority}' is not a valid priority.")
 
-Ticket description:
-{description}
+    return errors
 
-Assigned category: {category_value}
-Assigned priority: {priority}
-"""
 
-    return ai_service.generate(
-        system_prompt=ROUTING_PROMPT,
-        user_content=user_content,
-        response_model=RoutingDecision,
-    )
+def is_valid_routing(department: str, category: str, priority: str) -> bool:
+    """Return True if the (department, category, priority) triple is valid."""
+    return not validate_routing(department, category, priority)
