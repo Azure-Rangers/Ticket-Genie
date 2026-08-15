@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enterprise Portal - AI Knowledge Base</title>
+  <style>
+    /* --- CSS RESET & BASE STYLES --- */
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { display: flex; height: 100vh; background-color: #f9fafb; color: #1f2937; overflow: hidden; }
+
+    /* --- SIDEBAR --- */
+    .sidebar { width: 260px; background-color: #2b1b36; color: #d1d5db; display: flex; flex-direction: column; }
+    .sidebar-header { padding: 24px; border-bottom: 1px solid #402b4a; }
+    .sidebar-header h2 { color: #ffffff; font-size: 1.25rem; }
+    
+    .nav-section { padding: 0 16px; margin-top: 24px; }
+    .nav-title { font-size: 0.75rem; color: #a5b4fc; text-transform: uppercase; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
+    .nav-link { display: block; padding: 10px 16px; color: #d1d5db; text-decoration: none; border-radius: 8px; font-size: 0.9rem; margin-bottom: 4px; transition: background 0.2s; }
+    .nav-link:hover, .nav-link.active { background-color: #402a4a; color: #ffffff; }
+
+    /* --- MAIN CONTENT --- */
+    .main-content { flex: 1; padding: 32px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
+    
+    .header { display: flex; justify-content: space-between; align-items: flex-end; }
+    .header h1 { font-size: 1.75rem; color: #111827; margin-bottom: 8px; }
+    .header p { color: #6b7280; font-size: 0.95rem; }
+
+    /* --- GRID LAYOUT --- */
+    .content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+
+    /* --- DOCUMENT TABLE (Left Column) --- */
+    .card { background: white; border-radius: 12px; border: 1px solid #e5e7eb; padding: 24px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .card h2 { font-size: 1.1rem; color: #111827; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; }
+    
+    /* Upload Section */
+    .upload-container { display: flex; gap: 16px; align-items: stretch; }
+    .upload-zone { flex: 1; border: 2px dashed #cbd5e1; border-radius: 8px; padding: 24px; text-align: center; background-color: #f8fafc; cursor: pointer; transition: 0.2s; }
+    .upload-zone:hover { border-color: #818cf8; background-color: #eff6ff; }
+    
+    .upload-settings { width: 250px; display: flex; flex-direction: column; gap: 12px; justify-content: center; }
+    .upload-settings select { padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.85rem; outline: none; }
+    
+    /* Table */
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th { text-align: left; font-size: 0.75rem; color: #6b7280; text-transform: uppercase; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb; }
+    td { padding: 16px 0; border-bottom: 1px solid #f3f4f6; font-size: 0.9rem; color: #374151; }
+    
+    .doc-name { font-weight: 600; color: #111827; }
+    .doc-cat { font-size: 0.75rem; color: #6b7280; }
+    
+    /* Tags */
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+    .tag-public { background: #f3e8ff; color: #7e22ce; }
+    .tag-restricted { background: #fee2e2; color: #b91c1c; } /* Deal/Person specific */
+    .tag-sensitive { background: #fef08a; color: #854d0e; } /* No AI Summary allowed */
+
+    /* --- AI TESTING SANDBOX (Right Column) --- */
+    .sandbox-card { background: linear-gradient(to bottom, #ffffff, #f5f3ff); border-color: #c7d2fe; }
+    .sandbox-chat { flex: 1; border: 1px solid #e5e7eb; border-radius: 8px; background: white; padding: 16px; display: flex; flex-direction: column; gap: 12px; height: 350px; overflow-y: auto; margin-bottom: 12px; }
+    
+    .msg { font-size: 0.85rem; padding: 10px 14px; border-radius: 8px; line-height: 1.4; max-width: 90%; }
+    .msg-user { background: #f3f4f6; color: #374151; align-self: flex-end; border-bottom-right-radius: 2px; }
+    .msg-ai { background: #4f46e5; color: white; align-self: flex-start; border-bottom-left-radius: 2px; }
+    .msg-ai.sensitive { background: #1e1b4b; border-left: 3px solid #facc15; } /* Special styling for un-summarized legal text */
+    
+    .msg-src { font-size: 0.7rem; color: #a5b4fc; margin-top: 6px; display: block; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 4px; }
+
+    .sandbox-input { display: flex; gap: 8px; }
+    .sandbox-input input { flex: 1; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.85rem; outline: none; }
+    .sandbox-input button { background: #4f46e5; color: white; border: none; padding: 0 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+  
+    .profile { position: relative; }
+    .profile-button { background: transparent; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit; }
+    .profile-dropdown-menu { position: absolute; top: 100%; right: 0; margin-top: 8px; width: 190px; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12); display: none; flex-direction: column; padding: 8px 0; z-index: 1000; }
+    .profile-dropdown-menu.show { display: flex !important; }
+    .dropdown-label { font-size: 10px; color: #8b968f; padding: 4px 16px 6px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .role-switch-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 16px; border: none; background: transparent; text-align: left; font-size: 0.85rem; color: #374151; cursor: pointer; transition: background 0.2s ease; }
+    .role-switch-btn i { width: 16px; text-align: center; color: #6b7280; }
+    .role-switch-btn:hover { background: #f3f4f6; }
+    .role-switch-btn.active { background: #eef2ff; color: #4f46e5; font-weight: 600; }
+    .role-switch-btn.active i { color: #4f46e5; }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>Enterprise Portal</h2>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-title">Main</div>
+      <a href="management-portal.html" class="nav-link">📊 My Dashboard</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-title">Ticketing System</div>
+      <a href="management-submit-ticket.html" class="nav-link">➕ Submit New Ticket</a>
+      <a href="management-inbox.html" class="nav-link">📥 Team Inbox</a>
+    </div>
+
+    <div class="nav-section" id="adminNav" style="display: none;">
+      <div class="nav-title">Administration</div>
+      <a href="management-knowledge-base.html" class="nav-link active">📚 AI Knowledge Base</a>
+    </div>
+    <div class="nav-section">
+    <div class="nav-title">Account</div>
+    <a href="../employee_NM/index.html" class="nav-link">🏠 Employee View</a>
+  </div>
+</aside>
+
+  <main class="main-content">
+    <div class="top-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; border-bottom: 1px solid #f3f4f6; background: white;">
+      <div class="search-small" style="display: flex; align-items: center; background: #f3f4f6; padding: 8px 16px; border-radius: 8px; width: 300px;">
+        <span>🔍</span>
+        <input type="text" placeholder="Search..." style="border: none; background: transparent; outline: none; margin-left: 8px; font-size: 0.85rem; width: 100%;">
+      </div>
+      <div class="nav-actions" style="display: flex; align-items: center; gap: 16px;">
+        <span style="cursor: pointer;">🌙</span>
+        <span style="cursor: pointer;">🔔</span>
+        <div class="profile" style="position: relative;">
+          <button class="profile-button" id="profileDropdownTrigger" style="background: transparent; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit;">
+            <div class="avatar" id="navAvatar" style="width: 32px; height: 32px; background: #eef2ff; color: #4f46e5; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 600;">M</div>
+            <div style="text-align: left;">
+              <div id="navName" style="font-weight: 600; font-size: 0.85rem; color: #111827;">Management User</div>
+              <div id="currentRoleDisplay" style="font-size: 0.7rem; color: #6b7280;">Management</div>
+            </div>
+            <i class="fa-solid fa-chevron-down" style="font-size: 0.75rem; color: #6b7280; margin-left: 4px;"></i>
+          </button>
+          <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu" aria-labelledby="profileDropdownTrigger">
+            <span class="dropdown-label">Switch View</span>
+            <button type="button" class="role-switch-btn" data-role="Employee" role="menuitem" onclick="localStorage.setItem('portalUser', JSON.stringify({name: 'Employee User', role: 'Employee', email: 'employee@ticketgenie.com'})); window.location.href='../employee_NM/index.html';">
+              <i class="fa-regular fa-user"></i> Employee View
+            </button>
+            <button type="button" class="role-switch-btn active" data-role="Management" role="menuitem" onclick="localStorage.setItem('portalUser', JSON.stringify({name: 'Management User', role: 'Management', email: 'management@ticketgenie.com'})); window.location.href='management-portal.html';">
+              <i class="fa-solid fa-briefcase"></i> Management View
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="header">
+      <div>
+        <h1>AI Policy & Document Database</h1>
+        <p>Manage standard policies and restricted deals. Control how AI reads and summaries legal/immigration documents.</p>
+      </div>
+    </div>
+
+    <div class="content-grid">
+      
+      <div class="card">
+        <h2>Upload New Policy / Deal Document</h2>
+        
+        <div class="upload-container">
+          <div class="upload-zone" onclick="alert('File browser opened!')">
+            <div style="font-size: 2rem; color: #94a3b8; margin-bottom: 8px;">📄</div>
+            <h4 style="color: #334155;">Drag & Drop files here</h4>
+          </div>
+          
+          <div class="upload-settings">
+            <select>
+              <option disabled selected>Category...</option>
+              <option>Immigration (OPT, Visas)</option>
+              <option>IT Policy</option>
+              <option>HR / Onboarding</option>
+            </select>
+            <select>
+              <option disabled selected>Access Level...</option>
+              <option>Public (All Employees)</option>
+              <option>Restricted (Deal-Specific/HR Only)</option>
+            </select>
+            <label style="font-size: 0.75rem; color: #475569; display: flex; align-items: center; gap: 4px;">
+              <input type="checkbox"> Sensitive (Disable AI Summary)
+            </label>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Document Name</th>
+              <th>Access Level</th>
+              <th>AI Treatment</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="doc-name">OPT_Onboarding_Guidelines.pdf</div>
+                <div class="doc-cat">Category: Immigration</div>
+              </td>
+              <td><span class="tag tag-public">Public</span></td>
+              <td><span class="tag tag-sensitive">Full Text Only (No Summary)</span></td>
+              <td><a href="#" style="color: #4f46e5; text-decoration: none; font-size: 0.85rem;">Edit Access</a></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="doc-name">Project_Zeus_Merger_Details.pdf</div>
+                <div class="doc-cat">Category: Other (Legal)</div>
+              </td>
+              <td><span class="tag tag-restricted">Deal-Specific</span></td>
+              <td><span class="tag tag-public">Standard RAG Summary</span></td>
+              <td><a href="#" style="color: #4f46e5; text-decoration: none; font-size: 0.85rem;">Manage Users</a></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="doc-name">IT_Equipment_Policy_2026.pdf</div>
+                <div class="doc-cat">Category: IT-Related</div>
+              </td>
+              <td><span class="tag tag-public">Public</span></td>
+              <td><span class="tag tag-public">Standard RAG Summary</span></td>
+              <td><a href="#" style="color: #4f46e5; text-decoration: none; font-size: 0.85rem;">Edit Access</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card sandbox-card">
+        <h2>✨ AI Policy Tester</h2>
+        <p style="font-size: 0.75rem; color: #6b7280; margin-bottom: 8px;">Test how the AI answers questions based on document security settings.</p>
+        
+        <div class="sandbox-chat">
+          <div class="msg msg-user">What is the policy on getting a new laptop?</div>
+          <div class="msg msg-ai">
+            Employees are eligible for a hardware refresh every 3 years. You must submit a ticket to IT for approval.
+            <span class="msg-src">Source: IT_Equipment_Policy_2026.pdf</span>
+          </div>
+
+          <div class="msg msg-user">What are the rules for my OPT timeline?</div>
+          <div class="msg msg-ai sensitive">
+            <strong>[SENSITIVE DOC DETECTED - RAW TEXT PROVIDED]</strong><br><br>
+            "F-1 students must apply for post-completion OPT up to 90 days before their program end date and no later than 60 days after their program end date. Employment must be directly related to the student's major area of study."
+            <span class="msg-src">Source: OPT_Onboarding_Guidelines.pdf (Page 2)</span>
+          </div>
+        </div>
+
+        <div class="sandbox-input">
+          <input type="text" placeholder="Test a query here...">
+          <button>Ask</button>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    // 1. Check user login
+    
+    let userDataString = localStorage.getItem('portalUser');
+    if (!userDataString) {
+      const defaultUser = { name: 'Management User', role: 'Management', email: 'management@ticketgenie.com' };
+      localStorage.setItem('portalUser', JSON.stringify(defaultUser));
+      userDataString = JSON.stringify(defaultUser);
+    }
+
+    
+    if (userDataString) {
+      const user = JSON.parse(userDataString);
+      
+      // 2. Only show this page link to HR and Management! IT/Accounting shouldn't mess with policy docs.
+      if (user.role === 'HR' || user.role === 'Management') {
+        document.getElementById('adminNav').style.display = 'block';
+      } else {
+        // Kick them back to dashboard if they don't have permission
+        alert('You do not have administrative access to the Knowledge Base.');
+        window.location.href = 'management-portal.html';
+      }
+    } else {
+      window.location.href = '../index.html';
+    }
+  </script>
+  <script src="../js/script.js"></script>
+</body>
+</html>

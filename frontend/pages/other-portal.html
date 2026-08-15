@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket-Genie | Help Desk</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+   <div class="app-container">
+        
+        <nav class="sidebar">
+            <div class="logo">
+                <h2>Ticket-Genie</h2>
+            </div>
+            <ul class="nav-links">
+                <li class="active"><a href="#">Help & Support</a></li>
+                <li><a href="#">New Request</a></li>
+                <li><a href="#">My Tickets</a></li>
+                <li><a href="#">Knowledge Base</a></li>
+            </ul>
+            <div class="genie-panel-teaser">
+                <p>✨ Genie AI is active</p>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <header class="top-header">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search for help...">
+                </div>
+                <div class="user-profile">
+                    <span>Employee</span>
+                </div>
+            </header>
+            
+            <section class="dashboard-area">
+                <div class="dashboard-header">
+                    <h1>Staff Dashboard</h1>
+                    <p>Overview of current tickets and department activity.</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Open Tickets</h3>
+                        <span class="stat-number">24</span>
+                    </div>
+                    <div class="stat-card border-red">
+                        <h3>High Priority</h3>
+                        <span class="stat-number">5</span>
+                    </div>
+                    <div class="stat-card border-purple">
+                        <h3>Resolved Today</h3>
+                        <span class="stat-number">12</span>
+                    </div>
+                    <div class="stat-card border-purple">
+                        <h3>AI Summaries Pending</h3>
+                        <span class="stat-number">3</span>
+                    </div>
+                </div>
+
+                <div class="ticket-queue-container">
+                    <h2>Recent Tickets</h2>
+                    <table class="ticket-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Requester</th>
+                                <th>Department</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>#1042</td>
+                                <td>Sarah Jenkins</td>
+                                <td>IT</td>
+                                <td><span class="badge badge-high">High</span></td>
+                                <td><span class="badge badge-open">Open</span></td>
+                                <td><button class="btn-sm">View</button></td>
+                            </tr>
+                            <tr>
+                                <td>#1041</td>
+                                <td>Mike Ross</td>
+                                <td>HR</td>
+                                <td><span class="badge badge-med">Medium</span></td>
+                                <td><span class="badge badge-progress">In Progress</span></td>
+                                <td><button class="btn-sm">View</button></td>
+                            </tr>
+                            <tr>
+                                <td>#1040</td>
+                                <td>Emily Chen</td>
+                                <td>Facilities</td>
+                                <td><span class="badge badge-low">Low</span></td>
+                                <td><span class="badge badge-open">Open</span></td>
+                                <td><button class="btn-sm">View</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+    </div> 
+</body>
+</html>

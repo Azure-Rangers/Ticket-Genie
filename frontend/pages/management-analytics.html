@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TicketGenie - Analytics</title>
+  <style>
+    /* --- CSS RESET & BASE STYLES --- */
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { display: flex; height: 100vh; background-color: #fdfdfd; color: #1f2937; margin: 0; overflow: hidden; }
+
+    /* --- SIDEBAR --- */
+    .sidebar { width: 250px; background-color: #2b1b36; color: #d1d5db; display: flex; flex-direction: column; flex-shrink: 0; justify-content: space-between; }
+    .sidebar-top { flex: 1; }
+    .sidebar-header { padding: 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .sidebar-header h2 { color: #ffffff; font-size: 1.2rem; }
+    .sidebar-header span { display: block; font-size: 0.7rem; color: #a5b4fc; font-weight: normal; text-transform: uppercase; letter-spacing: 1px; }
+    
+    .nav-section { padding: 0 16px; margin-top: 24px; }
+    .nav-title { font-size: 0.7rem; color: #818cf8; text-transform: uppercase; font-weight: bold; margin-bottom: 12px; letter-spacing: 1px; }
+    .nav-link { display: flex; align-items: center; gap: 12px; padding: 10px 16px; color: #d1d5db; text-decoration: none; border-radius: 8px; font-size: 0.85rem; margin-bottom: 4px; transition: background 0.2s; }
+    .nav-link:hover, .nav-link.active { background-color: rgba(255,255,255,0.1); color: #ffffff; font-weight: 500; }
+    
+    .sidebar-footer { padding: 24px; font-size: 0.75rem; color: #a5b4fc; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 8px; }
+    .status-dot { width: 8px; height: 8px; background-color: #a855f7; border-radius: 50%; }
+
+    /* --- MAIN CONTENT --- */
+    .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    
+    /* Top Navbar */
+    .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; border-bottom: 1px solid #f3f4f6; background: white; }
+    .search-small { display: flex; align-items: center; background: #f3f4f6; padding: 8px 16px; border-radius: 8px; width: 300px; }
+    .search-small input { border: none; background: transparent; outline: none; margin-left: 8px; font-size: 0.85rem; width: 100%; }
+    .nav-actions { display: flex; align-items: center; gap: 16px; }
+    .user-profile { display: flex; align-items: center; gap: 12px; font-size: 0.85rem; font-weight: 600; }
+    .avatar { width: 32px; height: 32px; background: #eef2ff; color: #4f46e5; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.8rem; }
+
+    /* Page Content */
+    .page-padding { padding: 40px; max-width: 1200px; margin: 0 auto; width: 100%; }
+    
+    .welcome-text { font-size: 0.75rem; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .page-title { font-size: 2rem; color: #111827; margin: 8px 0 24px; }
+    
+    .btn-export { background: #ffffff; color: #374151; border: 1px solid #d1d5db; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .btn-export:hover { background: #f9fafb; border-color: #9ca3af; }
+
+    /* KPI Grid */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+    .kpi-card { background: white; border: 1px solid #e5e7eb; padding: 24px; border-radius: 12px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+    .kpi-header { display: flex; justify-content: space-between; font-size: 0.85rem; color: #6b7280; font-weight: 600; text-transform: uppercase; }
+    .kpi-value { font-size: 2.2rem; font-weight: bold; color: #111827; display: flex; align-items: baseline; gap: 8px; }
+    .kpi-trend { font-size: 0.9rem; font-weight: 600; }
+    .trend-up { color: #8b5cf6; }
+    .trend-down { color: #dc2626; }
+
+    /* Charts Layout */
+    .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 40px; }
+    .chart-card { background: white; border: 1px solid #e5e7eb; padding: 24px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); display: flex; flex-direction: column; }
+    .chart-card h3 { font-size: 1.1rem; color: #111827; margin-bottom: 8px; }
+    .chart-card p { font-size: 0.85rem; color: #6b7280; margin-bottom: 24px; }
+
+    /* Custom CSS Bar Chart */
+    .css-bar-chart { flex: 1; display: flex; align-items: flex-end; gap: 12px; height: 200px; padding-bottom: 30px; position: relative; border-bottom: 1px solid #e5e7eb; margin-top: 20px; }
+    .bar-column { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; position: relative; }
+    .bar { width: 100%; max-width: 40px; background: #4f46e5; border-radius: 4px 4px 0 0; transition: height 0.5s ease-out; position: relative; }
+    .bar:hover { background: #4338ca; }
+    .bar-label { position: absolute; bottom: -25px; font-size: 0.75rem; color: #6b7280; font-weight: 600; text-align: center; width: 100%; }
+    .bar-value { position: absolute; top: -25px; font-size: 0.8rem; font-weight: 700; color: #374151; }
+
+    /* Team Capacity Progress (170 hours) */
+    .capacity-container { display: flex; flex-direction: column; justify-content: center; height: 100%; gap: 16px; }
+    .cap-header { display: flex; justify-content: space-between; align-items: flex-end; }
+    .cap-hours { font-size: 2.5rem; font-weight: bold; color: #111827; line-height: 1; }
+    .cap-max { font-size: 1rem; color: #6b7280; font-weight: normal; }
+    
+    .cap-track { width: 100%; height: 24px; background: #f3f4f6; border-radius: 12px; overflow: hidden; }
+    .cap-fill { height: 100%; background: linear-gradient(90deg, #4f46e5, #c026d3); width: 85%; border-radius: 12px; }
+    
+    .cap-legend { display: flex; gap: 16px; margin-top: 8px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #6b7280; font-weight: 500; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  
+    .profile { position: relative; }
+    .profile-button { background: transparent; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit; }
+    .profile-dropdown-menu { position: absolute; top: 100%; right: 0; margin-top: 8px; width: 190px; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12); display: none; flex-direction: column; padding: 8px 0; z-index: 1000; }
+    .profile-dropdown-menu.show { display: flex !important; }
+    .dropdown-label { font-size: 10px; color: #8b968f; padding: 4px 16px 6px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .role-switch-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 16px; border: none; background: transparent; text-align: left; font-size: 0.85rem; color: #374151; cursor: pointer; transition: background 0.2s ease; }
+    .role-switch-btn i { width: 16px; text-align: center; color: #6b7280; }
+    .role-switch-btn:hover { background: #f3f4f6; }
+    .role-switch-btn.active { background: #eef2ff; color: #4f46e5; font-weight: 600; }
+    .role-switch-btn.active i { color: #4f46e5; }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-header">
+        <div style="background: white; padding: 4px; border-radius: 6px; font-size: 1.2rem;">🧞</div>
+        <div>
+          <h2>TicketGenie</h2>
+          <span id="sidebarRole">Unified Portal</span>
+        </div>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-title">Workspace</div>
+        <a href="management-portal.html" class="nav-link">📊 My Dashboard</a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-title">Ticketing System</div>
+        <a href="management-submit-ticket.html" class="nav-link">➕ Submit New Ticket</a>
+        <a href="management-inbox.html" class="nav-link">📥 Team Inbox</a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-title">Workforce</div>
+        <a href="management-onboarding.html" class="nav-link">🚀 Onboarding & Visas</a>
+      </div>
+
+      <div class="nav-section" id="adminNav" style="display: none;">
+        <div class="nav-title">Administration</div>
+        <a href="management-knowledge-base.html" class="nav-link">📚 AI Knowledge Base</a>
+        <a href="management-analytics.html" class="nav-link active">📈 Analytics</a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-title">Account</div>
+        <a href="../employee_NM/index.html" class="nav-link">🏠 Employee View</a>
+        <a href="management-settings.html" class="nav-link">⚙️ Settings</a>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="status-dot"></div>
+      <div>
+        <div style="color: white; font-weight: 600;">All systems operational</div>
+        <div>TicketGenie is online</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    
+    <div class="top-nav">
+      <div class="search-small">
+        <span>🔍</span>
+        <input type="text" placeholder="Search reports...">
+      </div>
+      <div class="nav-actions">
+        <span style="cursor: pointer;">🌙</span>
+        <span style="cursor: pointer;">🔔</span>
+        <div class="profile">
+          <button class="profile-button" id="profileDropdownTrigger">
+            <div class="avatar" id="navAvatar">M</div>
+            <div style="text-align: left;">
+              <div id="navName" style="font-weight: 600; font-size: 0.85rem; color: #111827;">Management User</div>
+              <div id="currentRoleDisplay" style="font-size: 0.7rem; color: #6b7280;">Management</div>
+            </div>
+            <i class="fa-solid fa-chevron-down" style="font-size: 0.75rem; color: #6b7280; margin-left: 4px;"></i>
+          </button>
+          <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu" aria-labelledby="profileDropdownTrigger">
+            <span class="dropdown-label">Switch View</span>
+            <button type="button" class="role-switch-btn" data-role="Employee" role="menuitem" onclick="localStorage.setItem('portalUser', JSON.stringify({name: 'Employee User', role: 'Employee', email: 'employee@ticketgenie.com'})); window.location.href='../employee_NM/index.html';">
+              <i class="fa-regular fa-user"></i> Employee View
+            </button>
+            <button type="button" class="role-switch-btn active" data-role="Management" role="menuitem" onclick="localStorage.setItem('portalUser', JSON.stringify({name: 'Management User', role: 'Management', email: 'management@ticketgenie.com'})); window.location.href='management-portal.html';">
+              <i class="fa-solid fa-briefcase"></i> Management View
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-padding">
+      
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px;">
+        <div>
+          <div class="welcome-text">Department Insights</div>
+          <h1 class="page-title" style="margin-bottom: 0;">Performance Analytics</h1>
+        </div>
+        <button class="btn-export">⬇️ Export Report (PDF)</button>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-header"><span>Avg Resolution Time</span></div>
+          <div class="kpi-value">4.2 <span style="font-size: 1rem; color: #6b7280; font-weight: normal;">hrs</span></div>
+          <div class="kpi-trend trend-up">↓ 1.5 hrs from last week</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span>AI Deflection Rate</span></div>
+          <div class="kpi-value">68%</div>
+          <div class="kpi-trend trend-up">↑ 12% from last week</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span>SLA Breaches</span></div>
+          <div class="kpi-value" style="color: #dc2626;">3</div>
+          <div class="kpi-trend trend-down">↑ 1 from last week</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span>Total Tickets (MTD)</span></div>
+          <div class="kpi-value">1,402</div>
+          <div class="kpi-trend" style="color: #6b7280;">Stable</div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        
+        <div class="chart-card">
+          <h3>Ticket Volume by Category</h3>
+          <p>Distribution of incoming requests over the last 30 days.</p>
+          
+          <div class="css-bar-chart">
+            <div class="bar-column">
+              <div class="bar-value">420</div>
+              <div class="bar" style="height: 85%;"></div>
+              <div class="bar-label">IT</div>
+            </div>
+            <div class="bar-column">
+              <div class="bar-value">215</div>
+              <div class="bar" style="height: 45%; background: #0ea5e9;"></div>
+              <div class="bar-label">Payroll</div>
+            </div>
+            <div class="bar-column">
+              <div class="bar-value">310</div>
+              <div class="bar" style="height: 65%; background: #8b5cf6;"></div>
+              <div class="bar-label">Visas</div>
+            </div>
+            <div class="bar-column">
+              <div class="bar-value">180</div>
+              <div class="bar" style="height: 35%; background: #f59e0b;"></div>
+              <div class="bar-label">Benefits</div>
+            </div>
+            <div class="bar-column">
+              <div class="bar-value">95</div>
+              <div class="bar" style="height: 20%; background: #8b5cf6;"></div>
+              <div class="bar-label">Facilities</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <h3>Team Capacity Tracker</h3>
+          <p>Monthly logged hours vs. the 170-hour maximum threshold.</p>
+          
+          <div class="capacity-container">
+            <div class="cap-header">
+              <div class="cap-hours">145 <span class="cap-max">/ 170 hrs</span></div>
+              <div style="color: #ea580c; font-weight: 600; font-size: 0.9rem;">85% Utilized</div>
+            </div>
+            
+            <div class="cap-track">
+              <div class="cap-fill"></div>
+            </div>
+            
+            <div class="cap-legend">
+              <div class="legend-item"><div class="legend-dot" style="background: #4f46e5;"></div> Logged Time</div>
+              <div class="legend-item"><div class="legend-dot" style="background: #f3f4f6; border: 1px solid #d1d5db;"></div> Remaining Time</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    
+    let userDataString = localStorage.getItem('portalUser');
+    if (!userDataString) {
+      const defaultUser = { name: 'Management User', role: 'Management', email: 'management@ticketgenie.com' };
+      localStorage.setItem('portalUser', JSON.stringify(defaultUser));
+      userDataString = JSON.stringify(defaultUser);
+    }
+
+    
+    if (userDataString) {
+      const user = JSON.parse(userDataString);
+      
+      document.getElementById('sidebarRole').innerText = `${user.role} Portal`;
+      document.getElementById('navName').innerText = user.name;
+      document.getElementById('navSubRole').innerText = user.role;
+      document.getElementById('navAvatar').innerText = user.name.charAt(0).toUpperCase();
+
+      // Show Admin link if HR/Management
+      if (user.role === 'HR' || user.role === 'Management') {
+        document.getElementById('adminNav').style.display = 'block';
+      } else {
+        // Kick them out if IT or Accounting tries to view HR/Admin Analytics
+        alert('You do not have administrative access to view Analytics.');
+        window.location.href = 'management-portal.html';
+      }
+    } else {
+      window.location.href = '../index.html';
+    }
+  </script>
+  <script src="../js/script.js"></script>
+</body>
+</html>

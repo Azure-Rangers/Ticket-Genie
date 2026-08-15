@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
-<body class="employee-page">
+<body>
 
 <aside class="sidebar">
     <div class="brand" style="position: relative; justify-content: space-between; width: 100%; padding-right: 15px;">
@@ -20,7 +20,6 @@
                 <span>Employee Portal</span>
             </div>
         </div>
-        
         <button id="brandMenuToggle" class="brand-menu-toggle" aria-label="Toggle Pages">
             <i class="fa-solid fa-bars"></i>
         </button>
@@ -41,24 +40,25 @@
             <i class="fa-regular fa-comments"></i><span>Chat History</span>
         </a>
 
+        <div class="nav-title">TIME OFF & COMPANY</div>
+        <a href="leave-calendar.html" class="nav-item">
+            <i class="fa-solid fa-calendar-days"></i><span>Leave Calendar</span>
+        </a>
+        <a href="announcements.html" class="nav-item">
+            <i class="fa-solid fa-bullhorn"></i><span>Announcements</span>
+        </a>
+
         <div class="nav-title">RESOURCES</div>
         <a href="knowledge-base.html" class="nav-item">
             <i class="fa-solid fa-book-open"></i><span>Knowledge Base</span>
         </a>
         <a href="notifications.html" class="nav-item active">
-            <i class="fa-solid fa-bell"></i><span>Notifications</span><span class="notification-count" id="badgeCount">3</span>
+            <i class="fa-solid fa-bell"></i><span>Notifications</span><span class="notification-count">3</span>
+        </a>
+        <a href="profile.html" class="nav-item">
+            <i class="fa-solid fa-user-gear"></i><span>Profile & Credentials</span>
         </a>
     </nav>
-
-    <div class="sidebar-bottom">
-        <div class="system-status">
-            <span class="status-dot"></span>
-            <div>
-                <strong>All systems operational</strong>
-                <small>TicketGenie is online</small>
-            </div>
-        </div>
-    </div>
 </aside>
 
 <main class="main-content">
@@ -73,109 +73,39 @@
         </div>
 
         <div class="topbar-actions">
-            <div class="search-box">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" placeholder="Search..." id="globalSearch">
-                <span class="shortcut">⌘ K</span>
-            </div>
-
-            <!-- Dark Mode Toggle Button -->
             <button class="icon-button" id="darkModeToggle" type="button" aria-label="Toggle Dark Mode">
                 <i class="fa-solid fa-moon" id="darkModeIcon"></i>
             </button>
-
-            <button class="icon-button" type="button">
-                <i class="fa-regular fa-bell"></i>
-                <span class="notification-dot"></span>
-            </button>
-
-            <div class="profile">
-                <button class="profile-button" id="profileDropdownTrigger" aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdownMenu">
-                    <div class="avatar">NM</div>
-                    <div class="profile-info">
-                        <strong>Nishita</strong>
-                        <span id="currentRoleDisplay">Employee</span>
-                    </div>
-                    <i class="fa-solid fa-chevron-down"></i>
-                </button>
-
-                <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu" aria-labelledby="profileDropdownTrigger">
-                    <span class="dropdown-label">Switch View</span>
-                    <button type="button" class="role-switch-btn active" data-role="Employee" role="menuitem">
-                        <i class="fa-regular fa-user"></i> Employee View
-                    </button>
-                    <button type="button" class="role-switch-btn" data-role="Management" role="menuitem">
-                        <i class="fa-solid fa-briefcase"></i> Management View
-                    </button>
-                </div>
-            </div>
         </div>
     </header>
 
-    <section class="welcome-section">
-        <p class="eyebrow">ACTIVITY & UPDATES</p>
-        <h2>Your Notifications</h2>
-        <p>Stay up to date with request statuses, departmental replies, and system alerts.</p>
+    <section class="section">
+        <div class="section-header">
+            <div>
+                <h3>Recent Activity & Updates</h3>
+                <p>Click any notification to open its associated ticket chat history.</p>
+            </div>
+        </div>
+
+        <div class="tickets-table">
+            <div class="table-row ticket-clickable" data-ticket-id="HD-1035">
+                <div class="request-info">
+                    <div class="request-icon"><i class="fa-solid fa-bell"></i></div>
+                    <div>
+                        <strong>Update on Immigration Help</strong>
+                        <span>#HD-1035 — HR reviewed your documents.</span>
+                    </div>
+                </div>
+                <div>HR & Workforce</div>
+                <div><span class="status open">Unread</span></div>
+                <div><span class="priority medium">Medium</span></div>
+                <div>Today</div>
+            </div>
+        </div>
     </section>
-
-    <!-- Controls Row -->
-    <div class="notification-actions-top">
-        <div class="ticket-filter" style="display: inline-flex; align-items: center; background: white; border: 1px solid #dfe5e1; border-radius: 7px; padding: 0 12px; height: 38px;">
-            <select id="notificationFilter" style="border: none; outline: none; background: transparent; font-size: 10px; color: #626c65; cursor: pointer;">
-                <option value="all">All Notifications</option>
-                <option value="unread">Unread Only</option>
-            </select>
-        </div>
-        <button class="mark-all-read-btn" id="markAllReadBtn" type="button">
-            <i class="fa-solid fa-check-double"></i> Mark all as read
-        </button>
-    </div>
-
-    <!-- Notifications List -->
-    <div class="notifications-container" id="notificationsList">
-        
-        <div class="notification-card unread" data-read="false">
-            <div class="notification-icon-wrap">
-                <i class="fa-solid fa-ticket"></i>
-            </div>
-            <div class="notification-content">
-                <div class="notification-header-row">
-                    <span class="notification-title">Ticket Status Updated</span>
-                    <span class="notification-time">10 mins ago</span>
-                </div>
-                <p class="notification-desc">Your ticket <strong>#HD-1024 (Payroll Issue)</strong> has been moved to <strong>In Progress</strong> by HR Support.</p>
-            </div>
-        </div>
-
-        <div class="notification-card unread" data-read="false">
-            <div class="notification-icon-wrap">
-                <i class="fa-regular fa-comments"></i>
-            </div>
-            <div class="notification-content">
-                <div class="notification-header-row">
-                    <span class="notification-title">New Message from Department Leader</span>
-                    <span class="notification-time">1 hour ago</span>
-                </div>
-                <p class="notification-desc">Michael Reynolds replied to your inquiry regarding workplace equipment policy. Check your Chat History to review.</p>
-            </div>
-        </div>
-
-        <div class="notification-card unread" data-read="false">
-            <div class="notification-icon-wrap">
-                <i class="fa-solid fa-shield-halved"></i>
-            </div>
-            <div class="notification-content">
-                <div class="notification-header-row">
-                    <span class="notification-title">Security Policy Acknowledgment Required</span>
-                    <span class="notification-time">Yesterday</span>
-                </div>
-                <p class="notification-desc">Please review the updated Information Security & Data Privacy guidelines in the Knowledge Base.</p>
-            </div>
-        </div>
-
-    </div>
 </main>
 
+<!-- Genie AI Floating Button & Drawer -->
 <button class="genie-button" id="genieButton" type="button">
     <i class="fa-solid fa-wand-magic-sparkles"></i>
     <span>Ask Genie</span>
@@ -202,12 +132,12 @@
                 <i class="fa-solid fa-wand-magic-sparkles"></i>
             </div>
             <div class="genie-bubble">
-                Hi! I can help you check notification details or find related support tickets.
+                Hi! I'm Genie, your AI support assistant. How can I help you today?
             </div>
         </div>
     </div>
     <div class="genie-input-area">
-        <input type="text" id="genieInput" placeholder="Ask about notifications..." autocomplete="off">
+        <input type="text" id="genieInput" placeholder="Ask a question..." autocomplete="off">
         <button id="genieSendButton" type="button">
             <i class="fa-solid fa-arrow-up"></i>
         </button>
@@ -217,51 +147,6 @@
     </div>
 </div>
 
-<!-- Interactive script for Mark as Read & Filtering -->
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const markAllBtn = document.getElementById('markAllReadBtn');
-        const cards = document.querySelectorAll('.notification-card');
-        const badge = document.getElementById('badgeCount');
-        const filterSelect = document.getElementById('notificationFilter');
-
-        if (markAllBtn) {
-            markAllBtn.addEventListener('click', () => {
-                cards.forEach(card => {
-                    card.classList.remove('unread');
-                    card.dataset.read = 'true';
-                });
-                if (badge) badge.style.display = 'none';
-            });
-        }
-
-        if (filterSelect) {
-            filterSelect.addEventListener('change', (e) => {
-                const val = e.target.value;
-                cards.forEach(card => {
-                    if (val === 'unread' && card.dataset.read === 'true') {
-                        card.style.display = 'none';
-                    } else {
-                        card.style.display = 'flex';
-                    }
-                });
-            });
-        }
-    });
-</script>
-
-<script>
-    // Unified Auth Check
-    const userDataString = localStorage.getItem('portalUser');
-    
-    // If no user is found, kick them back to the login screen
-    if (!userDataString) { 
-      window.location.href = '../index.html'; 
-    } else {
-      // Optional: If your partner's UI has a place for the user's name, you can inject it here!
-      const user = JSON.parse(userDataString);
-      // document.getElementById('employeeNameDisplay').innerText = user.name;
-    }
-  </script>
+<script src="../js/script.js"></script>
 </body>
 </html>

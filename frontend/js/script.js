@@ -128,41 +128,33 @@ function initializeProfileDropdown() {
                 profileBtn.setAttribute('aria-expanded', 'false');
 
                 const currentPath = window.location.pathname;
-
                 if (selectedRole === 'Management') {
-                    localStorage.setItem('portalUser', JSON.stringify({
-                        name: 'Management User',
-                        role: 'Management',
-                        email: 'management@ticketgenie.com'
-                    }));
-
+                    localStorage.setItem('portalUser', JSON.stringify({ name: 'Management User', role: 'Management', email: 'management@ticketgenie.com' }));
                     if (currentPath.includes('/employee_NM/')) {
                         window.location.href = '../admin_AV/admin_dashboard.html';
                     } else if (currentPath.includes('/admin_AV/')) {
                         window.location.href = 'admin_dashboard.html';
+                    } else if (currentPath.includes('/pages/')) {
+                        window.location.href = 'management-portal.html';
                     } else {
                         window.location.href = 'admin_AV/admin_dashboard.html';
                     }
-
                 } else if (selectedRole === 'Employee') {
-                    localStorage.setItem('portalUser', JSON.stringify({
-                        name: 'Employee User',
-                        role: 'Employee',
-                        email: 'employee@ticketgenie.com'
-                    }));
-
+                    localStorage.setItem('portalUser', JSON.stringify({ name: 'Employee User', role: 'Employee', email: 'employee@ticketgenie.com' }));
                     if (currentPath.includes('/admin_AV/')) {
-                        window.location.href = '../employee_NM/my-tickets.html';
+                        window.location.href = '../employee_NM/index.html';
+                    } else if (currentPath.includes('/pages/')) {
+                        window.location.href = '../employee_NM/index.html';
                     } else if (currentPath.includes('/employee_NM/')) {
-                        window.location.href = 'my-tickets.html';
+                        window.location.href = 'index.html';
                     } else {
-                        window.location.href = 'employee_NM/my-tickets.html';
+                        window.location.href = 'employee_NM/index.html';
                     }
                 }
             });
         });
     }
-} // Properly closed the initializeProfileDropdown function!
+}
 
 /* =========================================================
    NEW REQUEST FORM
@@ -821,6 +813,23 @@ function initializeDarkMode() {
 }
 
 /* =========================================================
+   TICKET TO CHAT HISTORY NAVIGATION
+   ========================================================= */
+document.addEventListener("DOMContentLoaded", () => {
+    const clickableRows = document.querySelectorAll(".ticket-clickable");
+
+    clickableRows.forEach(row => {
+        row.addEventListener("click", () => {
+            const ticketId = row.getAttribute("data-ticket-id");
+            if (!ticketId) return;
+
+            // Redirect to your chat-history.html page with the ticket query parameter
+            window.location.href = `chat-history.html?ticket=${ticketId}`;
+        });
+    });
+});
+
+/* =========================================================
    INITIALIZE EVERYTHING
 ========================================================= */
 document.addEventListener("DOMContentLoaded", () => {
@@ -834,3 +843,4 @@ document.addEventListener("DOMContentLoaded", () => {
     initializeFileUploads();
     initializeDarkMode();
 });
+
