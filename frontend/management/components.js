@@ -1,5 +1,5 @@
 /* =========================================================
-   MANAGEMENT PORTAL - SHARED UI COMPONENTS & EMBEDDED STYLES
+   MANAGEMENT PORTAL - AUTO-INITIALIZING UNIFIED COMPONENTS
    ========================================================= */
 
 function injectComponentStyles() {
@@ -34,22 +34,31 @@ function injectComponentStyles() {
   document.head.appendChild(style);
 }
 
-function renderManagementSidebar(activeTab = "dashboard") {
+function getManagementTabs() {
+  return [
+    { id: "index.html", title: "SuperAdmin Dashboard", subtitle: "Enterprise Control Center & Telemetry", label: "Dashboard", icon: "ph-layout", href: "index.html" },
+    { id: "inbox.html", title: "Unified Inbox & Triage", subtitle: "Upper Management & Multi-Dept Queue", label: "Inbox & Leave Queue", icon: "ph-tray", href: "inbox.html" },
+    { id: "departments.html", title: "Departments & Azure RBAC", subtitle: "Manage Enterprise Queues & M365 Object IDs", label: "Departments & RBAC", icon: "ph-buildings", href: "departments.html" },
+    { id: "knowledge-base.html", title: "Knowledge Ingestion", subtitle: "Grow Ticketer RAG Knowledge Memory Permanently", label: "Knowledge Base", icon: "ph-book-bookmark", href: "knowledge-base.html" },
+    { id: "analytics.html", title: "HR Analytics & Resolution Trends", subtitle: "Real-Time Helpdesk Metrics and SLA Performance", label: "HR Analytics", icon: "ph-chart-line-up", href: "analytics.html" },
+    { id: "settings.html", title: "System Settings", subtitle: "Configure Governance & Security Parameters", label: "System Settings", icon: "ph-gear-six", href: "settings.html" },
+  ];
+}
+
+function getCurrentFilename() {
+  return window.location.pathname.split("/").pop() || "index.html";
+}
+
+function renderManagementSidebar() {
   injectComponentStyles();
   const sidebarContainer = document.getElementById("shared-sidebar");
   if (!sidebarContainer) return;
 
-  const tabs = [
-    { id: "dashboard", label: "Dashboard", icon: "ph-layout", href: "index.html" },
-    { id: "inbox", label: "Inbox & Leave Queue", icon: "ph-tray", href: "inbox.html" },
-    { id: "departments", label: "Departments & RBAC", icon: "ph-buildings", href: "departments.html" },
-    { id: "knowledge", label: "Knowledge Base", icon: "ph-book-bookmark", href: "knowledge-base.html" },
-    { id: "analytics", label: "HR Analytics", icon: "ph-chart-line-up", href: "analytics.html" },
-    { id: "settings", label: "System Settings", icon: "ph-gear-six", href: "settings.html" },
-  ];
+  const currentFile = getCurrentFilename();
+  const tabs = getManagementTabs();
 
   const navHtml = tabs.map(tab => `
-    <a href="${tab.href}" class="nav-link ${activeTab === tab.id ? 'active' : ''}">
+    <a href="${tab.href}" class="nav-link ${currentFile === tab.href ? 'active' : ''}">
       <i class="ph-bold ${tab.icon}"></i>
       <span>${tab.label}</span>
     </a>
@@ -80,24 +89,27 @@ function renderManagementSidebar(activeTab = "dashboard") {
   `;
 }
 
-function renderManagementTopNav(pageTitle = "Dashboard", subtitle = "Super Admin Control Center") {
+function renderManagementTopNav() {
   injectComponentStyles();
   const topNavContainer = document.getElementById("shared-topnav");
   if (!topNavContainer) return;
 
+  const currentFile = getCurrentFilename();
+  const tabs = getManagementTabs();
+  const activeTab = tabs.find(t => t.href === currentFile) || tabs[0];
   const user = JSON.parse(localStorage.getItem("portalUser") || '{"name":"SuperAdmin SS","role":"Super Admin"}');
 
   topNavContainer.innerHTML = `
     <header class="top-nav">
       <div class="page-title-header">
-        <h1>${pageTitle}</h1>
-        <p>${subtitle}</p>
+        <h1>${activeTab.title}</h1>
+        <p>${activeTab.subtitle}</p>
       </div>
       
       <div class="nav-actions">
         <div class="search-small">
           <i class="ph-bold ph-magnifying-glass"></i>
-          <input type="text" id="globalSearchInput" placeholder="Search tickets, departments, SQL..." onkeyup="handleGlobalSearch(event)" />
+          <input type="text" id="globalSearchInput" placeholder="Search tickets, departments, SQL..." />
         </div>
         
         <a href="../index.html" class="switch-role-btn" title="Switch Portal Role">
@@ -116,9 +128,8 @@ function renderManagementTopNav(pageTitle = "Dashboard", subtitle = "Super Admin
   `;
 }
 
-function initSharedComponents(activeTab, title, subtitle) {
-  document.addEventListener("DOMContentLoaded", () => {
-    renderManagementSidebar(activeTab);
-    renderManagementTopNav(title, subtitle);
-  });
-}
+// Auto-run on DOMReady without requiring parameters
+document.addEventListener("DOMContentLoaded", () => {
+  renderManagementSidebar();
+  renderManagementTopNav();
+});

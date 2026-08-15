@@ -1,5 +1,5 @@
 /* =========================================================
-   ADMIN AV PORTAL - SHARED UI COMPONENTS & EMBEDDED STYLES
+   ADMIN AV PORTAL - AUTO-INITIALIZING UNIFIED COMPONENTS
    ========================================================= */
 
 function injectAdminAVComponentStyles() {
@@ -34,24 +34,33 @@ function injectAdminAVComponentStyles() {
   document.head.appendChild(style);
 }
 
-function renderAdminAVSidebar(activeTab = "dashboard") {
+function getAdminAVTabs() {
+  return [
+    { id: "admin_dashboard.html", title: "Operations Dashboard", subtitle: "HelpDesk Operations & Monitoring", label: "Operations Dashboard", icon: "ph-layout", href: "admin_dashboard.html" },
+    { id: "inbox.html", title: "Triage Inbox", subtitle: "Manage Incoming Requests & Ticket Queue", label: "Triage Inbox", icon: "ph-tray", href: "inbox.html" },
+    { id: "submit-ticket.html", title: "Create Ticket", subtitle: "Manual Request Logging", label: "Create Ticket", icon: "ph-plus-circle", href: "submit-ticket.html" },
+    { id: "announcements.html", title: "Announcements", subtitle: "Broadcast System Alerts", label: "Announcements", icon: "ph-megaphone", href: "announcements.html" },
+    { id: "knowledge-base.html", title: "Knowledge Base", subtitle: "Policy & Resolution Articles", label: "Knowledge Base", icon: "ph-book-bookmark", href: "knowledge-base.html" },
+    { id: "analytics.html", title: "Analytics", subtitle: "Resolution Performance & Metrics", label: "Analytics", icon: "ph-chart-pie", href: "analytics.html" },
+    { id: "archive.html", title: "Archive", subtitle: "Resolved Ticket Records", label: "Archive", icon: "ph-archive", href: "archive.html" },
+    { id: "settings.html", title: "Settings", subtitle: "Admin Portal Configuration", label: "Settings", icon: "ph-gear", href: "settings.html" },
+  ];
+}
+
+function getAdminAVFilename() {
+  return window.location.pathname.split("/").pop() || "admin_dashboard.html";
+}
+
+function renderAdminAVSidebar() {
   injectAdminAVComponentStyles();
   const sidebarContainer = document.getElementById("shared-sidebar");
   if (!sidebarContainer) return;
 
-  const tabs = [
-    { id: "dashboard", label: "Operations Dashboard", icon: "ph-layout", href: "admin_dashboard.html" },
-    { id: "inbox", label: "Triage Inbox", icon: "ph-tray", href: "inbox.html" },
-    { id: "submit-ticket", label: "Create Ticket", icon: "ph-plus-circle", href: "submit-ticket.html" },
-    { id: "announcements", label: "Announcements", icon: "ph-megaphone", href: "announcements.html" },
-    { id: "knowledge", label: "Knowledge Base", icon: "ph-book-bookmark", href: "knowledge-base.html" },
-    { id: "analytics", label: "Analytics", icon: "ph-chart-pie", href: "analytics.html" },
-    { id: "archive", label: "Archive", icon: "ph-archive", href: "archive.html" },
-    { id: "settings", label: "Settings", icon: "ph-gear", href: "settings.html" },
-  ];
+  const currentFile = getAdminAVFilename();
+  const tabs = getAdminAVTabs();
 
   const navHtml = tabs.map(tab => `
-    <a href="${tab.href}" class="nav-link ${activeTab === tab.id ? 'active' : ''}">
+    <a href="${tab.href}" class="nav-link ${currentFile === tab.href ? 'active' : ''}">
       <i class="ph-bold ${tab.icon}"></i>
       <span>${tab.label}</span>
     </a>
@@ -82,18 +91,21 @@ function renderAdminAVSidebar(activeTab = "dashboard") {
   `;
 }
 
-function renderAdminAVTopNav(pageTitle = "Dashboard", subtitle = "HelpDesk Operations") {
+function renderAdminAVTopNav() {
   injectAdminAVComponentStyles();
   const topNavContainer = document.getElementById("shared-topnav");
   if (!topNavContainer) return;
 
+  const currentFile = getAdminAVFilename();
+  const tabs = getAdminAVTabs();
+  const activeTab = tabs.find(t => t.href === currentFile) || tabs[0];
   const user = JSON.parse(localStorage.getItem("portalUser") || '{"name":"Admin AV","role":"IT / Operations"}');
 
   topNavContainer.innerHTML = `
     <header class="top-nav">
       <div class="page-title-header">
-        <h1>${pageTitle}</h1>
-        <p>${subtitle}</p>
+        <h1>${activeTab.title}</h1>
+        <p>${activeTab.subtitle}</p>
       </div>
       
       <div class="nav-actions">
@@ -118,9 +130,8 @@ function renderAdminAVTopNav(pageTitle = "Dashboard", subtitle = "HelpDesk Opera
   `;
 }
 
-function initAdminAVComponents(activeTab, title, subtitle) {
-  document.addEventListener("DOMContentLoaded", () => {
-    renderAdminAVSidebar(activeTab);
-    renderAdminAVTopNav(title, subtitle);
-  });
-}
+// Auto-run on DOMReady without requiring parameters
+document.addEventListener("DOMContentLoaded", () => {
+  renderAdminAVSidebar();
+  renderAdminAVTopNav();
+});

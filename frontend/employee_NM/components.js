@@ -1,5 +1,5 @@
 /* =========================================================
-   EMPLOYEE NM PORTAL - SHARED UI COMPONENTS & EMBEDDED STYLES
+   EMPLOYEE NM PORTAL - AUTO-INITIALIZING UNIFIED COMPONENTS
    ========================================================= */
 
 function injectEmployeeNMComponentStyles() {
@@ -34,25 +34,34 @@ function injectEmployeeNMComponentStyles() {
   document.head.appendChild(style);
 }
 
-function renderEmployeeNMSidebar(activeTab = "dashboard") {
+function getEmployeeTabs() {
+  return [
+    { id: "index.html", title: "Help & Support", subtitle: "Employee Self-Service Support Portal", label: "Employee Home", icon: "ph-house", href: "index.html" },
+    { id: "new-request.html", title: "New Support Request", subtitle: "Submit IT or HR Helpdesk Request", label: "New Support Request", icon: "ph-plus-circle", href: "new-request.html" },
+    { id: "my-tickets.html", title: "My Tickets", subtitle: "Track Your Active Support Requests", label: "My Tickets", icon: "ph-ticket", href: "my-tickets.html" },
+    { id: "leave-calendar.html", title: "Leave Calendar", subtitle: "Company Time Off & Holiday Events", label: "Leave Calendar", icon: "ph-calendar", href: "leave-calendar.html" },
+    { id: "knowledge-base.html", title: "Knowledge Base", subtitle: "Company Policies & Self-Service Guides", label: "Knowledge Base", icon: "ph-book-open", href: "knowledge-base.html" },
+    { id: "chat-history.html", title: "Genie Assistant Chat", subtitle: "Workplace AI Support Conversations", label: "Genie Assistant Chat", icon: "ph-chats-teardrop", href: "chat-history.html" },
+    { id: "announcements.html", title: "Announcements", subtitle: "Company News & System Maintenance Notices", label: "Announcements", icon: "ph-megaphone", href: "announcements.html" },
+    { id: "notifications.html", title: "Notifications", subtitle: "Ticket Status Updates & System Alerts", label: "Notifications", icon: "ph-bell", href: "notifications.html" },
+    { id: "profile.html", title: "Profile & Credentials", subtitle: "User Details & Security Settings", label: "Profile", icon: "ph-user", href: "profile.html" },
+  ];
+}
+
+function getEmployeeFilename() {
+  return window.location.pathname.split("/").pop() || "index.html";
+}
+
+function renderEmployeeNMSidebar() {
   injectEmployeeNMComponentStyles();
   const sidebarContainer = document.getElementById("shared-sidebar");
   if (!sidebarContainer) return;
 
-  const tabs = [
-    { id: "dashboard", label: "Employee Home", icon: "ph-house", href: "index.html" },
-    { id: "new-request", label: "New Support Request", icon: "ph-plus-circle", href: "new-request.html" },
-    { id: "my-tickets", label: "My Tickets", icon: "ph-ticket", href: "my-tickets.html" },
-    { id: "leave-calendar", label: "Leave Calendar", icon: "ph-calendar", href: "leave-calendar.html" },
-    { id: "knowledge", label: "Knowledge Base", icon: "ph-book-open", href: "knowledge-base.html" },
-    { id: "chat-history", label: "Genie Assistant Chat", icon: "ph-chats-teardrop", href: "chat-history.html" },
-    { id: "announcements", label: "Announcements", icon: "ph-megaphone", href: "announcements.html" },
-    { id: "notifications", label: "Notifications", icon: "ph-bell", href: "notifications.html" },
-    { id: "profile", label: "Profile", icon: "ph-user", href: "profile.html" },
-  ];
+  const currentFile = getEmployeeFilename();
+  const tabs = getEmployeeTabs();
 
   const navHtml = tabs.map(tab => `
-    <a href="${tab.href}" class="nav-link ${activeTab === tab.id ? 'active' : ''}">
+    <a href="${tab.href}" class="nav-link ${currentFile === tab.href ? 'active' : ''}">
       <i class="ph-bold ${tab.icon}"></i>
       <span>${tab.label}</span>
     </a>
@@ -83,18 +92,21 @@ function renderEmployeeNMSidebar(activeTab = "dashboard") {
   `;
 }
 
-function renderEmployeeNMTopNav(pageTitle = "Home", subtitle = "Self-Service Support") {
+function renderEmployeeNMTopNav() {
   injectEmployeeNMComponentStyles();
   const topNavContainer = document.getElementById("shared-topnav");
   if (!topNavContainer) return;
 
+  const currentFile = getEmployeeFilename();
+  const tabs = getEmployeeTabs();
+  const activeTab = tabs.find(t => t.href === currentFile) || tabs[0];
   const user = JSON.parse(localStorage.getItem("portalUser") || '{"name":"Employee NM","role":"Employee"}');
 
   topNavContainer.innerHTML = `
     <header class="top-nav">
       <div class="page-title-header">
-        <h1>${pageTitle}</h1>
-        <p>${subtitle}</p>
+        <h1>${activeTab.title}</h1>
+        <p>${activeTab.subtitle}</p>
       </div>
       
       <div class="nav-actions">
@@ -119,9 +131,8 @@ function renderEmployeeNMTopNav(pageTitle = "Home", subtitle = "Self-Service Sup
   `;
 }
 
-function initEmployeeNMComponents(activeTab, title, subtitle) {
-  document.addEventListener("DOMContentLoaded", () => {
-    renderEmployeeNMSidebar(activeTab);
-    renderEmployeeNMTopNav(title, subtitle);
-  });
-}
+// Auto-run on DOMReady without requiring parameters
+document.addEventListener("DOMContentLoaded", () => {
+  renderEmployeeNMSidebar();
+  renderEmployeeNMTopNav();
+});
