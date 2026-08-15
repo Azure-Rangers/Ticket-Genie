@@ -20,7 +20,6 @@
                 <span>Employee Portal</span>
             </div>
         </div>
-        
         <button id="brandMenuToggle" class="brand-menu-toggle" aria-label="Toggle Pages">
             <i class="fa-solid fa-bars"></i>
         </button>
@@ -41,6 +40,14 @@
             <i class="fa-regular fa-comments"></i><span>Chat History</span>
         </a>
 
+        <div class="nav-title">TIME OFF & COMPANY</div>
+        <a href="leave-calendar.html" class="nav-item">
+            <i class="fa-solid fa-calendar-days"></i><span>Leave Calendar</span>
+        </a>
+        <a href="announcements.html" class="nav-item">
+            <i class="fa-solid fa-bullhorn"></i><span>Announcements</span>
+        </a>
+
         <div class="nav-title">RESOURCES</div>
         <a href="knowledge-base.html" class="nav-item">
             <i class="fa-solid fa-book-open"></i><span>Knowledge Base</span>
@@ -48,17 +55,10 @@
         <a href="notifications.html" class="nav-item">
             <i class="fa-solid fa-bell"></i><span>Notifications</span><span class="notification-count">3</span>
         </a>
+        <a href="profile.html" class="nav-item">
+            <i class="fa-solid fa-user-gear"></i><span>Profile & Credentials</span>
+        </a>
     </nav>
-
-    <div class="sidebar-bottom">
-        <div class="system-status">
-            <span class="status-dot"></span>
-            <div>
-                <strong>All systems operational</strong>
-                <small>TicketGenie is online</small>
-            </div>
-        </div>
-    </div>
 </aside>
 
 <main class="main-content">
@@ -67,6 +67,9 @@
             <button class="icon-button" id="sidebarToggle" type="button" aria-label="Toggle Sidebar">
                 <i class="fa-solid fa-bars"></i>
             </button>
+            <div class="page-title">
+                <h1>Help & Support</h1>
+            </div>
         </div>
 
         <div class="topbar-actions">
@@ -75,37 +78,9 @@
                 <input type="text" placeholder="Search..." id="globalSearch">
                 <span class="shortcut">⌘ K</span>
             </div>
-
-            <!-- Dark Mode Toggle Button -->
             <button class="icon-button" id="darkModeToggle" type="button" aria-label="Toggle Dark Mode">
                 <i class="fa-solid fa-moon" id="darkModeIcon"></i>
             </button>
-
-            <button class="icon-button" type="button">
-                <i class="fa-regular fa-bell"></i>
-                <span class="notification-dot"></span>
-            </button>
-
-            <div class="profile">
-                <button class="profile-button" id="profileDropdownTrigger" aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdownMenu">
-                    <div class="avatar">NM</div>
-                    <div class="profile-info">
-                        <strong>Nishita</strong>
-                        <span id="currentRoleDisplay">Employee</span>
-                    </div>
-                    <i class="fa-solid fa-chevron-down"></i>
-                </button>
-
-                <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu" aria-labelledby="profileDropdownTrigger">
-                    <span class="dropdown-label">Switch View</span>
-                    <button type="button" class="role-switch-btn active" data-role="Employee" role="menuitem">
-                        <i class="fa-regular fa-user"></i> Employee View
-                    </button>
-                    <button type="button" class="role-switch-btn" data-role="Management" role="menuitem">
-                        <i class="fa-solid fa-briefcase"></i> Management View
-                    </button>
-                </div>
-            </div>
         </div>
     </header>
 
@@ -120,26 +95,26 @@
         <div class="ticket-overview">
             <div class="overview-card">
                 <div class="overview-top">
-                    <span style="color: #6f4b82; font-weight: 600;">Open</span>
+                    <span>Open</span>
                     <div class="overview-icon purple"><i class="fa-solid fa-folder-open"></i></div>
                 </div>
-                <strong id="openCount" style="color: #402a4a;">0</strong>
+                <strong>8</strong>
                 <p>Currently being reviewed</p>
             </div>
             <div class="overview-card">
                 <div class="overview-top">
-                    <span style="color: #6f4b82; font-weight: 600;">In Progress</span>
+                    <span>In Progress</span>
                     <div class="overview-icon purple"><i class="fa-solid fa-spinner"></i></div>
                 </div>
-                <strong id="inProgressCount" style="color: #402a4a;">0</strong>
+                <strong>2</strong>
                 <p>Being actively worked on</p>
             </div>
             <div class="overview-card">
                 <div class="overview-top">
-                    <span style="color: #6f4b82; font-weight: 600;">Resolved</span>
+                    <span>Resolved</span>
                     <div class="overview-icon purple"><i class="fa-solid fa-circle-check"></i></div>
                 </div>
-                <strong id="resolvedCount" style="color: #402a4a;">0</strong>
+                <strong>2</strong>
                 <p>Successfully completed</p>
             </div>
         </div>
@@ -158,16 +133,29 @@
         <div class="tickets-table">
             <div class="table-header">
                 <div>Request</div>
-                <div>Category</div>
                 <div>Status</div>
                 <div>Priority</div>
                 <div>Created</div>
+                <div>Date</div>
             </div>
-            <div id="recentTickets"></div>
+            <div class="table-row ticket-clickable" data-ticket-id="HD-1035">
+                <div class="request-info">
+                    <div class="request-icon"><i class="fa-solid fa-file-lines"></i></div>
+                    <div>
+                        <strong>Immigration Help</strong>
+                        <span>#HD-1035</span>
+                    </div>
+                </div>
+                <div>HR & Workforce Operations</div>
+                <div><span class="status open">Open</span></div>
+                <div><span class="priority medium">Medium</span></div>
+                <div>Today</div>
+            </div>
         </div>
     </section>
 </main>
 
+<!-- Genie AI Floating Button & Drawer -->
 <button class="genie-button" id="genieButton" type="button">
     <i class="fa-solid fa-wand-magic-sparkles"></i>
     <span>Ask Genie</span>
