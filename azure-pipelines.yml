@@ -36,7 +36,7 @@ stages:
           - checkout: self
 
           - task: AzureCLI@2
-            displayName: Build, Archive, and Push FastAPI backend image to ACR
+            displayName: Build and Push FastAPI backend and Nginx frontend images to ACR
             inputs:
               azureSubscription: $(azureServiceConnection)
               scriptType: bash
@@ -44,49 +44,31 @@ stages:
               inlineScript: |
                 set -euo pipefail
 
-                mkdir -p "$(Build.ArtifactStagingDirectory)/container-artifacts"
+                # Log in to Azure Container Registry
+                az acr login --name "$(acrName)"
 
-                # 1. Build backend image locally and export container archive
-                docker build --target backend -t "$(backendImageRepository):$(imageTag)" -t "$(backendImageRepository):latest" -f Dockerfile .
-                docker save "$(backendImageRepository):$(imageTag)" -o "$(Build.ArtifactStagingDirectory)/container-artifacts/backend-container.tar"
+                # Ensure buildx builder is initialized for registry caching
+                docker buildx create --use --name pipeline-builder || docker buildx use pipeline-builder
 
-                # 2. Build and push to Azure Container Registry
-                az acr build \
-                  --registry "$(acrName)" \
+                # 1. Build and Push Backend Image with remote registry buildcache
+                docker buildx build \
+                  --push \
                   --target backend \
-                  --image "$(backendImageRepository):$(imageTag)" \
-                  --image "$(backendImageRepository):latest" \
-                  --file Dockerfile \
-                  .
+                  --cache-to type=registry,ref="$(acrLoginServer)/$(backendImageRepository):buildcache",mode=max \
+                  --cache-from type=registry,ref="$(acrLoginServer)/$(backendImageRepository):buildcache" \
+                  -t "$(acrLoginServer)/$(backendImageRepository):$(imageTag)" \
+                  -t "$(acrLoginServer)/$(backendImageRepository):latest" \
+                  -f Dockerfile .
 
-          - task: AzureCLI@2
-            displayName: Build, Archive, and Push Nginx frontend image to ACR
-            inputs:
-              azureSubscription: $(azureServiceConnection)
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                set -euo pipefail
-
-                # 1. Build frontend image locally and export container archive
-                docker build --target frontend -t "$(frontendImageRepository):$(imageTag)" -t "$(frontendImageRepository):latest" -f Dockerfile .
-                docker save "$(frontendImageRepository):$(imageTag)" -o "$(Build.ArtifactStagingDirectory)/container-artifacts/frontend-container.tar"
-
-                # 2. Build and push to Azure Container Registry
-                az acr build \
-                  --registry "$(acrName)" \
+                # 2. Build and Push Frontend Image with remote registry buildcache
+                docker buildx build \
+                  --push \
                   --target frontend \
-                  --image "$(frontendImageRepository):$(imageTag)" \
-                  --image "$(frontendImageRepository):latest" \
-                  --file Dockerfile \
-                  .
-
-          - task: PublishPipelineArtifact@1
-            displayName: Publish Container Image Archives to DevOps
-            inputs:
-              targetPath: '$(Build.ArtifactStagingDirectory)/container-artifacts'
-              artifact: 'container-artifacts'
-              publishLocation: 'pipeline'
+                  --cache-to type=registry,ref="$(acrLoginServer)/$(frontendImageRepository):buildcache",mode=max \
+                  --cache-from type=registry,ref="$(acrLoginServer)/$(frontendImageRepository):buildcache" \
+                  -t "$(acrLoginServer)/$(frontendImageRepository):$(imageTag)" \
+                  -t "$(acrLoginServer)/$(frontendImageRepository):latest" \
+                  -f Dockerfile .
 
   - stage: UpdateWebApp
     displayName: Update Web App Containers
