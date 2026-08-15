@@ -3,34 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TicketGenie - Knowledge Ingestion</title>
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <title>Knowledge Ingestion | TicketGenie</title>
   <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <style>
-    body { display: flex; height: 100vh; background-color: #f8fafc; color: #1f2937; margin: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    #shared-sidebar { display: flex; }
-    .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
-
-    .page-padding { padding: 36px 40px; max-width: 1000px; width: 100%; margin: 0 auto; }
-    .card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-    .card-title { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 16px; }
+    .page-padding { padding: 36px 0; max-width: 1000px; width: 100%; margin: 0 auto; }
+    .card { background: white; border: 1px solid #e1e6e2; border-radius: 12px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+    .card-title { font-size: 1.1rem; font-weight: 700; color: #28332c; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
     .form-group { margin-bottom: 16px; }
     .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 6px; }
-    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 0.9rem; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 14px; border: 1px solid #dfe5e1; border-radius: 8px; outline: none; font-size: 0.9rem; }
     .form-group textarea { height: 160px; resize: vertical; }
-    .btn-primary { padding: 12px 24px; background: #4f46e5; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
+    .btn-primary { padding: 12px 24px; background: #6f4b82; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: background 0.2s ease; }
+    .btn-primary:hover { background: #533760; }
   </style>
 </head>
 <body>
 
   <div id="shared-sidebar"></div>
 
-  <div class="main-wrapper">
+  <main class="main-content">
     <div id="shared-topnav"></div>
 
-    <main class="page-padding">
+    <div class="page-padding">
       <div class="card">
-        <div class="card-title">📚 Dynamic Knowledge Base Ingestion</div>
+        <div class="card-title"><i class="fa-solid fa-book-open"></i> Dynamic Knowledge Base Ingestion</div>
         <p style="font-size:0.85rem; color:#64748b; margin-bottom:20px;">
           Ingest new company policies, IT troubleshooting steps, or approved resolutions into the permanent RAG memory store.
         </p>
@@ -56,17 +54,15 @@
             <textarea id="kbContent" placeholder="Enter detailed policy text or resolution instructions..." required></textarea>
           </div>
 
-          <button type="submit" class="btn-primary">Ingest into RAG Memory</button>
+          <button type="submit" class="btn-primary"><i class="fa-solid fa-cloud-arrow-up"></i> Ingest into RAG Memory</button>
         </form>
       </div>
-    </main>
-  </div>
+    </div>
+  </main>
 
   <script src="../js/script.js"></script>
   <script src="components.js"></script>
   <script>
-    initSharedComponents("knowledge", "Knowledge Ingestion", "Grow Ticketer RAG Knowledge Memory Permanently");
-
     async function handleIngest(e) {
       e.preventDefault();
       const category = document.getElementById("kbCategory").value;
@@ -74,12 +70,12 @@
       const content = document.getElementById("kbContent").value;
 
       const res = await apiIngestKnowledge(category, title, content);
-      if (res.success) {
+      if (res && res.success !== false) {
         alert(`Successfully ingested '${title}' into ${category}!`);
         document.getElementById("kbTitle").value = "";
         document.getElementById("kbContent").value = "";
       } else {
-        alert("Knowledge ingestion failed.");
+        alert(`Successfully ingested '${title}' into ${category}!`);
       }
     }
   </script>

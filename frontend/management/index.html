@@ -3,65 +3,62 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TicketGenie - SuperAdmin Dashboard</title>
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <title>SuperAdmin Dashboard | TicketGenie</title>
   <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <style>
-    body { display: flex; height: 100vh; background-color: #f8fafc; color: #1f2937; margin: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    #shared-sidebar { display: flex; }
-    .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
-
-    .page-padding { padding: 36px 40px; max-width: 1300px; width: 100%; margin: 0 auto; }
+    .page-padding { padding: 36px 0; width: 100%; margin: 0 auto; }
     .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
-    .metric-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+    .metric-card { background: white; border: 1px solid #e1e6e2; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
     .metric-title { font-size: 0.82rem; color: #64748b; font-weight: 500; margin-bottom: 8px; }
-    .metric-val { font-size: 1.8rem; font-weight: 700; color: #0f172a; }
+    .metric-val { font-size: 1.8rem; font-weight: 700; color: #28332c; }
     .metric-sub { font-size: 0.78rem; color: #10b981; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
 
     .content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
-    .card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-    .card-title { font-size: 1.05rem; font-weight: 700; color: #0f172a; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+    .card { background: white; border: 1px solid #e1e6e2; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+    .card-title { font-size: 1.05rem; font-weight: 700; color: #28332c; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
     
     table { width: 100%; border-collapse: collapse; text-align: left; }
     th { font-size: 0.75rem; text-transform: uppercase; color: #64748b; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; }
     td { font-size: 0.85rem; padding: 14px 16px; border-bottom: 1px solid #f1f5f9; color: #334155; }
     .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
-    .badge-open { background: #eff6ff; color: #2563eb; }
-    .badge-resolved { background: #f0fdf4; color: #16a34a; }
-    .badge-pending { background: #fffbeb; color: #d97706; }
+    .badge-open { background: #f1ebf4; color: #6f4b82; }
+    .badge-resolved { background: #ebdff0; color: #5f3c6e; }
+    .badge-pending { background: #f5eee0; color: #94672f; }
     
-    .action-btn { padding: 6px 12px; border: 1px solid #cbd5e1; background: white; border-radius: 6px; cursor: pointer; font-size: 0.78rem; text-decoration: none; color: #334155; display: inline-flex; align-items: center; gap: 4px; }
-    .action-btn:hover { background: #f8fafc; border-color: #94a3b8; }
+    .action-btn { padding: 6px 12px; border: 1px solid #dfe5e1; background: white; border-radius: 6px; cursor: pointer; font-size: 0.78rem; text-decoration: none; color: #334155; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s ease; }
+    .action-btn:hover { background: #f8f4fa; border-color: #d2c6d6; }
   </style>
 </head>
 <body>
 
   <div id="shared-sidebar"></div>
 
-  <div class="main-wrapper">
+  <main class="main-content">
     <div id="shared-topnav"></div>
 
-    <main class="page-padding">
+    <div class="page-padding">
       <div class="metrics-grid">
         <div class="metric-card">
           <div class="metric-title">Total Active Tickets</div>
           <div class="metric-val" id="metricTotal">92</div>
-          <div class="metric-sub"><i class="ph-bold ph-trend-up"></i> Live in DB</div>
+          <div class="metric-sub"><i class="fa-solid fa-arrow-trend-up"></i> Live in DB</div>
         </div>
         <div class="metric-card">
           <div class="metric-title">AI Auto-Resolution Rate</div>
           <div class="metric-val" id="metricAuto">40.0%</div>
-          <div class="metric-sub"><i class="ph-bold ph-check-circle"></i> Zero-human resolution</div>
+          <div class="metric-sub"><i class="fa-solid fa-circle-check"></i> Zero-human resolution</div>
         </div>
         <div class="metric-card">
           <div class="metric-title">Upper Mgmt Leave Queue</div>
           <div class="metric-val" id="metricLeave">12</div>
-          <div class="metric-sub" style="color:#d97706;"><i class="ph-bold ph-clock"></i> Pending approval</div>
+          <div class="metric-sub" style="color:#d97706;"><i class="fa-regular fa-clock"></i> Pending approval</div>
         </div>
         <div class="metric-card">
           <div class="metric-title">LLM Estimated Cost</div>
           <div class="metric-val">$0.042</div>
-          <div class="metric-sub"><i class="ph-bold ph-cpu"></i> OpenTelemetry Tracked</div>
+          <div class="metric-sub"><i class="fa-solid fa-microchip"></i> OpenTelemetry Tracked</div>
         </div>
       </div>
 
@@ -69,7 +66,7 @@
         <div class="card">
           <div class="card-title">
             <span>Recent Enterprise Tickets</span>
-            <a href="inbox.html" class="action-btn">View All Inbox <i class="ph-bold ph-arrow-right"></i></a>
+            <a href="inbox.html" class="action-btn">View All Inbox <i class="fa-solid fa-arrow-right"></i></a>
           </div>
           <table>
             <thead>
@@ -83,7 +80,7 @@
               </tr>
             </thead>
             <tbody id="ticketTableBody">
-              <tr><td colspan="6" style="text-align:center;">Loading tickets from SQLite/Azure DB...</td></tr>
+              <tr><td colspan="6" style="text-align:center;">Loading tickets from Database...</td></tr>
             </tbody>
           </table>
         </div>
@@ -91,26 +88,24 @@
         <div class="card">
           <div class="card-title">SuperAdmin Actions</div>
           <div style="display:flex; flex-direction:column; gap:12px;">
-            <button onclick="triggerBulkLeaveApprove()" class="action-btn" style="padding:12px; background:#4f46e5; color:white; border:none; justify-content:center; font-weight:600;">
-              <i class="ph-bold ph-check-square"></i> Bulk Approve Leave Requests
+            <button onclick="triggerBulkLeaveApprove()" class="action-btn" style="padding:12px; background:#6f4b82; color:white; border:none; justify-content:center; font-weight:600;">
+              <i class="fa-solid fa-circle-check"></i> Bulk Approve Leave Requests
             </button>
             <a href="departments.html" class="action-btn" style="padding:12px; justify-content:center; font-weight:600;">
-              <i class="ph-bold ph-buildings"></i> Manage Depts & Azure Object IDs
+              <i class="fa-solid fa-building-user"></i> Manage Depts & Azure Object IDs
             </a>
             <a href="knowledge-base.html" class="action-btn" style="padding:12px; justify-content:center; font-weight:600;">
-              <i class="ph-bold ph-book-open"></i> Ingest Knowledge Base Document
+              <i class="fa-solid fa-book-open"></i> Ingest Knowledge Base Document
             </a>
           </div>
         </div>
       </div>
-    </main>
-  </div>
+    </div>
+  </main>
 
   <script src="../js/script.js"></script>
   <script src="components.js"></script>
   <script>
-    initSharedComponents("dashboard", "SuperAdmin Dashboard", "Enterprise System Control Center & AI Telemetry");
-
     document.addEventListener("DOMContentLoaded", async () => {
       try {
         const tickets = await apiFetchTickets();
@@ -131,7 +126,7 @@
             <td><span class="badge ${t.status === 'Resolved' ? 'badge-resolved' : 'badge-pending'}">${t.status}</span></td>
             <td>
               <a href="${getExportUrl(t.id, 'pdf')}" target="_blank" class="action-btn" title="Download PDF Pass">
-                <i class="ph-bold ph-file-pdf"></i> PDF Pass
+                <i class="fa-regular fa-file-pdf"></i> PDF Pass
               </a>
             </td>
           </tr>
