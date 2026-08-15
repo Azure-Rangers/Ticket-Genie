@@ -157,6 +157,23 @@ function initAdminAVInteractiveListeners() {
     });
   }
 
+  const darkModeToggle = document.getElementById("darkModeToggle");
+  if (darkModeToggle) {
+    darkModeToggle.addEventListener("click", () => {
+      document.body.classList.toggle("dark-mode");
+      const icon = document.getElementById("darkModeIcon");
+      if (icon) {
+        if (document.body.classList.contains("dark-mode")) {
+          icon.classList.remove("fa-moon");
+          icon.classList.add("fa-sun");
+        } else {
+          icon.classList.remove("fa-sun");
+          icon.classList.add("fa-moon");
+        }
+      }
+    });
+  }
+
   const profileBtn = document.getElementById("profileDropdownTrigger");
   const profileMenu = document.getElementById("profileDropdownMenu");
   if (profileBtn && profileMenu) {
@@ -180,6 +197,10 @@ function initAdminAVInteractiveListeners() {
         const selectedRole = btn.getAttribute("data-role");
         if (selectedRole === "Employee") {
           window.location.href = "../employee_NM/index.html";
+        } else if (selectedRole === "Management") {
+          window.location.href = "../management/index.html";
+        } else if (selectedRole === "Admin") {
+          window.location.href = "admin_dashboard.html";
         }
       });
     });

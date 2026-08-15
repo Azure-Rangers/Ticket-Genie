@@ -28,7 +28,7 @@
                     <span>Open</span>
                     <div class="overview-icon purple"><i class="fa-solid fa-folder-open"></i></div>
                 </div>
-                <strong>8</strong>
+                <strong id="countOpen">0</strong>
                 <p>Currently being reviewed</p>
             </div>
             <div class="overview-card">
@@ -36,7 +36,7 @@
                     <span>In Progress</span>
                     <div class="overview-icon purple"><i class="fa-solid fa-spinner"></i></div>
                 </div>
-                <strong>2</strong>
+                <strong id="countInProgress">0</strong>
                 <p>Being actively worked on</p>
             </div>
             <div class="overview-card">
@@ -44,7 +44,7 @@
                     <span>Resolved</span>
                     <div class="overview-icon purple"><i class="fa-solid fa-circle-check"></i></div>
                 </div>
-                <strong>2</strong>
+                <strong id="countResolved">0</strong>
                 <p>Successfully completed</p>
             </div>
         </div>
@@ -60,27 +60,15 @@
             <a href="my-tickets.html">View all tickets <i class="fa-solid fa-arrow-right"></i></a>
         </div>
 
-        <div class="tickets-table">
+        <div class="tickets-table" id="recentTicketsContainer">
             <div class="table-header">
                 <div>Request</div>
+                <div>Category</div>
                 <div>Status</div>
                 <div>Priority</div>
-                <div>Created</div>
                 <div>Date</div>
             </div>
-            <div class="table-row ticket-clickable" data-ticket-id="HD-1035">
-                <div class="request-info">
-                    <div class="request-icon"><i class="fa-solid fa-file-lines"></i></div>
-                    <div>
-                        <strong>Immigration Help</strong>
-                        <span>#HD-1035</span>
-                    </div>
-                </div>
-                <div>HR & Workforce Operations</div>
-                <div><span class="status open">Open</span></div>
-                <div><span class="priority medium">Medium</span></div>
-                <div>Today</div>
-            </div>
+            <div style="padding: 20px; text-align: center;">Loading recent tickets...</div>
         </div>
     </section>
 </main>
@@ -129,5 +117,51 @@
 
 <script src="../js/script.js"></script>
 <script src="components.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        const tickets = await apiFetchTickets();
+        const open = tickets.filter(t => (t.status || "").toLowerCase() === "open").length;
+        const inProg = tickets.filter(t => ["in progress", "pending"].includes((t.status || "").toLowerCase())).length;
+        const resolved = tickets.filter(t => (t.status || "").toLowerCase() === "resolved").length;
+
+        document.getElementById("countOpen").textContent = open;
+        document.getElementById("countInProgress").textContent = inProg;
+        document.getElementById("countResolved").textContent = resolved;
+
+        const container = document.getElementById("recentTicketsContainer");
+        if (!tickets || tickets.length === 0) {
+            container.innerHTML = `
+                <div class="table-header"><div>Request</div><div>Category</div><div>Status</div><div>Priority</div><div>Date</div></div>
+                <div style="padding: 20px; text-align: center;">No tickets found.</div>
+            `;
+            return;
+        }
+
+        const rowsHtml = tickets.slice(0, 5).map(t => `
+            <div class="table-row ticket-clickable" style="cursor:pointer;" onclick="window.location.href='chat-history.html?ticket=${t.id}'">
+                <div class="request-info">
+                    <div class="request-icon"><i class="fa-solid fa-file-lines"></i></div>
+                    <div>
+                        <strong>${escapeHTML(t.title)}</strong>
+                        <span>#${t.id}</span>
+                    </div>
+                </div>
+                <div>${escapeHTML(t.category || 'General')}</div>
+                <div><span class="status ${ (t.status||'').toLowerCase().replace(' ', '-') }">${t.status}</span></div>
+                <div><span class="priority ${(t.priority||'Medium').toLowerCase()}">${t.priority || 'Medium'}</span></div>
+                <div>${t.date || 'Recently'}</div>
+            </div>
+        `).join("");
+
+        container.innerHTML = `
+            <div class="table-header"><div>Request</div><div>Category</div><div>Status</div><div>Priority</div><div>Date</div></div>
+            ${rowsHtml}
+        `;
+    } catch (err) {
+        console.error("Failed to load employee dashboard data:", err);
+    }
+});
+</script>
 </body>
-</html>
+</html>

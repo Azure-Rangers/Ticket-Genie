@@ -20,26 +20,34 @@
             <div style="background: #ffffff; border: 1px solid #e1e6e2; border-left: 4px solid #d4a359; border-radius: 8px; padding: 24px; box-shadow: 0 4px 15px rgba(43, 27, 54, 0.03);">
                 <h3 style="font-size: 16px; color: #2b1b36; margin-bottom: 16px;"><i class="fa-solid fa-id-card" style="color: #d4a359; margin-right: 8px;"></i> User Profile Settings</h3>
                 
-                <form style="display: flex; flex-direction: column; gap: 16px;">
+                <form id="profileForm" style="display: flex; flex-direction: column; gap: 16px;">
                     <div style="display: flex; gap: 16px;">
                         <div style="flex: 1;">
                             <label style="display: block; font-size: 12px; font-weight: 600; color: #402a4a; margin-bottom: 6px;">Full Name</label>
-                            <input type="text" value="Nishita" style="width: 100%; padding: 10px 14px; border: 1px solid #dcd2e3; border-radius: 6px; font-size: 13px;">
+                            <input type="text" id="profName" value="Nishita" style="width: 100%; padding: 10px 14px; border: 1px solid #dcd2e3; border-radius: 6px; font-size: 13px;">
                         </div>
                         <div style="flex: 1;">
                             <label style="display: block; font-size: 12px; font-weight: 600; color: #402a4a; margin-bottom: 6px;">Work Email (Entra ID)</label>
-                            <input type="email" value="nishita@enterprise.internal" disabled style="width: 100%; padding: 10px 14px; border: 1px solid #e1e6e2; background: #fafafc; border-radius: 6px; font-size: 13px; color: #7e8982;">
+                            <input type="email" id="profEmail" value="nishita@ticketgenie.com" style="width: 100%; padding: 10px 14px; border: 1px solid #e1e6e2; border-radius: 6px; font-size: 13px;">
                         </div>
                     </div>
 
-                    <div>
-                        <label style="display: block; font-size: 12px; font-weight: 600; color: #402a4a; margin-bottom: 6px;">Job Title & Department</label>
-                        <input type="text" value="Frontend Developer & UI Specialist" style="width: 100%; padding: 10px 14px; border: 1px solid #dcd2e3; border-radius: 6px; font-size: 13px;">
+                    <div style="display: flex; gap: 16px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 12px; font-weight: 600; color: #402a4a; margin-bottom: 6px;">Phone Number</label>
+                            <input type="text" id="profPhone" value="+1 (555) 019-2834" style="width: 100%; padding: 10px 14px; border: 1px solid #dcd2e3; border-radius: 6px; font-size: 13px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 12px; font-weight: 600; color: #402a4a; margin-bottom: 6px;">Department</label>
+                            <input type="text" id="profDept" value="HR & Operations" style="width: 100%; padding: 10px 14px; border: 1px solid #dcd2e3; border-radius: 6px; font-size: 13px;">
+                        </div>
                     </div>
 
-                    <button type="button" style="background: #6f4b82; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; align-self: flex-start;">Save Changes</button>
+                    <button type="submit" id="saveProfileBtn" style="background: #6f4b82; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; align-self: flex-start;">Save Changes</button>
+                    <span id="profileStatus" style="font-size:12px; color:#16a34a; display:none;">✓ Profile saved successfully!</span>
                 </form>
             </div>
+
 
             <!-- Azure / Entra ID Credentials Card -->
             <div style="background: #ffffff; border: 1px solid #e1e6e2; border-left: 4px solid #6f4b82; border-radius: 8px; padding: 24px; box-shadow: 0 4px 15px rgba(43, 27, 54, 0.03);">
@@ -83,5 +91,38 @@
 
 <script src="../js/script.js"></script>
 <script src="components.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        const prof = await apiFetchUserProfile();
+        if (prof) {
+            if (prof.name) document.getElementById("profName").value = prof.name;
+            if (prof.email) document.getElementById("profEmail").value = prof.email;
+            if (prof.phone) document.getElementById("profPhone").value = prof.phone;
+            if (prof.department) document.getElementById("profDept").value = prof.department;
+        }
+    } catch (err) {
+        console.error("Failed to load profile:", err);
+    }
+
+    const form = document.getElementById("profileForm");
+    if (form) {
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const name = document.getElementById("profName").value.trim();
+            const email = document.getElementById("profEmail").value.trim();
+            const phone = document.getElementById("profPhone").value.trim();
+            const department = document.getElementById("profDept").value.trim();
+
+            const res = await apiUpdateUserProfile({ name, email, phone, department });
+            const status = document.getElementById("profileStatus");
+            if (status) {
+                status.style.display = "inline";
+                setTimeout(() => { status.style.display = "none"; }, 3000);
+            }
+        });
+    }
+});
+</script>
 </body>
 </html>

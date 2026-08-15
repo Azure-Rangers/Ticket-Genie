@@ -153,36 +153,43 @@
     };
     resizer.addEventListener('mousedown', mouseDownHandler);
 
-    // MOCK DATABASE 
-    let tickets = [
-      {
-        id: "T-1049", status: "Open", subject: "H1B Visa LCA Document Signature", dept: "Immigration", priority: "High", priorityClass: "tag-priority-high",
-        requester: "Aarav Kumar", time: "9:00 AM", created: "Today, 9:00 AM",
-        aiSummary: "Aarav has uploaded the Labor Condition Application (LCA) for H1B processing. However, the signature block is incomplete.",
-        aiAction: "Review attached LCA document. Route back to employee for physical signature, or process if digitally verified.",
-        sentiment: "😐 Neutral", sentimentBg: "#f3f4f6", sentimentBorder: "#e5e7eb", sentimentColor: "#374151",
-        thread: [{ type: 'user', author: 'Aarav Kumar', avatar: 'AK', time: 'Today, 9:00 AM', content: "Hi HR, I've attached my LCA document for the upcoming H1B lottery. Can you please review and forward to the legal team?" }]
-      },
-      {
-        id: "T-1045", status: "Open", subject: "Missing overtime pay on last check", dept: "HR Payroll", priority: "High", priorityClass: "tag-priority-high",
-        requester: "Michael Ross", time: "10:30 AM", created: "Today, 10:30 AM",
-        aiSummary: "Employee is missing 8 hours of overtime pay on the current payroll cycle.",
-        aiAction: "Verify attached timesheet. Process off-cycle adjustment if valid.",
-        sentiment: "😟 Frustrated / Urgent", sentimentBg: "#fffbeb", sentimentBorder: "#fde047", sentimentColor: "#9a3412",
-        thread: [{ type: 'user', author: 'Michael Ross', avatar: 'MR', time: 'Today, 10:30 AM', content: "I checked my paystub for this period and the 8 hours of overtime I worked last Saturday aren't showing up. Can someone look into this immediately?" }]
-      },
-      {
-        id: "T-1039", status: "Pending", subject: "New Hire Hardware Setup", dept: "IT Hardware", priority: "Medium", priorityClass: "tag-priority-med",
-        requester: "HR System", time: "Aug 11", created: "Aug 11, 9:00 AM",
-        aiSummary: "Automated ticket generated for new hire starting next Monday. Needs a Mac laptop and 2 monitors.",
-        aiAction: "Deploy hardware from inventory. Awaiting confirmation of shipping address.",
-        sentiment: "🤖 Automated", sentimentBg: "#eef2ff", sentimentBorder: "#c7d2fe", sentimentColor: "#4f46e5",
-        thread: [{ type: 'user', author: 'HR Automation', avatar: '🤖', time: 'Aug 11, 9:00 AM', content: "New hire 'Alex Rivera' is scheduled to start next Monday. Please provision standard Engineering hardware package." }]
-      }
-    ];
-
+    let tickets = [];
     let currentTab = "Open";
-    let selectedTicketId = "T-1049"; 
+    let selectedTicketId = null;
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      await loadAdminTickets();
+    });
+
+    async function loadAdminTickets() {
+      try {
+        const rawTickets = await apiFetchTickets();
+        tickets = rawTickets.map(t => ({
+          id: t.id,
+          status: t.status || "Open",
+          subject: t.title || "Support Request",
+          dept: t.department || "IT Operations",
+          priority: t.priority || "Medium",
+          priorityClass: (t.priority || "").toLowerCase() === "high" ? "tag-priority-high" : "tag-priority-med",
+          requester: "Employee",
+          time: t.date || "Today",
+          created: t.createdAt ? t.createdAt.split("T")[0] : "Today",
+          description: t.description || "No description provided.",
+          aiSummary: `Ticket #${t.id} regarding ${t.category || 'Support'}. Current status: ${t.status || 'Open'}.`,
+          aiAction: "Review request and process update or route to appropriate team.",
+          sentiment: "😐 Neutral",
+          sentimentBg: "#f3f4f6",
+          sentimentBorder: "#e5e7eb",
+          sentimentColor: "#374151",
+          thread: [
+            { type: 'user', author: 'Employee', avatar: 'EM', time: t.date || 'Today', content: t.description || 'Support request created.' }
+          ]
+        }));
+        renderTicketList();
+      } catch (err) {
+        console.error("Failed to load tickets:", err);
+      }
+    }
 
     function switchTab(tabName) {
       currentTab = tabName;
@@ -197,21 +204,23 @@
     function renderTicketList() {
       const listContainer = document.getElementById('ticketListContainer');
       listContainer.innerHTML = "";
-      const filteredTickets = tickets.filter(t => t.status === currentTab);
+      const filteredTickets = tickets.filter(t => (t.status || "").toLowerCase() === currentTab.toLowerCase());
       
       if (filteredTickets.length === 0) {
         listContainer.innerHTML = `<div style="padding: 24px; text-align: center; color: #9ca3af; font-size: 0.85rem;">No ${currentTab.toLowerCase()} tickets found.</div>`;
         document.getElementById('ticketDetailContainer').innerHTML = `<div class="empty-state"><i class="ph-duotone ph-envelope-open" style="font-size: 3rem; margin-bottom: 16px; opacity: 0.5;"></i><h2>No Ticket Selected</h2></div>`;
         return;
       }
-      if (!filteredTickets.find(t => t.id === selectedTicketId)) selectedTicketId = filteredTickets[0].id;
+      if (!selectedTicketId || !filteredTickets.find(t => t.id === selectedTicketId)) {
+        selectedTicketId = filteredTickets[0].id;
+      }
 
       filteredTickets.forEach(ticket => {
         const isActive = ticket.id === selectedTicketId ? "active" : "";
         listContainer.innerHTML += `
           <div class="ticket-item ${isActive}" onclick="selectTicket('${ticket.id}')">
             <div class="ticket-meta"><span>${ticket.id} • ${ticket.dept}</span> <span>${ticket.time}</span></div>
-            <div class="ticket-title">${ticket.subject}</div>
+            <div class="ticket-title">${escapeHTML(ticket.subject)}</div>
             <div><span class="tag ${ticket.priorityClass}">${ticket.priority}</span></div>
           </div>
         `;
@@ -224,28 +233,26 @@
       renderTicketList();
     }
 
-    function renderTicketDetail() {
+    async function renderTicketDetail() {
       const ticket = tickets.find(t => t.id === selectedTicketId);
       if (!ticket) return;
 
+      const comments = await apiGetComments(ticket.id);
       const detailContainer = document.getElementById('ticketDetailContainer');
-      let threadHTML = "";
-      ticket.thread.forEach(msg => {
-        if (msg.type === 'system') {
-          threadHTML += `<div class="msg-system"><i class="ph-bold ph-arrow-right"></i> ${msg.content}</div>`;
-        } else if (msg.type === 'private') {
-          threadHTML += `<div class="message-card private-note"><div class="msg-header" style="border-bottom-color: #fef08a;"><div class="msg-author"><div class="msg-author-avatar"><i class="ph-fill ph-lock-key"></i></div> ${msg.author}</div><div class="msg-time">${msg.time}</div></div><div class="msg-content">${msg.content}</div></div>`;
-        } else {
-          threadHTML += `<div class="message-card"><div class="msg-header"><div class="msg-author"><div class="msg-author-avatar">${msg.avatar}</div> ${msg.author}</div><div class="msg-time">${msg.time}</div></div><div class="msg-content">${msg.content.replace(/\n/g, '<br>')}</div></div>`;
-        }
-      });
+      let threadHTML = `<div class="message-card"><div class="msg-header"><div class="msg-author"><div class="msg-author-avatar">EM</div> Requester</div><div class="msg-time">${ticket.time}</div></div><div class="msg-content">${escapeHTML(ticket.description)}</div></div>`;
+      
+      if (comments && comments.length > 0) {
+        comments.forEach(c => {
+          threadHTML += `<div class="message-card"><div class="msg-header"><div class="msg-author"><div class="msg-author-avatar">${c.sender_role ? c.sender_role.charAt(0) : 'A'}</div> ${escapeHTML(c.sender_role || 'Admin')}</div><div class="msg-time">${c.createdAt ? c.createdAt.split('T')[0] : 'Today'}</div></div><div class="msg-content">${escapeHTML(c.message)}</div></div>`;
+        });
+      }
 
       let replyBoxHTML = ticket.status !== 'Resolved' ? `
           <div class="reply-box">
             <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; color: #111827;">Add response:</div>
             <textarea id="replyText" class="reply-textarea" placeholder="Type your message..."></textarea>
             <div class="reply-actions">
-              <button class="btn-secondary" onclick="addNote(this)"><i class="ph-fill ph-lock-key"></i> Private Note</button>
+              <button class="btn-secondary" onclick="addNote(this)"><i class="ph-fill ph-lock-key"></i> Internal Note</button>
               <button class="btn-send" onclick="sendReply(this)">Send Reply</button>
             </div>
           </div>
@@ -254,7 +261,7 @@
       detailContainer.innerHTML = `
         <div class="detail-header">
           <div class="detail-top-row">
-            <h1>Ticket ${ticket.id}: ${ticket.subject}</h1>
+            <h1>Ticket ${ticket.id}: ${escapeHTML(ticket.subject)}</h1>
             <span class="tag ${ticket.priorityClass}" style="font-size: 0.8rem; padding: 6px 12px;">${ticket.priority} Priority</span>
           </div>
           <div class="ticket-info-bar">
@@ -269,42 +276,40 @@
           <div class="insight-column">
             <div class="ai-card">
               <div class="ai-header"><i class="ph-fill ph-magic-wand" style="font-size:1.2rem; color:#818cf8;"></i> Genie AI Analysis</div>
-              <div class="ai-field"><span class="ai-field-label">Issue Summary</span><div class="ai-field-text">${ticket.aiSummary}</div></div>
-              <div class="ai-field"><span class="ai-field-label">Suggested Action</span><div class="ai-field-text">${ticket.aiAction}</div></div>
+              <div class="ai-field"><span class="ai-field-label">Issue Summary</span><div class="ai-field-text">${escapeHTML(ticket.aiSummary)}</div></div>
+              <div class="ai-field"><span class="ai-field-label">Suggested Action</span><div class="ai-field-text">${escapeHTML(ticket.aiAction)}</div></div>
               <div class="ai-field"><span class="ai-field-label">Sentiment</span><div class="sentiment-badge" style="background:${ticket.sentimentBg}; border-color:${ticket.sentimentBorder}; color:${ticket.sentimentColor};">${ticket.sentiment}</div></div>
             </div>
             ${ticket.status !== 'Resolved' ? `
             <div class="action-panel">
               <div class="action-panel-title">Ticket Actions</div>
-              <button class="btn-panel" onclick="simulateAction('Reassign to IT', this)">Route to IT Dept <i class="ph-bold ph-caret-right"></i></button>
-              <button class="btn-panel escalate-btn" onclick="simulateAction('Escalate to Manager', this)">Escalate to Management <i class="ph-bold ph-caret-right"></i></button>
-              <button class="btn-panel resolve-btn" onclick="simulateAction('Resolve Ticket', this)"><i class="ph-bold ph-check"></i> Mark as Resolved</button>
+              <button class="btn-panel" onclick="simulateAction('In Progress', this)">Mark In Progress <i class="ph-bold ph-caret-right"></i></button>
+              <button class="btn-panel resolve-btn" onclick="simulateAction('Resolved', this)"><i class="ph-bold ph-check"></i> Mark as Resolved</button>
             </div>` : ''}
           </div>
         </div>
       `;
     }
 
-    function simulateAction(actionName, btn) {
-      const ticket = tickets.find(t => t.id === selectedTicketId);
-      ticket.thread.push({ type: 'system', content: `[Audit Trail] <strong>${loggedInUser}</strong> performed action: <em>${actionName}</em>.` });
-      if (actionName === 'Resolve Ticket') ticket.status = 'Resolved';
-      renderTicketList();
+    async function simulateAction(actionName, btn) {
+      await apiUpdateTicket(selectedTicketId, { status: actionName });
+      await loadAdminTickets();
     }
-    function addNote(btn) {
+
+    async function addNote(btn) {
       const text = document.getElementById('replyText').value.trim();
       if(!text) return;
-      const ticket = tickets.find(t => t.id === selectedTicketId);
-      ticket.thread.push({ type: 'private', author: `Private Note • ${loggedInUser}`, time: 'Just now', content: text });
+      await apiPostComment(selectedTicketId, `[Internal Note] ${text}`, "Operations Admin");
       renderTicketDetail();
     }
-    function sendReply(btn) {
+
+    async function sendReply(btn) {
       const text = document.getElementById('replyText').value.trim();
       if(!text) return;
-      const ticket = tickets.find(t => t.id === selectedTicketId);
-      ticket.thread.push({ type: 'user', author: loggedInUser, avatar: loggedInUser.charAt(0).toUpperCase(), time: 'Just now', content: text });
+      await apiPostComment(selectedTicketId, text, "Operations Admin");
       renderTicketDetail();
     }
+
     renderTicketList();
   </script>
 

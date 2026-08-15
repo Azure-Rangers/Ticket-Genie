@@ -20,28 +20,8 @@
             <p>Stay informed about company-wide updates, infrastructure milestones, and upcoming events.</p>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 16px;">
-            <!-- Announcement Card 1 -->
-            <div style="background: #ffffff; border: 1px solid #e1e6e2; border-left: 4px solid #d4a359; border-radius: 8px; padding: 20px 24px; box-shadow: 0 4px 15px rgba(43, 27, 54, 0.03);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <strong style="font-size: 15px; color: #2b1b36;"><i class="fa-solid fa-rocket" style="color: #d4a359; margin-right: 8px;"></i> TicketGenie v2.0 Enterprise Presentation</strong>
-                    <span style="font-size: 11px; color: #7e8982; background: #faf7fc; padding: 4px 8px; border-radius: 4px; border: 1px solid #dcd2e3;">August 19, 2026</span>
-                </div>
-                <p style="font-size: 13px; color: #4a3b5c; line-height: 1.5;">
-                    Our upcoming cross-team presentation for the TicketGenie portal redesign and Terraform backend integration is scheduled for August 19. Ensure your front-end components and infrastructure layers are locked in!
-                </p>
-            </div>
-
-            <!-- Announcement Card 2 -->
-            <div style="background: #ffffff; border: 1px solid #e1e6e2; border-left: 4px solid #6f4b82; border-radius: 8px; padding: 20px 24px; box-shadow: 0 4px 15px rgba(43, 27, 54, 0.03);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <strong style="font-size: 15px; color: #2b1b36;"><i class="fa-solid fa-shield-halved" style="color: #6f4b82; margin-right: 8px;"></i> Mandatory Azure Entra ID Security Review</strong>
-                    <span style="font-size: 11px; color: #7e8982; background: #faf7fc; padding: 4px 8px; border-radius: 4px; border: 1px solid #dcd2e3;">August 10, 2026</span>
-                </div>
-                <p style="font-size: 13px; color: #4a3b5c; line-height: 1.5;">
-                    All internal applications have successfully migrated to Azure Entra ID single sign-on. Please verify your token lifetimes and permissions via your profile settings page.
-                </p>
-            </div>
+        <div id="announcementsContainer" style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="padding: 20px; text-align: center;">Loading announcements...</div>
         </div>
     </section>
 </main>
@@ -75,5 +55,30 @@
 
 <script src="../js/script.js"></script>
 <script src="components.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        const list = await apiFetchAnnouncements();
+        const container = document.getElementById("announcementsContainer");
+        if (!list || list.length === 0) {
+            container.innerHTML = `<div style="padding: 20px; text-align: center;">No announcements posted yet.</div>`;
+            return;
+        }
+
+        container.innerHTML = list.map(a => `
+            <div style="background: #ffffff; border: 1px solid #e1e6e2; border-left: 4px solid #6f4b82; border-radius: 8px; padding: 20px 24px; box-shadow: 0 4px 15px rgba(43, 27, 54, 0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="font-size: 15px; color: #2b1b36;"><i class="fa-solid fa-bullhorn" style="color: #6f4b82; margin-right: 8px;"></i> ${escapeHTML(a.title)}</strong>
+                    <span style="font-size: 11px; color: #7e8982; background: #faf7fc; padding: 4px 8px; border-radius: 4px; border: 1px solid #dcd2e3;">${a.createdAt ? a.createdAt.split('T')[0] : 'Today'}</span>
+                </div>
+                <p style="font-size: 13px; color: #4a3b5c; line-height: 1.5;">${escapeHTML(a.content)}</p>
+                <small style="font-size: 11px; color: #64748b; margin-top: 8px; display: block;">Posted by: ${escapeHTML(a.author || 'Admin')}</small>
+            </div>
+        `).join("");
+    } catch (err) {
+        console.error("Failed to load announcements:", err);
+    }
+});
+</script>
 </body>
 </html>

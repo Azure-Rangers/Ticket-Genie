@@ -106,17 +106,29 @@
           <td>${t.department || "IT Team"}</td>
           <td><span class="badge badge-open">${t.priority || "Medium"}</span></td>
           <td><span class="badge ${t.status === 'Resolved' ? 'badge-resolved' : 'badge-pending'}">${t.status}</span></td>
-          <td style="display:flex; gap:6px;">
+          <td style="display:flex; gap:6px; flex-wrap:wrap;">
             <a href="${getExportUrl(t.id, 'pdf')}" target="_blank" class="action-btn" title="PDF Pass">
               <i class="fa-regular fa-file-pdf"></i> PDF
             </a>
             <a href="../chat-history.html?ticket=${t.id}" class="action-btn" title="View Thread">
               <i class="fa-regular fa-comments"></i> Thread
             </a>
+            ${t.status !== 'Resolved' ? `
+              <button onclick="changeStatus('${t.id}', 'Resolved')" class="action-btn" style="background:#16a34a; color:white; border:none;" title="Mark Resolved">
+                <i class="fa-solid fa-check"></i> Resolve
+              </button>
+            ` : ''}
           </td>
         </tr>
       `).join("");
     }
+
+    async function changeStatus(ticketId, newStatus) {
+      await apiUpdateTicket(ticketId, { status: newStatus });
+      allTickets = await apiFetchTickets();
+      renderTickets(allTickets);
+    }
   </script>
+
 </body>
 </html>

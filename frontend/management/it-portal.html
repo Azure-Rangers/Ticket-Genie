@@ -49,19 +49,19 @@
     <div class="stats-grid">
       <div class="stat-card border-blue">
         <h3>Active IT Tickets</h3>
-        <span class="stat-number">18</span>
+        <span class="stat-number" id="itActive">0</span>
       </div>
       <div class="stat-card border-blue">
         <h3>Hardware Requests</h3>
-        <span class="stat-number">6</span>
+        <span class="stat-number" id="itHardware">0</span>
       </div>
       <div class="stat-card border-green">
         <h3>Network Health</h3>
-        <span class="stat-number" style="color: #16a34a; font-size: 1.4rem;">99.9%</span>
+        <span class="stat-number" style="color: #16a34a; font-size: 1.4rem;">99.9% Operational</span>
       </div>
       <div class="stat-card border-green">
         <h3>SLA Compliance</h3>
-        <span class="stat-number" style="color: #16a34a; font-size: 1.4rem;">98.4%</span>
+        <span class="stat-number" style="color: #16a34a; font-size: 1.4rem;">98.4% On Time</span>
       </div>
     </div>
 
@@ -73,30 +73,15 @@
         <thead>
           <tr>
             <th>ID</th>
-            <th>Requester</th>
+            <th>Title</th>
             <th>Category</th>
             <th>Priority</th>
             <th>Status</th>
             <th>Action</th>
           </tr>
         </thead>
-        <tbody>
-          <tr>
-            <td>#IT-802</td>
-            <td>Alex Rivera</td>
-            <td>VPN & Access</td>
-            <td><span class="badge badge-high">High</span></td>
-            <td><span class="badge badge-open">Open</span></td>
-            <td><a href="inbox.html" class="btn-sm" style="text-decoration: none;">Triage</a></td>
-          </tr>
-          <tr>
-            <td>#IT-798</td>
-            <td>Nishita M.</td>
-            <td>MacBook Hardware</td>
-            <td><span class="badge badge-med">Medium</span></td>
-            <td><span class="badge badge-progress">In Progress</span></td>
-            <td><a href="inbox.html" class="btn-sm" style="text-decoration: none;">Triage</a></td>
-          </tr>
+        <tbody id="itTableBody">
+          <tr><td colspan="6" style="text-align:center;">Loading IT tickets...</td></tr>
         </tbody>
       </table>
     </section>
@@ -104,5 +89,48 @@
 
   <script src="../js/script.js"></script>
   <script src="components.js"></script>
+  <script>
+  document.addEventListener("DOMContentLoaded", async () => {
+    try {
+      const tickets = await apiFetchTickets();
+      const itTickets = tickets.filter(t => 
+        (t.category || "").toLowerCase().includes("it") ||
+        (t.category || "").toLowerCase().includes("hardware") ||
+        (t.category || "").toLowerCase().includes("vpn") ||
+        (t.category || "").toLowerCase().includes("password") ||
+        (t.department || "").toLowerCase().includes("it")
+      );
+
+      const active = itTickets.filter(t => (t.status || "").toLowerCase() !== "resolved").length;
+      const hw = itTickets.filter(t => (t.category || "").toLowerCase().includes("hardware") || (t.title || "").toLowerCase().includes("laptop")).length;
+
+      document.getElementById("itActive").textContent = active;
+      document.getElementById("itHardware").textContent = hw;
+
+      const tbody = document.getElementById("itTableBody");
+      const displayList = itTickets.length > 0 ? itTickets : tickets;
+      if (!displayList || displayList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No IT tickets found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = displayList.slice(0, 7).map(t => `
+        <tr>
+          <td><strong>#${t.id}</strong></td>
+          <td>${escapeHTML(t.title)}</td>
+          <td>${escapeHTML(t.category)}</td>
+          <td><span class="badge ${ (t.priority||'').toLowerCase() === 'high' ? 'badge-high' : 'badge-med' }">${t.priority || 'Medium'}</span></td>
+          <td><span class="badge badge-open">${t.status}</span></td>
+          <td>
+            <a href="inbox.html" class="btn-sm" style="text-decoration: none;">Triage</a>
+          </td>
+        </tr>
+      `).join("");
+    } catch (err) {
+      console.error("Failed to load IT portal data:", err);
+    }
+  });
+  </script>
 </body>
 </html>
+

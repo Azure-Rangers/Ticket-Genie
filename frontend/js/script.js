@@ -311,16 +311,219 @@ async function apiPostComment(ticketId, message, senderRole = "Employee") {
     }
 }
 
-async function apiIngestKnowledge(category, title, content) {
+async function apiUpdateTicket(ticketId, ticketUpdate) {
     try {
-        const res = await fetch(`${API_BASE_URL}/knowledge/ingest`, {
+        const res = await fetch(`${API_BASE_URL}/tickets/${ticketId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ticketUpdate)
+        });
+        if (res.ok) return await res.json();
+    } catch (err) {
+        console.error("Failed to update ticket:", err);
+    }
+    return null;
+}
+
+async function apiFetchAnnouncements() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/announcements`);
+        if (res.ok) return await res.json();
+    } catch (err) {
+        console.error("Failed to fetch announcements:", err);
+    }
+    return [];
+}
+
+async function apiCreateAnnouncement(payload) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/announcements`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ category, title, content }),
+            body: JSON.stringify(payload)
         });
-        return await res.json();
+        if (res.ok) return await res.json();
     } catch (err) {
-        console.error("Failed to ingest knowledge:", err);
-        return { success: false };
+        console.error("Failed to create announcement:", err);
     }
+    return null;
 }
+
+async function apiDeleteAnnouncement(ancId) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/announcements/${ancId}`, { method: "DELETE" });
+        return res.ok;
+    } catch (err) {
+        console.error("Failed to delete announcement:", err);
+    }
+    return false;
+}
+
+async function apiFetchNotifications() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/notifications`);
+        if (res.ok) return await res.json();
+    } catch (err) {
+        console.error("Failed to fetch notifications:", err);
+    }
+    return [];
+}
+
+async function apiMarkNotificationRead(notifId) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/notifications/${notifId}/read`, { method: "PUT" });
+        return res.ok;
+    } catch (err) {
+        console.error("Failed to mark notification read:", err);
+    }
+    return false;
+}
+
+async function apiFetchOnboarding() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/onboarding`);
+        if (res.ok) return await res.json();
+    } catch (err) {
+        console.error("Failed to fetch onboarding records:", err);
+    }
+    return [];
+}
+
+async function apiCreateOnboarding(payload) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/onboarding`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) return await res.json();
+    } catch (err) {
+        console.error("Failed to create onboarding record:", err);
+    }
+    return null;
+}
+
+async function apiUpdateOnboardingStatus(recId, status) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/onboarding/${recId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status })
+        });
+        if (res.ok) return await res.json();
+    } catch (err) {
+        console.error("Failed to update onboarding record:", err);
+    }
+    return null;
+}
+
+async function apiFetchUserProfile() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/users/profile`);
+        if (res.ok) return await res.json();
+    } catch (err) {
+        console.error("Failed to fetch user profile:", err);
+    }
+    return { name: "Nishita", email: "nishita@ticketgenie.com", role: "Employee", department: "HR & Operations", phone: "+1 (555) 019-2834" };
+}
+
+async function apiUpdateUserProfile(payload) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/users/profile`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) return await res.json();
+    } catch (err) {
+        console.error("Failed to update user profile:", err);
+    }
+    return null;
+}
+
+async function apiGenieChat(message) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/genie/chat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message })
+        });
+        if (res.ok) return await res.json();
+    } catch (err) {
+        console.error("Failed to post to Genie Chat:", err);
+    }
+    return { reply: "I'm having trouble connecting to the backend right now. Please try again shortly.", suggestions: ["Check my tickets"] };
+}
+
+function escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+/* Initialize Floating Genie Drawer globally if present on page */
+document.addEventListener("DOMContentLoaded", () => {
+    const genieBtn = document.getElementById("genieButton");
+    const genieChat = document.getElementById("genieChat");
+    const closeGenieBtn = document.getElementById("closeGenieButton");
+    const genieSendBtn = document.getElementById("genieSendButton");
+    const genieInput = document.getElementById("genieInput");
+    const genieMessages = document.getElementById("genieMessages");
+
+    if (genieBtn && genieChat) {
+        genieBtn.addEventListener("click", () => {
+            genieChat.classList.toggle("open");
+        });
+    }
+
+    if (closeGenieBtn && genieChat) {
+        closeGenieBtn.addEventListener("click", () => {
+            genieChat.classList.remove("open");
+        });
+    }
+
+    async function sendGenieMsg() {
+        if (!genieInput || !genieMessages) return;
+        const msg = genieInput.value.trim();
+        if (!msg) return;
+
+        // Render user message
+        const userDiv = document.createElement("div");
+        userDiv.className = "genie-message user-message";
+        userDiv.style.display = "flex";
+        userDiv.style.justifyContent = "flex-end";
+        userDiv.style.marginBottom = "12px";
+        userDiv.innerHTML = `<div class="genie-bubble" style="background:#4f46e5; color:white; border-radius:12px; padding:10px 14px;">${escapeHTML(msg)}</div>`;
+        genieMessages.appendChild(userDiv);
+
+        genieInput.value = "";
+        genieMessages.scrollTop = genieMessages.scrollHeight;
+
+        const res = await apiGenieChat(msg);
+
+        // Render Genie reply
+        const botDiv = document.createElement("div");
+        botDiv.className = "genie-message";
+        botDiv.style.marginBottom = "12px";
+        botDiv.innerHTML = `
+            <div class="genie-message-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+            <div class="genie-bubble">${escapeHTML(res.reply)}</div>
+        `;
+        genieMessages.appendChild(botDiv);
+        genieMessages.scrollTop = genieMessages.scrollHeight;
+    }
+
+    if (genieSendBtn) {
+        genieSendBtn.addEventListener("click", sendGenieMsg);
+    }
+    if (genieInput) {
+        genieInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") sendGenieMsg();
+        });
+    }
+});
+

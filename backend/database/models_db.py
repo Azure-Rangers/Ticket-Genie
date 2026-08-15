@@ -123,3 +123,94 @@ class KnowledgeChunkDB(Base):
             "source": self.source,
             "createdAt": self.createdAt,
         }
+
+
+class AnnouncementDB(Base):
+    __tablename__ = "announcements"
+
+    id = Column(String(50), primary_key=True, index=True)
+    title = Column(String(200), nullable=False)
+    content = Column(Text, nullable=False)
+    category = Column(String(100), nullable=False, default="General Alert")
+    author = Column(String(100), nullable=False, default="Admin Operations")
+    createdAt = Column(String(50), nullable=False)
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "title": self.title,
+            "content": self.content,
+            "category": self.category,
+            "author": self.author,
+            "createdAt": self.createdAt,
+        }
+
+
+class NotificationDB(Base):
+    __tablename__ = "notifications"
+
+    id = Column(String(50), primary_key=True, index=True)
+    user_id = Column(String(100), nullable=False, default="user")
+    title = Column(String(200), nullable=False)
+    message = Column(Text, nullable=False)
+    is_read = Column(Boolean, default=False, nullable=False)
+    createdAt = Column(String(50), nullable=False)
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "title": self.title,
+            "message": self.message,
+            "is_read": self.is_read,
+            "createdAt": self.createdAt,
+        }
+
+
+class OnboardingDB(Base):
+    __tablename__ = "onboarding"
+
+    id = Column(String(50), primary_key=True, index=True)
+    employee_name = Column(String(150), nullable=False)
+    role = Column(String(100), nullable=False)
+    department = Column(String(100), nullable=False)
+    visa_status = Column(String(100), nullable=False, default="H1-B / OPT")
+    start_date = Column(String(50), nullable=False)
+    status = Column(String(50), nullable=False, default="In Progress")
+    createdAt = Column(String(50), nullable=False)
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "employee_name": self.employee_name,
+            "role": self.role,
+            "department": self.department,
+            "visa_status": self.visa_status,
+            "start_date": self.start_date,
+            "status": self.status,
+            "createdAt": self.createdAt,
+        }
+
+
+class UserProfileDB(Base):
+    __tablename__ = "user_profiles"
+
+    id = Column(String(50), primary_key=True, index=True)
+    name = Column(String(150), nullable=False)
+    email = Column(String(150), nullable=False, unique=True)
+    role = Column(String(100), nullable=False, default="Employee")
+    department = Column(String(100), nullable=False, default="General")
+    phone = Column(String(50), nullable=True, default="+1 (555) 019-2834")
+    avatar = Column(String(50), nullable=True, default="NM")
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "email": self.email,
+            "role": self.role,
+            "department": self.department,
+            "phone": self.phone,
+            "avatar": self.avatar,
+        }
+

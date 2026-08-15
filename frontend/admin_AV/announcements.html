@@ -220,14 +220,38 @@
     if (document.getElementById('navAvatar')) document.getElementById('navAvatar').innerText = user.name.charAt(0).toUpperCase();
 
 
-    // --- Loading Wrapper ---
-    function withLoading(btnElement, callback) {
-      if (!btnElement) { callback(); return; }
-      btnElement.classList.add('btn-loading');
-      setTimeout(() => {
-        btnElement.classList.remove('btn-loading');
-        callback();
-      }, 1200);
+    document.addEventListener("DOMContentLoaded", () => {
+      loadAdminAnnouncements();
+    });
+
+    async function loadAdminAnnouncements() {
+      try {
+        const list = await apiFetchAnnouncements();
+        const tbody = document.getElementById('historyTableBody');
+        if (!list || list.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No announcements found.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = list.map(a => `
+          <tr>
+            <td><strong>${escapeHTML(a.title)}</strong><br><small style="color:#6b7280;">${escapeHTML(a.content.substring(0,60))}...</small></td>
+            <td>${escapeHTML(a.category || 'All Employees')}</td>
+            <td>${a.createdAt ? a.createdAt.split('T')[0] : 'Today'}</td>
+            <td>
+              <span class="status-tag">Active</span>
+              <button onclick="handleDeleteAnc('${a.id}')" style="background:#ef4444; color:white; border:none; padding:2px 6px; border-radius:4px; font-size:10px; margin-left:6px; cursor:pointer;">Delete</button>
+            </td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        console.error("Failed to load announcements:", err);
+      }
+    }
+
+    async function handleDeleteAnc(ancId) {
+      await apiDeleteAnnouncement(ancId);
+      loadAdminAnnouncements();
     }
 
     // --- AI Memo Generator ---
@@ -250,7 +274,7 @@
     }
 
     // --- Publish Function ---
-    function publishMemo(btnElement) {
+    async function publishMemo(btnElement) {
       const subject = document.getElementById('memoSubject').value.trim();
       const body = document.getElementById('memoBody').value.trim();
       const audience = document.getElementById('targetAudience').value;
@@ -260,23 +284,18 @@
         return;
       }
 
-      withLoading(btnElement, () => {
-        const tbody = document.getElementById('historyTableBody');
-        const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        
-        const newRow = `
-          <tr>
-            <td><strong>${subject}</strong></td>
-            <td>${audience}</td>
-            <td>${today}</td>
-            <td><span class="status-tag">Active</span></td>
-          </tr>
-        `;
-        tbody.insertAdjacentHTML('afterbegin', newRow);
+      withLoading(btnElement, async () => {
+        await apiCreateAnnouncement({
+          title: subject,
+          content: body,
+          category: audience,
+          author: user.name || "Admin Operations"
+        });
 
         document.getElementById('memoSubject').value = '';
         document.getElementById('memoBody').value = '';
-        alert("Announcement Published Successfully!");
+        alert("Announcement Published Successfully to Database!");
+        loadAdminAnnouncements();
       });
     }
   </script>
