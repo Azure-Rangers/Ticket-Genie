@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TicketGenie - Inbox & Leave Queue</title>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    body { display: flex; height: 100vh; background-color: #f8fafc; color: #1f2937; margin: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    #shared-sidebar { display: flex; }
+    .sidebar { width: 260px; background-color: #2b1b36; color: #d1d5db; display: flex; flex-direction: column; flex-shrink: 0; justify-content: space-between; height: 100vh; }
+    .sidebar-header { padding: 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .brand-badge { background: #4f46e5; color: white; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+    .sidebar-header h2 { color: #ffffff; font-size: 1.15rem; margin: 0; }
+    .sidebar-header span { font-size: 0.7rem; color: #a5b4fc; text-transform: uppercase; letter-spacing: 1px; }
+    .nav-section { padding: 16px; }
+    .nav-title { font-size: 0.7rem; color: #818cf8; text-transform: uppercase; font-weight: bold; margin-bottom: 12px; letter-spacing: 1px; padding-left: 8px; }
+    .nav-link { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: #cbd5e1; text-decoration: none; border-radius: 8px; font-size: 0.88rem; margin-bottom: 4px; transition: all 0.2s; }
+    .nav-link:hover, .nav-link.active { background-color: rgba(255,255,255,0.1); color: #ffffff; font-weight: 600; }
+    .sidebar-footer { padding: 20px 24px; font-size: 0.75rem; color: #a5b4fc; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 8px; }
+    .status-dot { width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; }
+
+    .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; border-bottom: 1px solid #e2e8f0; background: white; }
+    .page-title-header h1 { font-size: 1.4rem; color: #0f172a; margin: 0; }
+    .page-title-header p { font-size: 0.82rem; color: #64748b; margin: 2px 0 0 0; }
+    .nav-actions { display: flex; align-items: center; gap: 16px; }
+    .search-small { display: flex; align-items: center; background: #f1f5f9; padding: 8px 16px; border-radius: 8px; width: 280px; }
+    .search-small input { border: none; background: transparent; outline: none; margin-left: 8px; font-size: 0.85rem; width: 100%; }
+    .switch-role-btn { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #eef2ff; color: #4f46e5; border-radius: 8px; text-decoration: none; font-size: 0.82rem; font-weight: 600; }
+    .user-profile { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
+    .avatar { width: 34px; height: 34px; background: #fffbeb; color: #b45309; border: 1px solid #fef08a; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; }
+    .user-name { font-weight: 600; color: #0f172a; font-size: 0.85rem; }
+    .user-role { font-size: 0.72rem; color: #64748b; }
+
+    .page-padding { padding: 36px 40px; max-width: 1300px; width: 100%; margin: 0 auto; }
+    .filter-bar { display: flex; gap: 12px; margin-bottom: 24px; align-items: center; }
+    .filter-btn { padding: 8px 16px; border-radius: 8px; border: 1px solid #cbd5e1; background: white; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #475569; }
+    .filter-btn.active { background: #4f46e5; color: white; border-color: #4f46e5; }
+    .card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { font-size: 0.75rem; text-transform: uppercase; color: #64748b; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; }
+    td { font-size: 0.85rem; padding: 14px 16px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .badge-open { background: #eff6ff; color: #2563eb; }
+    .badge-resolved { background: #f0fdf4; color: #16a34a; }
+    .badge-pending { background: #fffbeb; color: #d97706; }
+    .action-btn { padding: 6px 12px; border: 1px solid #cbd5e1; background: white; border-radius: 6px; cursor: pointer; font-size: 0.78rem; text-decoration: none; color: #334155; display: inline-flex; align-items: center; gap: 4px; }
+    .action-btn:hover { background: #f8fafc; border-color: #94a3b8; }
+  </style>
+</head>
+<body>
+
+  <div id="shared-sidebar"></div>
+
+  <div class="main-wrapper">
+    <div id="shared-topnav"></div>
+
+    <main class="page-padding">
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="loadInbox('all', this)">All Tickets</button>
+        <button class="filter-btn" onclick="loadInbox('leave', this)">🌴 Leave Queue (Upper Mgmt)</button>
+        <button class="filter-btn" onclick="loadInbox('open', this)">Open Tickets</button>
+        <button class="filter-btn" onclick="loadInbox('resolved', this)">Resolved</button>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>Ticket ID</th>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Department</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="inboxTableBody">
+            <tr><td colspan="7" style="text-align:center;">Loading inbox...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/script.js"></script>
+  <script src="../js/components.js"></script>
+  <script>
+    initSharedComponents("inbox", "Unified Inbox & Triage", "Upper Management & Multi-Department Ticket Queue");
+
+    let allTickets = [];
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      allTickets = await apiFetchTickets();
+      renderTickets(allTickets);
+    });
+
+    function loadInbox(type, btn) {
+      document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      if (type === "leave") {
+        const leaveTickets = allTickets.filter(t => 
+          (t.category || "").toLowerCase().includes("leave") ||
+          (t.category || "").toLowerCase().includes("pto") ||
+          (t.category || "").toLowerCase().includes("time off") ||
+          (t.department || "").toLowerCase().includes("management")
+        );
+        renderTickets(leaveTickets);
+      } else if (type === "open") {
+        renderTickets(allTickets.filter(t => (t.status || "").toLowerCase() === "open"));
+      } else if (type === "resolved") {
+        renderTickets(allTickets.filter(t => (t.status || "").toLowerCase() === "resolved"));
+      } else {
+        renderTickets(allTickets);
+      }
+    }
+
+    function renderTickets(tickets) {
+      const tbody = document.getElementById("inboxTableBody");
+      if (!tickets || tickets.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No tickets in this view.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = tickets.map(t => `
+        <tr>
+          <td><strong>${t.id}</strong></td>
+          <td>${t.title}</td>
+          <td>${t.category}</td>
+          <td>${t.department || "IT Team"}</td>
+          <td><span class="badge badge-open">${t.priority || "Medium"}</span></td>
+          <td><span class="badge ${t.status === 'Resolved' ? 'badge-resolved' : 'badge-pending'}">${t.status}</span></td>
+          <td style="display:flex; gap:6px;">
+            <a href="${getExportUrl(t.id, 'pdf')}" target="_blank" class="action-btn" title="PDF Pass">
+              <i class="ph-bold ph-file-pdf"></i> PDF
+            </a>
+            <a href="../chat-history.html?ticket=${t.id}" class="action-btn" title="View Thread">
+              <i class="ph-bold ph-chats-teardrop"></i> Thread
+            </a>
+          </td>
+        </tr>
+      `).join("");
+    }
+  </script>
+</body>
+</html>
