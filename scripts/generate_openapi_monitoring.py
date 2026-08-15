@@ -111,6 +111,19 @@ def generate_kql_queries(routes: List[Dict[str, Any]]) -> str:
 | order by duration desc
 """)
 
+    # 4. LLM Token Usage & Cost Analytics
+    kql_blocks.append("// 4. LLM Token Consumption & Estimated Cost (OpenTelemetry Metrics)")
+    kql_blocks.append("""customMetrics
+| where timestamp > ago(24h) and name startswith "llm_"
+| summarize
+    PromptTokens = sumif(value, name == "llm_prompt_tokens"),
+    CompletionTokens = sumif(value, name == "llm_completion_tokens"),
+    TotalTokens = sumif(value, name == "llm_total_tokens"),
+    EstimatedCostUSD = sumif(value, name == "llm_estimated_cost_usd")
+  by bin(timestamp, 1h), tostring(customDimensions.agent)
+| order by timestamp desc
+""")
+
     return "\n\n".join(kql_blocks)
 
 
@@ -123,8 +136,8 @@ def generate_workbook_json(routes: List[Dict[str, Any]]) -> Dict[str, Any]:
                 "type": 1,
                 "content": {
                     "json": (
-                        "## 🚀 TicketGenie FastAPI Backend Dashboard\n"
-                        "*Auto-generated from OpenAPI 3.0 Specification*"
+                        "## 🚀 TicketGenie FastAPI & AI Agent Dashboard\n"
+                        "*Auto-generated from OpenAPI 3.0 Specification & OpenTelemetry LLM Metrics*"
                     )
                 },
             },
@@ -153,6 +166,25 @@ def generate_workbook_json(routes: List[Dict[str, Any]]) -> Dict[str, Any]:
                 "type": 3,
                 "content": {
                     "version": "KqlItem/1.0",
+                    "query": """customMetrics
+| where timestamp >= {TimeRange} and name startswith "llm_"
+| summarize
+    Prompt_Tokens = sumif(value, name == "llm_prompt_tokens"),
+    Completion_Tokens = sumif(value, name == "llm_completion_tokens"),
+    Total_Tokens = sumif(value, name == "llm_total_tokens"),
+    Est_Cost_USD = round(sumif(value, name == "llm_estimated_cost_usd"), 4)
+  by tostring(customDimensions.agent)
+| order by Total_Tokens desc""",
+                    "size": 0,
+                    "title": "LLM Token Consumption & Cost by Subagent",
+                    "queryType": 0,
+                    "resourceType": "microsoft.insights/components",
+                },
+            },
+            {
+                "type": 3,
+                "content": {
+                    "version": "KqlItem/1.0",
                     "query": """requests
 | where timestamp >= {TimeRange}
 | make-series Requests=count() on timestamp
@@ -166,7 +198,7 @@ def generate_workbook_json(routes: List[Dict[str, Any]]) -> Dict[str, Any]:
             },
         ],
         "style": "categoryGrid",
-        "tags": ["FastAPI", "OpenAPI", "TicketGenie"],
+        "tags": ["FastAPI", "OpenAPI", "OpenTelemetry", "TicketGenie"],
     }
     return workbook
 

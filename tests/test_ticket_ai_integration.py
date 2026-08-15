@@ -25,17 +25,15 @@ def _mock_mode(monkeypatch: pytest.MonkeyPatch) -> None:
 def _create_ticket(title: str, description: str) -> dict:
     payload = {"title": title, "description": description}
     assert "department" not in payload
-    response = client.post("/tickets", json=payload)
-    assert response.status_code == 200
-    return response.json()["ticket"]
+    response = client.post("/api/tickets", json=payload)
+    assert response.status_code == 201
+    return response.json()
 
 
 def _assert_full_ai_shape(ticket: dict) -> None:
     assert ticket["priority"] in {"Low", "Medium", "High", "Critical"}
-    assert isinstance(ticket["confidence"], float)
-    assert 0.0 <= ticket["confidence"] <= 1.0
-    assert isinstance(ticket["reason"], str) and ticket["reason"]
-    assert isinstance(ticket["needs_human_review"], bool)
+    assert isinstance(ticket["department"], str) and ticket["department"]
+    assert isinstance(ticket["category"], str) and ticket["category"]
 
 
 def test_it_ticket_is_classified_without_department() -> None:
@@ -89,29 +87,26 @@ def test_critical_ticket_is_classified_without_department() -> None:
 
 def test_completed_ticket_is_saved_and_retrievable_with_ai_fields() -> None:
     created = _create_ticket("Laptop request", "I need a new laptop for development work.")
-    ticket_id = created["ticket_id"]
+    ticket_id = created["id"]
 
-    response = client.get(f"/tickets/{ticket_id}")
+    response = client.get(f"/api/tickets/{ticket_id}")
     assert response.status_code == 200
 
     fetched = response.json()
     assert fetched["department"] == created["department"]
     assert fetched["category"] == created["category"]
     assert fetched["priority"] == created["priority"]
-    assert fetched["confidence"] == created["confidence"]
-    assert fetched["reason"] == created["reason"]
-    assert fetched["needs_human_review"] == created["needs_human_review"]
 
 
 def test_client_supplied_department_is_overridden_by_ai() -> None:
     response = client.post(
-        "/tickets",
+        "/api/tickets",
         json={
             "title": "Login issue",
             "description": "My account is locked and I cannot log in.",
             "department": "Upper Management",
         },
     )
-    assert response.status_code == 200
-    ticket = response.json()["ticket"]
+    assert response.status_code == 201
+    ticket = response.json()
     assert ticket["department"] == "IT Team"

@@ -193,6 +193,20 @@ def _call_azure_openai(
 
     raw_content = response.choices[0].message.content
 
+    # Record OpenTelemetry LLM token usage metrics
+    if hasattr(response, "usage") and response.usage:
+        try:
+            from telemetry import record_llm_metrics
+
+            record_llm_metrics(
+                prompt_tokens=response.usage.prompt_tokens or 0,
+                completion_tokens=response.usage.completion_tokens or 0,
+                model=deployment,
+                agent_name="ticket_classifier",
+            )
+        except Exception as exc:
+            logger.debug(f"Could not record LLM token metrics: {exc}")
+
     try:
         return json.loads(raw_content)
     except (json.JSONDecodeError, TypeError) as exc:

@@ -141,3 +141,16 @@ requests
 | where timestamp > ago(24h) and duration > 1000
 | project timestamp, name, resultCode, duration, url, customDimensions
 | order by duration desc
+
+
+// 4. LLM Token Consumption & Estimated Cost (OpenTelemetry Metrics)
+
+customMetrics
+| where timestamp > ago(24h) and name startswith "llm_"
+| summarize
+    PromptTokens = sumif(value, name == "llm_prompt_tokens"),
+    CompletionTokens = sumif(value, name == "llm_completion_tokens"),
+    TotalTokens = sumif(value, name == "llm_total_tokens"),
+    EstimatedCostUSD = sumif(value, name == "llm_estimated_cost_usd")
+  by bin(timestamp, 1h), tostring(customDimensions.agent)
+| order by timestamp desc
