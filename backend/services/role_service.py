@@ -21,7 +21,7 @@ trusting request-supplied values, and pass those into get_allowed_scopes().
 from typing import List, Optional
 
 GENERAL_SCOPE = "General"
-DEPARTMENT_SCOPES = {"HR", "IT", "Accounting"}
+DEPARTMENT_SCOPES = {"HR", "IT", "Accounting", "WorkplaceOperations"}
 MANAGEMENT_SCOPE = "UpperManagement"
 
 

@@ -1,46 +1,22 @@
 """
-Ticket Drafting Agent.
+Ticket Drafting: deterministic validation + merge layer.
 
-Extracts whatever it safely can from the user's own words into a
-TicketDraft that matches models.ticket.TicketCreate exactly. It never
-invents facts and never sets `priority` or `department` - those are
-internal routing fields owned by Saketh's classification/prioritization
-agents (backend/agents/*), not something the chatbot should guess. The
-resulting draft is always returned for the user to review/edit; nothing is
-ever auto-submitted here.
+Semantic extraction (what the user meant, what fields that implies) is
+GPT-5.2's job (backend/agents/chatbot_agent.py). This module never guesses
+meaning from the message text - it only validates what the model
+extracted against the schema TicketCreate/the Standard Request form
+actually allows, and merges it into the running TicketDraft. `priority`
+and `department` are never set here - those are internal routing fields
+owned by Saketh's classification/prioritization agents (backend/agents/*),
+not something the chatbot should guess.
 """
 
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional, Tuple
 
-from models.chatbot import TicketDraft
-
-_WORD_PATTERN_CACHE = {}
-
-
-def contains_keyword(text: str, keyword: str) -> bool:
-    """
-    Membership check for a keyword list. Single-word keywords are matched
-    on word boundaries so short tokens (e.g. "pto", "hr") don't false-match
-    inside unrelated words (e.g. "laptop", "threshold"); phrases containing
-    a space are matched as plain substrings since their own word boundaries
-    already make accidental embedding unlikely.
-    """
-
-    if " " in keyword:
-        return keyword in text
-
-    pattern = _WORD_PATTERN_CACHE.get(keyword)
-    if pattern is None:
-        pattern = re.compile(rf"\b{re.escape(keyword)}\b")
-        _WORD_PATTERN_CACHE[keyword] = pattern
-    return bool(pattern.search(text))
-
-
-def contains_any_keyword(text: str, keywords) -> bool:
-    return any(contains_keyword(text, keyword) for keyword in keywords)
-
+from agents.chatbot_agent import ExtractedTicketFields
+from models.chatbot import ChatIntent, TicketDraft
 
 STANDARD_CATEGORIES = [
     "HR & Workforce Operations",
@@ -59,214 +35,141 @@ LEAVE_TYPES = [
     "Other",
 ]
 
-_CATEGORY_KEYWORDS = [
-    (
-        "IT & Technology",
-        (
-            "laptop",
-            "computer",
-            "password",
-            "login",
-            "vpn",
-            "wifi",
-            "wi-fi",
-            "software",
-            "printer",
-            "teams",
-            "email",
-            "network",
-            "access",
-            "account locked",
-        ),
-    ),
-    (
-        "Account Management",
-        (
-            "reimbursement",
-            "payroll",
-            "paycheck",
-            "salary",
-            "invoice",
-            "expense",
-            "billing",
-            "vendor payment",
-        ),
-    ),
-    (
-        "HR & Workforce Operations",
-        (
-            "benefits",
-            "onboarding",
-            "offboarding",
-            "harassment",
-            "hr",
-            "employee relations",
-            "policy",
-        ),
-    ),
-    (
-        "Upper Executive Management",
-        ("executive", "strategic", "leadership decision", "organizational"),
-    ),
-]
+_ISO_DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_TICKET_ID_PATTERN = re.compile(r"^HD-\d+$", re.IGNORECASE)
 
-_WEEKDAYS = {
-    "monday": 0,
-    "tuesday": 1,
-    "wednesday": 2,
-    "thursday": 3,
-    "friday": 4,
-    "saturday": 5,
-    "sunday": 6,
-}
-
-MIN_DESCRIPTION_WORDS = 6
+_MISSING_TITLE_MARKERS = ("title", "subject")
+_MISSING_DESCRIPTION_MARKERS = ("description", "detail", "reason", "what happened")
+_MISSING_CATEGORY_MARKERS = ("categ", "leave type", "type of leave")
+_MISSING_DATE_MARKERS = ("date",)
 
 
-def guess_category(text: str) -> Optional[str]:
-    lowered = text.lower()
-    for category, keywords in _CATEGORY_KEYWORDS:
-        if contains_any_keyword(lowered, keywords):
-            return category
+def validate_category(value: Optional[str], allowed: List[str]) -> Optional[str]:
+    """Snap a model-proposed category to the exact allowed value, or reject it."""
+
+    if not value:
+        return None
+    normalized = value.strip().lower()
+    for option in allowed:
+        if option.lower() == normalized:
+            return option
     return None
 
 
-def guess_leave_type(text: str) -> Optional[str]:
-    lowered = text.lower()
-    if contains_any_keyword(lowered, ("pto", "paid time off", "vacation")):
-        return "Paid Time Off (PTO)"
-    if contains_any_keyword(lowered, ("medical", "sick")):
-        return "Medical Leave"
-    if contains_any_keyword(lowered, ("parental", "maternity", "paternity")):
-        return "Parental Leave"
-    if contains_any_keyword(lowered, ("bereavement",)):
-        return "Bereavement"
-    if contains_any_keyword(lowered, ("unpaid",)):
-        return "Unpaid Leave"
-    return None
+def validate_iso_date(value: Optional[str]) -> Optional[str]:
+    """Accept only a well-formed, real calendar date in YYYY-MM-DD."""
+
+    if not value:
+        return None
+    value = value.strip()
+    if not _ISO_DATE_PATTERN.match(value):
+        return None
+    try:
+        datetime.strptime(value, "%Y-%m-%d")
+    except ValueError:
+        return None
+    return value
 
 
-def extract_preferred_date(
-    text: str, *, today: Optional[datetime] = None
-) -> Optional[str]:
-    lowered = text.lower()
-    reference = today or datetime.now()
-
-    iso_match = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", text)
-    if iso_match:
-        return iso_match.group(1)
-
-    for weekday_name, weekday_index in _WEEKDAYS.items():
-        if weekday_name in lowered:
-            days_ahead = (weekday_index - reference.weekday()) % 7
-            days_ahead = days_ahead or 7
-            target = reference + timedelta(days=days_ahead)
-            return target.strftime("%Y-%m-%d")
-
-    if "tomorrow" in lowered:
-        return (reference + timedelta(days=1)).strftime("%Y-%m-%d")
-
-    return None
+def validate_ticket_id(value: Optional[str]) -> Optional[str]:
+    if not value:
+        return None
+    value = value.strip().upper()
+    if not value.startswith("HD-"):
+        value = f"HD-{value}" if value.isdigit() else value
+    return value if _TICKET_ID_PATTERN.match(value) else None
 
 
-def derive_title(text: str, *, max_words: int = 10) -> str:
-    first_sentence = re.split(r"[.!?\n]", text.strip())[0].strip()
-    words = first_sentence.split()
+def _fallback_title(description: str, *, max_words: int = 10) -> str:
+    words = description.strip().split()
     if not words:
         return "Support Request"
     title = " ".join(words[:max_words])
     return title[:1].upper() + title[1:]
 
 
-def _combined_text(message: str, history_user_messages: List[str]) -> str:
-    return " ".join([*history_user_messages, message]).strip()
+def _merge_description(
+    existing: Optional[str], extracted: Optional[str]
+) -> Optional[str]:
+    if not extracted:
+        return existing
+    if not existing:
+        return extracted
+    if extracted in existing:
+        return existing
+    return f"{existing} {extracted}".strip()
 
 
-def _accumulate_description(draft: TicketDraft, message: str, combined: str) -> str:
+def _filter_missing_fields(gpt_missing: List[str], draft: TicketDraft) -> List[str]:
     """
-    Fold a new message into the draft's running description without losing
-    earlier turns, even if the caller doesn't resend full chat history.
+    Hard backstop: never re-ask for something the draft already has, even
+    if the model's own missing_fields list forgot to drop it.
     """
 
-    if draft.description and message not in draft.description:
-        return f"{draft.description} {message}".strip()
-    return draft.description or combined
+    kept = []
+    for field in gpt_missing:
+        lowered = field.lower()
+        if draft.title and any(marker in lowered for marker in _MISSING_TITLE_MARKERS):
+            continue
+        if draft.description and any(
+            marker in lowered for marker in _MISSING_DESCRIPTION_MARKERS
+        ):
+            continue
+        if draft.category and any(
+            marker in lowered for marker in _MISSING_CATEGORY_MARKERS
+        ):
+            continue
+        if draft.preferredDate and any(
+            marker in lowered for marker in _MISSING_DATE_MARKERS
+        ):
+            continue
+        kept.append(field)
+    return kept
 
 
-def build_support_draft(
-    message: str,
+def merge_extracted_fields(
+    extracted: Optional[ExtractedTicketFields],
     *,
-    history_user_messages: List[str] = None,
-    existing_draft: Optional[TicketDraft] = None,
+    existing_draft: Optional[TicketDraft],
+    gpt_missing_fields: List[str],
+    intent: ChatIntent,
 ) -> Tuple[TicketDraft, List[str]]:
-    """Build/extend a general support-issue ticket draft.
-
+    """
+    Deterministically fold the model's extraction into the running draft,
+    validating category/date against the schema's exact allowed values.
     Returns (draft, missing_fields).
     """
 
-    history_user_messages = history_user_messages or []
-    combined = _combined_text(message, history_user_messages)
+    extracted = extracted or ExtractedTicketFields()
     draft = existing_draft.model_copy() if existing_draft else TicketDraft()
-    draft.description = _accumulate_description(draft, message, combined)
 
-    if not draft.title:
-        draft.title = derive_title(draft.description)
+    draft.description = _merge_description(draft.description, extracted.description)
 
     if not draft.category:
-        draft.category = guess_category(draft.description)
+        is_leave = intent == ChatIntent.LEAVE_MANAGEMENT
+        allowed = LEAVE_TYPES if is_leave else STANDARD_CATEGORIES
+        draft.category = validate_category(extracted.category, allowed)
 
     if not draft.preferredDate:
-        date = extract_preferred_date(draft.description)
-        if date:
-            draft.preferredDate = date
-
-    missing: List[str] = []
-    if len(draft.description.split()) < MIN_DESCRIPTION_WORDS:
-        missing.append("description")
-    if not draft.category:
-        missing.append("category")
-
-    return draft, missing
-
-
-def build_leave_draft(
-    message: str,
-    *,
-    history_user_messages: List[str] = None,
-    existing_draft: Optional[TicketDraft] = None,
-) -> Tuple[TicketDraft, List[str]]:
-    """
-    Build/extend a Leave Management draft using the existing TicketCreate
-    schema. The Standard Request form's dedicated Leave Management tab
-    doesn't map onto TicketCreate 1:1 (it has separate start/end date
-    fields that TicketCreate doesn't), so per the "don't invent fields"
-    rule: leave type -> category (using the exact existing leaveType
-    values), start date -> preferredDate (the only date field the schema
-    has), and the leave dates/reason are folded into description text.
-    """
-
-    history_user_messages = history_user_messages or []
-    combined = _combined_text(message, history_user_messages)
-    draft = existing_draft.model_copy() if existing_draft else TicketDraft()
-    draft.description = _accumulate_description(draft, message, combined)
-
-    if not draft.category:
-        draft.category = guess_leave_type(draft.description)
-
-    start_date = extract_preferred_date(draft.description)
-    if start_date and not draft.preferredDate:
-        draft.preferredDate = start_date
+        draft.preferredDate = validate_iso_date(extracted.preferred_date)
 
     if not draft.title:
-        leave_label = draft.category or "Leave"
-        draft.title = f"{leave_label} Request"
+        if extracted.title:
+            draft.title = extracted.title[:200]
+        elif draft.description:
+            draft.title = _fallback_title(draft.description)
 
-    missing: List[str] = []
-    if not draft.category:
-        missing.append("leave type (PTO, Medical, Parental, Bereavement, or Unpaid)")
-    if not draft.preferredDate:
-        missing.append("start date")
-    if len(draft.description.split()) < MIN_DESCRIPTION_WORDS:
-        missing.append("reason for the leave")
+    missing = _filter_missing_fields(gpt_missing_fields, draft)
+
+    if not draft.description and not any(
+        m in field.lower() for field in missing for m in _MISSING_DESCRIPTION_MARKERS
+    ):
+        missing.append("more detail about what's going on")
+
+    if not draft.category and not any(
+        m in field.lower() for field in missing for m in _MISSING_CATEGORY_MARKERS
+    ):
+        label = "leave type" if intent == ChatIntent.LEAVE_MANAGEMENT else "category"
+        missing.append(label)
 
     return draft, missing
