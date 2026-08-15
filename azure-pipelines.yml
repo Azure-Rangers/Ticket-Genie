@@ -36,7 +36,11 @@ stages:
           - checkout: self
 
           - task: AzureCLI@2
+<<<<<<< HEAD
             displayName: Build, Archive, and Push FastAPI backend image to ACR
+=======
+            displayName: Build and Push FastAPI backend and Nginx frontend images to ACR
+>>>>>>> d910f7bbeed9a89311a3cf7edbd0accb1f5a898d
             inputs:
               azureSubscription: $(azureServiceConnection)
               scriptType: bash
@@ -44,6 +48,7 @@ stages:
               inlineScript: |
                 set -euo pipefail
 
+<<<<<<< HEAD
                 mkdir -p "$(Build.ArtifactStagingDirectory)/container-artifacts"
 
                 # 1. Build backend image locally and export container archive
@@ -53,12 +58,25 @@ stages:
                 # 2. Build and push to Azure Container Registry
                 az acr build \
                   --registry "$(acrName)" \
-                  --target backend \
-                  --image "$(backendImageRepository):$(imageTag)" \
-                  --image "$(backendImageRepository):latest" \
-                  --file Dockerfile \
-                  .
+=======
+                # Log in to Azure Container Registry
+                az acr login --name "$(acrName)"
 
+                # Ensure buildx builder is initialized for registry caching
+                docker buildx create --use --name pipeline-builder || docker buildx use pipeline-builder
+
+                # 1. Build and Push Backend Image with remote registry buildcache
+                docker buildx build \
+                  --push \
+>>>>>>> d910f7bbeed9a89311a3cf7edbd0accb1f5a898d
+                  --target backend \
+                  --cache-to type=registry,ref="$(acrLoginServer)/$(backendImageRepository):buildcache",mode=max \
+                  --cache-from type=registry,ref="$(acrLoginServer)/$(backendImageRepository):buildcache" \
+                  -t "$(acrLoginServer)/$(backendImageRepository):$(imageTag)" \
+                  -t "$(acrLoginServer)/$(backendImageRepository):latest" \
+                  -f Dockerfile .
+
+<<<<<<< HEAD
           - task: AzureCLI@2
             displayName: Build, Archive, and Push Nginx frontend image to ACR
             inputs:
@@ -75,11 +93,17 @@ stages:
                 # 2. Build and push to Azure Container Registry
                 az acr build \
                   --registry "$(acrName)" \
+=======
+                # 2. Build and Push Frontend Image with remote registry buildcache
+                docker buildx build \
+                  --push \
+>>>>>>> d910f7bbeed9a89311a3cf7edbd0accb1f5a898d
                   --target frontend \
-                  --image "$(frontendImageRepository):$(imageTag)" \
-                  --image "$(frontendImageRepository):latest" \
-                  --file Dockerfile \
-                  .
+                  --cache-to type=registry,ref="$(acrLoginServer)/$(frontendImageRepository):buildcache",mode=max \
+                  --cache-from type=registry,ref="$(acrLoginServer)/$(frontendImageRepository):buildcache" \
+                  -t "$(acrLoginServer)/$(frontendImageRepository):$(imageTag)" \
+                  -t "$(acrLoginServer)/$(frontendImageRepository):latest" \
+                  -f Dockerfile .
 
           - task: PublishPipelineArtifact@1
             displayName: Publish Container Image Archives to DevOps

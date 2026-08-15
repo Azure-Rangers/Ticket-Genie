@@ -263,6 +263,50 @@
         }
       }
     },
+<<<<<<< HEAD
+=======
+    "/api/chatbot/message": {
+      "post": {
+        "tags": [
+          "chatbot"
+        ],
+        "summary": "Chatbot Message",
+        "operationId": "chatbot_message_api_chatbot_message_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+>>>>>>> d910f7bbeed9a89311a3cf7edbd0accb1f5a898d
     "/": {
       "get": {
         "summary": "Root",
@@ -298,6 +342,213 @@
   },
   "components": {
     "schemas": {
+<<<<<<< HEAD
+=======
+      "ChatAction": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "ticket_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ticket Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "ChatAction",
+        "description": "A machine-actionable follow-up the frontend can execute."
+      },
+      "ChatIntent": {
+        "type": "string",
+        "enum": [
+          "navigation",
+          "how_to",
+          "knowledge",
+          "create_ticket",
+          "leave_management",
+          "ticket_status",
+          "support_issue",
+          "general"
+        ],
+        "title": "ChatIntent"
+      },
+      "ChatRequest": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role",
+            "default": "Employee"
+          },
+          "department": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/ChatTurn"
+            },
+            "type": "array",
+            "title": "History"
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TicketDraft"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active_intent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatIntent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "ChatRequest"
+      },
+      "ChatResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "intent": {
+            "$ref": "#/components/schemas/ChatIntent"
+          },
+          "action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatAction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ticket_draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TicketDraft"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "missing_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Fields"
+          },
+          "suggestions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Suggestions"
+          },
+          "knowledge_verified": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Knowledge Verified"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message",
+          "intent"
+        ],
+        "title": "ChatResponse"
+      },
+      "ChatTurn": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "message"
+        ],
+        "title": "ChatTurn"
+      },
+>>>>>>> d910f7bbeed9a89311a3cf7edbd0accb1f5a898d
       "GenieChatRequest": {
         "properties": {
           "message": {
@@ -421,6 +672,99 @@
         ],
         "title": "TicketCreate"
       },
+<<<<<<< HEAD
+=======
+      "TicketDraft": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priority"
+          },
+          "department": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "preferredDate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferreddate"
+          },
+          "is_anonymous": {
+            "type": "boolean",
+            "title": "Is Anonymous",
+            "default": false
+          },
+          "attachment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attachment"
+          }
+        },
+        "type": "object",
+        "title": "TicketDraft",
+        "description": "Mirrors models.ticket.TicketCreate exactly (all fields optional here\nsince a draft may still be incomplete). This is never auto-submitted;\nthe frontend places it into the existing Standard Request form for the\nuser to review, edit, and submit via the existing POST /api/tickets flow."
+      },
+>>>>>>> d910f7bbeed9a89311a3cf7edbd0accb1f5a898d
       "TicketResponse": {
         "properties": {
           "id": {

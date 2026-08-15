@@ -136,7 +136,6 @@ function initializeProfileDropdown() {
                         email: 'management@ticketgenie.com'
                     }));
 
-                    // Route to new Admin folder
                     if (currentPath.includes('/employee_NM/')) {
                         window.location.href = '../admin_AV/admin_dashboard.html';
                     } else {
@@ -150,17 +149,16 @@ function initializeProfileDropdown() {
                         email: 'employee@ticketgenie.com'
                     }));
 
-                    // Route to new Employee folder
                     if (currentPath.includes('/admin_AV/')) {
-                        window.location.href = '../employee_NM/my-tickets.html';
+                        window.location.href = '../employee_NM/employee_dashboard.html';
                     } else {
-                        window.location.href = 'employee_NM/my-tickets.html';
+                        window.location.href = 'employee_NM/employee_dashboard.html';
                     }
                 }
             });
         });
     }
-} // Properly closed the initializeProfileDropdown function!
+}
 
 /* =========================================================
    NEW REQUEST FORM
@@ -652,10 +650,7 @@ function initializeSidebarToggle() {
         document.body.classList.toggle('sidebar-closed');
     }
 
-    // Attach to the topbar button (to reopen)
     if (topbarToggle) topbarToggle.addEventListener('click', toggleSidebar);
-    
-    // Attach to the inside sidebar button (to close)
     if (brandToggle) brandToggle.addEventListener('click', toggleSidebar);
 }
 
@@ -663,19 +658,15 @@ function initializeSidebarToggle() {
    ENHANCED FILE UPLOAD
 ========================================================= */
 function initializeFileUploads() {
-    // Grab every upload area across all tabs
     const uploadAreas = document.querySelectorAll('.upload-area');
     
     uploadAreas.forEach(area => {
         const fileInput = area.querySelector('input[type="file"]');
         const browseBtn = area.querySelector('.browse-button');
-        // The div right after the upload-area is where we display selected files
         const fileListContainer = area.nextElementSibling; 
         
-        // DataTransfer object lets us manipulate the file list (add/remove) programmatically
         let dataTransfer = new DataTransfer();
 
-        // 1. Click to browse
         if (browseBtn) {
             browseBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -683,7 +674,6 @@ function initializeFileUploads() {
             });
         }
 
-        // 2. Drag & Drop Visuals
         area.addEventListener('dragover', (e) => {
             e.preventDefault();
             area.classList.add('drag-over');
@@ -693,7 +683,6 @@ function initializeFileUploads() {
             area.classList.remove('drag-over');
         });
 
-        // 3. Handle Dropped Files
         area.addEventListener('drop', (e) => {
             e.preventDefault();
             area.classList.remove('drag-over');
@@ -702,7 +691,6 @@ function initializeFileUploads() {
             }
         });
 
-        // 4. Handle Browsed Files
         if (fileInput) {
             fileInput.addEventListener('change', () => {
                 if (fileInput.files.length > 0) {
@@ -711,16 +699,14 @@ function initializeFileUploads() {
             });
         }
 
-        // Add files to our DataTransfer and update the UI
         function handleFiles(files) {
             for (let i = 0; i < files.length; i++) {
                 dataTransfer.items.add(files[i]);
             }
-            fileInput.files = dataTransfer.files; // Update the actual hidden input
+            fileInput.files = dataTransfer.files; 
             renderFileList();
         }
 
-        // Build the HTML for the attached files
         function renderFileList() {
             if (!fileListContainer) return;
             fileListContainer.innerHTML = '';
@@ -733,7 +719,6 @@ function initializeFileUploads() {
                 const fileItem = document.createElement('div');
                 fileItem.className = 'file-item';
                 
-                // Pick a nice icon based on the file type
                 let iconClass = 'fa-file';
                 if (file.type.includes('image')) iconClass = 'fa-file-image';
                 else if (file.type.includes('pdf')) iconClass = 'fa-file-pdf';
@@ -754,7 +739,6 @@ function initializeFileUploads() {
             
             fileListContainer.appendChild(list);
             
-            // Attach event listeners to the new "remove" buttons
             const removeBtns = list.querySelectorAll('.file-remove-btn');
             removeBtns.forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -764,7 +748,6 @@ function initializeFileUploads() {
             });
         }
 
-        // Rebuild the DataTransfer object without the removed file
         function removeFile(index) {
             const dt = new DataTransfer();
             const files = dataTransfer.files;
@@ -779,6 +762,7 @@ function initializeFileUploads() {
         }
     });
 }
+
 /* =========================================================
    DARK MODE TOGGLE
 ========================================================= */
@@ -786,7 +770,6 @@ function initializeDarkMode() {
     const toggleBtn = document.getElementById('darkModeToggle');
     const darkIcon = document.getElementById('darkModeIcon');
     
-    // Check local storage for saved preference on page load
     const savedTheme = localStorage.getItem('ticketGenieTheme');
     if (savedTheme === 'dark') {
         document.body.classList.add('dark-mode');
@@ -801,10 +784,8 @@ function initializeDarkMode() {
             document.body.classList.toggle('dark-mode');
             const isDark = document.body.classList.contains('dark-mode');
             
-            // Save preference
             localStorage.setItem('ticketGenieTheme', isDark ? 'dark' : 'light');
             
-            // Switch icon between moon and sun
             if (darkIcon) {
                 if (isDark) {
                     darkIcon.classList.remove('fa-moon');

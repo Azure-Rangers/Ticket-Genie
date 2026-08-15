@@ -79,8 +79,6 @@
         
       } else if (roleType === 'Employee_NM') {
         localStorage.setItem('portalUser', JSON.stringify({ email: 'nm@company.com', role: 'Employee', name: 'Employee NM' }));
-        
-        // FIXED: This now routes directly to the employee dashboard
         window.location.href = 'employee_NM/employee_dashboard.html'; 
         
       } else if (roleType === 'SuperAdmin_SS') {

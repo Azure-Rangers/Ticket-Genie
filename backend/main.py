@@ -2,6 +2,10 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+<<<<<<< HEAD
+=======
+from api.chatbot import router as chatbot_router
+>>>>>>> d910f7bbeed9a89311a3cf7edbd0accb1f5a898d
 from api.genie import router as genie_router
 from api.tickets import router as ticket_router
 from database.connection import init_db_schema
@@ -33,6 +37,10 @@ setup_telemetry(app)
 # Include API Routers under /api
 app.include_router(ticket_router, prefix="/api")
 app.include_router(genie_router, prefix="/api")
+<<<<<<< HEAD
+=======
+app.include_router(chatbot_router, prefix="/api")
+>>>>>>> d910f7bbeed9a89311a3cf7edbd0accb1f5a898d
 
 
 @app.get("/")
