@@ -35,46 +35,21 @@ def test_create_and_get_ticket(monkeypatch) -> None:
     require Azure/OpenAI credentials.
     """
 
-    def fake_process_ticket_with_ai(
-        title: str,
-        description: str,
-    ) -> dict:
-        return {
-            "category": {
-                "category": "IT",
-                "confidence": 0.99,
-                "rationale": "VPN access issues belong to IT.",
-            },
-            "priority": {
-                "priority": "High",
-                "confidence": 0.95,
-                "rationale": "Remote access is blocked.",
-                "needs_human_review": False,
-            },
-            "summary": {
-                "summary": "Employee cannot connect to the company VPN.",
-                "requested_action": "Restore VPN access.",
-                "key_facts": [
-                    "VPN connection is unavailable",
-                ],
-                "missing_information": [],
-            },
-            "routing": {
-                "destination": "IT",
-                "queue": "IT - Service Desk",
-                "escalation_required": False,
-                "rationale": "Standard VPN support request.",
-            },
-            "suggested_response": {
-                "message": "Thanks for reporting the VPN issue.",
-                "suggested_actions": [],
-                "safety_notice_required": False,
-            },
-        }
+    def fake_classify_ticket(title: str, description: str):
+        from agents.orchestrator import TicketClassification
+
+        return TicketClassification(
+            department="IT Team",
+            category="Identity and Access Management",
+            priority="High",
+            confidence=0.95,
+            reason="VPN access issue.",
+            needs_human_review=False,
+        )
 
     monkeypatch.setattr(
-        "services.ticket_service.process_ticket_with_ai",
-        fake_process_ticket_with_ai,
+        "services.ticket_service.classify_ticket",
+        fake_classify_ticket,
     )
 
     payload = {
@@ -100,9 +75,9 @@ def test_create_and_get_ticket(monkeypatch) -> None:
     assert created["status"] == "Open"
 
     # Verify the mocked AI output was applied correctly.
-    assert created["category"] == "IT"
+    assert created["category"] == "Identity and Access Management"
     assert created["priority"] == "High"
-    assert created["department"] == "IT"
+    assert created["department"] == "IT Team"
 
     # Verify GET by ID.
     get_res = client.get(f"/api/tickets/{ticket_id}")
@@ -112,7 +87,7 @@ def test_create_and_get_ticket(monkeypatch) -> None:
     ticket = get_res.json()
 
     assert ticket["id"] == ticket_id
-    assert ticket["category"] == "IT"
+    assert ticket["category"] == "Identity and Access Management"
     assert ticket["priority"] == "High"
 
     # Verify UPDATE.

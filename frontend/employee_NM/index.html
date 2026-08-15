@@ -9,80 +9,10 @@
 </head>
 <body>
 
-<aside class="sidebar">
-    <div class="brand" style="position: relative; justify-content: space-between; width: 100%; padding-right: 15px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <div class="brand-icon">
-                <i class="fa-solid fa-ticket"></i>
-            </div>
-            <div>
-                <h2>TicketGenie</h2>
-                <span>Employee Portal</span>
-            </div>
-        </div>
-        <button id="brandMenuToggle" class="brand-menu-toggle" aria-label="Toggle Pages">
-            <i class="fa-solid fa-bars"></i>
-        </button>
-    </div>
-
-    <nav class="navigation">
-        <div class="nav-title">WORKSPACE</div>
-        <a href="index.html" class="nav-item active">
-            <i class="fa-solid fa-house"></i><span>Help & Support</span>
-        </a>
-        <a href="my-tickets.html" class="nav-item">
-            <i class="fa-solid fa-ticket"></i><span>My Tickets</span>
-        </a>
-        <a href="new-request.html" class="nav-item">
-            <i class="fa-solid fa-plus"></i><span>New Request</span>
-        </a>
-        <a href="chat-history.html" class="nav-item">
-            <i class="fa-regular fa-comments"></i><span>Chat History</span>
-        </a>
-
-        <div class="nav-title">TIME OFF & COMPANY</div>
-        <a href="leave-calendar.html" class="nav-item">
-            <i class="fa-solid fa-calendar-days"></i><span>Leave Calendar</span>
-        </a>
-        <a href="announcements.html" class="nav-item">
-            <i class="fa-solid fa-bullhorn"></i><span>Announcements</span>
-        </a>
-
-        <div class="nav-title">RESOURCES</div>
-        <a href="knowledge-base.html" class="nav-item">
-            <i class="fa-solid fa-book-open"></i><span>Knowledge Base</span>
-        </a>
-        <a href="notifications.html" class="nav-item">
-            <i class="fa-solid fa-bell"></i><span>Notifications</span><span class="notification-count">3</span>
-        </a>
-        <a href="profile.html" class="nav-item">
-            <i class="fa-solid fa-user-gear"></i><span>Profile & Credentials</span>
-        </a>
-    </nav>
-</aside>
+<div id="shared-sidebar"></div>
 
 <main class="main-content">
-    <header class="topbar">
-        <div class="header-left" style="display: flex; align-items: center; gap: 20px;">
-            <button class="icon-button" id="sidebarToggle" type="button" aria-label="Toggle Sidebar">
-                <i class="fa-solid fa-bars"></i>
-            </button>
-            <div class="page-title">
-                <h1>Help & Support</h1>
-            </div>
-        </div>
-
-        <div class="topbar-actions">
-            <div class="search-box">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" placeholder="Search..." id="globalSearch">
-                <span class="shortcut">⌘ K</span>
-            </div>
-            <button class="icon-button" id="darkModeToggle" type="button" aria-label="Toggle Dark Mode">
-                <i class="fa-solid fa-moon" id="darkModeIcon"></i>
-            </button>
-        </div>
-    </header>
+    <div id="shared-topnav"></div>
 
     <section class="welcome-section">
         <p class="eyebrow">PORTAL OVERVIEW</p>
@@ -98,7 +28,7 @@
                     <span>Open</span>
                     <div class="overview-icon purple"><i class="fa-solid fa-folder-open"></i></div>
                 </div>
-                <strong>8</strong>
+                <strong id="countOpen">0</strong>
                 <p>Currently being reviewed</p>
             </div>
             <div class="overview-card">
@@ -106,7 +36,7 @@
                     <span>In Progress</span>
                     <div class="overview-icon purple"><i class="fa-solid fa-spinner"></i></div>
                 </div>
-                <strong>2</strong>
+                <strong id="countInProgress">0</strong>
                 <p>Being actively worked on</p>
             </div>
             <div class="overview-card">
@@ -114,7 +44,7 @@
                     <span>Resolved</span>
                     <div class="overview-icon purple"><i class="fa-solid fa-circle-check"></i></div>
                 </div>
-                <strong>2</strong>
+                <strong id="countResolved">0</strong>
                 <p>Successfully completed</p>
             </div>
         </div>
@@ -130,27 +60,15 @@
             <a href="my-tickets.html">View all tickets <i class="fa-solid fa-arrow-right"></i></a>
         </div>
 
-        <div class="tickets-table">
+        <div class="tickets-table" id="recentTicketsContainer">
             <div class="table-header">
                 <div>Request</div>
+                <div>Category</div>
                 <div>Status</div>
                 <div>Priority</div>
-                <div>Created</div>
                 <div>Date</div>
             </div>
-            <div class="table-row ticket-clickable" data-ticket-id="HD-1035">
-                <div class="request-info">
-                    <div class="request-icon"><i class="fa-solid fa-file-lines"></i></div>
-                    <div>
-                        <strong>Immigration Help</strong>
-                        <span>#HD-1035</span>
-                    </div>
-                </div>
-                <div>HR & Workforce Operations</div>
-                <div><span class="status open">Open</span></div>
-                <div><span class="priority medium">Medium</span></div>
-                <div>Today</div>
-            </div>
+            <div style="padding: 20px; text-align: center;">Loading recent tickets...</div>
         </div>
     </section>
 </main>
@@ -198,5 +116,52 @@
 </div>
 
 <script src="../js/script.js"></script>
+<script src="components.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        const tickets = await apiFetchTickets();
+        const open = tickets.filter(t => (t.status || "").toLowerCase() === "open").length;
+        const inProg = tickets.filter(t => ["in progress", "pending"].includes((t.status || "").toLowerCase())).length;
+        const resolved = tickets.filter(t => (t.status || "").toLowerCase() === "resolved").length;
+
+        document.getElementById("countOpen").textContent = open;
+        document.getElementById("countInProgress").textContent = inProg;
+        document.getElementById("countResolved").textContent = resolved;
+
+        const container = document.getElementById("recentTicketsContainer");
+        if (!tickets || tickets.length === 0) {
+            container.innerHTML = `
+                <div class="table-header"><div>Request</div><div>Category</div><div>Status</div><div>Priority</div><div>Date</div></div>
+                <div style="padding: 20px; text-align: center;">No tickets found.</div>
+            `;
+            return;
+        }
+
+        const rowsHtml = tickets.slice(0, 5).map(t => `
+            <div class="table-row ticket-clickable" style="cursor:pointer;" onclick="window.location.href='chat-history.html?ticket=${t.id}'">
+                <div class="request-info">
+                    <div class="request-icon"><i class="fa-solid fa-file-lines"></i></div>
+                    <div>
+                        <strong>${escapeHTML(t.title)}</strong>
+                        <span>#${t.id}</span>
+                    </div>
+                </div>
+                <div>${escapeHTML(t.category || 'General')}</div>
+                <div><span class="status ${ (t.status||'').toLowerCase().replace(' ', '-') }">${t.status}</span></div>
+                <div><span class="priority ${(t.priority||'Medium').toLowerCase()}">${t.priority || 'Medium'}</span></div>
+                <div>${t.date || 'Recently'}</div>
+            </div>
+        `).join("");
+
+        container.innerHTML = `
+            <div class="table-header"><div>Request</div><div>Category</div><div>Status</div><div>Priority</div><div>Date</div></div>
+            ${rowsHtml}
+        `;
+    } catch (err) {
+        console.error("Failed to load employee dashboard data:", err);
+    }
+});
+</script>
 </body>
-</html>
+</html>

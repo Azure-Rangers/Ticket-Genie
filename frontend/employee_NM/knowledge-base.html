@@ -16,105 +16,10 @@
 </head>
 <body>
 
-<aside class="sidebar">
-    <div class="brand" style="position: relative; justify-content: space-between; width: 100%; padding-right: 15px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <div class="brand-icon">
-                <i class="fa-solid fa-ticket"></i>
-            </div>
-            <div>
-                <h2>TicketGenie</h2>
-                <span>Employee Portal</span>
-            </div>
-        </div>
-        
-        <button id="brandMenuToggle" class="brand-menu-toggle" aria-label="Toggle Pages">
-            <i class="fa-solid fa-bars"></i>
-        </button>
-    </div>
-
-    <nav class="navigation">
-        <div class="nav-title">WORKSPACE</div>
-        <a href="index.html" class="nav-item">
-            <i class="fa-solid fa-house"></i><span>Help & Support</span>
-        </a>
-        <a href="my-tickets.html" class="nav-item">
-            <i class="fa-solid fa-ticket"></i><span>My Tickets</span>
-        </a>
-        <a href="new-request.html" class="nav-item">
-            <i class="fa-solid fa-plus"></i><span>New Request</span>
-        </a>
-        <a href="chat-history.html" class="nav-item">
-            <i class="fa-regular fa-comments"></i><span>Chat History</span>
-        </a>
-
-        <div class="nav-title">RESOURCES</div>
-        <a href="knowledge-base.html" class="nav-item active">
-            <i class="fa-solid fa-book-open"></i><span>Knowledge Base</span>
-        </a>
-        <a href="notifications.html" class="nav-item">
-            <i class="fa-solid fa-bell"></i><span>Notifications</span><span class="notification-count">3</span>
-        </a>
-    </nav>
-
-    <div class="sidebar-bottom">
-        <div class="system-status">
-            <span class="status-dot"></span>
-            <div>
-                <strong>All systems operational</strong>
-                <small>TicketGenie is online</small>
-            </div>
-        </div>
-    </div>
-</aside>
+<div id="shared-sidebar"></div>
 
 <main class="main-content">
-    <header class="topbar">
-        <div class="header-left" style="display: flex; align-items: center; gap: 20px;">
-            <button class="icon-button" id="sidebarToggle" type="button" aria-label="Toggle Sidebar">
-                <i class="fa-solid fa-bars"></i>
-            </button>
-        </div>
-
-        <div class="topbar-actions">
-            <div class="search-box">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" placeholder="Search policies..." id="globalSearch">
-                <span class="shortcut">⌘ K</span>
-            </div>
-
-            <!-- Dark Mode Toggle Button -->
-            <button class="icon-button" id="darkModeToggle" type="button" aria-label="Toggle Dark Mode">
-                <i class="fa-solid fa-moon" id="darkModeIcon"></i>
-            </button>
-
-            <button class="icon-button" type="button">
-                <i class="fa-regular fa-bell"></i>
-                <span class="notification-dot"></span>
-            </button>
-
-            <div class="profile">
-                <button class="profile-button" id="profileDropdownTrigger" aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdownMenu">
-                    <div class="avatar">NM</div>
-                    <div class="profile-info">
-                        <strong>Nishita</strong>
-                        <span id="currentRoleDisplay">Employee</span>
-                    </div>
-                    <i class="fa-solid fa-chevron-down"></i>
-                </button>
-
-                <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu" aria-labelledby="profileDropdownTrigger">
-                    <span class="dropdown-label">Switch View</span>
-                    <button type="button" class="role-switch-btn active" data-role="Employee" role="menuitem">
-                        <i class="fa-regular fa-user"></i> Employee View
-                    </button>
-                    <button type="button" class="role-switch-btn" data-role="Management" role="menuitem">
-                        <i class="fa-solid fa-briefcase"></i> Management View
-                    </button>
-                </div>
-            </div>
-        </div>
-    </header>
+    <div id="shared-topnav"></div>
 
     <section class="welcome-section">
         <p class="eyebrow">COMPANY GOVERNANCE</p>
@@ -297,5 +202,6 @@
 </div>
 
 <script src="../js/script.js"></script>
+<script src="components.js"></script>
 </body>
 </html>

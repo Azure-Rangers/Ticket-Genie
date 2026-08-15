@@ -1,115 +1,51 @@
+"""Unit tests for TicketGenie backend agents and AI classifier integration."""
+
+from __future__ import annotations
+
+import pytest
+
 from agents.category_agent import (
-    CATEGORY_PROMPT,
-    CategoryDecision,
-    TicketCategory,
-    categorize_ticket,
+    ALLOWED_DEPARTMENTS,
+    get_categories_for_department,
+    is_valid_category,
+    is_valid_department,
 )
-from agents.priority_agent import PriorityDecision, TicketPriority, prioritize_ticket
-from agents.response_agent import EmployeeResponse, draft_response
-from agents.routing_agent import RoutingDecision, route_ticket
-from agents.summary_agent import TicketSummary, summarize_ticket
+from agents.orchestrator import TicketClassification, classify_ticket
+from telemetry import record_llm_metrics
 
 
-class FakeAIService:
-    def __init__(self, responses):
-        self.responses = responses
-        self.calls = []
+def test_category_taxonomy_validation():
+    assert "IT Team" in ALLOWED_DEPARTMENTS
+    assert is_valid_department("IT Team") is True
+    assert is_valid_department("NonExistentTeam") is False
 
-    def generate(self, *, system_prompt, user_content, response_model):
-        self.calls.append((system_prompt, user_content, response_model))
-        return self.responses[response_model]
+    it_categories = get_categories_for_department("IT Team")
+    assert "Identity and Access Management" in it_categories
+    assert is_valid_category("IT Team", "Identity and Access Management") is True
+    assert is_valid_category("IT Team", "NonExistentCategory") is False
 
 
-def test_category_agent_uses_closed_corporate_taxonomy():
-    expected = CategoryDecision(
-        category=TicketCategory.ACCOUNTING,
-        confidence=0.96,
-        rationale="Payroll owns incorrect salary payments.",
-    )
-    service = FakeAIService({CategoryDecision: expected})
+def test_classify_ticket_mock_mode(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("USE_MOCK_AI", "true")
 
-    result = categorize_ticket(
-        "Incorrect paycheck", "My overtime was not included.", ai_service=service
+    result = classify_ticket(
+        "Cannot log into account",
+        "My password is expired and I am locked out of my account.",
     )
 
-    assert result == expected
-    assert {item.value for item in TicketCategory} == {
-        "HR",
-        "IT",
-        "Accounting",
-        "Upper Management",
-    }
-    assert "Payroll" in CATEGORY_PROMPT
-    assert "Incorrect paycheck" in service.calls[0][1]
+    assert isinstance(result, TicketClassification)
+    assert result.department == "IT Team"
+    assert result.category == "Identity and Access Management"
+    assert result.priority in {"Low", "Medium", "High", "Critical"}
+    assert isinstance(result.confidence, float)
+    assert result.needs_human_review is False
 
 
-def test_priority_agent_uses_closed_priority_scale():
-    expected = PriorityDecision(
-        priority=TicketPriority.HIGH,
-        confidence=0.9,
-        rationale="The report describes an active account compromise.",
-        needs_human_review=True,
-    )
-    service = FakeAIService({PriorityDecision: expected})
-
-    result = prioritize_ticket(
-        "Account takeover",
-        "Someone is actively using my account.",
-        category="IT",
-        ai_service=service,
-    )
-
-    assert result == expected
-    assert {item.value for item in TicketPriority} == {"Low", "Medium", "High"}
-
-
-def test_routing_agent_accepts_category_enum():
-    expected = RoutingDecision(
-        destination=TicketCategory.IT,
-        queue="IT - Security",
-        escalation_required=True,
-        rationale="Active security incidents require the security queue.",
-    )
-    service = FakeAIService({RoutingDecision: expected})
-
-    result = route_ticket(
-        "Suspicious login",
-        "An unknown login is active.",
-        category=TicketCategory.IT,
-        priority="High",
-        ai_service=service,
-    )
-
-    assert result == expected
-    assert "Assigned category: IT" in service.calls[0][1]
-
-
-def test_summary_and_response_agents_return_typed_results():
-    summary = TicketSummary(
-        summary="The employee reports being unable to access the VPN.",
-        requested_action="Restore VPN access.",
-        key_facts=["VPN access is unavailable"],
-        missing_information=["Displayed error message"],
-    )
-    response = EmployeeResponse(
-        message="Your IT request has been received and assigned High priority.",
-        suggested_actions=["Use the official IT helpdesk channel"],
-        safety_notice_required=False,
-    )
-    service = FakeAIService({TicketSummary: summary, EmployeeResponse: response})
-
-    assert (
-        summarize_ticket("VPN unavailable", "I cannot connect.", ai_service=service)
-        == summary
-    )
-    assert (
-        draft_response(
-            "VPN unavailable",
-            "I cannot connect.",
-            category="IT",
-            priority="High",
-            queue="IT - Service Desk",
-            ai_service=service,
-        )
-        == response
+def test_telemetry_record_llm_metrics():
+    # Verify record_llm_metrics executes without throwing an exception
+    record_llm_metrics(
+        prompt_tokens=150,
+        completion_tokens=50,
+        model="gpt-4o",
+        agent_name="test_agent",
     )

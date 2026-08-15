@@ -4,7 +4,7 @@
     {
       "type": 1,
       "content": {
-        "json": "## \ud83d\ude80 TicketGenie FastAPI Backend Dashboard\n*Auto-generated from OpenAPI 3.0 Specification*"
+        "json": "## \ud83d\ude80 TicketGenie FastAPI & AI Agent Dashboard\n*Auto-generated from OpenAPI 3.0 Specification & OpenTelemetry LLM Metrics*"
       }
     },
     {
@@ -25,6 +25,17 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where timestamp >= {TimeRange} and name startswith \"llm_\"\n| summarize\n    Prompt_Tokens = sumif(value, name == \"llm_prompt_tokens\"),\n    Completion_Tokens = sumif(value, name == \"llm_completion_tokens\"),\n    Total_Tokens = sumif(value, name == \"llm_total_tokens\"),\n    Est_Cost_USD = round(sumif(value, name == \"llm_estimated_cost_usd\"), 4)\n  by tostring(customDimensions.agent)\n| order by Total_Tokens desc",
+        "size": 0,
+        "title": "LLM Token Consumption & Cost by Subagent",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
         "query": "requests\n| where timestamp >= {TimeRange}\n| make-series Requests=count() on timestamp\n    from {TimeRange:start} to {TimeRange:end} step 5m by name\n| render timechart",
         "size": 0,
         "title": "Request Throughput per OpenAPI Route (RPS / 5m)",
@@ -37,6 +48,7 @@
   "tags": [
     "FastAPI",
     "OpenAPI",
+    "OpenTelemetry",
     "TicketGenie"
   ]
 }
