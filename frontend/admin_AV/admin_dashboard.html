@@ -9,61 +9,6 @@
 </head>
 <body class="admin-page">
 
-  <aside class="sidebar" id="appSidebar">
-    <div class="sidebar-top">
-      <div class="sidebar-header">
-        <div class="bot-icon"><i class="ph-fill ph-ticket"></i></div>
-        <div class="sidebar-brand-text">
-          <h2>TicketGenie</h2>
-          <span id="sidebarRole">IT Portal</span>
-        </div>
-      </div>
-
-      <div class="nav-section">
-        <div class="nav-title">Workspace</div>
-        <a href="admin_dashboard.html" class="nav-link active">
-          <span class="menu-icon"><i class="ph-duotone ph-chart-pie-slice"></i></span>
-          <span class="menu-text">My Dashboard</span>
-        </a>
-        <a href="announcements.html" class="nav-link">
-          <span class="menu-icon"><i class="ph-duotone ph-megaphone"></i></span>
-          <span class="menu-text">Announcements</span>
-        </a>
-      </div>
-
-      <div class="nav-section">
-        <div class="nav-title">Ticketing System</div>
-        <a href="submit-ticket.html" class="nav-link">
-          <span class="menu-icon"><i class="ph-duotone ph-plus-circle"></i></span>
-          <span class="menu-text">Submit Request</span>
-        </a>
-        <a href="inbox.html" class="nav-link">
-          <span class="menu-icon"><i class="ph-duotone ph-tray"></i></span>
-          <span class="menu-text">Team Inbox</span>
-        </a>
-      </div>
-
-      <div class="nav-section" id="adminNav" style="display: none;">
-        <div class="nav-title">Administration</div>
-        <a href="knowledge-base.html" class="nav-link">
-          <span class="menu-icon"><i class="ph-duotone ph-books"></i></span>
-          <span class="menu-text">Policy Library</span>
-        </a>
-        <a href="analytics.html" class="nav-link">
-          <span class="menu-icon"><i class="ph-duotone ph-trend-up"></i></span>
-          <span class="menu-text">Analytics</span>
-        </a>
-        <a href="archive.html" class="nav-link">
-          <span class="menu-icon"><i class="ph-duotone ph-archive"></i></span>
-          <span class="menu-text">Ticket Archive</span>
-        </a>
-      </div>
-
-      <div class="nav-section">
-        <div class="nav-title">Account</div>
-        <a href="settings.html" class="nav-link">
-          <span class="menu-icon"><i class="ph-duotone ph-gear"></i></span>
-          <span class="menu-text">Settings</span>
         </a>
       </div>
     </div>
@@ -241,6 +186,10 @@
   </main>
 
   <script src="../js/script.js"></script>
+  <script src="components.js"></script>
+  <script>
+    initAdminAVComponents("dashboard", "Operations Dashboard", "HelpDesk Admin Control Center");
+  </script>
   <script>
     function toggleSidebar() { 
       document.getElementById('appSidebar').classList.toggle('collapsed'); 
