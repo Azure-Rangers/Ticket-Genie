@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Optional
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -68,7 +69,9 @@ def handle_remove_department_user(department_name: str, azure_object_id: str):
     removed = remove_department_user(department_name, azure_object_id)
     if not removed:
         raise HTTPException(status_code=404, detail="Department user mapping not found")
-    return {"message": f"Removed Azure Object ID {azure_object_id} from {department_name}"}
+    return {
+        "message": f"Removed Azure Object ID {azure_object_id} from {department_name}"
+    }
 
 
 @router.get("/leave-queue")
@@ -78,4 +81,6 @@ def get_admin_leave_queue():
 
 @router.post("/sql-query")
 def handle_sql_query(req: SQLQueryRequest):
-    return execute_sql_query(req.query, role=req.role or "Super Admin", user_id=req.user_id or "admin")
+    return execute_sql_query(
+        req.query, role=req.role or "Super Admin", user_id=req.user_id or "admin"
+    )

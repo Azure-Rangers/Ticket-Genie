@@ -86,7 +86,9 @@ def test_critical_ticket_is_classified_without_department() -> None:
 
 
 def test_completed_ticket_is_saved_and_retrievable_with_ai_fields() -> None:
-    created = _create_ticket("Laptop request", "I need a new laptop for development work.")
+    created = _create_ticket(
+        "Laptop request", "I need a new laptop for development work."
+    )
     ticket_id = created["id"]
 
     response = client.get(f"/api/tickets/{ticket_id}")

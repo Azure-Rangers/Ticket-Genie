@@ -170,10 +170,14 @@ class KnowledgeAnswerResult:
     verified: bool = True
 
 
-def answer_question(query: str, allowed_scopes: List[str] = None) -> KnowledgeAnswerResult:
+def answer_question(
+    query: str, allowed_scopes: List[str] = None
+) -> KnowledgeAnswerResult:
     """Search knowledge base and return an answer result object."""
     try:
-        results = default_knowledge_retriever.search(query, allowed_scopes=allowed_scopes or [])
+        results = default_knowledge_retriever.search(
+            query, allowed_scopes=allowed_scopes or []
+        )
         if results:
             content_summary = " ".join([doc.content for doc in results[:2]])
             return KnowledgeAnswerResult(answer=content_summary, verified=True)
@@ -188,7 +192,12 @@ def answer_question(query: str, allowed_scopes: List[str] = None) -> KnowledgeAn
 
 def search_knowledge(query: str, allowed_scopes: List[str] = None) -> List[dict]:
     try:
-        results = default_knowledge_retriever.search(query, allowed_scopes=allowed_scopes or [])
-        return [{"id": d.id, "content": d.content, "scope": d.scope, "source": d.source} for d in results]
+        results = default_knowledge_retriever.search(
+            query, allowed_scopes=allowed_scopes or []
+        )
+        return [
+            {"id": d.id, "content": d.content, "scope": d.scope, "source": d.source}
+            for d in results
+        ]
     except Exception:
         return []

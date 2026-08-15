@@ -112,7 +112,9 @@ def generate_kql_queries(routes: List[Dict[str, Any]]) -> str:
 """)
 
     # 4. LLM Token Usage & Cost Analytics
-    kql_blocks.append("// 4. LLM Token Consumption & Estimated Cost (OpenTelemetry Metrics)")
+    kql_blocks.append(
+        "// 4. LLM Token Consumption & Estimated Cost (OpenTelemetry Metrics)"
+    )
     kql_blocks.append("""customMetrics
 | where timestamp > ago(24h) and name startswith "llm_"
 | summarize

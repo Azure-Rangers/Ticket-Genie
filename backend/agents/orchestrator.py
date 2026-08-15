@@ -40,9 +40,17 @@ FALLBACK_PRIORITY: Priority = "Medium"
 _VAGUE_WORD_COUNT_THRESHOLD = 6
 
 _SENSITIVE_KEYWORDS = (
-    "harassment", "discrimination", "assault", "threat", "weapon",
-    "lawsuit", "legal action", "safety concern", "security breach",
-    "data breach", "self-harm",
+    "harassment",
+    "discrimination",
+    "assault",
+    "threat",
+    "weapon",
+    "lawsuit",
+    "legal action",
+    "safety concern",
+    "security breach",
+    "data breach",
+    "self-harm",
 )
 
 
@@ -72,7 +80,9 @@ def _is_sensitive(title: str, description: str) -> bool:
     return any(keyword in text for keyword in _SENSITIVE_KEYWORDS)
 
 
-def _fallback_classification(reason: str, priority: Priority = FALLBACK_PRIORITY) -> TicketClassification:
+def _fallback_classification(
+    reason: str, priority: Priority = FALLBACK_PRIORITY
+) -> TicketClassification:
     return TicketClassification(
         department=FALLBACK_DEPARTMENT,
         category=FALLBACK_CATEGORY,
@@ -102,17 +112,23 @@ def classify_ticket(
         return _fallback_classification(f"AI classification unavailable: {exc}")
     except Exception:
         logger.exception("Unexpected error calling AI classification service.")
-        return _fallback_classification("AI classification unavailable due to an unexpected error.")
+        return _fallback_classification(
+            "AI classification unavailable due to an unexpected error."
+        )
 
     if not isinstance(raw_result, dict):
-        logger.error("AI classification returned a non-dict result: %r", type(raw_result))
+        logger.error(
+            "AI classification returned a non-dict result: %r", type(raw_result)
+        )
         return _fallback_classification("AI classification returned an invalid result.")
 
     try:
         classification = TicketClassification(**raw_result)
     except Exception as exc:
         logger.error("AI classification output failed validation: %s", exc)
-        return _fallback_classification("AI classification output was invalid and could not be used.")
+        return _fallback_classification(
+            "AI classification output was invalid and could not be used."
+        )
 
     needs_review = (
         classification.needs_human_review

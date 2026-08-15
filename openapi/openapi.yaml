@@ -132,6 +132,93 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/tickets/{ticket_id}/export:
+    get:
+      tags:
+      - tickets
+      summary: Export Ticket Document
+      operationId: export_ticket_document_api_tickets__ticket_id__export_get
+      parameters:
+      - name: ticket_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticket Id
+      - name: format
+        in: query
+        required: false
+        schema:
+          type: string
+          default: pdf
+          title: Format
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/tickets/{ticket_id}/comments:
+    get:
+      tags:
+      - tickets
+      summary: List Comments For Ticket
+      operationId: list_comments_for_ticket_api_tickets__ticket_id__comments_get
+      parameters:
+      - name: ticket_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticket Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - tickets
+      summary: Post Comment To Ticket
+      operationId: post_comment_to_ticket_api_tickets__ticket_id__comments_post
+      parameters:
+      - name: ticket_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Ticket Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentCreateRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/genie/chat:
     post:
       tags:
@@ -157,6 +244,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/genie/react:
+    post:
+      tags:
+      - genie
+      summary: Run React Chat
+      operationId: run_react_chat_api_genie_react_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReActAgentRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/genie/exec-agent:
+    post:
+      tags:
+      - genie
+      summary: Handle Exec Agent Command
+      operationId: handle_exec_agent_command_api_genie_exec_agent_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecutiveActionRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/genie/exec-briefing:
+    get:
+      tags:
+      - genie
+      summary: Handle Exec Briefing
+      operationId: handle_exec_briefing_api_genie_exec_briefing_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
   /api/chatbot/message:
     post:
       tags:
@@ -176,6 +323,505 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/admin/departments:
+    get:
+      tags:
+      - admin
+      summary: Get Departments
+      operationId: get_departments_api_admin_departments_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+    post:
+      tags:
+      - admin
+      summary: Handle Create Department
+      operationId: handle_create_department_api_admin_departments_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentCreateRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/admin/departments/users:
+    get:
+      tags:
+      - admin
+      summary: Get Department Users
+      operationId: get_department_users_api_admin_departments_users_get
+      parameters:
+      - name: department_name
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Department Name
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - admin
+      summary: Handle Add Department User
+      operationId: handle_add_department_user_api_admin_departments_users_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentUserRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - admin
+      summary: Handle Remove Department User
+      operationId: handle_remove_department_user_api_admin_departments_users_delete
+      parameters:
+      - name: department_name
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Department Name
+      - name: azure_object_id
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Azure Object Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/admin/leave-queue:
+    get:
+      tags:
+      - admin
+      summary: Get Admin Leave Queue
+      operationId: get_admin_leave_queue_api_admin_leave_queue_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /api/admin/sql-query:
+    post:
+      tags:
+      - admin
+      summary: Handle Sql Query
+      operationId: handle_sql_query_api_admin_sql_query_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SQLQueryRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/analytics/trends:
+    get:
+      tags:
+      - analytics
+      summary: Get Analytics Trends
+      operationId: get_analytics_trends_api_analytics_trends_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /api/calendar/leave-events:
+    get:
+      tags:
+      - calendar
+      summary: Get Leave Events
+      operationId: get_leave_events_api_calendar_leave_events_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /api/calendar/export.ics:
+    get:
+      tags:
+      - calendar
+      summary: Export Calendar Ics
+      operationId: export_calendar_ics_api_calendar_export_ics_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /api/knowledge/ingest:
+    post:
+      tags:
+      - knowledge
+      summary: Handle Knowledge Ingest
+      operationId: handle_knowledge_ingest_api_knowledge_ingest_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KnowledgeIngestRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/knowledge/search:
+    get:
+      tags:
+      - knowledge
+      summary: Handle Knowledge Search
+      operationId: handle_knowledge_search_api_knowledge_search_get
+      parameters:
+      - name: q
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Q
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/announcements:
+    get:
+      tags:
+      - announcements
+      summary: List Announcements
+      operationId: list_announcements_api_announcements_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+    post:
+      tags:
+      - announcements
+      summary: Handle Create Announcement
+      operationId: handle_create_announcement_api_announcements_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnouncementCreateRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/announcements/{anc_id}:
+    delete:
+      tags:
+      - announcements
+      summary: Handle Delete Announcement
+      operationId: handle_delete_announcement_api_announcements__anc_id__delete
+      parameters:
+      - name: anc_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Anc Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/notifications:
+    get:
+      tags:
+      - notifications
+      summary: List Notifications
+      operationId: list_notifications_api_notifications_get
+      parameters:
+      - name: user_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: user
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - notifications
+      summary: Handle Create Notification
+      operationId: handle_create_notification_api_notifications_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationCreateRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/notifications/{notif_id}/read:
+    put:
+      tags:
+      - notifications
+      summary: Handle Mark Notification Read
+      operationId: handle_mark_notification_read_api_notifications__notif_id__read_put
+      parameters:
+      - name: notif_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Notif Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/onboarding:
+    get:
+      tags:
+      - onboarding
+      summary: List Onboarding Records
+      operationId: list_onboarding_records_api_onboarding_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+    post:
+      tags:
+      - onboarding
+      summary: Handle Create Onboarding
+      operationId: handle_create_onboarding_api_onboarding_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OnboardingCreateRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/onboarding/{rec_id}:
+    put:
+      tags:
+      - onboarding
+      summary: Handle Update Onboarding
+      operationId: handle_update_onboarding_api_onboarding__rec_id__put
+      parameters:
+      - name: rec_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Rec Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OnboardingUpdateRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/users/profile:
+    get:
+      tags:
+      - users
+      summary: Handle Get Profile
+      operationId: handle_get_profile_api_users_profile_get
+      parameters:
+      - name: user_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: usr-1
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    put:
+      tags:
+      - users
+      summary: Handle Update Profile
+      operationId: handle_update_profile_api_users_profile_put
+      parameters:
+      - name: user_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: usr-1
+          title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdateRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
         '422':
           description: Validation Error
           content:
@@ -204,6 +850,31 @@ paths:
               schema: {}
 components:
   schemas:
+    AnnouncementCreateRequest:
+      properties:
+        title:
+          type: string
+          title: Title
+        content:
+          type: string
+          title: Content
+        category:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Category
+          default: General Alert
+        author:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Author
+          default: Admin Operations
+      type: object
+      required:
+      - title
+      - content
+      title: AnnouncementCreateRequest
     ChatAction:
       properties:
         type:
@@ -322,6 +993,84 @@ components:
       - role
       - message
       title: ChatTurn
+    CommentCreateRequest:
+      properties:
+        message:
+          type: string
+          title: Message
+        sender_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sender Id
+          default: user
+        sender_role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sender Role
+          default: Employee
+      type: object
+      required:
+      - message
+      title: CommentCreateRequest
+    DepartmentCreateRequest:
+      properties:
+        name:
+          type: string
+          title: Name
+        queue_name:
+          type: string
+          title: Queue Name
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+      type: object
+      required:
+      - name
+      - queue_name
+      title: DepartmentCreateRequest
+    DepartmentUserRequest:
+      properties:
+        department_name:
+          type: string
+          title: Department Name
+        azure_object_id:
+          type: string
+          title: Azure Object Id
+        role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Role
+          default: Member
+        user_email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: User Email
+      type: object
+      required:
+      - department_name
+      - azure_object_id
+      title: DepartmentUserRequest
+    ExecutiveActionRequest:
+      properties:
+        command:
+          type: string
+          title: Command
+        user_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: User Id
+          default: exec_user
+      type: object
+      required:
+      - command
+      title: ExecutiveActionRequest
     GenieChatRequest:
       properties:
         message:
@@ -356,6 +1105,134 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    KnowledgeIngestRequest:
+      properties:
+        category:
+          type: string
+          title: Category
+        title:
+          type: string
+          title: Title
+        content:
+          type: string
+          title: Content
+        source:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source
+          default: Ticketer Approved Resolution
+      type: object
+      required:
+      - category
+      - title
+      - content
+      title: KnowledgeIngestRequest
+    NotificationCreateRequest:
+      properties:
+        title:
+          type: string
+          title: Title
+        message:
+          type: string
+          title: Message
+        user_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: User Id
+          default: all
+      type: object
+      required:
+      - title
+      - message
+      title: NotificationCreateRequest
+    OnboardingCreateRequest:
+      properties:
+        employee_name:
+          type: string
+          title: Employee Name
+        role:
+          type: string
+          title: Role
+        department:
+          type: string
+          title: Department
+        visa_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Visa Status
+          default: H1-B / OPT
+        start_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Start Date
+          default: '2026-09-01'
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+          default: In Progress
+      type: object
+      required:
+      - employee_name
+      - role
+      - department
+      title: OnboardingCreateRequest
+    OnboardingUpdateRequest:
+      properties:
+        status:
+          type: string
+          title: Status
+      type: object
+      required:
+      - status
+      title: OnboardingUpdateRequest
+    ReActAgentRequest:
+      properties:
+        message:
+          type: string
+          title: Message
+        role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Role
+          default: Super Admin
+        user_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: User Id
+          default: user
+      type: object
+      required:
+      - message
+      title: ReActAgentRequest
+    SQLQueryRequest:
+      properties:
+        query:
+          type: string
+          title: Query
+        role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Role
+          default: Super Admin
+        user_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: User Id
+          default: admin
+      type: object
+      required:
+      - query
+      title: SQLQueryRequest
     TicketCreate:
       properties:
         title:
@@ -363,24 +1240,33 @@ components:
           maxLength: 200
           minLength: 3
           title: Title
-        category:
+        description:
           type: string
+          minLength: 10
+          title: Description
+        category:
+          anyOf:
+          - type: string
+          - type: 'null'
           title: Category
           default: IT Support
         priority:
-          type: string
+          anyOf:
+          - type: string
+          - type: 'null'
           title: Priority
           default: Medium
         department:
           anyOf:
           - type: string
+            enum:
+            - HR Team
+            - Accounting Team
+            - Workplace Operations Team
+            - IT Team
+            - Upper Management
           - type: 'null'
           title: Department
-          default: IT
-        description:
-          type: string
-          minLength: 5
-          title: Description
         preferredDate:
           anyOf:
           - type: string
@@ -549,6 +1435,30 @@ components:
           title: Attachment
       type: object
       title: TicketUpdate
+    UserProfileUpdateRequest:
+      properties:
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        phone:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Phone
+        department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Department
+      type: object
+      title: UserProfileUpdateRequest
     ValidationError:
       properties:
         loc:

@@ -157,8 +157,9 @@ def add_ticket_comment(
     should_close = db is None
 
     try:
-        from database.models_db import TicketCommentDB
         import uuid
+
+        from database.models_db import TicketCommentDB
 
         comment_id = f"cmt-{uuid.uuid4().hex[:8]}"
         now_str = datetime.now().isoformat()
@@ -181,9 +182,7 @@ def add_ticket_comment(
             session.close()
 
 
-def get_ticket_comments(
-    ticket_id: str, db: Optional[Session] = None
-) -> List[dict]:
+def get_ticket_comments(ticket_id: str, db: Optional[Session] = None) -> List[dict]:
     session = db or SessionLocal()
     should_close = db is None
 
@@ -217,8 +216,9 @@ def create_department(
     should_close = db is None
 
     try:
-        from database.models_db import DepartmentDB
         import uuid
+
+        from database.models_db import DepartmentDB
 
         existing = session.query(DepartmentDB).filter(DepartmentDB.name == name).first()
         if existing:
@@ -257,7 +257,10 @@ def list_departments(db: Optional[Session] = None) -> List[dict]:
                 {"name": "IT Team", "queue_name": "IT - Service Desk"},
                 {"name": "HR Team", "queue_name": "HR - Employee Relations"},
                 {"name": "Accounting Team", "queue_name": "Accounting - Payroll"},
-                {"name": "Upper Executive Management", "queue_name": "Upper Management - Leave Approval"},
+                {
+                    "name": "Upper Executive Management",
+                    "queue_name": "Upper Management - Leave Approval",
+                },
             ]
             return defaults
         return [d.to_dict() for d in depts]
@@ -277,8 +280,9 @@ def add_department_user(
     should_close = db is None
 
     try:
-        from database.models_db import DepartmentUserDB
         import uuid
+
+        from database.models_db import DepartmentUserDB
 
         user_id = f"uobj-{uuid.uuid4().hex[:8]}"
         now_str = datetime.now().isoformat()
@@ -356,12 +360,22 @@ def get_leave_tickets(db: Optional[Session] = None) -> List[dict]:
     should_close = db is None
 
     try:
-        leave_keywords = ["leave", "pto", "vacation", "medical", "parental", "bereavement", "sick"]
+        leave_keywords = [
+            "leave",
+            "pto",
+            "vacation",
+            "medical",
+            "parental",
+            "bereavement",
+            "sick",
+        ]
         query = session.query(TicketDB)
-        
-        conditions = [func.lower(TicketDB.category).like(f"%{kw}%") for kw in leave_keywords]
+
+        conditions = [
+            func.lower(TicketDB.category).like(f"%{kw}%") for kw in leave_keywords
+        ]
         conditions.append(func.lower(TicketDB.department).like("%management%"))
-        
+
         tickets = query.filter(or_(*conditions)).all()
         return [t.to_dict() for t in tickets]
     finally:
@@ -376,9 +390,13 @@ def get_analytics_summary(db: Optional[Session] = None) -> dict:
     try:
         all_tickets = session.query(TicketDB).all()
         total_count = len(all_tickets)
-        resolved_count = sum(1 for t in all_tickets if (t.status or "").lower() == "resolved")
-        auto_resolved_count = sum(1 for t in all_tickets if getattr(t, "auto_resolved", False))
-        
+        resolved_count = sum(
+            1 for t in all_tickets if (t.status or "").lower() == "resolved"
+        )
+        auto_resolved_count = sum(
+            1 for t in all_tickets if getattr(t, "auto_resolved", False)
+        )
+
         by_category = {}
         by_department = {}
         for t in all_tickets:
@@ -387,7 +405,11 @@ def get_analytics_summary(db: Optional[Session] = None) -> dict:
             by_category[cat] = by_category.get(cat, 0) + 1
             by_department[dept] = by_department.get(dept, 0) + 1
 
-        auto_res_rate = round((auto_resolved_count / total_count * 100), 1) if total_count > 0 else 40.0
+        auto_res_rate = (
+            round((auto_resolved_count / total_count * 100), 1)
+            if total_count > 0
+            else 40.0
+        )
 
         return {
             "total_tickets": total_count,
@@ -415,18 +437,40 @@ def get_announcements(db: Optional[Session] = None) -> List[dict]:
     try:
         from database.models_db import AnnouncementDB
 
-        records = session.query(AnnouncementDB).order_by(AnnouncementDB.createdAt.desc()).all()
+        records = (
+            session.query(AnnouncementDB)
+            .order_by(AnnouncementDB.createdAt.desc())
+            .all()
+        )
         if not records:
             # Seed standard announcements
             now_str = datetime.now().isoformat()
             defaults = [
-                AnnouncementDB(id="anc-1", title="System Maintenance Notice", content="Scheduled infrastructure maintenance on Saturday at 2 AM EST.", category="System Alert", author="IT Ops", createdAt=now_str),
-                AnnouncementDB(id="anc-2", title="New HR Policy Handbook Released", content="Please review the updated employee handbook for 2026.", category="HR Announcement", author="HR Relations", createdAt=now_str),
+                AnnouncementDB(
+                    id="anc-1",
+                    title="System Maintenance Notice",
+                    content="Scheduled infrastructure maintenance on Saturday at 2 AM EST.",
+                    category="System Alert",
+                    author="IT Ops",
+                    createdAt=now_str,
+                ),
+                AnnouncementDB(
+                    id="anc-2",
+                    title="New HR Policy Handbook Released",
+                    content="Please review the updated employee handbook for 2026.",
+                    category="HR Announcement",
+                    author="HR Relations",
+                    createdAt=now_str,
+                ),
             ]
             for d in defaults:
                 session.add(d)
             session.commit()
-            records = session.query(AnnouncementDB).order_by(AnnouncementDB.createdAt.desc()).all()
+            records = (
+                session.query(AnnouncementDB)
+                .order_by(AnnouncementDB.createdAt.desc())
+                .all()
+            )
 
         return [r.to_dict() for r in records]
     finally:
@@ -434,13 +478,20 @@ def get_announcements(db: Optional[Session] = None) -> List[dict]:
             session.close()
 
 
-def create_announcement(title: str, content: str, category: str = "General Alert", author: str = "Admin Operations", db: Optional[Session] = None) -> dict:
+def create_announcement(
+    title: str,
+    content: str,
+    category: str = "General Alert",
+    author: str = "Admin Operations",
+    db: Optional[Session] = None,
+) -> dict:
     session = db or SessionLocal()
     should_close = db is None
 
     try:
-        from database.models_db import AnnouncementDB
         import uuid
+
+        from database.models_db import AnnouncementDB
 
         anc_id = f"anc-{uuid.uuid4().hex[:8]}"
         now_str = datetime.now().isoformat()
@@ -485,28 +536,60 @@ def delete_announcement(anc_id: str, db: Optional[Session] = None) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def get_notifications(user_id: str = "user", db: Optional[Session] = None) -> List[dict]:
+def get_notifications(
+    user_id: str = "user", db: Optional[Session] = None
+) -> List[dict]:
     session = db or SessionLocal()
     should_close = db is None
 
     try:
         from database.models_db import NotificationDB
 
-        records = session.query(NotificationDB).filter(
-            or_(NotificationDB.user_id == user_id, NotificationDB.user_id == "all")
-        ).order_by(NotificationDB.createdAt.desc()).all()
+        records = (
+            session.query(NotificationDB)
+            .filter(
+                or_(NotificationDB.user_id == user_id, NotificationDB.user_id == "all")
+            )
+            .order_by(NotificationDB.createdAt.desc())
+            .all()
+        )
 
         if not records:
             now_str = datetime.now().isoformat()
             defaults = [
-                NotificationDB(id="notif-1", user_id="all", title="Ticket Updated", message="Your ticket HD-1025 status has been updated to In Progress.", is_read=False, createdAt=now_str),
-                NotificationDB(id="notif-2", user_id="all", title="New Announcement", message="System Maintenance Notice has been published.", is_read=False, createdAt=now_str),
-                NotificationDB(id="notif-3", user_id="all", title="Leave Request Approved", message="Your PTO request for next Friday was approved.", is_read=True, createdAt=now_str),
+                NotificationDB(
+                    id="notif-1",
+                    user_id="all",
+                    title="Ticket Updated",
+                    message="Your ticket HD-1025 status has been updated to In Progress.",
+                    is_read=False,
+                    createdAt=now_str,
+                ),
+                NotificationDB(
+                    id="notif-2",
+                    user_id="all",
+                    title="New Announcement",
+                    message="System Maintenance Notice has been published.",
+                    is_read=False,
+                    createdAt=now_str,
+                ),
+                NotificationDB(
+                    id="notif-3",
+                    user_id="all",
+                    title="Leave Request Approved",
+                    message="Your PTO request for next Friday was approved.",
+                    is_read=True,
+                    createdAt=now_str,
+                ),
             ]
             for d in defaults:
                 session.add(d)
             session.commit()
-            records = session.query(NotificationDB).order_by(NotificationDB.createdAt.desc()).all()
+            records = (
+                session.query(NotificationDB)
+                .order_by(NotificationDB.createdAt.desc())
+                .all()
+            )
 
         return [r.to_dict() for r in records]
     finally:
@@ -514,13 +597,16 @@ def get_notifications(user_id: str = "user", db: Optional[Session] = None) -> Li
             session.close()
 
 
-def create_notification(title: str, message: str, user_id: str = "all", db: Optional[Session] = None) -> dict:
+def create_notification(
+    title: str, message: str, user_id: str = "all", db: Optional[Session] = None
+) -> dict:
     session = db or SessionLocal()
     should_close = db is None
 
     try:
-        from database.models_db import NotificationDB
         import uuid
+
+        from database.models_db import NotificationDB
 
         notif_id = f"notif-{uuid.uuid4().hex[:8]}"
         now_str = datetime.now().isoformat()
@@ -549,7 +635,9 @@ def mark_notification_read(notif_id: str, db: Optional[Session] = None) -> bool:
     try:
         from database.models_db import NotificationDB
 
-        notif = session.query(NotificationDB).filter(NotificationDB.id == notif_id).first()
+        notif = (
+            session.query(NotificationDB).filter(NotificationDB.id == notif_id).first()
+        )
         if notif:
             notif.is_read = True
             session.commit()
@@ -572,18 +660,51 @@ def get_onboarding_records(db: Optional[Session] = None) -> List[dict]:
     try:
         from database.models_db import OnboardingDB
 
-        records = session.query(OnboardingDB).order_by(OnboardingDB.createdAt.desc()).all()
+        records = (
+            session.query(OnboardingDB).order_by(OnboardingDB.createdAt.desc()).all()
+        )
         if not records:
             now_str = datetime.now().isoformat()
             defaults = [
-                OnboardingDB(id="onb-101", employee_name="Aarav Sharma", role="Senior Software Engineer", department="IT Engineering", visa_status="H-1B Active", start_date="2026-09-01", status="Completed", createdAt=now_str),
-                OnboardingDB(id="onb-102", employee_name="Elena Rostova", role="Product Designer", department="UX Design", visa_status="OPT STEM", start_date="2026-09-15", status="In Progress", createdAt=now_str),
-                OnboardingDB(id="onb-103", employee_name="Marcus Vance", role="Data Analyst", department="HR Analytics", visa_status="TN Visa", start_date="2026-10-01", status="Pending Documents", createdAt=now_str),
+                OnboardingDB(
+                    id="onb-101",
+                    employee_name="Aarav Sharma",
+                    role="Senior Software Engineer",
+                    department="IT Engineering",
+                    visa_status="H-1B Active",
+                    start_date="2026-09-01",
+                    status="Completed",
+                    createdAt=now_str,
+                ),
+                OnboardingDB(
+                    id="onb-102",
+                    employee_name="Elena Rostova",
+                    role="Product Designer",
+                    department="UX Design",
+                    visa_status="OPT STEM",
+                    start_date="2026-09-15",
+                    status="In Progress",
+                    createdAt=now_str,
+                ),
+                OnboardingDB(
+                    id="onb-103",
+                    employee_name="Marcus Vance",
+                    role="Data Analyst",
+                    department="HR Analytics",
+                    visa_status="TN Visa",
+                    start_date="2026-10-01",
+                    status="Pending Documents",
+                    createdAt=now_str,
+                ),
             ]
             for d in defaults:
                 session.add(d)
             session.commit()
-            records = session.query(OnboardingDB).order_by(OnboardingDB.createdAt.desc()).all()
+            records = (
+                session.query(OnboardingDB)
+                .order_by(OnboardingDB.createdAt.desc())
+                .all()
+            )
 
         return [r.to_dict() for r in records]
     finally:
@@ -591,13 +712,22 @@ def get_onboarding_records(db: Optional[Session] = None) -> List[dict]:
             session.close()
 
 
-def create_onboarding_record(employee_name: str, role: str, department: str, visa_status: str = "H1-B", start_date: str = "2026-09-01", status: str = "In Progress", db: Optional[Session] = None) -> dict:
+def create_onboarding_record(
+    employee_name: str,
+    role: str,
+    department: str,
+    visa_status: str = "H1-B",
+    start_date: str = "2026-09-01",
+    status: str = "In Progress",
+    db: Optional[Session] = None,
+) -> dict:
     session = db or SessionLocal()
     should_close = db is None
 
     try:
-        from database.models_db import OnboardingDB
         import uuid
+
+        from database.models_db import OnboardingDB
 
         onb_id = f"onb-{uuid.uuid4().hex[:6]}"
         now_str = datetime.now().isoformat()
@@ -621,7 +751,9 @@ def create_onboarding_record(employee_name: str, role: str, department: str, vis
             session.close()
 
 
-def update_onboarding_status(rec_id: str, new_status: str, db: Optional[Session] = None) -> Optional[dict]:
+def update_onboarding_status(
+    rec_id: str, new_status: str, db: Optional[Session] = None
+) -> Optional[dict]:
     session = db or SessionLocal()
     should_close = db is None
 
@@ -673,7 +805,14 @@ def get_user_profile(user_id: str = "usr-1", db: Optional[Session] = None) -> di
             session.close()
 
 
-def update_user_profile(user_id: str = "usr-1", name: Optional[str] = None, email: Optional[str] = None, phone: Optional[str] = None, department: Optional[str] = None, db: Optional[Session] = None) -> dict:
+def update_user_profile(
+    user_id: str = "usr-1",
+    name: Optional[str] = None,
+    email: Optional[str] = None,
+    phone: Optional[str] = None,
+    department: Optional[str] = None,
+    db: Optional[Session] = None,
+) -> dict:
     session = db or SessionLocal()
     should_close = db is None
 
@@ -682,13 +821,21 @@ def update_user_profile(user_id: str = "usr-1", name: Optional[str] = None, emai
 
         user = session.query(UserProfileDB).filter(UserProfileDB.id == user_id).first()
         if not user:
-            user = UserProfileDB(id=user_id, name=name or "Nishita", email=email or "nishita@ticketgenie.com")
+            user = UserProfileDB(
+                id=user_id,
+                name=name or "Nishita",
+                email=email or "nishita@ticketgenie.com",
+            )
             session.add(user)
 
-        if name: user.name = name
-        if email: user.email = email
-        if phone: user.phone = phone
-        if department: user.department = department
+        if name:
+            user.name = name
+        if email:
+            user.email = email
+        if phone:
+            user.phone = phone
+        if department:
+            user.department = department
 
         session.commit()
         session.refresh(user)
@@ -696,4 +843,3 @@ def update_user_profile(user_id: str = "usr-1", name: Optional[str] = None, emai
     finally:
         if should_close:
             session.close()
-

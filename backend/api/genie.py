@@ -1,4 +1,7 @@
+from typing import Optional
+
 from fastapi import APIRouter
+from pydantic import BaseModel
 
 from models.ticket import GenieChatRequest, GenieChatResponse
 
@@ -48,9 +51,6 @@ def genie_chat(request: GenieChatRequest):
 # ---------------------------------------------------------------------------
 # ReAct Agent Loop Engine Endpoints
 # ---------------------------------------------------------------------------
-
-from typing import Optional
-from pydantic import BaseModel
 
 
 class ReActAgentRequest(BaseModel):

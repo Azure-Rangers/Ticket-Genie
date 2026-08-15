@@ -43,7 +43,11 @@ def execute_upper_management_action(
 def get_executive_leave_briefing() -> Dict[str, Any]:
     """Generate an executive summary briefing of pending leave requests requiring review."""
     leave_tickets = get_leave_tickets()
-    pending = [t for t in leave_tickets if (t.get("status") or "").lower() in {"open", "pending"}]
+    pending = [
+        t
+        for t in leave_tickets
+        if (t.get("status") or "").lower() in {"open", "pending"}
+    ]
 
     return {
         "total_leave_requests": len(leave_tickets),

@@ -46,7 +46,9 @@ class AIServiceError(Exception):
 class AIServiceWrapper:
     """Wrapper class providing a structured .generate() interface for Pydantic response models."""
 
-    def generate(self, *, system_prompt: str, user_content: str, response_model: Any) -> Any:
+    def generate(
+        self, *, system_prompt: str, user_content: str, response_model: Any
+    ) -> Any:
         if use_mock_ai():
             try:
                 return response_model()
@@ -67,7 +69,9 @@ class AIServiceWrapper:
         try:
             from openai import AzureOpenAI
 
-            client = AzureOpenAI(azure_endpoint=endpoint, api_key=api_key, api_version=api_version)
+            client = AzureOpenAI(
+                azure_endpoint=endpoint, api_key=api_key, api_version=api_version
+            )
             response = client.chat.completions.create(
                 model=deployment,
                 temperature=0,
@@ -109,7 +113,12 @@ ai_service = AIServiceWrapper()
 def use_mock_ai() -> bool:
     """Return True when the module should use deterministic local rules
     instead of calling Azure OpenAI."""
-    return os.getenv("USE_MOCK_AI", "true").strip().lower() in {"1", "true", "yes", "on"}
+    return os.getenv("USE_MOCK_AI", "true").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
 
 def get_confidence_threshold() -> float:
@@ -149,7 +158,8 @@ def build_system_prompt() -> str:
         for department, categories in ALLOWED_CATEGORIES.items()
     )
     priorities_block = "\n".join(
-        f"- {priority}: {PRIORITY_DESCRIPTIONS[priority]}" for priority in ALLOWED_PRIORITIES
+        f"- {priority}: {PRIORITY_DESCRIPTIONS[priority]}"
+        for priority in ALLOWED_PRIORITIES
     )
 
     return (
@@ -164,8 +174,8 @@ def build_system_prompt() -> str:
         f"{priorities_block}\n\n"
         "Rules:\n"
         "- Base priority on business impact, not on emotional language. "
-        "The word \"urgent\" appearing in the ticket text does NOT by "
-        "itself justify a \"Critical\" priority.\n"
+        'The word "urgent" appearing in the ticket text does NOT by '
+        'itself justify a "Critical" priority.\n'
         "- If the ticket is vague, could reasonably belong to more than "
         "one department, or is missing information needed to classify it "
         "confidently, lower your confidence and set needs_human_review "
@@ -174,7 +184,7 @@ def build_system_prompt() -> str:
         "high-risk (legal, safety, security, executive-level conflict), "
         "set needs_human_review to true even if you are otherwise "
         "confident.\n"
-        "- \"reason\" must be one short, concise, factual sentence.\n"
+        '- "reason" must be one short, concise, factual sentence.\n'
         "- Respond with a single JSON object and no other text, matching "
         "exactly this shape and no additional keys:\n"
         "{\n"
@@ -229,7 +239,9 @@ def _call_azure_openai(
         user_content += f"\nAdditional context: {json.dumps(context, default=str)}"
 
     try:
-        client = AzureOpenAI(azure_endpoint=endpoint, api_key=api_key, api_version=api_version)
+        client = AzureOpenAI(
+            azure_endpoint=endpoint, api_key=api_key, api_version=api_version
+        )
         response = client.chat.completions.create(
             model=deployment,
             temperature=0,
@@ -286,8 +298,14 @@ def _call_azure_openai(
 _MOCK_KEYWORD_RULES: dict[str, dict[str, list[str]]] = {
     "IT Team": {
         "Identity and Access Management": [
-            "password", "login", "log in", "account", "locked out",
-            "access", "vpn", "credentials",
+            "password",
+            "login",
+            "log in",
+            "account",
+            "locked out",
+            "access",
+            "vpn",
+            "credentials",
         ],
         "Laptop Requests": ["laptop"],
         "Software Licensing": ["software", "license", "licensing"],
@@ -301,23 +319,35 @@ _MOCK_KEYWORD_RULES: dict[str, dict[str, list[str]]] = {
         "Badge Registration": ["badge"],
         "Maintenance": ["maintenance", "repair"],
         "Office Equipment Issues": [
-            "office equipment", "mouse", "keyboard", "monitor", "printer",
-            "desk", "chair",
+            "office equipment",
+            "mouse",
+            "keyboard",
+            "monitor",
+            "printer",
+            "desk",
+            "chair",
         ],
     },
     "HR Team": {
         "Benefits Inquiries": ["benefits", "benefit"],
         "Onboarding and Offboarding": [
-            "onboarding", "offboarding", "onboard", "offboard", "new hire",
+            "onboarding",
+            "offboarding",
+            "onboard",
+            "offboard",
+            "new hire",
         ],
         "Employee Relationships": [
-            "employee relationship", "harassment", "coworker conflict",
+            "employee relationship",
+            "harassment",
+            "coworker conflict",
             "workplace conflict",
         ],
     },
     "Upper Management": {
         "High-Impact Company Conflict": [
-            "serious company-wide conflict", "major organizational conflict",
+            "serious company-wide conflict",
+            "major organizational conflict",
             "company-wide conflict",
         ],
         "Executive Review": ["executive issue", "executive review"],
@@ -326,19 +356,39 @@ _MOCK_KEYWORD_RULES: dict[str, dict[str, list[str]]] = {
 }
 
 _CRITICAL_SIGNALS = [
-    "company-wide", "company wide", "entire company", "all employees",
-    "every employee", "many employees", "across the company",
-    "safety concern", "security incident", "security breach",
-    "data breach", "legal risk",
+    "company-wide",
+    "company wide",
+    "entire company",
+    "all employees",
+    "every employee",
+    "many employees",
+    "across the company",
+    "safety concern",
+    "security incident",
+    "security breach",
+    "data breach",
+    "legal risk",
 ]
 _LOW_SIGNALS = [
-    "still works", "no rush", "not urgent", "just a question",
-    "just curious", "whenever you get a chance",
+    "still works",
+    "no rush",
+    "not urgent",
+    "just a question",
+    "just curious",
+    "whenever you get a chance",
 ]
 _HIGH_SIGNALS = [
-    "cannot work", "can't work", "unable to work", "blocked",
-    "locked out", "cannot log in", "can't log in", "important deadline",
-    "approaching deadline", "cannot access", "can't access",
+    "cannot work",
+    "can't work",
+    "unable to work",
+    "blocked",
+    "locked out",
+    "cannot log in",
+    "can't log in",
+    "important deadline",
+    "approaching deadline",
+    "cannot access",
+    "can't access",
 ]
 
 

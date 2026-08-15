@@ -53,7 +53,6 @@ app.include_router(onboarding_router, prefix="/api")
 app.include_router(users_router, prefix="/api")
 
 
-
 @app.get("/")
 def root():
     return {"message": "Welcome to TicketGenie API!", "status": "Running"}

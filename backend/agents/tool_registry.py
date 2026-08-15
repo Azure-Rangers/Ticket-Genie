@@ -8,11 +8,10 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Callable, Dict, List
+from typing import Any, Dict, List
 
 from database.crud import get_all_tickets, update_ticket
 from models.ticket import TicketUpdate
-from services.document_service import generate_ticket_pdf
 from services.knowledge_service import answer_question
 from services.sql_context_service import execute_sql_query
 
@@ -55,7 +54,9 @@ def bulk_approve_leave_tool(max_days: int = 5, date_range: str = None) -> str:
         cat = (t.get("category") or "").lower()
         status = (t.get("status") or "").lower()
 
-        is_leave = "leave" in cat or "pto" in cat or "vacation" in cat or "executive" in dept
+        is_leave = (
+            "leave" in cat or "pto" in cat or "vacation" in cat or "executive" in dept
+        )
         if is_leave and status in {"open", "pending"}:
             update_ticket(t["id"], TicketUpdate(status="Approved"))
             approved_count += 1
@@ -74,7 +75,11 @@ TOOL_DEFINITIONS = [
     {
         "name": "sql_query_tool",
         "description": "Execute role-scoped SELECT or controlled UPDATE query on the tickets database.",
-        "parameters": {"query": "string (SQL query)", "role": "string", "user_id": "string"},
+        "parameters": {
+            "query": "string (SQL query)",
+            "role": "string",
+            "user_id": "string",
+        },
     },
     {
         "name": "update_ticket_tool",
@@ -99,7 +104,12 @@ TOOL_DEFINITIONS = [
 ]
 
 
-def execute_tool(tool_name: str, arguments: Dict[str, Any], role: str = "Super Admin", user_id: str = "user") -> str:
+def execute_tool(
+    tool_name: str,
+    arguments: Dict[str, Any],
+    role: str = "Super Admin",
+    user_id: str = "user",
+) -> str:
     """Dispatch execution to the matching tool handler."""
     logger.info(f"[ReAct Tool Call] name={tool_name} args={arguments}")
 

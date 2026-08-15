@@ -1,6 +1,7 @@
 """User Profiles API Router for TicketGenie."""
 
 from typing import Optional
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -22,7 +23,9 @@ def handle_get_profile(user_id: Optional[str] = "usr-1"):
 
 
 @router.put("/profile")
-def handle_update_profile(req: UserProfileUpdateRequest, user_id: Optional[str] = "usr-1"):
+def handle_update_profile(
+    req: UserProfileUpdateRequest, user_id: Optional[str] = "usr-1"
+):
     return update_user_profile(
         user_id=user_id or "usr-1",
         name=req.name,

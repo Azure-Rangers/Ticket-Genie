@@ -79,4 +79,3 @@ class CompletedTicket(TicketCreate):
     confidence: float = Field(ge=0.0, le=1.0)
     reason: str
     needs_human_review: bool
-

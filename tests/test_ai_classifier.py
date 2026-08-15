@@ -72,7 +72,9 @@ def test_urgent_word_alone_does_not_force_critical_priority() -> None:
     assert result.priority == "Low"
 
 
-def test_low_confidence_result_flags_human_review(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_low_confidence_result_flags_human_review(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(
         ai_service,
         "get_ai_classification",
@@ -121,7 +123,9 @@ def test_invalid_category_for_department_is_rejected_and_flagged(
     assert result.category == orchestrator.FALLBACK_CATEGORY
 
 
-def test_azure_failure_is_caught_and_flags_human_review(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_azure_failure_is_caught_and_flags_human_review(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     def _boom(title: str, description: str, context=None):
         raise ai_service.AIServiceError("Azure OpenAI authentication failed.")
 

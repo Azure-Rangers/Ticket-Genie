@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter
+
 from database.crud import get_analytics_summary
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])

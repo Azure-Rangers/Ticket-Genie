@@ -50,7 +50,9 @@ def is_valid_department(department: str) -> bool:
 
 def is_valid_category(department: str, category: str) -> bool:
     """Return True if `category` is a valid category for `department`."""
-    return is_valid_department(department) and category in ALLOWED_CATEGORIES[department]
+    return (
+        is_valid_department(department) and category in ALLOWED_CATEGORIES[department]
+    )
 
 
 def get_categories_for_department(department: str) -> list[str]:

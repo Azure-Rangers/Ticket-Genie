@@ -1,6 +1,7 @@
 """Onboarding & Visas API Router for TicketGenie."""
 
 from typing import Optional
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 

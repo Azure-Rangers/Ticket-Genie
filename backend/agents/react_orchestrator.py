@@ -14,6 +14,7 @@ import logging
 import os
 import re
 from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel
 
 from agents.tool_registry import TOOL_DEFINITIONS, execute_tool
@@ -111,7 +112,9 @@ def run_react_agent_loop(
         response_text = _call_llm_react_step(system_prompt, conversation_history)
 
         # Parse Thought, Action, Action Input, or Final Response
-        thought, action, action_input, final_response = _parse_react_output(response_text)
+        thought, action, action_input, final_response = _parse_react_output(
+            response_text
+        )
 
         if final_response:
             steps.append(
@@ -145,9 +148,7 @@ def run_react_agent_loop(
             )
 
             # Append to prompt history for next loop
-            conversation_history += (
-                f"\nThought: {thought}\nAction: {action}\nAction Input: {json.dumps(action_input)}\nObservation: {observation}\n"
-            )
+            conversation_history += f"\nThought: {thought}\nAction: {action}\nAction Input: {json.dumps(action_input)}\nObservation: {observation}\n"
         else:
             # Fallback if no valid action was formatted
             final_resp = thought or response_text
@@ -173,9 +174,13 @@ def run_react_agent_loop(
     )
 
 
-def _parse_react_output(text: str) -> tuple[str, Optional[str], Optional[Dict[str, Any]], Optional[str]]:
+def _parse_react_output(
+    text: str,
+) -> tuple[str, Optional[str], Optional[Dict[str, Any]], Optional[str]]:
     """Parse Thought, Action, Action Input, and Final Response from LLM output."""
-    thought_match = re.search(r"Thought:\s*(.*?)(?=(Action:|Final Response:|$))", text, re.DOTALL)
+    thought_match = re.search(
+        r"Thought:\s*(.*?)(?=(Action:|Final Response:|$))", text, re.DOTALL
+    )
     thought = thought_match.group(1).strip() if thought_match else ""
 
     final_match = re.search(r"Final Response:\s*(.*)", text, re.DOTALL)
@@ -203,7 +208,12 @@ def _call_llm_react_step(system_prompt: str, user_history: str) -> str:
     deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT")
     api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-08-01-preview")
 
-    use_mock = os.getenv("USE_MOCK_AI", "true").strip().lower() in {"1", "true", "yes", "on"}
+    use_mock = os.getenv("USE_MOCK_AI", "true").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
     if use_mock or not (endpoint and api_key and deployment):
         # Local deterministic ReAct parser for mock testing
@@ -212,7 +222,9 @@ def _call_llm_react_step(system_prompt: str, user_history: str) -> str:
     try:
         from openai import AzureOpenAI
 
-        client = AzureOpenAI(azure_endpoint=endpoint, api_key=api_key, api_version=api_version)
+        client = AzureOpenAI(
+            azure_endpoint=endpoint, api_key=api_key, api_version=api_version
+        )
         response = client.chat.completions.create(
             model=deployment,
             temperature=0,

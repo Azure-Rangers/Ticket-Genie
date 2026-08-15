@@ -22,7 +22,9 @@ def validate_routing(department: str, category: str, priority: str) -> list[str]
     if not is_valid_department(department):
         errors.append(f"'{department}' is not an allowed department.")
     elif not is_valid_category(department, category):
-        errors.append(f"'{category}' is not a valid category for department '{department}'.")
+        errors.append(
+            f"'{category}' is not a valid category for department '{department}'."
+        )
 
     if not is_valid_priority(priority):
         errors.append(f"'{priority}' is not a valid priority.")

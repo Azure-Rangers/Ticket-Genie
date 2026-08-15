@@ -157,4 +157,3 @@ def record_llm_metrics(
             _estimated_cost_counter.add(estimated_cost_usd, attributes)
         except Exception as exc:
             logger.warning(f"Failed to record LLM metrics to OpenTelemetry: {exc}")
-

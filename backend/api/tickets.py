@@ -85,6 +85,7 @@ def handle_update_ticket(
 @router.get("/{ticket_id}/export")
 def export_ticket_document(ticket_id: str, format: str = "pdf"):
     from fastapi import Response
+
     from services.document_service import generate_ticket_docx, generate_ticket_pdf
 
     doc_format = format.lower().strip()
@@ -93,7 +94,9 @@ def export_ticket_document(ticket_id: str, format: str = "pdf"):
         return Response(
             content=docx_bytes,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            headers={"Content-Disposition": f"attachment; filename=ticket_{ticket_id}.docx"},
+            headers={
+                "Content-Disposition": f"attachment; filename=ticket_{ticket_id}.docx"
+            },
         )
 
     pdf_bytes = generate_ticket_pdf(ticket_id)
@@ -118,12 +121,16 @@ class CommentCreateRequest(BaseModel):
 @router.get("/{ticket_id}/comments")
 def list_comments_for_ticket(ticket_id: str, db: Session = Depends(get_db)):
     from database.crud import get_ticket_comments
+
     return get_ticket_comments(ticket_id, db=db)
 
 
 @router.post("/{ticket_id}/comments", status_code=201)
-def post_comment_to_ticket(ticket_id: str, req: CommentCreateRequest, db: Session = Depends(get_db)):
+def post_comment_to_ticket(
+    ticket_id: str, req: CommentCreateRequest, db: Session = Depends(get_db)
+):
     from database.crud import add_ticket_comment
+
     return add_ticket_comment(
         ticket_id=ticket_id,
         message=req.message,

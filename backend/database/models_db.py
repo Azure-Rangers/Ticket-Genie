@@ -213,4 +213,3 @@ class UserProfileDB(Base):
             "phone": self.phone,
             "avatar": self.avatar,
         }
-

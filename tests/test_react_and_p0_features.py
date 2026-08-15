@@ -3,10 +3,14 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from agents.react_orchestrator import ReActResult, run_react_agent_loop
 from backend.main import app
-from agents.react_orchestrator import run_react_agent_loop, ReActResult
-from services.sql_context_service import execute_sql_query, validate_and_sanitize_sql, SQLValidationError
-from services.document_service import generate_ticket_pdf, generate_ticket_docx
+from services.document_service import generate_ticket_docx, generate_ticket_pdf
+from services.sql_context_service import (
+    SQLValidationError,
+    execute_sql_query,
+    validate_and_sanitize_sql,
+)
 
 client = TestClient(app)
 
@@ -21,7 +25,9 @@ def test_react_agent_loop_execution():
 
 def test_text_to_sql_execution_and_security():
     # Valid SELECT
-    select_res = execute_sql_query("SELECT COUNT(*) as cnt FROM tickets", role="Super Admin")
+    select_res = execute_sql_query(
+        "SELECT COUNT(*) as cnt FROM tickets", role="Super Admin"
+    )
     assert select_res["success"] is True
 
     # Forbidden SQL operation
@@ -42,7 +48,10 @@ def test_document_export_pdf_and_docx():
 
 def test_admin_api_departments_and_users():
     # Create department
-    res = client.post("/api/admin/departments", json={"name": "DevOps Engineering", "queue_name": "DevOps Queue"})
+    res = client.post(
+        "/api/admin/departments",
+        json={"name": "DevOps Engineering", "queue_name": "DevOps Queue"},
+    )
     assert res.status_code == 201
 
     # List departments
@@ -51,12 +60,15 @@ def test_admin_api_departments_and_users():
     assert any(d["name"] == "DevOps Engineering" for d in list_res.json())
 
     # Add department user
-    user_res = client.post("/api/admin/departments/users", json={
-        "department_name": "DevOps Engineering",
-        "azure_object_id": "obj-12345-devops",
-        "role": "Lead",
-        "user_email": "devops@company.com"
-    })
+    user_res = client.post(
+        "/api/admin/departments/users",
+        json={
+            "department_name": "DevOps Engineering",
+            "azure_object_id": "obj-12345-devops",
+            "role": "Lead",
+            "user_email": "devops@company.com",
+        },
+    )
     assert user_res.status_code == 201
 
 
