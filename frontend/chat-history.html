@@ -4,40 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat History | TicketGenie</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
-    
-    <!-- Custom Styles for Chat History -->
-    <style>
-        .chat-history-container { display: flex; flex-direction: column; gap: 15px; }
-        .chat-card { background: white; border: 1px solid #e1e6e2; border-radius: 9px; padding: 20px; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
-        .chat-card:hover { border-color: #d2c6d6; box-shadow: 0 7px 20px rgba(43, 27, 54, 0.05); }
-        
-        .chat-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-        .leader-info { display: flex; align-items: center; gap: 12px; }
-        .leader-avatar { width: 40px; height: 40px; border-radius: 50%; background: #e2d5e8; color: #432950; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; flex-shrink: 0; }
-        .leader-details strong { display: block; font-size: 14px; color: #303a34; font-weight: 600; }
-        .leader-details span { display: block; font-size: 11px; color: #8a948d; margin-top: 3px; }
-        
-        .ai-summary-btn { height: 32px; padding: 0 12px; border: 1px solid #d2c6d6; border-radius: 6px; background: #f8f4fa; color: #6f4b82; font-size: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s ease; }
-        .ai-summary-btn:hover { background: #e2d5e8; }
-        
-        .chat-snippet { background: #fcfbfc; border: 1px solid #edf0ee; padding: 12px 15px; border-radius: 6px; color: #5f6b63; font-size: 12px; line-height: 1.5; margin-bottom: 15px; }
-        
-        .chat-actions { display: flex; gap: 10px; }
-        .view-chat-btn { font-size: 11px; color: #6f4b82; text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 5px; }
-        .view-chat-btn:hover { color: #402a4a; }
-
-        /* The Boxed AI Summary */
-        .ai-summary-box { display: none; background: #f1ebf4; border-left: 4px solid #6f4b82; padding: 15px; border-radius: 6px; margin-top: 15px; animation: fadeIn 0.3s ease; }
-        .ai-summary-box.active { display: block; }
-        .ai-summary-header { display: flex; align-items: center; gap: 7px; color: #432950; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-        .ai-summary-content { font-size: 11px; color: #402a4a; line-height: 1.5; }
-        .ai-summary-tags { display: flex; gap: 6px; margin-top: 10px; }
-        .summary-tag { background: white; border: 1px solid #d2c6d6; color: #6f4b82; font-size: 9px; padding: 3px 8px; border-radius: 12px; }
-        
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 <body>
 
@@ -49,10 +17,9 @@
             </div>
             <div>
                 <h2>TicketGenie</h2>
-                <span>Employee Support</span>
+                <span>Employee Portal</span>
             </div>
         </div>
-        
         <button id="brandMenuToggle" class="brand-menu-toggle" aria-label="Toggle Pages">
             <i class="fa-solid fa-bars"></i>
         </button>
@@ -69,7 +36,6 @@
         <a href="new-request.html" class="nav-item">
             <i class="fa-solid fa-plus"></i><span>New Request</span>
         </a>
-        <!-- NEW TAB ADDED HERE -->
         <a href="chat-history.html" class="nav-item active">
             <i class="fa-regular fa-comments"></i><span>Chat History</span>
         </a>
@@ -82,13 +48,6 @@
             <i class="fa-solid fa-bell"></i><span>Notifications</span><span class="notification-count">3</span>
         </a>
     </nav>
-
-    <div class="sidebar-bottom">
-        <div class="system-status">
-            <div class="status-dot"></div>
-            <div><strong>All systems operational</strong><small>TicketGenie is online</small></div>
-        </div>
-    </div>
 </aside>
 
 <main class="main-content">
@@ -97,225 +56,141 @@
             <button class="icon-button" id="sidebarToggle" type="button" aria-label="Toggle Sidebar">
                 <i class="fa-solid fa-bars"></i>
             </button>
+            <div class="page-title">
+                <h1 id="chatPageTitle">Chat History</h1>
+            </div>
         </div>
 
         <div class="topbar-actions">
-            <div class="search-box">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" placeholder="Search chats..." id="globalSearch">
-                <span class="shortcut">⌘ K</span>
-            </div>
-            <!-- Dark Mode Toggle Button -->
             <button class="icon-button" id="darkModeToggle" type="button" aria-label="Toggle Dark Mode">
                 <i class="fa-solid fa-moon" id="darkModeIcon"></i>
             </button>
-            <button class="icon-button" type="button">
-                <i class="fa-regular fa-bell"></i><span class="notification-dot"></span>
-            </button>
-            <div class="profile">
-                <button class="profile-button" id="profileDropdownTrigger" aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdownMenu">
-                    <div class="avatar">NM</div>
-                    <div class="profile-info"><strong>Nishita</strong><span id="currentRoleDisplay">Employee</span></div>
-                    <i class="fa-solid fa-chevron-down"></i>
-                </button>
-                <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu" aria-labelledby="profileDropdownTrigger">
-                    <span class="dropdown-label">Switch View</span>
-                    <button type="button" class="role-switch-btn active" data-role="Employee" role="menuitem">
-                        <i class="fa-regular fa-user"></i> Employee View
-                    </button>
-                    <button type="button" class="role-switch-btn" data-role="Management" role="menuitem">
-                        <i class="fa-solid fa-briefcase"></i> Management View
-                    </button>
-                </div>
-            </div>
         </div>
     </header>
 
-    <section class="welcome-section">
-        <div class="eyebrow">COMMUNICATIONS</div>
-        <h2>Direct Conversations</h2>
-        <p>Review your past chat history with department leaders and view AI-generated summaries of your discussions.</p>
-    </section>
-
     <section class="section">
-        <div class="chat-history-container">
+        <div class="chat-history-container" style="background: #ffffff; border: 1px solid #e1e6e2; border-left: 4px solid #d4a359; border-radius: 8px; padding: 24px; box-shadow: 0 4px 15px rgba(43, 27, 54, 0.03);">
             
-            <!-- Chat Card 1 -->
-            <div class="chat-card">
-                <div class="chat-header">
-                    <div class="leader-info">
-                        <div class="leader-avatar">JD</div>
-                        <div class="leader-details">
-                            <strong>Jane Doe</strong>
-                            <span>Director of Human Resources • Aug 11, 2026</span>
-                        </div>
+            <!-- Chat Header Banner with Ticket Info & AI Summary Button -->
+            <div id="activeTicketBanner" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #faf7fc; padding: 16px 20px; border-radius: 8px; border: 1px solid #dcd2e3;">
+                <div>
+                    <div style="font-size: 15px; font-weight: 700; color: #2b1b36; margin-bottom: 4px;">
+                        Support Request <span id="bannerTicketId" style="color: #6f4b82;">#HD-1035</span>
                     </div>
-                    <button type="button" class="ai-summary-btn toggle-summary">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> AI-Generated Summary
-                    </button>
+                    <div id="bannerContextText" style="font-size: 12px; color: #6a5a7c;">
+                        Viewing active conversation history and routing thread.
+                    </div>
                 </div>
-                
-                <div class="chat-snippet">
-                    <strong>Jane:</strong> "I've reviewed your request for the extended parental leave. The documentation looks good, but please ensure you fill out the secondary form by Friday."
-                </div>
-                
-                <div class="chat-actions">
-                    <a href="#" class="view-chat-btn">View full transcript <i class="fa-solid fa-arrow-right"></i></a>
-                </div>
+                <!-- Restored AI-Generated Summary Button -->
+                <button type="button" id="aiSummaryBtn" style="background: #f1ebf4; color: #6f4b82; border: 1px solid #dcd2e3; padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s;">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Summarize with AI
+                </button>
+            </div>
 
-                <!-- AI Summary Box -->
-                <div class="ai-summary-box">
-                    <div class="ai-summary-header">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> Conversation Summary
+            <!-- Messages Thread Area -->
+            <div class="genie-messages" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; max-height: 400px; overflow-y: auto; padding-right: 4px;">
+                <div class="genie-message" style="display: flex; gap: 12px;">
+                    <div class="genie-message-avatar" style="width: 32px; height: 32px; background: #f1ebf4; color: #6f4b82; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
                     </div>
-                    <div class="ai-summary-content">
-                        Discussed the approval process for extended parental leave. Jane Doe confirmed that the primary documentation is approved, but noted that a secondary compliance form must be completed and submitted by this coming Friday to finalize the request.
-                    </div>
-                    <div class="ai-summary-tags">
-                        <span class="summary-tag">Parental Leave</span>
-                        <span class="summary-tag">Action Required</span>
+                    <div class="genie-bubble" style="background: #faf7fc; border: 1px solid #dcd2e3; padding: 12px 16px; border-radius: 8px; font-size: 13px; color: #2b1b36; max-width: 80%;">
+                        We received your request. An enterprise specialist is currently reviewing your ticket details.
                     </div>
                 </div>
             </div>
 
-            <!-- Chat Card 2 -->
-            <div class="chat-card">
-                <div class="chat-header">
-                    <div class="leader-info">
-                        <div class="leader-avatar">MR</div>
-                        <div class="leader-details">
-                            <strong>Michael Reynolds</strong>
-                            <span>VP of IT & Infrastructure • Aug 08, 2026</span>
-                        </div>
-                    </div>
-                    <button type="button" class="ai-summary-btn toggle-summary">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> AI-Generated Summary
-                    </button>
-                </div>
-                
-                <div class="chat-snippet">
-                    <strong>Michael:</strong> "The new Power BI licenses have been allocated. You should see the application available in your dashboard upon your next login."
-                </div>
-                
-                <div class="chat-actions">
-                    <a href="#" class="view-chat-btn">View full transcript <i class="fa-solid fa-arrow-right"></i></a>
-                </div>
-
-                <!-- AI Summary Box -->
-                <div class="ai-summary-box">
-                    <div class="ai-summary-header">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> Conversation Summary
-                    </div>
-                    <div class="ai-summary-content">
-                        You requested a new enterprise license for Microsoft Power BI. Michael Reynolds verified the software allocation and confirmed the license has been applied to your account. Access should be granted immediately upon next login.
-                    </div>
-                    <div class="ai-summary-tags">
-                        <span class="summary-tag">Software License</span>
-                        <span class="summary-tag">Resolved</span>
-                    </div>
-                </div>
+            <!-- Chat Reply Input Area -->
+            <div class="genie-input-area" style="display: flex; gap: 10px;">
+                <input type="text" id="chatHistoryInput" placeholder="Type a message to reply..." autocomplete="off" style="flex: 1; padding: 10px 14px; border: 1px solid #dcd2e3; border-radius: 6px; font-size: 13px;">
+                <button type="button" style="background: #6f4b82; color: #ffffff; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer;">
+                    <i class="fa-solid fa-arrow-up"></i>
+                </button>
             </div>
-
-            <!-- Chat Card 3 -->
-            <div class="chat-card">
-                <div class="chat-header">
-                    <div class="leader-info">
-                        <div class="leader-avatar">SK</div>
-                        <div class="leader-details">
-                            <strong>Sarah Kensington</strong>
-                            <span>Payroll Operations Manager • Aug 02, 2026</span>
-                        </div>
-                    </div>
-                    <button type="button" class="ai-summary-btn toggle-summary">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> AI-Generated Summary
-                    </button>
-                </div>
-                
-                <div class="chat-snippet">
-                    <strong>Sarah:</strong> "The expense reimbursement for the Seattle conference was processed in yesterday's batch. It will reflect on your upcoming paycheck."
-                </div>
-                
-                <div class="chat-actions">
-                    <a href="#" class="view-chat-btn">View full transcript <i class="fa-solid fa-arrow-right"></i></a>
-                </div>
-
-                <!-- AI Summary Box -->
-                <div class="ai-summary-box">
-                    <div class="ai-summary-header">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> Conversation Summary
-                    </div>
-                    <div class="ai-summary-content">
-                        Inquired about the status of the Q3 Seattle travel expenses. Sarah confirmed that the expenses were successfully verified and processed. The funds will be distributed alongside the next standard payroll cycle.
-                    </div>
-                    <div class="ai-summary-tags">
-                        <span class="summary-tag">Expenses</span>
-                        <span class="summary-tag">Payroll</span>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </section>
-
 </main>
 
-<div class="genie-container">
-    <button class="genie-button" id="genieButton" type="button"><i class="fa-solid fa-wand-magic-sparkles"></i> Ask Genie</button>
-    <div class="genie-chat" id="genieChat">
-        <div class="genie-chat-header">
-            <div class="genie-header-info">
-                <div class="genie-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                <div><strong>Genie AI</strong><span><span class="genie-status-dot"></span> Online</span></div>
+<!-- Genie AI Floating Button & Drawer -->
+<button class="genie-button" id="genieButton" type="button">
+    <i class="fa-solid fa-wand-magic-sparkles"></i>
+    <span>Ask Genie</span>
+</button>
+
+<div class="genie-chat" id="genieChat">
+    <div class="genie-chat-header">
+        <div class="genie-header-info">
+            <div class="genie-avatar">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
             </div>
-            <button class="genie-close" id="closeGenieButton" type="button"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="genie-messages" id="genieMessages">
-            <div class="genie-message">
-                <div class="genie-message-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                <div class="genie-bubble">Hi! I'm Genie. I can help you search your past chat history or summarize a specific topic.</div>
+            <div>
+                <strong>Genie AI</strong>
+                <span><span class="genie-status-dot"></span> Online</span>
             </div>
         </div>
-        <div class="genie-input-area">
-            <input type="text" id="genieInput" placeholder="Ask Genie something..." autocomplete="off">
-            <button type="button" id="genieSendButton"><i class="fa-solid fa-arrow-up"></i></button>
+        <button class="genie-close" id="closeGenieButton" type="button">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <div class="genie-messages" id="genieMessages">
+        <div class="genie-message">
+            <div class="genie-message-avatar">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div class="genie-bubble">
+                Hi! I'm Genie, your AI support assistant. How can I help you today?
+            </div>
         </div>
-        <div class="genie-disclaimer">Genie may occasionally provide inaccurate information.</div>
+    </div>
+    <div class="genie-input-area">
+        <input type="text" id="genieInput" placeholder="Ask a question..." autocomplete="off">
+        <button id="genieSendButton" type="button">
+            <i class="fa-solid fa-arrow-up"></i>
+        </button>
+    </div>
+    <div class="genie-disclaimer">
+        Genie may occasionally provide inaccurate information.
     </div>
 </div>
 
-<script src="js/script.js"></script>
-
-<!-- Script for handling AI Summary Toggles -->
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        const summaryButtons = document.querySelectorAll('.toggle-summary');
-        
-        summaryButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                const card = e.target.closest('.chat-card');
-                const summaryBox = card.querySelector('.ai-summary-box');
-                
-                // If it's already open, just close it instantly
-                if (summaryBox.classList.contains('active')) {
-                    summaryBox.classList.remove('active');
-                    return;
-                }
+        const urlParams = new URLSearchParams(window.location.search);
+        const ticketId = urlParams.get('ticket') || "HD-1035";
+        const contextText = urlParams.get('context');
 
-                // If it's closed, trigger the loading state
-                const originalHTML = button.innerHTML;
-                button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
-                button.classList.add('loading');
+        const titleElement = document.getElementById('chatPageTitle');
+        const bannerTicketId = document.getElementById('bannerTicketId');
+        const bannerContextText = document.getElementById('bannerContextText');
 
-                // Simulate AI generating the summary for 1.2 seconds
-                setTimeout(() => {
-                    button.innerHTML = originalHTML;
-                    button.classList.remove('loading');
-                    summaryBox.classList.add('active');
-                }, 1200);
+        if (ticketId) {
+            if (titleElement) titleElement.textContent = `Chat History: #${ticketId}`;
+            if (bannerTicketId) bannerTicketId.textContent = `#${ticketId}`;
+            if (bannerContextText) {
+                bannerContextText.textContent = contextText ? decodeURIComponent(contextText) : "Active conversation thread and routing history.";
+            }
+        }
+
+        // AI Summary Button Action
+        const aiSummaryBtn = document.getElementById('aiSummaryBtn');
+        const messagesContainer = document.querySelector('.genie-messages');
+        if (aiSummaryBtn && messagesContainer) {
+            aiSummaryBtn.addEventListener('click', () => {
+                const summaryDiv = document.createElement('div');
+                summaryDiv.className = 'genie-message';
+                summaryDiv.innerHTML = `
+                    <div class="genie-message-avatar" style="width: 32px; height: 32px; background: #f1ebf4; color: #6f4b82; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <div class="genie-bubble" style="background: #fdf8f0; border: 1px solid #d4a359; padding: 12px 16px; border-radius: 8px; font-size: 13px; color: #2b1b36; max-width: 85%;">
+                        <strong>AI Summary for #${ticketId}:</strong> User submitted an enterprise support request. HR/IT reviewed documentation and confirmed active status handling.
+                    </div>
+                `;
+                messagesContainer.appendChild(summaryDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
             });
-        });
+        }
     });
 </script>
-
+<script src="js/script.js"></script>
 </body>
 </html>

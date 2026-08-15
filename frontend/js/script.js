@@ -797,6 +797,23 @@ function initializeDarkMode() {
 }
 
 /* =========================================================
+   TICKET TO CHAT HISTORY NAVIGATION
+   ========================================================= */
+document.addEventListener("DOMContentLoaded", () => {
+    const clickableRows = document.querySelectorAll(".ticket-clickable");
+
+    clickableRows.forEach(row => {
+        row.addEventListener("click", () => {
+            const ticketId = row.getAttribute("data-ticket-id");
+            if (!ticketId) return;
+
+            // Redirect to your chat-history.html page with the ticket query parameter
+            window.location.href = `chat-history.html?ticket=${ticketId}`;
+        });
+    });
+});
+
+/* =========================================================
    INITIALIZE EVERYTHING
 ========================================================= */
 document.addEventListener("DOMContentLoaded", () => {
