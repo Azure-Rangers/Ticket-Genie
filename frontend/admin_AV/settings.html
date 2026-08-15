@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TicketGenie - Settings</title>
+  <link rel="stylesheet" href="admin.css">
+  <style>
+    /* PAGE SPECIFIC SETTINGS STYLES */
+
+    .page-padding { padding: 40px; max-width: 600px; margin: 0 auto; width: 100%; }
+    .eyebrow-text { font-size: 0.7rem; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .page-title { font-size: 1.75rem; color: #111827; font-weight: 600; margin-bottom: 32px; }
+    
+    .settings-card { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 32px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+    .input-group { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
+    .input-group label { font-size: 0.8rem; font-weight: 600; color: #374151; }
+    .input-group select { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; outline: none; }
+    .btn-row { display: flex; gap: 12px; margin-top: 24px; }
+    .btn-save { flex: 1; padding: 10px; background: #2b1b38; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn-save:hover { background: #4f46e5; }
+    .btn-logout { padding: 10px 20px; background: white; border: 1px solid #d1d5db; color: #dc2626; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn-logout:hover { background: #fee2e2; border-color: #fca5a5; }
+  </style>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body class="admin-page">
+  <aside class="sidebar" id="appSidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-header">
+        <div class="bot-icon"><i class="ph-fill ph-ticket"></i></div>
+        <div class="sidebar-brand-text">
+          <h2>TicketGenie</h2>
+          <span id="sidebarRole">IT Portal</span>
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-title">Workspace</div>
+        <a href="admin_dashboard.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-chart-pie-slice"></i></span><span class="menu-text">My Dashboard</span></a>
+        <a href="announcements.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-megaphone"></i></span><span class="menu-text">Announcements</span></a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-title">Ticketing System</div>
+        <a href="submit-ticket.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-plus-circle"></i></span><span class="menu-text">Submit Request</span></a>
+        <a href="inbox.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-tray"></i></span><span class="menu-text">Team Inbox</span></a>
+      </div>
+      <div class="nav-section" id="adminNav" style="display: none;">
+        <div class="nav-title">Administration</div>
+        <a href="knowledge-base.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-books"></i></span><span class="menu-text">Policy Library</span></a>
+        <a href="analytics.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-trend-up"></i></span><span class="menu-text">Analytics</span></a>
+        <a href="archive.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-archive"></i></span><span class="menu-text">Ticket Archive</span></a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-title">Account</div>
+        <a href="settings.html" class="nav-link active"><span class="menu-icon"><i class="ph-duotone ph-gear"></i></span><span class="menu-text">Settings</span></a>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="status-dot"></div>
+      <div class="sidebar-footer-text">
+        <div style="color: white; font-weight: 600;">Systems operational</div>
+        <div>Genie is online</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="top-nav">
+      <div class="nav-left-cluster">
+        <button class="btn-hamburger" onclick="toggleSidebar()" title="Toggle Menu">
+          <i class="ph ph-list"></i>
+        </button>
+        <div class="search-small">
+          <i class="ph-bold ph-magnifying-glass"></i>
+          <input type="text" placeholder="Search operations...">
+        </div>
+      </div>
+      
+      <div class="nav-actions">
+        <button class="nav-icon-btn"><i class="ph-fill ph-moon"></i></button>
+        <button class="nav-icon-btn"><i class="ph-fill ph-bell"></i></button>
+        
+        <div class="user-profile">
+          <div style="text-align: right;">
+            <div id="navName" style="color: #111827;">User</div>
+            <div id="navSubRole" style="font-size: 0.7rem; color: #6b7280; font-weight: normal;">Role</div>
+          </div>
+          <div class="avatar" id="navAvatar">U</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-padding">
+      <div class="eyebrow-text">Account Management</div>
+      <h1 class="page-title">Profile Settings</h1>
+      <div class="settings-card">
+        <div class="input-group">
+          <label>Department Role (Demo Switcher)</label>
+          <select id="editRole">
+            <option value="HR">Human Resources</option>
+            <option value="IT">Information Technology</option>
+            <option value="Accounting">Accounting & Finance</option>
+            <option value="Management">Upper Management</option>
+          </select>
+        </div>
+        <div class="btn-row">
+          <button class="btn-logout" onclick="logout()">Log Out</button>
+          <button class="btn-save" onclick="saveSettings()">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Floating Genie Widget Button -->
+  <button class="fab-genie" id="genieButton" type="button" title="Ask Genie AI">
+    <i class="ph-fill ph-magic-wand"></i> Ask Genie
+  </button>
+
+  <!-- Genie AI Chat Panel -->
+  <div class="genie-chat" id="genieChat">
+    <div class="genie-chat-header">
+      <div class="genie-header-info">
+        <div class="genie-avatar"><i class="ph-fill ph-magic-wand"></i></div>
+        <div><strong>Genie AI Assistant</strong><span><span class="genie-status-dot"></span> Online</span></div>
+      </div>
+      <button class="genie-close" id="closeGenieButton" type="button" aria-label="Close"><i class="ph-bold ph-x"></i></button>
+    </div>
+    <div class="genie-messages" id="genieMessages">
+      <div class="genie-message">
+        <div class="genie-message-avatar"><i class="ph-fill ph-magic-wand"></i></div>
+        <div class="genie-bubble">Hi! I'm Genie, your AI Assistant. How can I help you manage tickets, policies, or workspace requests today?</div>
+      </div>
+    </div>
+    <div class="genie-suggestions">
+      <button type="button" class="genie-suggestion">Show open ticket queue</button>
+      <button type="button" class="genie-suggestion">How do I route tickets?</button>
+    </div>
+    <div class="genie-input-area">
+      <input type="text" id="genieInput" placeholder="Ask Genie something..." autocomplete="off">
+      <button type="button" id="genieSendButton" aria-label="Send"><i class="ph-bold ph-paper-plane-right"></i></button>
+    </div>
+    <div class="genie-disclaimer">TicketGenie AI Assistant • Operations Help</div>
+  </div>
+
+  <script src="../js/script.js"></script>
+  <script>
+    let currentUser = {};
+    function toggleSidebar() { document.getElementById('appSidebar').classList.toggle('collapsed'); }
+    const userDataString = localStorage.getItem('portalUser');
+    if (userDataString) {
+      currentUser = JSON.parse(userDataString);
+      document.getElementById('sidebarRole').innerText = `${currentUser.role} Portal`;
+      document.getElementById('navName').innerText = currentUser.name;
+      document.getElementById('navSubRole').innerText = `${currentUser.role} Admin`;
+      document.getElementById('navAvatar').innerText = currentUser.name.charAt(0).toUpperCase();
+      document.getElementById('editRole').value = currentUser.role;
+      if (currentUser.role === 'HR' || currentUser.role === 'Management') document.getElementById('adminNav').style.display = 'block';
+    } else { window.location.href = '../index.html'; }
+    function saveSettings() {
+      currentUser.role = document.getElementById('editRole').value;
+      localStorage.setItem('portalUser', JSON.stringify(currentUser));
+      window.location.reload(); 
+    }
+    function logout() { localStorage.removeItem('portalUser'); window.location.href = '../index.html'; }
+  </script>
+</body>
+</html>

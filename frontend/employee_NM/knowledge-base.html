@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Base & Policies | TicketGenie</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <!-- Specific override to ensure help card text is perfectly visible -->
+    <style>
+        .knowledge-help-content p {
+            color: #f1ebf4 !important;
+        }
+    </style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="brand" style="position: relative; justify-content: space-between; width: 100%; padding-right: 15px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="brand-icon">
+                <i class="fa-solid fa-ticket"></i>
+            </div>
+            <div>
+                <h2>TicketGenie</h2>
+                <span>Employee Portal</span>
+            </div>
+        </div>
+        
+        <button id="brandMenuToggle" class="brand-menu-toggle" aria-label="Toggle Pages">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+    </div>
+
+    <nav class="navigation">
+        <div class="nav-title">WORKSPACE</div>
+        <a href="index.html" class="nav-item">
+            <i class="fa-solid fa-house"></i><span>Help & Support</span>
+        </a>
+        <a href="my-tickets.html" class="nav-item">
+            <i class="fa-solid fa-ticket"></i><span>My Tickets</span>
+        </a>
+        <a href="new-request.html" class="nav-item">
+            <i class="fa-solid fa-plus"></i><span>New Request</span>
+        </a>
+        <a href="chat-history.html" class="nav-item">
+            <i class="fa-regular fa-comments"></i><span>Chat History</span>
+        </a>
+
+        <div class="nav-title">RESOURCES</div>
+        <a href="knowledge-base.html" class="nav-item active">
+            <i class="fa-solid fa-book-open"></i><span>Knowledge Base</span>
+        </a>
+        <a href="notifications.html" class="nav-item">
+            <i class="fa-solid fa-bell"></i><span>Notifications</span><span class="notification-count">3</span>
+        </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+        <div class="system-status">
+            <span class="status-dot"></span>
+            <div>
+                <strong>All systems operational</strong>
+                <small>TicketGenie is online</small>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<main class="main-content">
+    <header class="topbar">
+        <div class="header-left" style="display: flex; align-items: center; gap: 20px;">
+            <button class="icon-button" id="sidebarToggle" type="button" aria-label="Toggle Sidebar">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+
+        <div class="topbar-actions">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Search policies..." id="globalSearch">
+                <span class="shortcut">⌘ K</span>
+            </div>
+
+            <!-- Dark Mode Toggle Button -->
+            <button class="icon-button" id="darkModeToggle" type="button" aria-label="Toggle Dark Mode">
+                <i class="fa-solid fa-moon" id="darkModeIcon"></i>
+            </button>
+
+            <button class="icon-button" type="button">
+                <i class="fa-regular fa-bell"></i>
+                <span class="notification-dot"></span>
+            </button>
+
+            <div class="profile">
+                <button class="profile-button" id="profileDropdownTrigger" aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdownMenu">
+                    <div class="avatar">NM</div>
+                    <div class="profile-info">
+                        <strong>Nishita</strong>
+                        <span id="currentRoleDisplay">Employee</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </button>
+
+                <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu" aria-labelledby="profileDropdownTrigger">
+                    <span class="dropdown-label">Switch View</span>
+                    <button type="button" class="role-switch-btn active" data-role="Employee" role="menuitem">
+                        <i class="fa-regular fa-user"></i> Employee View
+                    </button>
+                    <button type="button" class="role-switch-btn" data-role="Management" role="menuitem">
+                        <i class="fa-solid fa-briefcase"></i> Management View
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="welcome-section">
+        <p class="eyebrow">COMPANY GOVERNANCE</p>
+        <h2>Knowledge Base & Policies</h2>
+        <p>Access official company guidelines, employee handbooks, and compliance standards.</p>
+    </section>
+
+    <section class="help-search">
+        <div class="help-search-icon">
+            <i class="fa-solid fa-book-open"></i>
+        </div>
+        <div class="help-search-content">
+            <h3>Search Company Policies & Guidelines</h3>
+            <p>Find official documentation, HR handbooks, and operational rules.</p>
+            <div class="large-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="knowledgeSearch" placeholder="Search policies (e.g., Remote Work, Expenses)...">
+                <button type="button" id="knowledgeSearchButton">Search</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="section-header">
+            <div>
+                <h3>Browse Policies by Category</h3>
+                <p>Review rules and structures across different corporate domains.</p>
+            </div>
+        </div>
+        <div class="help-categories">
+            <div class="category-card">
+                <div class="category-icon"><i class="fa-solid fa-scale-balanced"></i></div>
+                <div><h4>Code of Conduct</h4><p>Ethics, compliance & behavior</p></div>
+                <i class="fa-solid fa-chevron-right arrow"></i>
+            </div>
+            <div class="category-card">
+                <div class="category-icon"><i class="fa-solid fa-house-laptop"></i></div>
+                <div><h4>Remote Work</h4><p>Guidelines & home office safety</p></div>
+                <i class="fa-solid fa-chevron-right arrow"></i>
+            </div>
+            <div class="category-card">
+                <div class="category-icon"><i class="fa-solid fa-receipt"></i></div>
+                <div><h4>Expense & Travel</h4><p>Reimbursements & spending limits</p></div>
+                <i class="fa-solid fa-chevron-right arrow"></i>
+            </div>
+            <div class="category-card">
+                <div class="category-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                <div><h4>Information Security</h4><p>Data privacy & access controls</p></div>
+                <i class="fa-solid fa-chevron-right arrow"></i>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="section-header">
+            <div>
+                <h3>Core Company Policies & Resources</h3>
+                <p>Frequently referenced employee documentation.</p>
+            </div>
+        </div>
+        <div class="knowledge-articles">
+            <div class="knowledge-article" data-category="Code of Conduct">
+                <div class="article-icon"><i class="fa-solid fa-file-shield"></i></div>
+                <div class="article-content">
+                    <span class="article-category">CODE OF CONDUCT</span>
+                    <h4>Global Employee Handbook 2026</h4>
+                    <p>12 min read • Updated Jan 2026</p>
+                    <div class="article-action-link">Read policy <i class="fa-solid fa-arrow-right"></i></div>
+                </div>
+            </div>
+            <div class="knowledge-article" data-category="Remote Work">
+                <div class="article-icon"><i class="fa-solid fa-house-laptop"></i></div>
+                <div class="article-content">
+                    <span class="article-category">REMOTE WORK</span>
+                    <h4>Hybrid & Remote Work Policy</h4>
+                    <p>5 min read • Core Guidelines</p>
+                    <div class="article-action-link">Read policy <i class="fa-solid fa-arrow-right"></i></div>
+                </div>
+            </div>
+            <div class="knowledge-article" data-category="Expense & Travel">
+                <div class="article-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                <div class="article-content">
+                    <span class="article-category">EXPENSE & TRAVEL</span>
+                    <h4>Corporate Travel & Expense Guidelines</h4>
+                    <p>8 min read • Per Diem & Bookings</p>
+                    <div class="article-action-link">Read policy <i class="fa-solid fa-arrow-right"></i></div>
+                </div>
+            </div>
+            <div class="knowledge-article" data-category="Information Security">
+                <div class="article-icon"><i class="fa-solid fa-lock"></i></div>
+                <div class="article-content">
+                    <span class="article-category">INFORMATION SECURITY</span>
+                    <h4>Data Privacy & Confidentiality Agreement</h4>
+                    <p>6 min read • Mandatory Compliance</p>
+                    <div class="article-action-link">Read policy <i class="fa-solid fa-arrow-right"></i></div>
+                </div>
+            </div>
+            <div class="knowledge-article" data-category="Time Off">
+                <div class="article-icon"><i class="fa-solid fa-calendar-days"></i></div>
+                <div class="article-content">
+                    <span class="article-category">TIME OFF</span>
+                    <h4>Paid Time Off (PTO) & Leave Accrual Policy</h4>
+                    <p>4 min read • Leave Structures</p>
+                    <div class="article-action-link">Read policy <i class="fa-solid fa-arrow-right"></i></div>
+                </div>
+            </div>
+            <div class="knowledge-article" data-category="Code of Conduct">
+                <div class="article-icon"><i class="fa-solid fa-users-rectangle"></i></div>
+                <div class="article-content">
+                    <span class="article-category">CODE OF CONDUCT</span>
+                    <h4>Anti-Harassment & Equal Opportunity Policy</h4>
+                    <p>5 min read • Zero Tolerance</p>
+                    <div class="article-action-link">Read policy <i class="fa-solid fa-arrow-right"></i></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="knowledge-help-card">
+            <div class="knowledge-help-icon">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div class="knowledge-help-content">
+                <span class="eyebrow" style="color: #d2c6d6;">STILL NEED HELP?</span>
+                <h3 style="color: white;">Can't find what you're looking for?</h3>
+                <p style="color: #f1ebf4 !important; font-size: 11px;">Ask Genie or submit a support request and our team will help you out.</p>
+            </div>
+            <div class="knowledge-help-actions">
+                <button class="knowledge-genie-button" type="button" id="knowledgeGenieButton">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Ask Genie
+                </button>
+                <a class="knowledge-request-button" href="new-request.html">
+                    <i class="fa-solid fa-plus"></i> New Request
+                </a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<button class="genie-button" id="genieButton" type="button">
+    <i class="fa-solid fa-wand-magic-sparkles"></i>
+    <span>Ask Genie</span>
+</button>
+
+<div class="genie-chat" id="genieChat">
+    <div class="genie-chat-header">
+        <div class="genie-header-info">
+            <div class="genie-avatar">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div>
+                <strong>Genie AI</strong>
+                <span><span class="genie-status-dot"></span> Online</span>
+            </div>
+        </div>
+        <button class="genie-close" id="closeGenieButton" type="button">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <div class="genie-messages" id="genieMessages">
+        <div class="genie-message">
+            <div class="genie-message-avatar">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div class="genie-bubble">
+                Hi! I'm Genie, your AI policy assistant. I can help you search official handbooks or guide you through compliance questions.
+            </div>
+        </div>
+    </div>
+    <div class="genie-input-area">
+        <input type="text" id="genieInput" placeholder="Ask about company policies..." autocomplete="off">
+        <button id="genieSendButton" type="button">
+            <i class="fa-solid fa-arrow-up"></i>
+        </button>
+    </div>
+    <div class="genie-disclaimer">
+        Genie may occasionally provide inaccurate information.
+    </div>
+</div>
+
+<script src="../js/script.js"></script>
+</body>
+</html>
