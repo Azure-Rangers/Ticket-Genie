@@ -14,11 +14,18 @@ trust the return value.
 from __future__ import annotations
 
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field, model_validator
 
-from agents.routing_agent import validate_routing
+from agents.category_agent import classify_category_with_ai
+from agents.priority_agent import (
+    classify_priority,
+    classify_priority_with_ai,
+    enforce_minimum_priority,
+)
+from agents.routing_agent import reconcile_routing_with_ai, validate_routing
 from services import ai_service
 
 logger = logging.getLogger(__name__)
@@ -51,6 +58,15 @@ _SENSITIVE_KEYWORDS = (
     "security breach",
     "data breach",
     "self-harm",
+)
+
+_HR_EMPLOYEE_RELATIONS_ROOTS = (
+    "harass",
+    "discriminat",
+    "retaliat",
+    "sexual misconduct",
+    "hostile work environment",
+    "workplace bullying",
 )
 
 
@@ -106,7 +122,31 @@ def classify_ticket(
     human review.
     """
     try:
-        raw_result = ai_service.get_ai_classification(title, description, context)
+        if ai_service.use_mock_ai():
+            raw_result = ai_service.get_ai_classification(title, description, context)
+        else:
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                category_future = executor.submit(
+                    classify_category_with_ai,
+                    title,
+                    description,
+                    ai_service.generate_structured,
+                )
+                priority_future = executor.submit(
+                    classify_priority_with_ai,
+                    title,
+                    description,
+                    ai_service.generate_structured,
+                )
+                category_result = category_future.result()
+                priority_result = priority_future.result()
+            raw_result = reconcile_routing_with_ai(
+                title,
+                description,
+                category_result,
+                priority_result,
+                ai_service.generate_structured,
+            )
     except ai_service.AIServiceError as exc:
         logger.warning("AI classification request failed: %s", exc)
         return _fallback_classification(f"AI classification unavailable: {exc}")
@@ -121,6 +161,30 @@ def classify_ticket(
             "AI classification returned a non-dict result: %r", type(raw_result)
         )
         return _fallback_classification("AI classification returned an invalid result.")
+
+    # Deterministic policy guardrails apply in both mock and real-AI modes.
+    # This prevents model wording variance from downgrading or misrouting
+    # sensitive employee-relations reports.
+    text = f"{title} {description}".lower()
+    if any(root in text for root in _HR_EMPLOYEE_RELATIONS_ROOTS):
+        raw_result = dict(raw_result)
+        raw_result["department"] = "HR Team"
+        raw_result["category"] = "Employee Relationships"
+        raw_result["priority"] = enforce_minimum_priority(
+            str(raw_result.get("priority", "Medium")), "High"
+        )
+        raw_result["needs_human_review"] = True
+
+        # Corporate policy keeps sensitive employee-relations reports at High
+        # unless the text independently meets the explicit Critical threshold.
+        if classify_priority(text) != "Critical":
+            raw_result["priority"] = "High"
+
+    policy_priority = classify_priority(text)
+    if policy_priority == "Critical":
+        raw_result = dict(raw_result)
+        raw_result["priority"] = "Critical"
+        raw_result["needs_human_review"] = True
 
     try:
         classification = TicketClassification(**raw_result)

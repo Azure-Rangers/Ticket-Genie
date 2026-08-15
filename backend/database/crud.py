@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from typing import List, Optional
 
@@ -49,6 +50,18 @@ def create_ticket(ticket: TicketCreate, db: Optional[Session] = None) -> dict:
             createdAt=now_str,
             is_anonymous=ticket.is_anonymous,
             attachment=ticket.attachment,
+            requester_id=ticket.requester_id,
+            classification_status=(
+                "Pending AI Triage" if getattr(ticket, "confidence", 0.0) == 0.0
+                else "Classified"
+            ),
+            classification_confidence=str(getattr(ticket, "confidence", "")) or None,
+            classification_reason=getattr(ticket, "reason", None),
+            needs_human_review=getattr(ticket, "needs_human_review", False),
+            model_deployment=(
+                "mock" if os.getenv("USE_MOCK_AI", "false").lower() == "true"
+                else os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-5.2")
+            ),
         )
 
         session.add(db_ticket)
@@ -64,6 +77,7 @@ def get_all_tickets(
     status: Optional[str] = None,
     priority: Optional[str] = None,
     search: Optional[str] = None,
+    requester_id: Optional[str] = None,
     db: Optional[Session] = None,
 ) -> List[dict]:
     session = db or SessionLocal()
@@ -71,6 +85,11 @@ def get_all_tickets(
 
     try:
         query = session.query(TicketDB)
+
+        if requester_id:
+            query = query.filter(
+                func.lower(TicketDB.requester_id) == requester_id.lower().strip()
+            )
 
         if search:
             s = f"%{search.lower().strip()}%"

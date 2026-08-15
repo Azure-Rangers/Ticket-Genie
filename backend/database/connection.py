@@ -21,8 +21,8 @@ IS_AZURE_CONFIGURED = bool(DATABASE_URL or (DB_SERVER and DB_PASSWORD))
 
 def _get_sqlalchemy_url() -> str:
     if DATABASE_URL:
-        # If DATABASE_URL is already an mssql or pyodbc string
-        if DATABASE_URL.startswith("mssql"):
+        # Use complete SQLAlchemy URLs directly (SQLite, MSSQL, PostgreSQL, etc.).
+        if "://" in DATABASE_URL:
             return DATABASE_URL
         # If raw ADO.NET / ODBC style string: "Server=tcp:...;Database=...;..."
         params = urllib.parse.quote_plus(DATABASE_URL)
@@ -97,6 +97,24 @@ def init_db_schema():
                             "ALTER TABLE tickets ADD COLUMN auto_resolved BOOLEAN DEFAULT 0"
                         )
                     )
+                if "requester_id" not in existing_cols:
+                    conn.execute(
+                        text("ALTER TABLE tickets ADD COLUMN requester_id VARCHAR(150)")
+                    )
+                additions = {
+                    "classification_status": "VARCHAR(50) DEFAULT 'Classified'",
+                    "classification_confidence": "VARCHAR(20)",
+                    "classification_reason": "TEXT",
+                    "needs_human_review": "BOOLEAN DEFAULT 0",
+                    "model_deployment": "VARCHAR(100)",
+                }
+                for column_name, column_type in additions.items():
+                    if column_name not in existing_cols:
+                        conn.execute(
+                            text(
+                                f"ALTER TABLE tickets ADD COLUMN {column_name} {column_type}"
+                            )
+                        )
                 conn.commit()
     except Exception as e:
         print(f"⚠️ Error creating database schema: {e}")

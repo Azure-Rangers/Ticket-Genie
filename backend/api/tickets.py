@@ -29,12 +29,14 @@ def list_tickets(
     status: Optional[str] = None,
     priority: Optional[str] = None,
     search: Optional[str] = None,
+    requester_id: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
     tickets_list = get_all_tickets(
         status=status,
         priority=priority,
         search=search,
+        requester_id=requester_id,
         db=db,
     )
     return tickets_list

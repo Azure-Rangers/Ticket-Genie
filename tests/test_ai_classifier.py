@@ -72,6 +72,37 @@ def test_urgent_word_alone_does_not_force_critical_priority() -> None:
     assert result.priority == "Low"
 
 
+@pytest.mark.parametrize(
+    "description",
+    [
+        "I am being harassed in the workplace.",
+        "A coworker is harassing me repeatedly.",
+        "I need to report workplace harassment.",
+        "I believe I am being discriminated against at work.",
+        "I am experiencing retaliation after reporting a concern.",
+    ],
+)
+def test_employee_relations_reports_route_to_hr_at_high_priority(
+    description: str,
+) -> None:
+    result = classify_ticket("Employee relations concern", description)
+
+    assert result.department == "HR Team"
+    assert result.category == "Employee Relationships"
+    assert result.priority == "High"
+    assert result.needs_human_review is True
+
+
+def test_immediate_workplace_danger_is_critical() -> None:
+    result = classify_ticket(
+        "Immediate safety threat",
+        "There is a credible threat of workplace violence and immediate danger.",
+    )
+
+    assert result.priority == "Critical"
+    assert result.needs_human_review is True
+
+
 def test_low_confidence_result_flags_human_review(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -20,6 +20,12 @@ class TicketDB(Base):
     updatedAt = Column(String(50), nullable=True)
     is_anonymous = Column(Boolean, default=False, nullable=False)
     attachment = Column(Text, nullable=True)
+    requester_id = Column(String(150), nullable=True, index=True)
+    classification_status = Column(String(50), nullable=False, default="Classified")
+    classification_confidence = Column(String(20), nullable=True)
+    classification_reason = Column(Text, nullable=True)
+    needs_human_review = Column(Boolean, default=False, nullable=False)
+    model_deployment = Column(String(100), nullable=True)
     parent_ticket_id = Column(String(50), nullable=True)
     auto_resolved = Column(Boolean, default=False, nullable=False)
 
@@ -38,6 +44,12 @@ class TicketDB(Base):
             "updatedAt": self.updatedAt,
             "is_anonymous": self.is_anonymous,
             "attachment": self.attachment,
+            "requester_id": self.requester_id,
+            "classification_status": self.classification_status,
+            "classification_confidence": float(self.classification_confidence) if self.classification_confidence else None,
+            "classification_reason": self.classification_reason,
+            "needs_human_review": self.needs_human_review,
+            "model_deployment": self.model_deployment,
             "parent_ticket_id": self.parent_ticket_id,
             "auto_resolved": self.auto_resolved,
         }

@@ -85,6 +85,16 @@ def test_critical_ticket_is_classified_without_department() -> None:
     _assert_full_ai_shape(ticket)
 
 
+def test_harassed_employee_ticket_routes_to_hr_as_high_priority() -> None:
+    ticket = _create_ticket(
+        "This is urgent",
+        "I am being harassed in the workplace.",
+    )
+    assert ticket["department"] == "HR Team"
+    assert ticket["category"] == "Employee Relationships"
+    assert ticket["priority"] == "High"
+
+
 def test_completed_ticket_is_saved_and_retrievable_with_ai_fields() -> None:
     created = _create_ticket(
         "Laptop request", "I need a new laptop for development work."

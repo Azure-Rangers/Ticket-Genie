@@ -20,6 +20,7 @@ class TicketCreate(BaseModel):
     preferredDate: Optional[str] = None
     is_anonymous: bool = False
     attachment: Optional[str] = None
+    requester_id: Optional[str] = None
 
 
 class TicketUpdate(BaseModel):
@@ -31,6 +32,7 @@ class TicketUpdate(BaseModel):
     description: Optional[str] = Field(None, min_length=5)
     is_anonymous: Optional[bool] = None
     attachment: Optional[str] = None
+    requester_id: Optional[str] = None
 
 
 class TicketResponse(BaseModel):
@@ -45,6 +47,12 @@ class TicketResponse(BaseModel):
     createdAt: str
     is_anonymous: bool = False
     attachment: Optional[str] = None
+    requester_id: Optional[str] = None
+    classification_status: str = "Classified"
+    classification_confidence: Optional[float] = None
+    classification_reason: Optional[str] = None
+    needs_human_review: bool = False
+    model_deployment: Optional[str] = None
 
 
 class GenieChatRequest(BaseModel):

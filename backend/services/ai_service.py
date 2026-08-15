@@ -19,8 +19,14 @@ import logging
 import os
 from typing import Any, Optional
 
+import requests
+
 from agents.category_agent import ALLOWED_CATEGORIES
-from agents.priority_agent import ALLOWED_PRIORITIES, PRIORITY_DESCRIPTIONS
+from agents.priority_agent import (
+    ALLOWED_PRIORITIES,
+    PRIORITY_DESCRIPTIONS,
+    classify_priority,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -113,12 +119,60 @@ ai_service = AIServiceWrapper()
 def use_mock_ai() -> bool:
     """Return True when the module should use deterministic local rules
     instead of calling Azure OpenAI."""
-    return os.getenv("USE_MOCK_AI", "true").strip().lower() in {
+    return os.getenv("USE_MOCK_AI", "false").strip().lower() in {
         "1",
         "true",
         "yes",
         "on",
     }
+
+
+def generate_structured(
+    *, prompt: str, schema: dict[str, Any], name: str
+) -> dict[str, Any]:
+    """Call the configured Azure v1 Responses endpoint with strict JSON output."""
+    endpoint = os.getenv("GROUP1OPENAIENDPOINT") or os.getenv("AZURE_OPENAI_ENDPOINT")
+    api_key = os.getenv("GROUP1OPENAIAPIKEY") or os.getenv("AZURE_OPENAI_API_KEY")
+    model = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-5.2")
+    if not endpoint or not api_key:
+        raise AIServiceError("Azure OpenAI ticket-classification configuration is missing.")
+
+    body = {
+        "model": model,
+        "input": prompt,
+        "text": {
+            "format": {
+                "type": "json_schema",
+                "name": name,
+                "schema": schema,
+                "strict": True,
+            }
+        },
+    }
+    try:
+        response = requests.post(
+            endpoint,
+            headers={"api-key": api_key, "Content-Type": "application/json"},
+            json=body,
+            timeout=60,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        output_text = payload.get("output_text")
+        if not output_text:
+            for item in payload.get("output", []):
+                for content in item.get("content", []):
+                    if content.get("type") == "output_text":
+                        output_text = content.get("text")
+                        break
+        if not output_text:
+            raise AIServiceError("Azure OpenAI returned no structured output.")
+        return json.loads(output_text)
+    except AIServiceError:
+        raise
+    except (requests.RequestException, ValueError, TypeError) as exc:
+        logger.warning("Structured AI agent call failed: %s", exc)
+        raise AIServiceError("Azure OpenAI agent call failed.") from exc
 
 
 def get_confidence_threshold() -> float:
@@ -184,6 +238,12 @@ def build_system_prompt() -> str:
         "high-risk (legal, safety, security, executive-level conflict), "
         "set needs_human_review to true even if you are otherwise "
         "confident.\n"
+        "- Reports of workplace harassment, discrimination, retaliation, "
+        "sexual misconduct, or workplace bullying must route to HR Team / "
+        "Employee Relationships and must be at least High priority.\n"
+        "- Reserve Critical for an immediate threat of serious physical harm, "
+        "credible workplace violence, a major security/data breach, or a "
+        "company-wide outage.\n"
         '- "reason" must be one short, concise, factual sentence.\n'
         "- Respond with a single JSON object and no other text, matching "
         "exactly this shape and no additional keys:\n"
@@ -340,6 +400,16 @@ _MOCK_KEYWORD_RULES: dict[str, dict[str, list[str]]] = {
         "Employee Relationships": [
             "employee relationship",
             "harassment",
+            "harassed",
+            "harassing",
+            "discrimination",
+            "discriminated",
+            "discriminatory",
+            "retaliation",
+            "retaliated",
+            "workplace bullying",
+            "hostile work environment",
+            "sexual misconduct",
             "coworker conflict",
             "workplace conflict",
         ],
@@ -354,53 +424,6 @@ _MOCK_KEYWORD_RULES: dict[str, dict[str, list[str]]] = {
         "Company-Wide Issue": ["company-wide issue", "company wide issue"],
     },
 }
-
-_CRITICAL_SIGNALS = [
-    "company-wide",
-    "company wide",
-    "entire company",
-    "all employees",
-    "every employee",
-    "many employees",
-    "across the company",
-    "safety concern",
-    "security incident",
-    "security breach",
-    "data breach",
-    "legal risk",
-]
-_LOW_SIGNALS = [
-    "still works",
-    "no rush",
-    "not urgent",
-    "just a question",
-    "just curious",
-    "whenever you get a chance",
-]
-_HIGH_SIGNALS = [
-    "cannot work",
-    "can't work",
-    "unable to work",
-    "blocked",
-    "locked out",
-    "cannot log in",
-    "can't log in",
-    "important deadline",
-    "approaching deadline",
-    "cannot access",
-    "can't access",
-]
-
-
-def _mock_priority(text: str) -> str:
-    if any(signal in text for signal in _CRITICAL_SIGNALS):
-        return "Critical"
-    if any(signal in text for signal in _LOW_SIGNALS):
-        return "Low"
-    if any(signal in text for signal in _HIGH_SIGNALS):
-        return "High"
-    return "Medium"
-
 
 def _mock_classify(
     title: str,
@@ -417,7 +440,7 @@ def _mock_classify(
             if any(keyword in text for keyword in keywords):
                 matches.append((department, category))
 
-    priority = _mock_priority(text)
+    priority = classify_priority(text)
 
     if not matches:
         return {

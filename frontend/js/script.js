@@ -43,12 +43,22 @@ function generateTicketId() {
     return `HD-${highestNumber + 1}`;
 }
 
+function getCurrentRequesterId() {
+    try {
+        const user = JSON.parse(localStorage.getItem("portalUser") || "{}");
+        return user.email || user.id || "nm@company.com";
+    } catch (err) {
+        return "nm@company.com";
+    }
+}
+
 async function apiFetchTickets(params = {}) {
     try {
         const query = new URLSearchParams();
         if (params.search) query.append("search", params.search);
         if (params.status && params.status !== "all") query.append("status", params.status);
         if (params.priority && params.priority !== "all") query.append("priority", params.priority);
+        if (params.requesterId) query.append("requester_id", params.requesterId);
 
         const url = query.toString() ? `${API_BASE_URL}/tickets?${query.toString()}` : `${API_BASE_URL}/tickets`;
         const res = await fetch(url);
@@ -56,38 +66,38 @@ async function apiFetchTickets(params = {}) {
         const data = await res.json();
         return Array.isArray(data) ? data : (data.tickets || []);
     } catch (err) {
-        console.warn("Backend API not reachable, using local storage tickets:", err);
+        console.warn("Backend API not reachable; no server tickets can be displayed:", err);
     }
-    return getTickets();
+    return [];
 }
 
 async function apiCreateTicket(ticketPayload) {
+    let res;
     try {
-        const res = await fetch(`${API_BASE_URL}/tickets`, {
+        res = await fetch(`${API_BASE_URL}/tickets`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(ticketPayload)
         });
-        if (res.ok) {
-            return await res.json();
-        }
     } catch (err) {
-        console.warn("Backend API POST failed, creating ticket locally:", err);
+        throw new Error("Unable to reach TicketGenie. Please check the connection and try again.");
     }
-    const tickets = getTickets();
-    const newTicket = {
-        id: generateTicketId(),
-        title: ticketPayload.subject || ticketPayload.title,
-        category: ticketPayload.category,
-        priority: ticketPayload.priority || "Medium",
-        status: "Open",
-        description: ticketPayload.description,
-        date: ticketPayload.date || "",
-        createdAt: new Date().toISOString()
-    };
-    tickets.unshift(newTicket);
-    saveTickets(tickets);
-    return newTicket;
+
+    if (!res.ok) {
+        let detail = `Ticket submission failed (${res.status}).`;
+        try {
+            const errorBody = await res.json();
+            if (typeof errorBody.detail === "string") detail = errorBody.detail;
+            if (Array.isArray(errorBody.detail)) {
+                detail = errorBody.detail.map(item => item.msg).filter(Boolean).join(" ") || detail;
+            }
+        } catch (err) {
+            // Keep the status-based message when the server did not return JSON.
+        }
+        throw new Error(detail);
+    }
+
+    return await res.json();
 }
 
 /* =========================================================
@@ -160,25 +170,36 @@ function initializeProfileDropdown() {
    NEW REQUEST FORM
    ========================================================= */
 function initializeNewRequestForm() {
-    const form = document.querySelector(".request-form-card form");
-    if (!form) return;
+    const formConfigs = {
+        newTicketForm: { title: "ticketSubject", category: "ticketCategory", description: "ticketDescription", preferredDate: "preferredDate", file: "fileUpload", anonymous: false },
+        anonTicketForm: { title: "anonTicketSubject", category: "anonTicketCategory", description: "anonTicketDescription", file: "anonFileUpload", anonymous: true },
+        leaveTicketForm: { title: "leaveType", category: "leaveType", description: "leaveDescription", preferredDate: "leaveEndDate", file: "leaveFileUpload", anonymous: false, leave: true }
+    };
 
-    form.addEventListener("submit", async function(event) {
+    Object.entries(formConfigs).forEach(([formId, config]) => {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        form.addEventListener("submit", async function(event) {
         event.preventDefault();
 
-        const titleElement = document.getElementById("ticketSubject") || document.getElementById("anonTicketSubject") || document.getElementById("leaveType");
-        const categoryElement = document.getElementById("ticketCategory") || document.getElementById("anonTicketCategory") || document.getElementById("leaveType");
-        const descriptionElement = document.getElementById("ticketDescription") || document.getElementById("anonTicketDescription") || document.getElementById("leaveDescription");
-        
+        const titleElement = document.getElementById(config.title);
+        const categoryElement = document.getElementById(config.category);
+        const descriptionElement = document.getElementById(config.description);
         const submitBtn = event.target.querySelector('.submit-request-button');
+        const originalSubmitContent = submitBtn?.innerHTML;
 
         const title = titleElement ? titleElement.value.trim() : "New Request";
         const category = categoryElement ? categoryElement.value : "General";
         const description = descriptionElement ? descriptionElement.value.trim() : "";
 
-        if (!title || !category || !description) { 
-            showFormError("Please fill out all required fields."); 
-            return; 
+        if (!title || !category || !description) {
+            showFormError("Please fill out all required fields.");
+            return;
+        }
+        if (title.length < 3 || description.length < 10) {
+            showFormError("The subject must be at least 3 characters and the description at least 10 characters.");
+            return;
         }
 
         const oldError = document.querySelector(".form-error-message");
@@ -189,19 +210,72 @@ function initializeNewRequestForm() {
             submitBtn.classList.add('loading');
         }
 
-        const newTicket = await apiCreateTicket({
-            title: title,
-            subject: title,
-            category: category,
-            priority: "Medium",
-            description: description,
-            date: ""
+        try {
+            let finalDescription = description;
+            if (config.leave) {
+                const startDate = document.getElementById("leaveStartDate")?.value || "";
+                const endDate = document.getElementById("leaveEndDate")?.value || "";
+                finalDescription = `Leave dates: ${startDate} to ${endDate}. ${description}`;
+            }
+            const files = Array.from(document.getElementById(config.file)?.files || []);
+            const newTicket = await apiCreateTicket({
+                title,
+                category,
+                description: finalDescription,
+                preferredDate: config.preferredDate ? (document.getElementById(config.preferredDate)?.value || null) : null,
+                is_anonymous: config.anonymous,
+                attachment: files.length ? files.map(file => file.name).join(", ") : null,
+                requester_id: getCurrentRequesterId()
+            });
+
+            showSuccessMessage(newTicket);
+            setTimeout(() => { window.location.href = "my-tickets.html"; }, 1500);
+        } catch (err) {
+            showFormError(err.message || "Unable to submit the request. Please try again.");
+            if (submitBtn) {
+                submitBtn.innerHTML = originalSubmitContent;
+                submitBtn.classList.remove('loading');
+            }
+        }
         });
-
-        showSuccessMessage(newTicket);
-
-        setTimeout(() => { window.location.href = "my-tickets.html"; }, 1500);
     });
+}
+
+function renderMyTickets(tickets) {
+    const list = document.getElementById("myTicketsList");
+    if (!list) return;
+
+    if (!tickets.length) {
+        list.innerHTML = '<div class="table-row"><div class="request-info"><div><strong>No tickets found</strong><span>Your submitted requests will appear here.</span></div></div></div>';
+        return;
+    }
+
+    list.innerHTML = tickets.map(ticket => `
+        <div class="table-row ticket-clickable" data-ticket-id="${escapeHTML(ticket.id)}">
+            <div class="request-info">
+                <div class="request-icon"><i class="fa-solid fa-file-lines"></i></div>
+                <div><strong>${escapeHTML(ticket.title)}</strong><span>#${escapeHTML(ticket.id)}</span></div>
+            </div>
+            <div>${escapeHTML(ticket.department || ticket.category)}</div>
+            <div><span class="status ${escapeHTML(String(ticket.status || "open").toLowerCase().replaceAll(" ", "-"))}">${escapeHTML(ticket.status)}</span></div>
+            <div><span class="priority ${escapeHTML(String(ticket.priority || "medium").toLowerCase())}">${escapeHTML(ticket.priority)}</span></div>
+            <div>${escapeHTML(ticket.date || "")}</div>
+        </div>
+    `).join("");
+
+    list.querySelectorAll(".ticket-clickable").forEach(row => {
+        row.addEventListener("click", () => {
+            window.location.href = `chat-history.html?ticket=${encodeURIComponent(row.dataset.ticketId)}`;
+        });
+    });
+}
+
+async function initializeMyTickets() {
+    const list = document.getElementById("myTicketsList");
+    if (!list) return;
+    list.innerHTML = '<div class="table-row"><div>Loading tickets...</div></div>';
+    const tickets = await apiFetchTickets({ requesterId: getCurrentRequesterId() });
+    renderMyTickets(tickets);
 }
 
 function showFormError(message) {
@@ -238,6 +312,10 @@ function showSuccessMessage(ticket) {
    TICKET TO CHAT HISTORY NAVIGATION
    ========================================================= */
 document.addEventListener("DOMContentLoaded", () => {
+    initializeProfileDropdown();
+    initializeNewRequestForm();
+    initializeMyTickets();
+
     const clickableRows = document.querySelectorAll(".ticket-clickable");
 
     clickableRows.forEach(row => {
