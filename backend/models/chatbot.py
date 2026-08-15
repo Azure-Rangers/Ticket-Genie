@@ -46,15 +46,6 @@ class TicketDraft(BaseModel):
     is_anonymous: bool = False
     attachment: Optional[str] = None
 
-    def is_complete(self) -> bool:
-        return bool(
-            self.title
-            and len(self.title) >= 3
-            and self.description
-            and len(self.description) >= 5
-            and self.category
-        )
-
 
 class ChatRequest(BaseModel):
     message: str
@@ -62,9 +53,11 @@ class ChatRequest(BaseModel):
     department: Optional[str] = None
     history: List[ChatTurn] = Field(default_factory=list)
     draft: Optional[TicketDraft] = None
-    # Echoes ChatResponse.intent from the previous turn so a follow-up
-    # answer (e.g. supplying a missing field) continues the same
-    # drafting flow instead of being re-classified from scratch.
+    # Set when the intent is already known without needing the model to
+    # (re)classify it - either the user clicked a predefined option
+    # (navigation/how-to don't need this; ticket-drafting/status/knowledge
+    # buttons do), or this turn continues an in-progress drafting flow by
+    # echoing the previous ChatResponse.intent.
     active_intent: Optional[ChatIntent] = None
 
 
