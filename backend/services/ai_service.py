@@ -43,6 +43,69 @@ class AIServiceError(Exception):
     """
 
 
+class AIServiceWrapper:
+    """Wrapper class providing a structured .generate() interface for Pydantic response models."""
+
+    def generate(self, *, system_prompt: str, user_content: str, response_model: Any) -> Any:
+        if use_mock_ai():
+            try:
+                return response_model()
+            except Exception:
+                pass
+
+        endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+        api_key = os.getenv("AZURE_OPENAI_API_KEY")
+        deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT")
+        api_version = os.getenv("AZURE_OPENAI_API_VERSION", DEFAULT_AZURE_API_VERSION)
+
+        if not (endpoint and api_key and deployment):
+            try:
+                return response_model()
+            except Exception:
+                return None
+
+        try:
+            from openai import AzureOpenAI
+
+            client = AzureOpenAI(azure_endpoint=endpoint, api_key=api_key, api_version=api_version)
+            response = client.chat.completions.create(
+                model=deployment,
+                temperature=0,
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_content},
+                ],
+            )
+            raw = response.choices[0].message.content
+            if hasattr(response, "usage") and response.usage:
+                try:
+                    from telemetry import record_llm_metrics
+
+                    record_llm_metrics(
+                        prompt_tokens=response.usage.prompt_tokens or 0,
+                        completion_tokens=response.usage.completion_tokens or 0,
+                        model=deployment,
+                        agent_name="ai_service_wrapper",
+                    )
+                except Exception:
+                    pass
+
+            data = json.loads(raw)
+            if hasattr(response_model, "model_validate"):
+                return response_model.model_validate(data)
+            return response_model(**data)
+        except Exception as exc:
+            logger.warning(f"ai_service.generate failed: {exc}")
+            try:
+                return response_model()
+            except Exception:
+                return None
+
+
+ai_service = AIServiceWrapper()
+
+
 def use_mock_ai() -> bool:
     """Return True when the module should use deterministic local rules
     instead of calling Azure OpenAI."""
