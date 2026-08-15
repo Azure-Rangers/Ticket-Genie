@@ -1,8 +1,8 @@
 /* =========================================================
-   TICKETGENIE - SHARED UI COMPONENTS & LAYOUT ENGINE
+   MANAGEMENT PORTAL - SHARED UI COMPONENTS
    ========================================================= */
 
-function renderSidebar(activeTab = "dashboard") {
+function renderManagementSidebar(activeTab = "dashboard") {
   const sidebarContainer = document.getElementById("shared-sidebar");
   if (!sidebarContainer) return;
 
@@ -47,7 +47,7 @@ function renderSidebar(activeTab = "dashboard") {
   `;
 }
 
-function renderTopNav(pageTitle = "Dashboard", subtitle = "Super Admin Control Center") {
+function renderManagementTopNav(pageTitle = "Dashboard", subtitle = "Super Admin Control Center") {
   const topNavContainer = document.getElementById("shared-topnav");
   if (!topNavContainer) return;
 
@@ -84,7 +84,7 @@ function renderTopNav(pageTitle = "Dashboard", subtitle = "Super Admin Control C
 
 function initSharedComponents(activeTab, title, subtitle) {
   document.addEventListener("DOMContentLoaded", () => {
-    renderSidebar(activeTab);
-    renderTopNav(title, subtitle);
+    renderManagementSidebar(activeTab);
+    renderManagementTopNav(title, subtitle);
   });
 }
