@@ -52,14 +52,16 @@ def create_ticket(ticket: TicketCreate, db: Optional[Session] = None) -> dict:
             attachment=ticket.attachment,
             requester_id=ticket.requester_id,
             classification_status=(
-                "Pending AI Triage" if getattr(ticket, "confidence", 0.0) == 0.0
+                "Pending AI Triage"
+                if getattr(ticket, "confidence", 0.0) == 0.0
                 else "Classified"
             ),
             classification_confidence=str(getattr(ticket, "confidence", "")) or None,
             classification_reason=getattr(ticket, "reason", None),
             needs_human_review=getattr(ticket, "needs_human_review", False),
             model_deployment=(
-                "mock" if os.getenv("USE_MOCK_AI", "false").lower() == "true"
+                "mock"
+                if os.getenv("USE_MOCK_AI", "false").lower() == "true"
                 else os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-5.2")
             ),
         )

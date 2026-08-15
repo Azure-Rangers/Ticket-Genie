@@ -59,6 +59,14 @@ paths:
           - type: string
           - type: 'null'
           title: Search
+      - name: requester_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Requester Id
       responses:
         '200':
           description: Successful Response
@@ -1281,6 +1289,11 @@ components:
           - type: string
           - type: 'null'
           title: Attachment
+        requester_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Requester Id
       type: object
       required:
       - title
@@ -1376,6 +1389,34 @@ components:
           - type: string
           - type: 'null'
           title: Attachment
+        requester_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Requester Id
+        classification_status:
+          type: string
+          title: Classification Status
+          default: Classified
+        classification_confidence:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Classification Confidence
+        classification_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Classification Reason
+        needs_human_review:
+          type: boolean
+          title: Needs Human Review
+          default: false
+        model_deployment:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Model Deployment
       type: object
       required:
       - id
@@ -1433,6 +1474,11 @@ components:
           - type: string
           - type: 'null'
           title: Attachment
+        requester_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Requester Id
       type: object
       title: TicketUpdate
     UserProfileUpdateRequest:

@@ -46,7 +46,9 @@ class TicketDB(Base):
             "attachment": self.attachment,
             "requester_id": self.requester_id,
             "classification_status": self.classification_status,
-            "classification_confidence": float(self.classification_confidence) if self.classification_confidence else None,
+            "classification_confidence": float(self.classification_confidence)
+            if self.classification_confidence
+            else None,
             "classification_reason": self.classification_reason,
             "needs_human_review": self.needs_human_review,
             "model_deployment": self.model_deployment,

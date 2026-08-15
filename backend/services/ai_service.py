@@ -135,7 +135,9 @@ def generate_structured(
     api_key = os.getenv("GROUP1OPENAIAPIKEY") or os.getenv("AZURE_OPENAI_API_KEY")
     model = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-5.2")
     if not endpoint or not api_key:
-        raise AIServiceError("Azure OpenAI ticket-classification configuration is missing.")
+        raise AIServiceError(
+            "Azure OpenAI ticket-classification configuration is missing."
+        )
 
     body = {
         "model": model,
@@ -424,6 +426,7 @@ _MOCK_KEYWORD_RULES: dict[str, dict[str, list[str]]] = {
         "Company-Wide Issue": ["company-wide issue", "company wide issue"],
     },
 }
+
 
 def _mock_classify(
     title: str,

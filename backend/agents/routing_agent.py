@@ -72,7 +72,14 @@ Taxonomy: {json.dumps(ALLOWED_CATEGORIES)}"""
             "reason": {"type": "string"},
             "needs_human_review": {"type": "boolean"},
         },
-        "required": ["department", "category", "priority", "confidence", "reason", "needs_human_review"],
+        "required": [
+            "department",
+            "category",
+            "priority",
+            "confidence",
+            "reason",
+            "needs_human_review",
+        ],
         "additionalProperties": False,
     }
     return generate(prompt=prompt, schema=schema, name="ticket_routing")
