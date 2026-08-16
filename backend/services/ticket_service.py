@@ -8,7 +8,6 @@ from models.ticket import CompletedTicket, TicketCreate
 
 
 def process_new_ticket(ticket: TicketCreate, db: Optional[Session] = None):
-
     classification = classify_ticket(ticket.title, ticket.description)
 
     completed_ticket = CompletedTicket(
