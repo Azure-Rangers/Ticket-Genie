@@ -139,7 +139,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         const rowsHtml = tickets.slice(0, 5).map(t => `
-            <div class="table-row ticket-clickable" style="cursor:pointer;" onclick="window.location.href='chat-history.html?ticket=${t.id}'">
+            <div class="table-row ticket-clickable" style="cursor:pointer;" onclick="window.location.href='ticket-detail.html?ticket=${t.id}'">
                 <div class="request-info">
                     <div class="request-icon"><i class="fa-solid fa-file-lines"></i></div>
                     <div>
