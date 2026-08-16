@@ -66,6 +66,9 @@ def health_check():
 @app.get("/api/config")
 def get_public_config():
     import os
+
     return {
-        "appInsightsConnectionString": os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING", "")
+        "appInsightsConnectionString": os.getenv(
+            "APPLICATIONINSIGHTS_CONNECTION_STRING", ""
+        )
     }
