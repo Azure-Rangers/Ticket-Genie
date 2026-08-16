@@ -1398,6 +1398,22 @@
           }
         }
       }
+    },
+    "/api/config": {
+      "get": {
+        "summary": "Get Public Config",
+        "operationId": "get_public_config_api_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

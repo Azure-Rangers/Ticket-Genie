@@ -30,6 +30,49 @@ Ticket-Genie enforces a strict security boundary by separating the frontend UI a
 
 ---
 
+## Monitoring & Troubleshooting Logs
+
+### 1. Tail Live Container Logs (Azure CLI)
+To view real-time `stdout`/`stderr` startup logs for both Web Apps:
+
+```bash
+# Frontend Container Logs (Nginx)
+az webapp log tail --resource-group Azure_Rangers --name webapp-prod-frontend-ticketgenie
+
+# Backend Container Logs (FastAPI / Uvicorn)
+az webapp log tail --resource-group Azure_Rangers --name webapp-prod-backend-ticketgenie
+```
+
+To download historical Docker startup & container failure logs:
+```bash
+az webapp log download --resource-group Azure_Rangers --name webapp-prod-frontend-ticketgenie --log-file frontend_logs.zip
+```
+
+### 2. Azure Portal & Kudu Diagnostic URLs
+- **Live Stream Logs:** Azure Portal > Web App (`webapp-prod-frontend-ticketgenie` / `webapp-prod-backend-ticketgenie`) > **Log stream**
+- **Deployment Center Logs:** Web App > **Deployment Center** > **Logs**
+- **Direct Docker Kudu Log Endpoint:** `https://webapp-prod-frontend-ticketgenie.scm.azurewebsites.net/api/logs/docker`
+
+### 3. How to View Request Traces in Azure Portal
+
+1. Go to **Azure Portal** $\rightarrow$ **Application Insights** (`appi-ticketgenie-westus-prod`).
+2. Under **Investigate** on the left menu, click **Transaction Search**.
+3. Click **Search** and click any request (e.g. `POST /api/tickets`) to view the full trace waterfall:
+
+```text
+[Browser Click]             Submit Ticket (Front-End)
+ └── [Browser Dependency]   fetch POST /api/tickets
+       └── [Server Request] POST /api/tickets (FastAPI Backend)
+             └── [Span]     ticket_service.process_new_ticket
+                   ├── [Span] orchestrator.classify_ticket
+                   │     ├── [Span] priority_agent.classify_priority
+                   │     └── [Span] category_agent.classify_category
+                   └── [Span] database.create_ticket
+                         └── [Dependency] SQL: INSERT INTO tickets
+```
+
+---
+
 ## Environment & Secrets Setup
 
 Ticket-Genie uses a `.env` file for managing application configuration and secrets locally.

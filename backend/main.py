@@ -61,3 +61,14 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy", "service": "TicketGenie API"}
+
+
+@app.get("/api/config")
+def get_public_config():
+    import os
+
+    return {
+        "appInsightsConnectionString": os.getenv(
+            "APPLICATIONINSIGHTS_CONNECTION_STRING", ""
+        )
+    }

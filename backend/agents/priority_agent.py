@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
+from opentelemetry import trace
+
+tracer = trace.get_tracer("ticketgenie.agents.priority_agent")
+
 ALLOWED_PRIORITIES: list[str] = ["Low", "Medium", "High", "Critical"]
 
 PRIORITY_RANK: dict[str, int] = {
@@ -92,13 +96,16 @@ LOW_SIGNALS: tuple[str, ...] = (
 
 
 def classify_priority(text: str) -> str:
-    """Assign a deterministic corporate triage priority from ticket text.
+    """Assign a deterministic corporate triage priority from ticket text."""
+    with tracer.start_as_current_span("priority_agent.classify_priority") as span:
+        span.set_attribute("agent.name", "priority_agent")
+        span.set_attribute("service.method", "classify_priority")
+        result = _classify_priority_internal(text)
+        span.set_attribute("agent.priority_assigned", result)
+        return result
 
-    Critical is reserved for immediate safety, major security, or
-    organization-wide operational incidents. Sensitive employee-relations
-    complaints receive High so HR can respond promptly. Unknown or vague
-    tickets remain Medium rather than being silently deprioritized.
-    """
+
+def _classify_priority_internal(text: str) -> str:
     normalized = text.lower()
     if any(signal in normalized for signal in CRITICAL_SIGNALS):
         return "Critical"
@@ -117,6 +124,19 @@ def enforce_minimum_priority(priority: str, minimum: str) -> str:
 
 
 def classify_priority_with_ai(
+    title: str, description: str, generate: Callable[..., dict[str, Any]]
+) -> dict[str, Any]:
+    with tracer.start_as_current_span(
+        "priority_agent.classify_priority_with_ai"
+    ) as span:
+        span.set_attribute("agent.name", "priority_agent")
+        span.set_attribute("service.method", "classify_priority_with_ai")
+        res = _classify_priority_with_ai_internal(title, description, generate)
+        span.set_attribute("agent.priority_assigned", str(res.get("priority", "")))
+        return res
+
+
+def _classify_priority_with_ai_internal(
     title: str, description: str, generate: Callable[..., dict[str, Any]]
 ) -> dict[str, Any]:
     definitions = "\n".join(

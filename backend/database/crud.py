@@ -2,12 +2,15 @@ import os
 from datetime import datetime
 from typing import List, Optional
 
+from opentelemetry import trace
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from database.connection import SessionLocal
 from database.models_db import TicketDB
 from models.ticket import TicketCreate, TicketUpdate
+
+tracer = trace.get_tracer("ticketgenie.database.crud")
 
 
 def _generate_next_id(db: Session) -> str:
@@ -28,6 +31,13 @@ def _generate_next_id(db: Session) -> str:
 
 
 def create_ticket(ticket: TicketCreate, db: Optional[Session] = None) -> dict:
+    with tracer.start_as_current_span("database.create_ticket") as span:
+        span.set_attribute("service.name", "database")
+        span.set_attribute("service.method", "create_ticket")
+        return _create_ticket_internal(ticket, db=db)
+
+
+def _create_ticket_internal(ticket: TicketCreate, db: Optional[Session] = None) -> dict:
     session = db or SessionLocal()
     should_close = db is None
 

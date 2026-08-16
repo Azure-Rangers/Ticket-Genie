@@ -42,7 +42,52 @@ button {
   font-weight: bold;
 }
 
-/* --- COMMON PAGE LAYOUT --- */
+/* --- COMMON PAGE LAYOUT & SCROLL FIXES --- */
+body.admin-page .main-content {
+  padding: 0 !important;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.inbox-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  height: calc(100vh - 70px);
+  background: #f4f5f8;
+}
+
+.ticket-list-pane {
+  width: 380px;
+  min-width: 280px;
+  max-width: 600px;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.ticket-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: calc(100vh - 170px);
+}
+
+.ticket-detail-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: calc(100vh - 70px);
+  padding: 32px 40px;
+}
+
 .page-padding {
   padding: 40px;
   max-width: 1200px;
