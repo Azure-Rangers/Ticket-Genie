@@ -53,50 +53,22 @@ az webapp log download --resource-group Azure_Rangers --name webapp-prod-fronten
 - **Deployment Center Logs:** Web App > **Deployment Center** > **Logs**
 - **Direct Docker Kudu Log Endpoint:** `https://webapp-prod-frontend-ticketgenie.scm.azurewebsites.net/api/logs/docker`
 
-### 3. Azure Application Insights & Log Analytics (KQL Queries)
-Infrastructure telemetry is routed to Log Analytics (`law-ticketgenie-westus-prod`) and Application Insights (`appi-ticketgenie-westus-prod`).
+### 3. How to View Request Traces in Azure Portal
 
-#### How to Access End-to-End Request Traces in Azure Portal:
+1. Go to **Azure Portal** $\rightarrow$ **Application Insights** (`appi-ticketgenie-westus-prod`).
+2. Under **Investigate** on the left menu, click **Transaction Search**.
+3. Click **Search** and click any request (e.g. `POST /api/tickets`) to view the full trace waterfall:
 
-1. **Transaction Search (End-to-End Trace Waterfall)**:
-   - Go to **Azure Portal** $\rightarrow$ **Application Insights** (`appi-ticketgenie-westus-prod`).
-   - Under **Investigate** on the left menu, select **Transaction Search**.
-   - Click **Search** or filter by event type (*Requests*, *Dependencies*, or *Traces*).
-   - Click any request (e.g., `POST /api/tickets`) to open the **End-to-End Transaction Details** waterfall view:
-     ```text
-     [Browser PageView / Click]  Submit Ticket (Front-End)
-      └── [Browser Dependency]   fetch POST /api/tickets
-            └── [Server Request] POST /api/tickets (FastAPI Backend)
-                  └── [Span]     ticket_service.process_new_ticket
-                        ├── [Span] orchestrator.classify_ticket
-                        │     ├── [Span] priority_agent.classify_priority
-                        │     └── [Span] category_agent.classify_category
-                        └── [Span] database.create_ticket
-                              └── [Dependency] SQL: INSERT INTO tickets
-     ```
-
-2. **Application Map (Component Topology)**:
-   - Go to **Investigate** $\rightarrow$ **Application Map** in `appi-ticketgenie-westus-prod`.
-   - View the live topology map showing traffic flow between the Frontend, FastAPI Backend, Azure OpenAI, and SQL Database with real-time latency numbers.
-
-3. **Log Analytics KQL Diagnostic Queries**:
-   - Open **Logs** under *Monitoring* in `appi-ticketgenie-westus-prod` and run:
-
-```kql
-// Query 503 / 502 Errors
-requests
-| where resultCode in ("503", "502", "500")
-| order by timestamp desc
-
-// Correlate full end-to-end trace by Operation ID
-union requests, dependencies, traces, exceptions
-| where operation_Id == "<INSERT_OPERATION_ID_HERE>"
-| order by timestamp asc
-
-// Query Container Console Crash & Startup Errors
-AppServiceConsoleLogs
-| where ResultDescription has "error" or ResultDescription has "emerg" or ResultDescription has "invalid"
-| order by TimeGenerated desc
+```text
+[Browser Click]             Submit Ticket (Front-End)
+ └── [Browser Dependency]   fetch POST /api/tickets
+       └── [Server Request] POST /api/tickets (FastAPI Backend)
+             └── [Span]     ticket_service.process_new_ticket
+                   ├── [Span] orchestrator.classify_ticket
+                   │     ├── [Span] priority_agent.classify_priority
+                   │     └── [Span] category_agent.classify_category
+                   └── [Span] database.create_ticket
+                         └── [Dependency] SQL: INSERT INTO tickets
 ```
 
 ---
