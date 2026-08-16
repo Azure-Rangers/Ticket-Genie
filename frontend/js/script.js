@@ -955,4 +955,5 @@ async function loadDashboardTickets() {
 
 document.addEventListener("DOMContentLoaded", () => {
     loadDashboardTickets();
+    initializeMyTickets();
 });
