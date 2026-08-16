@@ -53,19 +53,22 @@ az webapp log download --resource-group Azure_Rangers --name webapp-prod-fronten
 - **Deployment Center Logs:** Web App > **Deployment Center** > **Logs**
 - **Direct Docker Kudu Log Endpoint:** `https://webapp-prod-frontend-ticketgenie.scm.azurewebsites.net/api/logs/docker`
 
-### 3. Azure Application Insights & Log Analytics (KQL Queries)
-Infrastructure telemetry is routed to Log Analytics (`law-ticketgenie-westus-prod`) and Application Insights (`appi-ticketgenie-westus-prod`). Run these KQL queries in Azure Portal:
+### 3. How to View Request Traces in Azure Portal
 
-```kql
-// Query 503 / 502 Errors
-requests
-| where resultCode in ("503", "502", "500")
-| order by timestamp desc
+1. Go to **Azure Portal** $\rightarrow$ **Application Insights** (`appi-ticketgenie-westus-prod`).
+2. Under **Investigate** on the left menu, click **Transaction Search**.
+3. Click **Search** and click any request (e.g. `POST /api/tickets`) to view the full trace waterfall:
 
-// Query Container Console Crash & Startup Errors
-AppServiceConsoleLogs
-| where ResultDescription has "error" or ResultDescription has "emerg" or ResultDescription has "invalid"
-| order by TimeGenerated desc
+```text
+[Browser Click]             Submit Ticket (Front-End)
+ └── [Browser Dependency]   fetch POST /api/tickets
+       └── [Server Request] POST /api/tickets (FastAPI Backend)
+             └── [Span]     ticket_service.process_new_ticket
+                   ├── [Span] orchestrator.classify_ticket
+                   │     ├── [Span] priority_agent.classify_priority
+                   │     └── [Span] category_agent.classify_category
+                   └── [Span] database.create_ticket
+                         └── [Dependency] SQL: INSERT INTO tickets
 ```
 
 ---
