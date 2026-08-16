@@ -30,6 +30,70 @@ Ticket-Genie enforces a strict security boundary by separating the frontend UI a
 
 ---
 
+## Monitoring & Troubleshooting Logs
+
+### 1. Tail Live Container Logs (Azure CLI)
+To view real-time `stdout`/`stderr` startup logs for both Web Apps:
+
+```bash
+# Frontend Container Logs (Nginx)
+az webapp log tail --resource-group Azure_Rangers --name webapp-prod-frontend-ticketgenie
+
+# Backend Container Logs (FastAPI / Uvicorn)
+az webapp log tail --resource-group Azure_Rangers --name webapp-prod-backend-ticketgenie
+```
+
+To download historical Docker startup & container failure logs:
+```bash
+az webapp log download --resource-group Azure_Rangers --name webapp-prod-frontend-ticketgenie --log-file frontend_logs.zip
+```
+
+### 2. Azure Portal & Kudu Diagnostic URLs
+- **Live Stream Logs:** Azure Portal > Web App (`webapp-prod-frontend-ticketgenie` / `webapp-prod-backend-ticketgenie`) > **Log stream**
+- **Deployment Center Logs:** Web App > **Deployment Center** > **Logs**
+- **Direct Docker Kudu Log Endpoint:** `https://webapp-prod-frontend-ticketgenie.scm.azurewebsites.net/api/logs/docker`
+
+### 3. Azure Application Insights & Log Analytics (KQL Queries)
+Infrastructure telemetry is routed to Log Analytics (`law-ticketgenie-westus-prod`) and Application Insights (`appi-ticketgenie-westus-prod`). Run these KQL queries in Azure Portal:
+
+```kql
+// Query 503 / 502 Errors
+requests
+| where resultCode in ("503", "502", "500")
+| order by timestamp desc
+
+// Query Container Console Crash & Startup Errors
+AppServiceConsoleLogs
+| where ResultDescription has "error" or ResultDescription has "emerg" or ResultDescription has "invalid"
+| order by TimeGenerated desc
+```
+
+### 4. Exposing Docker Startup Logs in CI/CD Pipelines
+By default, `az webapp restart` returns `200 OK` asynchronously before the container actually pulls and boots. To expose startup logs and fail the CI/CD pipeline on container crash, add a post-deployment health poll step to `azure-pipelines.yml`:
+
+```yaml
+- script: |
+    echo "Waiting for web app container warmup..."
+    for i in {1..12}; do
+      STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://$(frontendWebAppName).azurewebsites.net/healthz || true)
+      if [ "$STATUS" = "200" ]; then
+        echo "Frontend container healthy!"
+        exit 0
+      fi
+      echo "Attempt $i: Status $STATUS. Retrying in 10s..."
+      sleep 10
+    done
+
+    echo "ERROR: Web app failed healthcheck! Fetching docker logs..."
+    az webapp log download --resource-group "$(resourceGroupName)" --name "$(frontendWebAppName)" --log-file container_logs.zip
+    unzip -q container_logs.zip -d logs/
+    cat logs/LogFiles/*_docker.log | tail -n 100
+    exit 1
+  displayName: "Verify Container Health & Print Logs on Failure"
+```
+
+---
+
 ## Environment & Secrets Setup
 
 Ticket-Genie uses a `.env` file for managing application configuration and secrets locally.
