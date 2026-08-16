@@ -30,7 +30,8 @@ CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
 # Stage 2: Nginx Frontend Application with API Reverse Proxy
 FROM nginx:alpine AS frontend
 
-# Copy Nginx reverse proxy configuration
+# Copy Nginx template for automatic envsubst environment dynamic configuration
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy static frontend HTML/CSS/JS files
