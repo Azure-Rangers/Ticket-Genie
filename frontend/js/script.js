@@ -1,6 +1,15 @@
 /* =========================================================
-   TICKETGENIE - MAIN JAVASCRIPT & API CLIENT
+   AUTO-LOAD TELEMETRY & DISTRIBUTED TRACING
    ========================================================= */
+(function autoLoadTelemetry() {
+    if (window.TicketGenieTelemetry) return;
+    const script = document.createElement("script");
+    const scriptElement = document.querySelector('script[src*="script.js"]');
+    const basePath = scriptElement ? scriptElement.src.replace("script.js", "") : "/js/";
+    script.src = basePath + "telemetry.js";
+    script.async = true;
+    document.head.appendChild(script);
+})();
 
 const API_BASE_URL = "/api";
 const STORAGE_KEY = "ticketGenieTickets";
