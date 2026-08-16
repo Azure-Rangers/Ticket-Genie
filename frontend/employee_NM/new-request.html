@@ -188,26 +188,26 @@
                         <strong>When to use this request:</strong> Use this form for general IT support, software/hardware access issues, account management, HR operational questions, or administrative requests linked to your active profile.
                     </div>
 
-                    <form style="display: flex; flex-direction: column; gap: 24px;">
+                    <form id="standardTicketForm" onsubmit="submitStandardTicket(event)" style="display: flex; flex-direction: column; gap: 24px;">
                         <div>
                             <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">Request Title / Subject</label>
-                            <input type="text" placeholder="e.g., VPN Connection Issue / Account Provisioning" style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
+                            <input id="standardSubject" type="text" required placeholder="e.g., VPN Connection Issue / Account Provisioning" style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
                         </div>
 
                         <div>
                             <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">Department / Team</label>
-                            <select style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
-                                <option>HR & Workplace Operations</option>
-                                <option>IT & Technology</option>
-                                <option>Account Management</option>
-                                <option>Upper Management/Administration</option>
-                                <option>Other</option>
+                            <select id="standardDepartment" style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
+                                <option value="IT & Technology">IT & Technology</option>
+                                <option value="HR & Workplace Operations">HR & Workplace Operations</option>
+                                <option value="Account Management">Account Management</option>
+                                <option value="Upper Management/Administration">Upper Management/Administration</option>
+                                <option value="Other">Other</option>
                             </select>
                         </div>
 
                         <div>
                             <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">Description & Specifications</label>
-                            <textarea rows="7" placeholder="Provide complete specifications or error details..." style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; box-sizing: border-box;"></textarea>
+                            <textarea id="standardDescription" rows="7" required placeholder="Provide complete specifications or error details..." style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; box-sizing: border-box;"></textarea>
                         </div>
 
                         <!-- Attach Documents Box -->
@@ -221,7 +221,7 @@
                             </div>
                         </div>
 
-                        <button type="button" style="background: #3b82f6; color: #fff; border: none; padding: 14px 28px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; align-self: flex-start; transition: background 0.2s;">
+                        <button id="submitStandardBtn" type="submit" onclick="submitStandardTicket(event)" style="background: #3b82f6; color: #fff; border: none; padding: 14px 28px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; align-self: flex-start; transition: background 0.2s;">
                             <i class="fa-solid fa-paper-plane" style="margin-right: 6px;"></i> Submit Standard Ticket
                         </button>
                     </form>

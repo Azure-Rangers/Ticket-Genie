@@ -957,3 +957,60 @@ document.addEventListener("DOMContentLoaded", () => {
     loadDashboardTickets();
     initializeMyTickets();
 });
+
+
+/* =========================================================
+   NEW TICKET FORM SUBMISSIONS
+========================================================= */
+async function submitStandardTicket(event) {
+    if (event) event.preventDefault();
+    
+    const subjectEl = document.getElementById("standardSubject");
+    const deptEl = document.getElementById("standardDepartment");
+    const descEl = document.getElementById("standardDescription");
+    
+    const subject = subjectEl ? subjectEl.value.trim() : "";
+    const department = deptEl ? deptEl.value : "IT & Technology";
+    const description = descEl ? descEl.value.trim() : "";
+    
+    if (!subject || !description) {
+        alert("Please enter a Request Title / Subject and Description before submitting.");
+        return;
+    }
+
+    const submitBtn = document.getElementById("submitStandardBtn");
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i> Submitting...';
+    }
+
+    let backendDept = "IT Team";
+    if (department.includes("HR")) backendDept = "HR Team";
+    else if (department.includes("Account")) backendDept = "Accounting Team";
+    else if (department.includes("Upper") || department.includes("Admin")) backendDept = "Upper Management";
+    else if (department.includes("Workplace")) backendDept = "Workplace Operations Team";
+
+    const payload = {
+        title: subject,
+        description: description,
+        category: "IT Support",
+        priority: "Medium",
+        department: backendDept,
+        requester_id: typeof getCurrentRequesterId === 'function' ? getCurrentRequesterId() : "nm@company.com"
+    };
+
+    const newTicket = await apiCreateTicket(payload);
+    
+    // Save locally for fallback rendering
+    const tickets = getTickets();
+    const existingIndex = tickets.findIndex(t => t.id === newTicket.id);
+    if (existingIndex < 0) {
+        tickets.unshift(newTicket);
+        saveTickets(tickets);
+    }
+
+    alert(`Ticket #${newTicket.id || "HD-1029"} submitted successfully!`);
+    window.location.href = "my-tickets.html";
+}
+
+window.submitStandardTicket = submitStandardTicket;
