@@ -153,3 +153,21 @@ def test_update_ticket_not_found() -> None:
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Ticket not found"
+
+
+def test_azure_login_admin_check() -> None:
+    payload = {
+        "azure_object_id": "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a",
+        "email": "admin@company.com",
+        "name": "Admin User"
+    }
+
+    response = client.post("/api/users/azure-login", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["status"] == "success"
+    assert data["azure_object_id"] == "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a"
+    assert data["is_admin"] is True
+    assert data["role"] == "Admin"
+

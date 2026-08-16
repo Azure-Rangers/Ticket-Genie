@@ -1,34 +1,109 @@
-/* =========================================================
-   TICKETGENIE - MAIN JAVASCRIPT & API CLIENT
-   ========================================================= */
+console.log("[Script Log] TicketGenie main script.js loaded successfully!");
 
-const API_BASE_URL = "/api";
+/* =========================================================
+   AUTO-LOAD DEPENDENCIES, TELEMETRY & AZURE AUTH MODULES
+   ========================================================= */
+(function autoLoadModules() {
+    const scriptElement = document.querySelector('script[src*="script.js"]');
+    const basePath = scriptElement ? scriptElement.src.replace("script.js", "") : "/js/";
+
+    if (!window.apiFetchAnnouncements) {
+        const apiScript = document.createElement("script");
+        apiScript.src = basePath + "api.js";
+        document.head.appendChild(apiScript);
+    }
+
+    if (!window.TicketGenieTelemetry) {
+        const teleScript = document.createElement("script");
+        teleScript.src = basePath + "telemetry.js";
+        teleScript.async = true;
+        document.head.appendChild(teleScript);
+    }
+
+    if (!window.AzureAuth) {
+        const authScript = document.createElement("script");
+        authScript.src = basePath + "azure-auth.js";
+        authScript.async = false;
+        document.head.appendChild(authScript);
+    }
+})();
+/* =========================================================
+   GLOBAL BEARER TOKEN PROPAGATION INTERCEPTOR
+   ========================================================= */
+(function patchFetchForBearerToken() {
+    if (window._bearerFetchPatched) return;
+    window._bearerFetchPatched = true;
+    const originalFetch = window.fetch;
+
+    window.fetch = function (resource, options = {}) {
+        const url = typeof resource === "string" ? resource : resource?.url || "";
+
+        // Inject Authorization Bearer header into all backend /api/ requests
+        if (url.includes("/api/") && !url.includes("/api/config")) {
+            let idToken = "";
+            try {
+                const stored = localStorage.getItem("azureUser") || localStorage.getItem("portalUser");
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    idToken = parsed.idToken || parsed.id_token || "";
+                }
+            } catch (e) { }
+
+            if (idToken) {
+                options = options || {};
+                let headers = options.headers || {};
+
+                if (headers instanceof Headers) {
+                    if (!headers.has("Authorization")) {
+                        headers.set("Authorization", `Bearer ${idToken}`);
+                    }
+                } else if (Array.isArray(headers)) {
+                    const hasAuth = headers.some(([k]) => k.toLowerCase() === "authorization");
+                    if (!hasAuth) {
+                        headers.push(["Authorization", `Bearer ${idToken}`]);
+                    }
+                } else {
+                    headers = { ...headers };
+                    if (!headers["Authorization"] && !headers["authorization"]) {
+                        headers["Authorization"] = `Bearer ${idToken}`;
+                    }
+                }
+                options.headers = headers;
+            }
+        }
+
+        return originalFetch.call(this, resource, options);
+    };
+})();
+
+/* =========================================================
+   LOCAL STORAGE FALLBACK & IDENTIFIER HELPERS
+   ========================================================= */
 const STORAGE_KEY = "ticketGenieTickets";
 
-/* =========================================================
-   BACKEND API CLIENT & STORAGE FALLBACK
-   ========================================================= */
 function getTickets() {
-    const tickets = localStorage.getItem(STORAGE_KEY);
-    if (!tickets) {
-        const defaultTickets = [
-            { id: "HD-1024", title: "Payroll Issue", category: "Payroll", priority: "High", status: "In Progress", description: "Having an issue with my latest paycheck.", date: "2026-08-08", createdAt: "2026-08-08T10:00:00" },
-            { id: "HD-1025", title: "Benefits Question", category: "Benefits", priority: "Medium", status: "Open", description: "I have a question about my benefits.", date: "2026-08-07", createdAt: "2026-08-07T10:00:00" },
-            { id: "HD-1026", title: "Laptop Request", category: "IT Support", priority: "Low", status: "Resolved", description: "Requesting a replacement laptop.", date: "2026-08-05", createdAt: "2026-08-05T10:00:00" },
-            { id: "HD-1027", title: "PTO Request", category: "Time Off", priority: "Medium", status: "Pending", description: "Requesting PTO.", date: "2026-08-04", createdAt: "2026-08-04T10:00:00" },
-            { id: "HD-1028", title: "Expense Reimbursement", category: "Payroll", priority: "Low", status: "Resolved", description: "Submitting an expense reimbursement.", date: "2026-08-02", createdAt: "2026-08-02T10:00:00" }
-        ];
-        return defaultTickets;
-    }
     try {
-        return JSON.parse(tickets);
-    } catch (e) {
-        return [];
-    }
+        const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("employee_tickets");
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+    } catch (e) {}
+
+    return [
+        { id: "HD-1024", title: "Payroll Issue", category: "Payroll", priority: "High", status: "In Progress", description: "Having an issue with my latest paycheck.", date: "2026-08-08", createdAt: "2026-08-08T10:00:00" },
+        { id: "HD-1025", title: "Benefits Question", category: "Benefits", priority: "Medium", status: "Open", description: "I have a question about my benefits.", date: "2026-08-07", createdAt: "2026-08-07T10:00:00" },
+        { id: "HD-1026", title: "Laptop Request", category: "IT Support", priority: "Low", status: "Resolved", description: "Requesting a replacement laptop.", date: "2026-08-05", createdAt: "2026-08-05T10:00:00" },
+        { id: "HD-1027", title: "PTO Request", category: "Time Off", priority: "Medium", status: "Pending", description: "Requesting PTO.", date: "2026-08-04", createdAt: "2026-08-04T10:00:00" },
+        { id: "HD-1028", title: "Expense Reimbursement", category: "Payroll", priority: "Low", status: "Resolved", description: "Submitting an expense reimbursement.", date: "2026-08-02", createdAt: "2026-08-02T10:00:00" }
+    ];
 }
 
 function saveTickets(tickets) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+        localStorage.setItem("employee_tickets", JSON.stringify(tickets));
+    } catch (e) {}
 }
 
 function generateTicketId() {
@@ -43,169 +118,37 @@ function generateTicketId() {
     return `HD-${highestNumber + 1}`;
 }
 
-async function apiFetchTickets(params = {}) {
+function getCurrentRequesterId() {
     try {
-        const query = new URLSearchParams();
-        if (params.search) query.append("search", params.search);
-        if (params.status && params.status !== "all") query.append("status", params.status);
-        if (params.priority && params.priority !== "all") query.append("priority", params.priority);
-
-        const url = query.toString() ? `${API_BASE_URL}/tickets?${query.toString()}` : `${API_BASE_URL}/tickets`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const data = await res.json();
-        return Array.isArray(data) ? data : (data.tickets || []);
-    } catch (err) {
-        console.warn("Backend API not reachable, using local storage tickets:", err);
-    }
-    return getTickets();
-}
-
-async function apiCreateTicket(ticketPayload) {
-    try {
-        const res = await fetch(`${API_BASE_URL}/tickets`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(ticketPayload)
-        });
-        if (res.ok) {
-            return await res.json();
-        }
-    } catch (err) {
-        console.warn("Backend API POST failed, creating ticket locally:", err);
-    }
-    const tickets = getTickets();
-    const newTicket = {
-        id: generateTicketId(),
-        title: ticketPayload.subject || ticketPayload.title,
-        category: ticketPayload.category,
-        priority: ticketPayload.priority || "Medium",
-        status: "Open",
-        description: ticketPayload.description,
-        date: ticketPayload.date || "",
-        createdAt: new Date().toISOString()
-    };
-    tickets.unshift(newTicket);
-    saveTickets(tickets);
-    return newTicket;
-}
-
-/* =========================================================
-   PROFILE DROPDOWN MENU & TOP RIGHT PAGE SWITCHING
-   ========================================================= */
-function initializeProfileDropdown() {
-    const profileBtn = document.getElementById('profileDropdownTrigger');
-    const profileMenu = document.getElementById('profileDropdownMenu');
-    const roleButtons = document.querySelectorAll('.role-switch-btn');
-    const currentRoleDisplay = document.getElementById('currentRoleDisplay');
-
-    if (profileBtn && profileMenu) {
-        profileBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const isShowing = profileMenu.classList.toggle('show');
-            profileBtn.setAttribute('aria-expanded', isShowing);
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!profileBtn.contains(e.target) && !profileMenu.contains(e.target)) {
-                profileMenu.classList.remove('show');
-                profileBtn.setAttribute('aria-expanded', 'false');
-            }
-        });
-
-        roleButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const selectedRole = btn.getAttribute('data-role') || btn.dataset.role;
-                roleButtons.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-
-                if (currentRoleDisplay) {
-                    currentRoleDisplay.textContent = selectedRole;
-                }
-
-                profileMenu.classList.remove('show');
-                profileBtn.setAttribute('aria-expanded', 'false');
-
-                const currentPath = window.location.pathname;
-
-                if (selectedRole === 'Management') {
-                    localStorage.setItem('portalUser', JSON.stringify({
-                        name: 'Management User',
-                        role: 'Management',
-                        email: 'management@ticketgenie.com'
-                    }));
-
-                    if (currentPath.includes('/employee_NM/')) {
-                        window.location.href = '../admin_AV/admin_dashboard.html';
-                    } else {
-                        window.location.href = 'admin_AV/admin_dashboard.html';
-                    }
-
-                } else if (selectedRole === 'Employee') {
-                    localStorage.setItem('portalUser', JSON.stringify({
-                        name: 'Employee User',
-                        role: 'Employee',
-                        email: 'employee@ticketgenie.com'
-                    }));
-
-                    if (currentPath.includes('/admin_AV/')) {
-                        window.location.href = '../employee_NM/employee_dashboard.html';
-                    } else {
-                        window.location.href = 'employee_NM/employee_dashboard.html';
-                    }
-                }
-            });
-        });
+        const user = JSON.parse(localStorage.getItem("portalUser") || "{}");
+        return user.email || user.id || "nm@company.com";
+    } catch (e) {
+        return "nm@company.com";
     }
 }
 
-/* =========================================================
-   NEW REQUEST FORM
-   ========================================================= */
-function initializeNewRequestForm() {
-    const form = document.querySelector(".request-form-card form");
-    if (!form) return;
+function escapeHTML(str) {
+    if (!str) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 
-    form.addEventListener("submit", async function(event) {
-        event.preventDefault();
-
-        const titleElement = document.getElementById("ticketSubject") || document.getElementById("anonTicketSubject") || document.getElementById("leaveType");
-        const categoryElement = document.getElementById("ticketCategory") || document.getElementById("anonTicketCategory") || document.getElementById("leaveType");
-        const descriptionElement = document.getElementById("ticketDescription") || document.getElementById("anonTicketDescription") || document.getElementById("leaveDescription");
-        
-        const submitBtn = event.target.querySelector('.submit-request-button');
-
-        const title = titleElement ? titleElement.value.trim() : "New Request";
-        const category = categoryElement ? categoryElement.value : "General";
-        const description = descriptionElement ? descriptionElement.value.trim() : "";
-
-        if (!title || !category || !description) { 
-            showFormError("Please fill out all required fields."); 
-            return; 
-        }
-
-        const oldError = document.querySelector(".form-error-message");
-        if (oldError) oldError.style.display = "none";
-
-        if (submitBtn) {
-            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
-            submitBtn.classList.add('loading');
-        }
-
-        const newTicket = await apiCreateTicket({
-            title: title,
-            subject: title,
-            category: category,
-            priority: "Medium",
-            description: description,
-            date: ""
-        });
-
-        showSuccessMessage(newTicket);
-
-        setTimeout(() => { window.location.href = "my-tickets.html"; }, 1500);
-    });
+function showNotification(message, type = "info") {
+    console.log(`[Notification - ${type}] ${message}`);
+    let toast = document.getElementById("globalToastNotification");
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "globalToastNotification";
+        toast.style.cssText = "position: fixed; bottom: 24px; right: 24px; z-index: 9999; background: #1e293b; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); font-size: 14px; transition: opacity 0.3s ease;";
+        document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.style.opacity = "1";
+    setTimeout(() => { toast.style.opacity = "0"; }, 3500);
 }
 
 function showFormError(message) {
@@ -238,578 +181,748 @@ function showSuccessMessage(ticket) {
 }
 
 /* =========================================================
-   MY TICKETS
-========================================================= */
-function initializeMyTickets() {
-    const table = document.querySelector(".tickets-table");
-    if (!table) return;
-
-    renderTickets();
-
-    const searchInput = document.getElementById("ticketSearch");
-    if (searchInput) {
-        searchInput.addEventListener("input", renderTickets);
-    }
-
-    const filters = document.querySelectorAll(".ticket-filter");
-    filters.forEach(filter => {
-        filter.addEventListener("change", renderTickets);
-    });
-}
-
-async function renderTickets() {
-    const table = document.querySelector(".tickets-table");
-    if (!table) return;
-
-    const searchInput = document.getElementById("ticketSearch");
-    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
-
-    const statusFilter = document.getElementById("ticketStatusFilter");
-    const priorityFilter = document.getElementById("ticketPriorityFilter");
-
-    const statusValue = statusFilter ? statusFilter.value : "all";
-    const priorityValue = priorityFilter ? priorityFilter.value : "all";
-
-    let tickets = await apiFetchTickets({
-        search: searchTerm,
-        status: statusValue,
-        priority: priorityValue
-    });
-
-    if (searchTerm) {
-        tickets = tickets.filter(ticket => {
-            const title = (ticket.title || ticket.subject || "").toLowerCase();
-            const id = (ticket.id || "").toLowerCase();
-            const category = (ticket.category || "").toLowerCase();
-            return title.includes(searchTerm) || id.includes(searchTerm) || category.includes(searchTerm);
-        });
-    }
-
-    if (statusValue && statusValue !== "all") {
-        tickets = tickets.filter(ticket => String(ticket.status).toLowerCase() === statusValue.toLowerCase());
-    }
-
-    if (priorityValue && priorityValue !== "all") {
-        tickets = tickets.filter(ticket => String(ticket.priority).toLowerCase() === priorityValue.toLowerCase());
-    }
-
-    tickets.sort((a, b) => {
-        const dateA = new Date(a.createdAt || a.created_at || 0);
-        const dateB = new Date(b.createdAt || b.created_at || 0);
-        return dateB - dateA;
-    });
-
-    const header = table.querySelector(".table-header");
-    table.innerHTML = "";
-    if (header) { table.appendChild(header); }
-
-    tickets.forEach(ticket => {
-        const row = createTicketRow(ticket);
-        table.appendChild(row);
-    });
-
-    if (tickets.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "ticket-empty-state";
-        empty.innerHTML = `
-            <i class="fa-regular fa-folder-open"></i>
-            <strong>No tickets found</strong>
-            <span>Try changing your search or filters.</span>
-        `;
-        table.appendChild(empty);
-    }
-
-    await updateTicketOverview();
-}
-
-function createTicketRow(ticket) {
-    const row = document.createElement("div");
-    row.className = "table-row ticket-clickable";
-    const icon = getTicketIcon(ticket.category);
-    const updated = formatTicketDate(ticket.createdAt || ticket.created_at);
-
-    row.innerHTML = `
-        <div class="request-info">
-            <div class="request-icon"><i class="${icon}"></i></div>
-            <div>
-                <strong>${escapeHTML(ticket.title || ticket.subject || "Request")}</strong>
-                <span>#${escapeHTML(ticket.id)}</span>
-            </div>
-        </div>
-        <span>${escapeHTML(ticket.category || "General")}</span>
-        <span class="status ${getStatusClass(ticket.status)}">${escapeHTML(ticket.status || "Open")}</span>
-        <span class="priority ${String(ticket.priority || "Medium").toLowerCase().replace(/\s+/g, "-")}">${escapeHTML(ticket.priority || "Medium")}</span>
-        <span>${updated}</span>
-    `;
-
-    row.addEventListener("click", () => { showTicketDetails(ticket); });
-    return row;
-}
-
-function getTicketIcon(category) {
-    const icons = {
-        "IT Support": "fa-solid fa-display",
-        "IT & Technology": "fa-solid fa-display",
-        "Payroll": "fa-solid fa-receipt",
-        "Payroll & Benefits": "fa-solid fa-receipt",
-        "Benefits": "fa-solid fa-shield-heart",
-        "Human Resources": "fa-solid fa-users",
-        "Employee Services": "fa-solid fa-user",
-        "Time Off": "fa-solid fa-calendar-check",
-        "Access & Permissions": "fa-solid fa-lock",
-        "Other": "fa-solid fa-file-lines"
-    };
-    return (icons[category] || "fa-solid fa-file-lines");
-}
-
-function getStatusClass(status) {
-    return String(status || "open").toLowerCase().replace(/\s+/g, "-");
-}
-
-function formatTicketDate(dateString) {
-    if (!dateString) return "—";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "—";
-    const now = new Date();
-    const difference = now - date;
-    const hours = difference / 3600000;
-    if (hours >= 0 && hours < 24) return "Today";
-    if (hours >= 24 && hours < 48) return "Yesterday";
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-async function updateTicketOverview() {
-    const tickets = await apiFetchTickets();
-    const open = tickets.filter(ticket => String(ticket.status).toLowerCase() === "open").length;
-    const inProgress = tickets.filter(ticket => ["in progress", "pending", "in-progress"].includes(String(ticket.status).toLowerCase())).length;
-    const resolved = tickets.filter(ticket => String(ticket.status).toLowerCase() === "resolved").length;
-
-    const openCount = document.getElementById("openCount");
-    const inProgressCount = document.getElementById("inProgressCount");
-    const resolvedCount = document.getElementById("resolvedCount");
-
-    if (openCount) openCount.textContent = open;
-    if (inProgressCount) inProgressCount.textContent = inProgress;
-    if (resolvedCount) resolvedCount.textContent = resolved;
-
-    const recentTickets = document.getElementById("recentTickets");
-    if (recentTickets) {
-        recentTickets.innerHTML = "";
-        tickets.slice(0, 5).forEach(ticket => {
-            const row = createTicketRow(ticket);
-            recentTickets.appendChild(row);
-        });
-    }
-}
-
-function showTicketDetails(ticket) {
-    const modal = document.createElement("div");
-    modal.className = "ticket-modal";
-    modal.innerHTML = `
-        <div class="ticket-modal-content">
-            <button class="ticket-modal-close" type="button" aria-label="Close ticket details">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-            <p class="eyebrow">TICKET #${escapeHTML(ticket.id)}</p>
-            <h2>${escapeHTML(ticket.title)}</h2>
-            <div class="ticket-detail-grid">
-                <div><span>Category</span><strong>${escapeHTML(ticket.category)}</strong></div>
-                <div><span>Priority</span><strong class="priority ${ticket.priority.toLowerCase().replace(/\s+/g, "-")}">${escapeHTML(ticket.priority)}</strong></div>
-                <div><span>Status</span><strong class="status ${getStatusClass(ticket.status)}">${escapeHTML(ticket.status)}</strong></div>
-                <div><span>Preferred Date</span><strong>${ticket.date ? formatPreferredDate(ticket.date) : "Not specified"}</strong></div>
-            </div>
-            <div class="ticket-description">
-                <span>Description</span>
-                <p>${escapeHTML(ticket.description)}</p>
-            </div>
-            <div class="ticket-modal-footer">
-                <span>Created ${formatTicketDate(ticket.createdAt)}</span>
-                <button class="modal-close-button" type="button">Close</button>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-    requestAnimationFrame(() => { modal.classList.add("show"); });
-
-    const closeModal = () => {
-        modal.classList.remove("show");
-        setTimeout(() => { modal.remove(); }, 200);
+   NEW REQUEST FORM
+   ========================================================= */
+function initializeNewRequestForm() {
+    const formConfigs = {
+        newTicketForm: { title: "ticketSubject", category: "ticketCategory", description: "ticketDescription", preferredDate: "preferredDate", file: "fileUpload", anonymous: false },
+        anonTicketForm: { title: "anonTicketSubject", category: "anonTicketCategory", description: "anonTicketDescription", file: "anonFileUpload", anonymous: true },
+        leaveTicketForm: { title: "leaveType", category: "leaveType", description: "leaveDescription", preferredDate: "leaveEndDate", file: "leaveFileUpload", anonymous: false, leave: true, departmentOverride: "Upper Management" }
     };
 
-    const closeIcon = modal.querySelector(".ticket-modal-close");
-    const closeButton = modal.querySelector(".modal-close-button");
+    Object.entries(formConfigs).forEach(([formId, config]) => {
+        const form = document.getElementById(formId);
+        if (!form) return;
 
-    if (closeIcon) closeIcon.addEventListener("click", closeModal);
-    if (closeButton) closeButton.addEventListener("click", closeModal);
+        form.addEventListener("submit", async function(event) {
+        event.preventDefault();
 
-    modal.addEventListener("click", event => { if (event.target === modal) closeModal(); });
-    document.addEventListener("keydown", function escapeHandler(event) {
-        if (event.key === "Escape") {
-            closeModal();
-            document.removeEventListener("keydown", escapeHandler);
+        const titleElement = document.getElementById(config.title);
+        const categoryElement = document.getElementById(config.category);
+        const descriptionElement = document.getElementById(config.description);
+        const submitBtn = event.target.querySelector('.submit-request-button');
+        const originalSubmitContent = submitBtn?.innerHTML;
+
+        const title = titleElement ? titleElement.value.trim() : "New Request";
+        const category = categoryElement ? categoryElement.value : "General";
+        const description = descriptionElement ? descriptionElement.value.trim() : "";
+
+        if (!title || !category || !description) {
+            showFormError("Please fill out all required fields.");
+            return;
         }
+        if (title.length < 3 || description.length < 10) {
+            showFormError("The subject must be at least 3 characters and the description at least 10 characters.");
+            return;
+        }
+
+        const oldError = document.querySelector(".form-error-message");
+        if (oldError) oldError.style.display = "none";
+
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
+            submitBtn.classList.add('loading');
+        }
+
+        try {
+            let finalDescription = description;
+            if (config.leave) {
+                const startDate = document.getElementById("leaveStartDate")?.value || "";
+                const endDate = document.getElementById("leaveEndDate")?.value || "";
+                finalDescription = `Leave dates: ${startDate} to ${endDate}. ${description}`;
+            }
+            const files = Array.from(document.getElementById(config.file)?.files || []);
+            const newTicket = await apiCreateTicket({
+                title,
+                category,
+                description: finalDescription,
+                preferredDate: config.preferredDate ? (document.getElementById(config.preferredDate)?.value || null) : null,
+                is_anonymous: config.anonymous,
+                attachment: files.length ? files.map(file => file.name).join(", ") : null,
+                requester_id: getCurrentRequesterId(),
+                // Deterministic, fixed to this one static tab - never derived
+                // from chatbot/GPT output. Makes the backend skip normal AI
+                // classification for Leave Management (see
+                // services/ticket_service.py's department_override handling)
+                // so it always routes to Upper Management.
+                ...(config.departmentOverride ? { department_override: config.departmentOverride } : {})
+            });
+
+            showSuccessMessage(newTicket);
+            setTimeout(() => { window.location.href = "my-tickets.html"; }, 1500);
+        } catch (err) {
+            showFormError(err.message || "Unable to submit the request. Please try again.");
+            if (submitBtn) {
+                submitBtn.innerHTML = originalSubmitContent;
+                submitBtn.classList.remove('loading');
+            }
+        }
+        });
     });
 }
 
-function formatPreferredDate(dateString) {
-    if (!dateString) return "Not specified";
-    const date = new Date(dateString + "T00:00:00");
-    if (isNaN(date.getTime())) return dateString;
-    return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
-}
 
 /* =========================================================
-   GENIE AI AGENT
-========================================================= */
-function initializeGenie() {
-    const genieChat = document.getElementById("genieChat");
-    if (!genieChat) return;
-    const genieInput = document.getElementById("genieInput");
-    const genieSendButton = document.getElementById("genieSendButton");
-    const closeButton = document.getElementById("closeGenieButton");
-    const genieButton = document.getElementById("genieButton");
-
-    function openGenie() {
-        genieChat.classList.add("open");
-        if (genieInput) setTimeout(() => { genieInput.focus(); }, 100);
-    }
-
-    function closeGenie() {
-        genieChat.classList.remove("open");
-    }
-
-    if (genieButton) genieButton.addEventListener("click", openGenie);
-    if (closeButton) closeButton.addEventListener("click", closeGenie);
-
-    const genieNav = document.querySelector(".genie-nav-link");
-    if (genieNav) genieNav.addEventListener("click", event => { event.preventDefault(); openGenie(); });
-
-    const knowledgeGenieButton = document.getElementById("knowledgeGenieButton");
-    if (knowledgeGenieButton) knowledgeGenieButton.addEventListener("click", openGenie);
-
-    const openGenieFromRequest = document.getElementById("openGenieFromRequest");
-    if (openGenieFromRequest) openGenieFromRequest.addEventListener("click", openGenie);
-
-    function sendGenieMessage() {
-        if (!genieInput) return;
-        const message = genieInput.value.trim();
-        if (!message) return;
-
-        addGenieMessage(message, "user");
-        genieInput.value = "";
-
-        const thinking = addGenieThinking();
-        setTimeout(() => {
-            if (thinking) thinking.remove();
-            const response = getGenieResponse(message);
-            addGenieMessage(response, "agent");
-        }, 700);
-    }
-
-    if (genieSendButton) genieSendButton.addEventListener("click", sendGenieMessage);
-    if (genieInput) {
-        genieInput.addEventListener("keydown", event => {
-            if (event.key === "Enter") { event.preventDefault(); sendGenieMessage(); }
-        });
-    }
-
-    const suggestions = document.querySelectorAll(".genie-suggestion");
-    suggestions.forEach(suggestion => {
-        suggestion.addEventListener("click", () => {
-            const message = suggestion.textContent.trim();
-            if (!message) return;
-            addGenieMessage(message, "user");
-            const thinking = addGenieThinking();
-            setTimeout(() => {
-                if (thinking) thinking.remove();
-                const response = getGenieResponse(message);
-                addGenieMessage(response, "agent");
-            }, 700);
-        });
-    });
-
-    document.addEventListener("click", event => {
-        if (!genieChat.classList.contains("open")) return;
-        const clickedInside = genieChat.contains(event.target);
-        const clickedButton = genieButton && genieButton.contains(event.target);
-        const clickedNav = genieNav && genieNav.contains(event.target);
-        if (!clickedInside && !clickedButton && !clickedNav) closeGenie();
-    });
-}
-
-function addGenieThinking() {
-    const messages = document.getElementById("genieMessages");
-    if (!messages) return null;
-    const thinking = document.createElement("div");
-    thinking.className = "genie-message genie-thinking";
-    thinking.innerHTML = `
-        <div class="genie-message-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-        <div class="genie-bubble"><span>Genie is thinking...</span></div>
-    `;
-    messages.appendChild(thinking);
-    messages.scrollTop = messages.scrollHeight;
-    return thinking;
-}
-
-function getGenieResponse(message) {
-    const text = message.toLowerCase().trim();
-    if (text.includes("hello") || text.includes("hi") || text.includes("hey") || text === "genie") return "Hi! I'm Genie, your AI support agent. I can help you find the right support category, answer common questions, or guide you through creating a request. What do you need help with?";
-    if (text.includes("payroll") || text.includes("paycheck") || text.includes("salary") || text.includes("wages") || text.includes("pay")) return "I can help with payroll questions. If you're experiencing an issue with your paycheck, select Payroll when creating a request and include the pay period and a description of the issue.";
-    if (text.includes("laptop") || text.includes("computer") || text.includes("wifi") || text.includes("wi-fi") || text.includes("internet") || text.includes("password") || text.includes("login") || text.includes("log in") || text.includes("software") || text.includes("monitor") || text.includes("keyboard") || text.includes("mouse") || text.includes("printer") || text.includes("it help") || text.includes("it issue")) return "This sounds like an IT Support request. If you've already tried basic troubleshooting and still need help, create a new request and select IT & Technology as the category. Be sure to include any error messages or screenshots.";
-    if (text.includes("benefit") || text.includes("insurance") || text.includes("health") || text.includes("dental") || text.includes("vision") || text.includes("401k")) return "For benefits questions, the Payroll & Benefits category is usually the best choice. When submitting your request, include the specific benefit or plan you're asking about so the right team can assist you.";
-    if (text.includes("pto") || text.includes("vacation") || text.includes("leave") || text.includes("time off") || text.includes("day off")) return "For PTO or leave-related requests, select Time Off as your category when creating a new request. You can also include your preferred date in the request.";
-    if (text.includes("access") || text.includes("permission") || text.includes("permissions") || text.includes("account")) return "For access or permission issues, select IT & Technology as your category. Include the system or application you need access to and explain what you're currently unable to access.";
-    if (text.includes("ticket") || text.includes("request") || text.includes("submit") || text.includes("create")) return "I can help you create a support request. Select New Request from the sidebar, then provide a clear title, category, priority, description, and preferred date if needed. Once submitted, your request will appear under My Tickets.";
-    if (text.includes("my ticket") || text.includes("my tickets") || text.includes("ticket status") || text.includes("check my tickets") || text.includes("status")) return "You can view your submitted requests by selecting My Tickets from the sidebar. There you can search, filter, and select a ticket to view its details.";
-    if (text.includes("how long") || text.includes("response") || text.includes("when") || text.includes("wait")) return "The typical response time for a support request is within 1-2 business days. You can check My Tickets to monitor the status of your request.";
-    return "I can help with IT & Technology, Payroll & Benefits, Time Off, Employee Services, or creating and tracking a support request. Tell me a little more about what you need help with.";
-}
-
-function addGenieMessage(message, sender) {
-    const messages = document.getElementById("genieMessages");
-    if (!messages) return;
-    const messageElement = document.createElement("div");
-
-    if (sender === "user") {
-        messageElement.className = "genie-message genie-message-user";
-        messageElement.innerHTML = `<div class="genie-bubble">${escapeHTML(message)}</div>`;
+   GLOBAL DARK MODE & HAMBURGER SIDEBAR TOGGLES
+   ========================================================= */
+function initDarkMode() {
+    const savedTheme = localStorage.getItem("theme");
+    const isDark = savedTheme === "dark";
+    if (isDark) {
+        document.body.classList.add("dark-mode");
     } else {
-        messageElement.className = "genie-message";
-        messageElement.innerHTML = `
-            <div class="genie-message-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-            <div class="genie-bubble">${escapeHTML(message)}</div>
+        document.body.classList.remove("dark-mode");
+    }
+
+    const darkToggle = document.getElementById("myCustomDarkToggle") || document.getElementById("darkModeToggle");
+    if (darkToggle) {
+        darkToggle.setAttribute("aria-checked", isDark ? "true" : "false");
+    }
+}
+
+function initSidebarToggle() {
+    const sidebar = document.querySelector(".sidebar");
+    const savedState = localStorage.getItem("sidebar_collapsed");
+    if (sidebar && savedState === "true") {
+        sidebar.classList.add("collapsed");
+    }
+}
+
+function handleSignOut(event) {
+    if (event) event.preventDefault();
+    localStorage.removeItem("portalUser");
+    window.location.href = "../index.html";
+}
+
+/* =========================================================
+   MODAL CHAT & TICKET CHAT UTILITIES
+   ========================================================= */
+let currentOpenTicketId = null;
+let loadedMyTicketsMap = {};
+
+async function openTicketChatModal(ticketId, ticketObj = null) {
+    const modal = document.getElementById("ticketModal");
+    if (!modal) return;
+
+    currentOpenTicketId = ticketId;
+
+    let ticket = ticketObj || loadedMyTicketsMap[ticketId];
+    if (!ticket) {
+        try {
+            const fetchFn = window.apiFetchTickets || apiFetchTickets;
+            const res = await fetchFn({ search: ticketId });
+            if (res && res.length > 0) ticket = res[0];
+        } catch (e) {}
+    }
+
+    const modalTitle = document.getElementById("modalTicketTitle");
+    const modalId = document.getElementById("modalTicketId");
+    const modalStatus = document.getElementById("modalTicketStatus");
+    const modalCategory = document.getElementById("modalTicketCategory");
+    const modalPriority = document.getElementById("modalTicketPriority");
+    const modalDate = document.getElementById("modalTicketDate");
+    const modalDesc = document.getElementById("modalTicketDescription");
+
+    if (modalTitle) modalTitle.textContent = ticket ? ticket.title : `Ticket #${ticketId}`;
+    if (modalId) modalId.textContent = `#${ticketId}`;
+
+    if (modalStatus) {
+        const st = ticket ? (ticket.status || "Open") : "Open";
+        modalStatus.textContent = st;
+        modalStatus.className = `status ${st.toLowerCase().replaceAll(" ", "-")}`;
+    }
+
+    if (modalCategory) modalCategory.textContent = ticket ? (ticket.department || ticket.category || "General") : "General";
+
+    if (modalPriority) {
+        const pr = ticket ? (ticket.priority || "Medium") : "Medium";
+        modalPriority.textContent = pr;
+        modalPriority.className = `priority ${pr.toLowerCase()}`;
+    }
+
+    if (modalDate) modalDate.textContent = ticket ? (ticket.date || (ticket.createdAt ? ticket.createdAt.split("T")[0] : "Today")) : "Today";
+    if (modalDesc) modalDesc.textContent = ticket ? (ticket.description || "No description provided.") : "No description provided.";
+
+    await renderModalComments(ticketId);
+
+    modal.style.display = "flex";
+    requestAnimationFrame(() => modal.classList.add("show"));
+
+    const threadContainer = document.getElementById("modalChatThread");
+    if (threadContainer) threadContainer.scrollTop = threadContainer.scrollHeight;
+}
+
+async function renderModalComments(ticketId) {
+    const threadContainer = document.getElementById("modalChatThread");
+    if (!threadContainer) return;
+
+    const getCommentsFn = window.apiGetComments || (async () => []);
+    const comments = await getCommentsFn(ticketId);
+
+    if (!comments || comments.length === 0) {
+        threadContainer.innerHTML = `
+            <div style="text-align: center; color: #8a7896; font-size: 12px; padding: 20px; background: #faf7fc; border-radius: 8px;">
+                <i class="fa-regular fa-comments" style="font-size: 1.5rem; margin-bottom: 6px; display: block; color: #b4a2c0;"></i>
+                No messages from HR yet. Type below to send a message to support.
+            </div>
         `;
-    }
-    messages.appendChild(messageElement);
-    messages.scrollTop = messages.scrollHeight;
-}
-
-function escapeHTML(value) {
-    return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-/* =========================================================
-   KNOWLEDGE BASE
-========================================================= */
-function initializeKnowledgeBase() {
-    const searchInput = document.getElementById("knowledgeSearch");
-    const searchButton = document.getElementById("knowledgeSearchButton");
-    const articles = document.querySelectorAll(".knowledge-article");
-    const categories = document.querySelectorAll(".knowledge-category");
-
-    if (!searchInput) return;
-
-    function searchArticles() {
-        const searchTerm = searchInput.value.toLowerCase().trim();
-        articles.forEach(article => {
-            const articleText = article.textContent.toLowerCase();
-            if (!searchTerm || articleText.includes(searchTerm)) {
-                article.style.display = "flex";
-            } else {
-                article.style.display = "none";
-            }
-        });
+        return;
     }
 
-    if (searchButton) searchButton.addEventListener("click", searchArticles);
-    searchInput.addEventListener("keydown", event => {
-        if (event.key === "Enter") { event.preventDefault(); searchArticles(); }
-    });
+    threadContainer.innerHTML = comments.map(c => {
+        const isEmployee = (c.sender_role || "").toLowerCase() === "employee";
+        const senderRoleText = c.sender_role || (isEmployee ? "Employee" : "HR Support");
+        const timeText = c.createdAt ? c.createdAt.replace("T", " ").substring(0, 16) : "Just now";
 
-    categories.forEach(category => {
-        category.addEventListener("click", () => {
-            const selectedCategory = category.dataset.category;
-            articles.forEach(article => {
-                const articleCategory = article.dataset.category;
-                if (articleCategory === selectedCategory) {
-                    article.style.display = "flex";
-                } else {
-                    article.style.display = "none";
-                }
-            });
-            searchInput.value = selectedCategory;
-        });
-    });
-}
-
-/* =========================================================
-   SIDEBAR TOGGLE
-========================================================= */
-function initializeSidebarToggle() {
-    const topbarToggle = document.getElementById('sidebarToggle');
-    const brandToggle = document.getElementById('brandMenuToggle');
-
-    function toggleSidebar(e) {
-        if (e) e.stopPropagation();
-        document.body.classList.toggle('sidebar-closed');
-    }
-
-    if (topbarToggle) topbarToggle.addEventListener('click', toggleSidebar);
-    if (brandToggle) brandToggle.addEventListener('click', toggleSidebar);
-}
-
-/* =========================================================
-   ENHANCED FILE UPLOAD
-========================================================= */
-function initializeFileUploads() {
-    const uploadAreas = document.querySelectorAll('.upload-area');
-    
-    uploadAreas.forEach(area => {
-        const fileInput = area.querySelector('input[type="file"]');
-        const browseBtn = area.querySelector('.browse-button');
-        const fileListContainer = area.nextElementSibling; 
-        
-        let dataTransfer = new DataTransfer();
-
-        if (browseBtn) {
-            browseBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                fileInput.click();
-            });
-        }
-
-        area.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            area.classList.add('drag-over');
-        });
-
-        area.addEventListener('dragleave', () => {
-            area.classList.remove('drag-over');
-        });
-
-        area.addEventListener('drop', (e) => {
-            e.preventDefault();
-            area.classList.remove('drag-over');
-            if (e.dataTransfer.files.length > 0) {
-                handleFiles(e.dataTransfer.files);
-            }
-        });
-
-        if (fileInput) {
-            fileInput.addEventListener('change', () => {
-                if (fileInput.files.length > 0) {
-                    handleFiles(fileInput.files);
-                }
-            });
-        }
-
-        function handleFiles(files) {
-            for (let i = 0; i < files.length; i++) {
-                dataTransfer.items.add(files[i]);
-            }
-            fileInput.files = dataTransfer.files; 
-            renderFileList();
-        }
-
-        function renderFileList() {
-            if (!fileListContainer) return;
-            fileListContainer.innerHTML = '';
-            if (dataTransfer.files.length === 0) return;
-            
-            const list = document.createElement('div');
-            list.className = 'file-list';
-            
-            Array.from(dataTransfer.files).forEach((file, index) => {
-                const fileItem = document.createElement('div');
-                fileItem.className = 'file-item';
-                
-                let iconClass = 'fa-file';
-                if (file.type.includes('image')) iconClass = 'fa-file-image';
-                else if (file.type.includes('pdf')) iconClass = 'fa-file-pdf';
-                else if (file.type.includes('word')) iconClass = 'fa-file-word';
-                else if (file.type.includes('video')) iconClass = 'fa-file-video';
-
-                fileItem.innerHTML = `
-                    <div class="file-item-info">
-                        <i class="fa-regular ${iconClass}"></i>
-                        <span>${file.name}</span>
+        if (isEmployee) {
+            return `
+                <div class="chat-msg-bubble-wrapper employee-msg">
+                    <div class="chat-msg-header">
+                        <span class="chat-msg-time">${escapeHTML(timeText)}</span>
+                        <span>You (${escapeHTML(senderRoleText)})</span>
                     </div>
-                    <button type="button" class="file-remove-btn" data-index="${index}" aria-label="Remove file">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                `;
-                list.appendChild(fileItem);
-            });
-            
-            fileListContainer.appendChild(list);
-            
-            const removeBtns = list.querySelectorAll('.file-remove-btn');
-            removeBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const indexToRemove = parseInt(this.getAttribute('data-index'), 10);
-                    removeFile(indexToRemove);
-                });
-            });
+                    <div class="chat-bubble-content">
+                        ${escapeHTML(c.message)}
+                    </div>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="chat-msg-bubble-wrapper hr-msg">
+                    <div class="chat-msg-header">
+                        <span class="chat-msg-badge"><i class="fa-solid fa-user-shield"></i> ${escapeHTML(senderRoleText)}</span>
+                        <span class="chat-msg-time">${escapeHTML(timeText)}</span>
+                    </div>
+                    <div class="chat-bubble-content">
+                        ${escapeHTML(c.message)}
+                    </div>
+                </div>
+            `;
         }
+    }).join("");
 
-        function removeFile(index) {
-            const dt = new DataTransfer();
-            const files = dataTransfer.files;
-            for (let i = 0; i < files.length; i++) {
-                if (i !== index) {
-                    dt.items.add(files[i]);
-                }
-            }
-            dataTransfer = dt;
-            fileInput.files = dataTransfer.files;
-            renderFileList();
+    threadContainer.scrollTop = threadContainer.scrollHeight;
+}
+
+function closeTicketChatModal() {
+    const modal = document.getElementById("ticketModal");
+    if (!modal) return;
+    modal.classList.remove("show");
+    setTimeout(() => { modal.style.display = "none"; }, 200);
+}
+
+async function submitModalComment() {
+    const chatInput = document.getElementById("modalChatInput");
+    if (!chatInput || !currentOpenTicketId) return;
+    const msg = chatInput.value.trim();
+    if (!msg) return;
+
+    chatInput.value = "";
+    
+    const postFn = window.apiPostComment || (async () => null);
+    await postFn(currentOpenTicketId, msg, "Employee");
+    await renderModalComments(currentOpenTicketId);
+}
+
+async function initializeMyTickets() {
+    const list = document.getElementById("myTicketsList");
+    if (!list) return;
+    list.innerHTML = '<div class="table-row"><div>Loading tickets...</div></div>';
+    const fetchFn = window.apiFetchTickets || (async () => getTickets());
+    const tickets = await fetchFn({ requesterId: getCurrentRequesterId() });
+    renderMyTickets(tickets);
+}
+
+function renderMyTickets(tickets) {
+    const list = document.getElementById("myTicketsList");
+    if (!list) return;
+    if (!tickets || tickets.length === 0) {
+        list.innerHTML = '<div class="table-row"><div>No tickets found.</div></div>';
+        return;
+    }
+    loadedMyTicketsMap = {};
+    list.innerHTML = tickets.map(t => {
+        loadedMyTicketsMap[t.id] = t;
+        const stClass = (t.status || "Open").toLowerCase().replaceAll(" ", "-");
+        const prClass = (t.priority || "Medium").toLowerCase();
+        return `
+            <div class="table-row" onclick="openTicketChatModal('${escapeHTML(t.id)}')">
+                <div class="ticket-request-cell">
+                    <strong>${escapeHTML(t.title || "Untitled request")}</strong>
+                    <span>#${escapeHTML(t.id)}</span>
+                </div>
+                <div class="ticket-department">${escapeHTML(t.department || t.category || "General Support")}</div>
+                <div><span class="ticket-badge status-${stClass}">${escapeHTML(t.status || "Open")}</span></div>
+                <div><span class="ticket-badge priority-${prClass}">${escapeHTML(t.priority || "Medium")}</span></div>
+                <div class="ticket-date">${escapeHTML(t.date || (t.createdAt ? t.createdAt.substring(0, 10) : "Today"))}</div>
+                <div style="text-align: right;">
+                    <button class="ticket-action" type="button" onclick="event.stopPropagation(); openTicketChatModal('${escapeHTML(t.id)}')" aria-label="Open conversation for ticket ${escapeHTML(t.id)}">
+                        <i class="fa-regular fa-comment-dots"></i> Chat
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+/* =========================================================
+   EMPLOYEE PORTAL SPECIFIC LOADERS
+   ========================================================= */
+async function loadDashboardTickets() {
+    const tableBody = document.querySelector(".table-container table tbody");
+    if (!tableBody) return;
+    const fetchFn = window.apiFetchTickets || (async () => getTickets());
+    let tickets = await fetchFn({ requesterId: getCurrentRequesterId() });
+    if (!tickets || tickets.length === 0) tickets = getTickets();
+
+    tableBody.innerHTML = tickets.slice(0, 5).map(t => `
+        <tr onclick="window.location.href='ticket-detail.html?id=${encodeURIComponent(t.id)}'" style="cursor: pointer;">
+            <td><strong>#${escapeHTML(t.id)}</strong></td>
+            <td>${escapeHTML(t.title || "Untitled")}</td>
+            <td>${escapeHTML(t.department || t.category || "General")}</td>
+            <td><span class="status-pill status-${(t.status || "Open").toLowerCase().replaceAll(" ", "-")}">${escapeHTML(t.status || "Open")}</span></td>
+            <td><span class="priority-pill priority-${(t.priority || "Medium").toLowerCase()}">${escapeHTML(t.priority || "Medium")}</span></td>
+            <td>${escapeHTML(t.date || "Today")}</td>
+        </tr>
+    `).join("");
+}
+
+async function loadMyTicketsPage() {
+    const tableBody = document.querySelector(".table-container table tbody");
+    if (!tableBody) return;
+    const fetchFn = window.apiFetchTickets || (async () => getTickets());
+    let tickets = await fetchFn({ requesterId: getCurrentRequesterId() });
+    if (!tickets || tickets.length === 0) tickets = getTickets();
+
+    tableBody.innerHTML = tickets.map(t => `
+        <tr onclick="window.location.href='ticket-detail.html?id=${encodeURIComponent(t.id)}'" style="cursor: pointer;">
+            <td><strong>#${escapeHTML(t.id)}</strong></td>
+            <td>${escapeHTML(t.title || "Untitled")}</td>
+            <td>${escapeHTML(t.department || t.category || "General")}</td>
+            <td><span class="status-pill status-${(t.status || "Open").toLowerCase().replaceAll(" ", "-")}">${escapeHTML(t.status || "Open")}</span></td>
+            <td><span class="priority-pill priority-${(t.priority || "Medium").toLowerCase()}">${escapeHTML(t.priority || "Medium")}</span></td>
+            <td>${escapeHTML(t.date || "Today")}</td>
+        </tr>
+    `).join("");
+}
+
+async function loadTicketDetailPage() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const ticketId = urlParams.get("id") || "HD-1024";
+
+    const fetchFn = window.apiFetchTickets || (async () => getTickets());
+    let tickets = await fetchFn({ requesterId: getCurrentRequesterId() });
+    let ticket = (tickets || []).find(t => String(t.id) === String(ticketId)) || getTickets()[0];
+
+    const titleEl = document.getElementById("ticketDetailTitle");
+    const idEl = document.getElementById("ticketDetailId");
+    const statusEl = document.getElementById("ticketDetailStatus");
+    const priorityEl = document.getElementById("ticketDetailPriority");
+    const descEl = document.getElementById("ticketDetailDescription");
+
+    if (titleEl) titleEl.textContent = ticket.title || "Ticket Detail";
+    if (idEl) idEl.textContent = `#${ticket.id}`;
+    if (statusEl) {
+        statusEl.textContent = ticket.status || "Open";
+        statusEl.className = `status-pill status-${(ticket.status || "Open").toLowerCase().replaceAll(" ", "-")}`;
+    }
+    if (priorityEl) {
+        priorityEl.textContent = ticket.priority || "Medium";
+        priorityEl.className = `priority-pill priority-${(ticket.priority || "Medium").toLowerCase()}`;
+    }
+    if (descEl) descEl.textContent = ticket.description || "No description provided.";
+
+    const getCommentsFn = window.apiGetComments || (async () => []);
+    const comments = await getCommentsFn(ticketId);
+    const threadContainer = document.getElementById("ticketCommentsThread");
+    if (threadContainer && comments && comments.length > 0) {
+        threadContainer.innerHTML = comments.map(c => `
+            <div class="comment-bubble ${c.sender_role === "Employee" ? "user-bubble" : "support-bubble"}">
+                <div class="comment-header">
+                    <strong>${escapeHTML(c.sender_role || "Support")}</strong>
+                    <small>${escapeHTML(c.createdAt ? c.createdAt.substring(0, 10) : "Today")}</small>
+                </div>
+                <div class="comment-body">${escapeHTML(c.message)}</div>
+            </div>
+        `).join("");
+    }
+}
+
+async function submitStandardTicket(event) {
+    if (event) event.preventDefault();
+    const titleEl = document.getElementById("ticketTitle");
+    const deptEl = document.getElementById("ticketDepartment");
+    const priorityEl = document.getElementById("ticketPriority");
+    const descEl = document.getElementById("ticketDescription");
+
+    const payload = {
+        title: titleEl ? titleEl.value.trim() : "New Support Request",
+        department: deptEl ? deptEl.value : "IT Support",
+        priority: priorityEl ? priorityEl.value : "Medium",
+        description: descEl ? descEl.value.trim() : "",
+        requester_id: getCurrentRequesterId()
+    };
+
+    const createFn = window.apiCreateTicket || apiCreateTicket;
+    const result = await createFn(payload);
+    showNotification("Ticket submitted successfully!", "success");
+    setTimeout(() => { window.location.href = "my-tickets.html"; }, 1000);
+}
+
+async function sendTicketReply(ticketId) {
+    const replyInput = document.getElementById("replyMessageInput");
+    if (!replyInput) return;
+    const msg = replyInput.value.trim();
+    if (!msg) return;
+
+    replyInput.value = "";
+    const postFn = window.apiPostComment || apiPostComment;
+    await postFn(ticketId, msg, "Employee");
+    await loadTicketDetailPage();
+}
+
+/* =========================================================
+   GLOBAL INITIALIZER LISTENERS
+   ========================================================= */
+
+/* NOTE: apiRunReAct, apiRunExecAction, getExportUrl, apiGetComments,
+   apiPostComment, apiUpdateTicket, apiFetchAnnouncements,
+   apiCreateAnnouncement, apiDeleteAnnouncement, apiFetchNotifications,
+   apiMarkNotificationRead, apiFetchOnboarding, apiCreateOnboarding,
+   apiUpdateOnboardingStatus, apiFetchUserProfile, and apiUpdateUserProfile
+   now live in frontend/js/api.js (dev's shared REST API client module,
+   loaded via autoLoadDependencies() above) rather than being duplicated
+   here - callers already use the window.apiX || apiX pattern elsewhere
+   in this file expecting that. */
+
+/* =========================================================
+   GENIE CHATBOT (real backend integration)
+   Talks to the actual chatbot endpoint (POST /api/chatbot/message,
+   backend/api/chatbot.py) using the real ChatRequest/ChatResponse
+   contract (backend/models/chatbot.py) - not a local/static responder.
+   ========================================================= */
+const GENIE_STATE_KEY = "genieChatState";
+const GENIE_PENDING_DRAFT_KEY = "geniePendingDraft";
+const GENIE_DRAFTING_INTENTS = ["create_ticket", "support_issue", "leave_management"];
+
+function loadGenieState() {
+    try {
+        const raw = sessionStorage.getItem(GENIE_STATE_KEY);
+        if (!raw) return { history: [], draft: null, active_intent: null, active_request_type: null };
+        const parsed = JSON.parse(raw);
+        return {
+            history: Array.isArray(parsed.history) ? parsed.history : [],
+            draft: parsed.draft || null,
+            active_intent: parsed.active_intent || null,
+            active_request_type: parsed.active_request_type || null,
+        };
+    } catch (err) {
+        return { history: [], draft: null, active_intent: null, active_request_type: null };
+    }
+}
+
+function saveGenieState(state) {
+    sessionStorage.setItem(GENIE_STATE_KEY, JSON.stringify(state));
+}
+
+function getCurrentUserRole() {
+    try {
+        const user = JSON.parse(localStorage.getItem("portalUser") || "{}");
+        return user.role || "Employee";
+    } catch (err) {
+        return "Employee";
+    }
+}
+
+async function apiChatbotMessage(message, state) {
+    const payload = {
+        message,
+        role: getCurrentUserRole(),
+        history: state.history,
+        draft: state.draft,
+        active_intent: state.active_intent,
+        active_request_type: state.active_request_type,
+    };
+    try {
+        // Hardcoded rather than using the shared API_BASE_URL from api.js
+        // (the shared REST client uses the backend's real "/api" prefix,
+        // prefix the backend and nginx actually use - see this merge's
+        // final report) so the chatbot never silently breaks regardless
+        // of that mismatch.
+        const res = await fetch("/api/chatbot/message", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) return await res.json();
+    } catch (err) {
+        console.error("Failed to reach the chatbot service:", err);
+    }
+    return {
+        message: "I'm having trouble reaching the assistant service right now. Please try again in a moment.",
+        intent: "general",
+        suggestions: []
+    };
+}
+
+/* Fold a completed turn into the persisted conversation state. A
+   ticket-drafting flow stays "active" (so the next message is treated as
+   a continuation) only while it's still collecting fields - once the
+   draft is ready_for_review it's handed off to the actual form and the
+   chat is free to start a new topic. */
+function advanceGenieState(state, userMessage, response) {
+    state.history.push({ role: "user", message: userMessage });
+    state.history.push({ role: "assistant", message: response.message || "" });
+
+    const stillDrafting = GENIE_DRAFTING_INTENTS.includes(response.intent) && !response.ready_for_review;
+    state.active_intent = stillDrafting ? response.intent : null;
+    state.active_request_type = stillDrafting ? (response.request_type || null) : null;
+    state.draft = stillDrafting ? (response.ticket_draft || null) : null;
+
+    saveGenieState(state);
+}
+
+function renderGenieUserMessage(container, text) {
+    const userDiv = document.createElement("div");
+    userDiv.className = "genie-message user-message";
+    userDiv.style.display = "flex";
+    userDiv.style.justifyContent = "flex-end";
+    userDiv.style.marginBottom = "12px";
+    userDiv.innerHTML = `<div class="genie-bubble" style="background:#4f46e5; color:white; border-radius:12px; padding:10px 14px;">${escapeHTML(text)}</div>`;
+    container.appendChild(userDiv);
+}
+
+function renderGenieBotMessage(container, text, suggestions) {
+    const botDiv = document.createElement("div");
+    botDiv.className = "genie-message";
+    botDiv.style.marginBottom = "12px";
+    const suggestionsHtml = (suggestions && suggestions.length)
+        ? `<div class="genie-suggestions">${suggestions.map(s => `<button class="genie-suggestion" type="button">${escapeHTML(s)}</button>`).join("")}</div>`
+        : "";
+    botDiv.innerHTML = `
+        <div class="genie-message-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <div class="genie-bubble">${escapeHTML(text)}</div>
+        ${suggestionsHtml}
+    `;
+    container.appendChild(botDiv);
+}
+
+/* Redraw the drawer from persisted history so a conversation survives
+   navigating to a different page (e.g. when a draft becomes ready and we
+   move to new-request.html to prefill the right form). */
+function renderGenieHistory(container, state) {
+    if (!container || !state.history.length) return;
+    container.innerHTML = "";
+    state.history.forEach(turn => {
+        if (turn.role === "user") {
+            renderGenieUserMessage(container, turn.message);
+        } else {
+            renderGenieBotMessage(container, turn.message, null);
         }
     });
 }
 
 /* =========================================================
-   DARK MODE TOGGLE
-========================================================= */
-function initializeDarkMode() {
-    const toggleBtn = document.getElementById('darkModeToggle');
-    const darkIcon = document.getElementById('darkModeIcon');
+   REQUEST FORM PREFILL (from a ready_for_review chatbot draft)
+   Only ever fills field values and switches tabs - never submits.
+   ========================================================= */
+const GENIE_REQUEST_TYPE_TABS = {
+    standard: "standardRequestTab",
+    anonymous: "anonymousRequestTab",
+    leave_management: "leaveRequestTab",
+};
 
-    // Supports both Font Awesome (employee portal) and Phosphor (admin portal) icon sets
-    function setDarkIcon(isDark) {
-        if (!darkIcon) return;
-        if (darkIcon.classList.contains('fa-moon') || darkIcon.classList.contains('fa-sun')) {
-            darkIcon.classList.toggle('fa-moon', !isDark);
-            darkIcon.classList.toggle('fa-sun', isDark);
-        } else if (darkIcon.classList.contains('ph-moon') || darkIcon.classList.contains('ph-sun')) {
-            darkIcon.classList.toggle('ph-moon', !isDark);
-            darkIcon.classList.toggle('ph-sun', isDark);
-        }
-        toggleBtn.classList.toggle('theme-glow', isDark);
+function switchRequestTab(tabTarget) {
+    const btn = document.querySelector(`.tab-btn[data-target="${tabTarget}"]`);
+    const content = document.getElementById(tabTarget);
+    if (!btn || !content) return false;
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+    btn.classList.add("active");
+    content.classList.add("active");
+    return true;
+}
+
+function setFieldValue(id, value) {
+    if (!value) return;
+    const el = document.getElementById(id);
+    if (el) el.value = value;
+}
+
+function prefillRequestForm(requestType, draft) {
+    if (!draft) return;
+    const tabTarget = GENIE_REQUEST_TYPE_TABS[requestType];
+    if (!tabTarget || !switchRequestTab(tabTarget)) return;
+
+    if (requestType === "standard") {
+        setFieldValue("ticketSubject", draft.title);
+        setFieldValue("ticketCategory", draft.category);
+        setFieldValue("ticketDescription", draft.description);
+        setFieldValue("preferredDate", draft.preferredDate);
+    } else if (requestType === "anonymous") {
+        setFieldValue("anonTicketSubject", draft.title);
+        setFieldValue("anonTicketCategory", draft.category);
+        setFieldValue("anonTicketDescription", draft.description);
+    } else if (requestType === "leave_management") {
+        setFieldValue("leaveType", draft.category);
+        setFieldValue("leaveDescription", draft.description);
+        // KNOWN BACKEND LIMITATION: the chatbot draft only carries a single
+        // preferredDate (models.chatbot.TicketDraft), while this form has
+        // separate start/end date fields. We treat preferredDate as the
+        // start date (the existing chatbot<->form compatibility choice)
+        // and deliberately leave leaveEndDate for the user to confirm
+        // rather than fabricating it - the full range the user typed is
+        // still visible in the prefilled description for review.
+        setFieldValue("leaveStartDate", draft.preferredDate);
     }
 
-    const savedTheme = localStorage.getItem('ticketGenieTheme');
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        setDarkIcon(true);
-    }
+    const card = document.querySelector(".request-form-card");
+    if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            const isDark = document.body.classList.contains('dark-mode');
-            localStorage.setItem('ticketGenieTheme', isDark ? 'dark' : 'light');
-            setDarkIcon(isDark);
-        });
+function applyPendingGenieDraft() {
+    const raw = sessionStorage.getItem(GENIE_PENDING_DRAFT_KEY);
+    if (!raw) return;
+    sessionStorage.removeItem(GENIE_PENDING_DRAFT_KEY);
+    try {
+        const pending = JSON.parse(raw);
+        prefillRequestForm(pending.request_type, pending.draft);
+    } catch (err) {
+        // Malformed/stale pending draft - nothing to prefill.
     }
 }
 
-/* =========================================================
-   INITIALIZE EVERYTHING
-========================================================= */
+/* When a draft is ready_for_review, hand it to the correct existing form.
+   If we're already on the New Request page, prefill in place; otherwise
+   stash it and navigate there (the page reload picks it up via
+   applyPendingGenieDraft()). Never auto-submits. */
+function openReadyDraft(response) {
+    if (!response.request_type || !response.ticket_draft) return;
+    const onNewRequestPage = !!document.getElementById("newTicketForm");
+    if (onNewRequestPage) {
+        prefillRequestForm(response.request_type, response.ticket_draft);
+        return;
+    }
+    sessionStorage.setItem(
+        GENIE_PENDING_DRAFT_KEY,
+        JSON.stringify({ request_type: response.request_type, draft: response.ticket_draft })
+    );
+    setTimeout(() => { window.location.href = "new-request.html"; }, 900);
+}
+
+/* Deterministic (not GPT-driven) route handling for navigation-style
+   replies (intent=navigation, or a fallback action like "browse the
+   Knowledge Base" / "view My Tickets"). Ticket-status/knowledge/general
+   replies never open a request form. */
+function handleGenieAction(action) {
+    if (!action || !action.target) return;
+    if (action.type !== "navigate" && action.type !== "lookup_ticket") return;
+    setTimeout(() => { window.location.href = action.target; }, 900);
+}
+
+/* Initialize Floating Genie Drawer globally if present on page */
 document.addEventListener("DOMContentLoaded", () => {
-    initializeProfileDropdown(); 
+    initDarkMode();
+    initSidebarToggle();
+    if (typeof initializeProfileDropdown === "function") initializeProfileDropdown();
     initializeNewRequestForm();
     initializeMyTickets();
-    initializeGenie();
-    initializeKnowledgeBase();
-    updateTicketOverview();
-    initializeSidebarToggle();
-    initializeFileUploads();
-    initializeDarkMode();
+    applyPendingGenieDraft();
+
+    // Floating Genie Chat Drawer events
+    const genieBtn = document.getElementById("genieButton");
+    const genieChat = document.getElementById("genieChat");
+    const closeGenieBtn = document.getElementById("closeGenieButton");
+    const genieSendBtn = document.getElementById("genieSendButton");
+    const genieInput = document.getElementById("genieInput");
+    const genieMessages = document.getElementById("genieMessages");
+    // "Need help writing your request?" button on new-request.html.
+    const openGenieFromRequestBtn = document.getElementById("openGenieFromRequest");
+
+    if (!genieBtn || !genieChat) return;
+
+    const openGenie = () => genieChat.classList.add("open");
+
+    genieBtn.addEventListener("click", () => genieChat.classList.toggle("open"));
+
+    if (closeGenieBtn) {
+        closeGenieBtn.addEventListener("click", () => genieChat.classList.remove("open"));
+    }
+    if (openGenieFromRequestBtn) {
+        openGenieFromRequestBtn.addEventListener("click", openGenie);
+    }
+
+    let genieState = loadGenieState();
+    renderGenieHistory(genieMessages, genieState);
+
+    async function sendGenieMsg() {
+        if (!genieInput) return;
+        const genieMessages = document.getElementById("genieMessages");
+        const msg = genieInput.value.trim();
+        if (!msg || !genieMessages) return;
+
+        renderGenieUserMessage(genieMessages, msg);
+        genieInput.value = "";
+        genieInput.disabled = true;
+        genieMessages.scrollTop = genieMessages.scrollHeight;
+
+        const response = await apiChatbotMessage(msg, genieState);
+        advanceGenieState(genieState, msg, response);
+
+        renderGenieBotMessage(genieMessages, response.message, response.suggestions);
+        genieMessages.scrollTop = genieMessages.scrollHeight;
+        genieInput.disabled = false;
+        genieInput.focus();
+
+        if (response.ready_for_review) {
+            openReadyDraft(response);
+        } else {
+            handleGenieAction(response.action);
+        }
+    }
+
+    if (genieSendBtn) genieSendBtn.addEventListener("click", sendGenieMsg);
+    if (genieInput) {
+        genieInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") sendGenieMsg();
+        });
+    }
+    // Both the static initial suggestions in the HTML and any rendered
+    // from a chatbot response use this same class - wire them all via
+    // delegation so clicking one sends it as the next message.
+    if (genieMessages) {
+        genieMessages.addEventListener("click", (e) => {
+            const btn = e.target.closest(".genie-suggestion");
+            if (!btn || !genieInput) return;
+            genieInput.value = btn.textContent.trim();
+            sendGenieMsg();
+        });
+    }
+});
+
+// Bind all global utilities to window
+Object.assign(window, {
+    STORAGE_KEY,
+    getTickets,
+    saveTickets,
+    generateTicketId,
+    getCurrentRequesterId,
+    escapeHTML,
+    showNotification,
+    showFormError,
+    showSuccessMessage,
+    initDarkMode,
+    initSidebarToggle,
+    handleSignOut,
+    openTicketChatModal,
+    renderModalComments,
+    closeTicketChatModal,
+    submitModalComment,
+    initializeMyTickets,
+    renderMyTickets,
+    loadDashboardTickets,
+    loadMyTicketsPage,
+    loadTicketDetailPage,
+    submitStandardTicket,
+    sendTicketReply
 });

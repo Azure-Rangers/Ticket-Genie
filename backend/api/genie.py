@@ -1,15 +1,19 @@
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from models.ticket import GenieChatRequest, GenieChatResponse
+from services.jwt_verifier import verify_azure_user
 
 router = APIRouter(prefix="/genie", tags=["genie"])
 
 
 @router.post("/chat", response_model=GenieChatResponse)
-def genie_chat(request: GenieChatRequest):
+def genie_chat(
+    request: GenieChatRequest,
+    current_user: dict = Depends(verify_azure_user),
+):
     msg = request.message.lower().strip()
 
     if "ticket" in msg or "status" in msg:
@@ -39,7 +43,7 @@ def genie_chat(request: GenieChatRequest):
         suggestions = ["Time Off Request", "HR Portal"]
     else:
         reply = (
-            "Hi! I'm Genie, your AI helpdesk assistant. "
+            f"Hi {current_user.get('name', 'there')}! I'm Genie, your AI helpdesk assistant. "
             "I can help you search knowledge base articles, "
             "understand ticket statuses, or route you to the right department."
         )
@@ -49,29 +53,38 @@ def genie_chat(request: GenieChatRequest):
 
 
 # ---------------------------------------------------------------------------
-# ReAct Agent Loop Engine Endpoints
+# ReAct Agent Loop Engine Endpoints (Absorbs Verified User Role & Identity)
 # ---------------------------------------------------------------------------
 
 
 class ReActAgentRequest(BaseModel):
     message: str
-    role: Optional[str] = "Super Admin"
-    user_id: Optional[str] = "user"
+    role: Optional[str] = None
+    user_id: Optional[str] = None
 
 
 class ExecutiveActionRequest(BaseModel):
     command: str
-    user_id: Optional[str] = "exec_user"
+    user_id: Optional[str] = None
 
 
 @router.post("/react")
-def run_react_chat(req: ReActAgentRequest):
+def run_react_chat(
+    req: ReActAgentRequest,
+    current_user: dict = Depends(verify_azure_user),
+):
     from agents.react_orchestrator import run_react_agent_loop
+
+    # AI Agent absorbs authenticated user's verified role and OID/identity
+    absorbed_role = current_user.get("role") or req.role or "Employee"
+    absorbed_user_id = current_user.get("oid") or current_user.get("email") or req.user_id or "user"
+
+    print(f"🤖 [AI Agent Security] ReAct Agent running for user '{absorbed_user_id}' with absorbed role permissions: '{absorbed_role}'")
 
     result = run_react_agent_loop(
         user_prompt=req.message,
-        role=req.role or "Super Admin",
-        user_id=req.user_id or "user",
+        role=absorbed_role,
+        user_id=absorbed_user_id,
     )
     return {
         "reply": result.final_response,
@@ -81,17 +94,23 @@ def run_react_chat(req: ReActAgentRequest):
 
 
 @router.post("/exec-agent")
-def handle_exec_agent_command(req: ExecutiveActionRequest):
+def handle_exec_agent_command(
+    req: ExecutiveActionRequest,
+    current_user: dict = Depends(verify_azure_user),
+):
     from agents.exec_agent import execute_upper_management_action
+
+    absorbed_user_id = current_user.get("oid") or current_user.get("email") or req.user_id or "exec_user"
+    print(f"🤖 [AI Agent Security] Exec Agent executing for user '{absorbed_user_id}'")
 
     return execute_upper_management_action(
         command_prompt=req.command,
-        user_id=req.user_id or "exec_user",
+        user_id=absorbed_user_id,
     )
 
 
 @router.get("/exec-briefing")
-def handle_exec_briefing():
+def handle_exec_briefing(current_user: dict = Depends(verify_azure_user)):
     from agents.exec_agent import get_executive_leave_briefing
 
     return get_executive_leave_briefing()

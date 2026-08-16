@@ -130,6 +130,7 @@ function renderEmployeeNMTopNav() {
   `;
 }
 
+<<<<<<< HEAD
 window.toggleEmployeeDarkMode = function(e) {
     if (e) {
         if (e.__darkToggleHandled) return;
@@ -192,6 +193,9 @@ document.addEventListener("click", function(e) {
 
 // Run initializers
 function initComponents() {
+    if (window.AzureAuth && typeof window.AzureAuth.enforcePageAccessControl === "function") {
+        if (!window.AzureAuth.enforcePageAccessControl()) return;
+    }
     renderEmployeeNMSidebar();
     renderEmployeeNMTopNav();
     

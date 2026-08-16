@@ -71,6 +71,8 @@ def validate_and_sanitize_sql(
                 cleaned_sql += " WHERE department = 'HR Team'"
             elif role.lower() in {"it admin", "it team"}:
                 cleaned_sql += " WHERE department = 'IT Team'"
+            else:
+                cleaned_sql += f" WHERE (is_anonymous = 0 OR requester_id = '{user_id}')"
 
     return cleaned_sql
 

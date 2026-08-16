@@ -11,6 +11,7 @@ from database.crud import (
     update_ticket,
 )
 from models.ticket import TicketCreate, TicketResponse, TicketUpdate
+from services.jwt_verifier import verify_azure_user
 from services.ticket_service import process_new_ticket
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
@@ -20,6 +21,7 @@ router = APIRouter(prefix="/tickets", tags=["tickets"])
 def handle_create_ticket(
     ticket: TicketCreate,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_azure_user),
 ):
     return process_new_ticket(ticket, db=db)
 
@@ -31,6 +33,7 @@ def list_tickets(
     search: Optional[str] = None,
     requester_id: Optional[str] = None,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_azure_user),
 ):
     tickets_list = get_all_tickets(
         status=status,

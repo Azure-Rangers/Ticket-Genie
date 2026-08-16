@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Depends, Response
 
 from database.crud import get_leave_tickets
+from services.jwt_verifier import verify_azure_user
 
 router = APIRouter(prefix="/calendar", tags=["calendar"])
 
 
 @router.get("/leave-events")
-def get_leave_events():
+def get_leave_events(current_user: dict = Depends(verify_azure_user)):
     tickets = get_leave_tickets()
     events = []
 

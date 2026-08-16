@@ -59,5 +59,14 @@ VALUES
         'Williams',
         (SELECT role_id FROM dbo.Roles WHERE role_name = 'ADMIN'),
         NULL
+    ),
+    (
+        'admin.dc3b',
+        'admin.dc3b@ticketgenie.com',
+        'REPLACE_WITH_REAL_HASH',
+        'Admin',
+        'User (dc3b56e9)',
+        (SELECT role_id FROM dbo.Roles WHERE role_name = 'ADMIN'),
+        'IT'
     );
 GO

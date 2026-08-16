@@ -225,6 +225,9 @@ function initSharedComponents() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  if (window.AzureAuth && typeof window.AzureAuth.enforcePageAccessControl === "function") {
+    if (!window.AzureAuth.enforcePageAccessControl()) return;
+  }
   renderManagementSidebar();
   renderManagementTopNav();
   initManagementInteractiveListeners();

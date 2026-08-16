@@ -14,6 +14,7 @@ from api.onboarding import router as onboarding_router
 from api.tickets import router as ticket_router
 from api.users import router as users_router
 from database.connection import init_db_schema
+from database.seed import seed_initial_data
 from telemetry import setup_telemetry
 
 load_dotenv()
@@ -24,8 +25,9 @@ app = FastAPI(
     version="1.0",
 )
 
-# Initialize Database Schema
+# Initialize Database Schema & Seed Initial Data
 init_db_schema()
+seed_initial_data()
 
 # Enable CORS for frontend dynamic requests
 app.add_middleware(
@@ -70,5 +72,7 @@ def get_public_config():
     return {
         "appInsightsConnectionString": os.getenv(
             "APPLICATIONINSIGHTS_CONNECTION_STRING", ""
-        )
+        ),
+        "azureClientId": os.getenv("AZURE_CLIENT_ID", ""),
+        "azureTenantId": os.getenv("AZURE_TENANT_ID", ""),
     }

@@ -208,6 +208,9 @@ function initAdminAVInteractiveListeners() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  if (window.AzureAuth && typeof window.AzureAuth.enforcePageAccessControl === "function") {
+    if (!window.AzureAuth.enforcePageAccessControl()) return;
+  }
   renderAdminAVSidebar();
   renderAdminAVTopNav();
   initAdminAVInteractiveListeners();
