@@ -1056,11 +1056,14 @@ async function submitStandardTicket(event) {
         submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i> Submitting...';
     }
 
-    let backendDept = "IT Team";
-    if (department.includes("HR")) backendDept = "HR Team";
-    else if (department.includes("Account")) backendDept = "Accounting Team";
-    else if (department.includes("Upper") || department.includes("Admin")) backendDept = "Upper Management";
-    else if (department.includes("Workplace")) backendDept = "Workplace Operations Team";
+    let backendDept = null;
+    if (department && department !== "Auto") {
+        if (department.includes("HR")) backendDept = "HR Team";
+        else if (department.includes("Account")) backendDept = "Accounting Team";
+        else if (department.includes("Upper") || department.includes("Admin")) backendDept = "Upper Management";
+        else if (department.includes("Workplace")) backendDept = "Workplace Operations Team";
+        else backendDept = "IT Team";
+    }
 
     const payload = {
         title: subject,
