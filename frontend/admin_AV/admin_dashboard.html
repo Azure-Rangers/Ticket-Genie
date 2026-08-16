@@ -24,10 +24,10 @@
     .nav-title { font-size: 0.65rem; color: #818cf8; text-transform: uppercase; font-weight: 700; margin: 0 16px 8px; letter-spacing: 1px; transition: opacity 0.2s; }
     .nav-link { display: flex; align-items: center; gap: 12px; padding: 10px 16px; margin: 0 8px 4px; color: #d1d5db; text-decoration: none; font-size: 0.85rem; border-radius: 8px; transition: 0.2s; }
     .nav-link:hover { background-color: rgba(255,255,255,0.05); color: #ffffff; }
-    .nav-link.active { background-color: rgba(255,255,255,0.1); color: #ffffff; font-weight: 500; }
+    .nav-link.active { background-color: rgba(255,255,255,0.12); color: #ffffff; font-weight: 600; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05); }
     
     .menu-icon { font-size: 1.25rem; flex-shrink: 0; display: flex; justify-content: center; width: 24px; }
-    .nav-link.active .menu-icon { color: #818cf8; }
+    .nav-link.active .menu-icon { color: #a5b4fc; }
     
     .sidebar-footer { padding: 24px; font-size: 0.75rem; color: #a5b4fc; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 8px; }
     .status-dot { width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; flex-shrink: 0; }
@@ -90,9 +90,53 @@
 
     #loginWarning { display: none; background-color: #fee2e2; color: #b91c1c; padding: 12px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fca5a5; font-weight: 600; text-align: center; font-size: 0.85rem; }
     
-    .fab-genie { position: fixed; bottom: 32px; right: 32px; background: #2b1b38; color: white; border: none; padding: 14px 24px; border-radius: 30px; font-size: 0.95rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; z-index: 100; transition: 0.2s; }
-    .fab-genie i { font-size: 1.2rem; color: #facc15; }
-    .fab-genie:hover { background: #4f46e5; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(79,70,229,0.3); }
+    /* Genie Chatbot Styles */
+    .genie-container { position: fixed; bottom: 28px; right: 28px; z-index: 1000; }
+    .genie-button { height: 45px; padding: 0 17px; border: none; border-radius: 23px; background: #2b1b38; color: white; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; transition: 0.2s; }
+    .genie-button:hover { background: #4f46e5; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(79,70,229,0.3); }
+    .genie-button i { font-size: 1.1rem; color: #facc15; }
+    .genie-chat { position: fixed; right: 28px; bottom: 85px; width: 355px; height: 505px; background: white; border: 1px solid #dfe5e1; border-radius: 12px; box-shadow: 0 18px 45px rgba(43,27,54,0.18); display: none; flex-direction: column; overflow: hidden; z-index: 999; }
+    .genie-chat.open { display: flex; animation: genieOpen 0.2s ease-out; }
+    @keyframes genieOpen { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .genie-chat-header { height: 68px; padding: 0 16px; background: #2b1b38; color: white; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .genie-header-info { display: flex; align-items: center; gap: 10px; }
+    .genie-avatar { width: 34px; height: 34px; border-radius: 8px; background: #6f4b82; display: flex; align-items: center; justify-content: center; color: white; }
+    .genie-status-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; }
+    .genie-close { width: 30px; height: 30px; border: none; background: transparent; color: #a0aaa4; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+    .genie-close:hover { color: white; background: rgba(255,255,255,0.1); }
+    .genie-messages { flex: 1; overflow-y: auto; padding: 18px 15px; background: #fafcfb; }
+    .genie-message { display: flex; gap: 8px; margin-bottom: 15px; }
+    .genie-message-avatar { width: 26px; height: 26px; border-radius: 7px; background: #f1ebf4; color: #6f4b82; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 10px; }
+    .genie-bubble { max-width: 255px; background: white; border: 1px solid #e1e6e2; border-radius: 5px 10px 10px 10px; padding: 10px 12px; color: #5f6b63; font-size: 0.85rem; line-height: 1.55; }
+    .genie-message-user { justify-content: flex-end; }
+    .genie-message-user .genie-bubble { background: #6f4b82; color: white; border-color: #6f4b82; border-radius: 10px 5px 10px 10px; }
+    .genie-suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin-left: 34px; margin-bottom: 12px; }
+    .genie-suggestion { border: 1px solid #d2c6d6; background: white; color: #6f4b82; border-radius: 15px; padding: 6px 10px; font-size: 0.8rem; cursor: pointer; transition: 0.2s; }
+    .genie-suggestion:hover { background: #f1ebf4; }
+    .genie-input-area { min-height: 58px; padding: 10px; border-top: 1px solid #e5eae6; background: white; display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+    .genie-input-area input { flex: 1; height: 37px; border: 1px solid #dfe5e1; border-radius: 7px; padding: 0 11px; outline: none; font-size: 0.85rem; }
+    .genie-input-area input:focus { border-color: #6f4b82; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+    .genie-input-area button { width: 37px; height: 37px; flex-shrink: 0; border: none; border-radius: 7px; background: #6f4b82; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .genie-input-area button:hover { background: #533760; }
+    .genie-disclaimer { padding: 0 12px 9px; background: white; color: #a0a8a3; text-align: center; font-size: 0.7rem; }
+
+    /* --- TICKETS TABLE --- */
+    .tickets-table-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); overflow: hidden; }
+    .tickets-table-card table { width: 100%; border-collapse: collapse; }
+    .tickets-table-card th { text-align: left; font-size: 0.75rem; color: #6b7280; text-transform: uppercase; padding: 16px 24px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; font-weight: 600; letter-spacing: 0.5px; }
+    .tickets-table-card td { padding: 16px 24px; border-bottom: 1px solid #f3f4f6; font-size: 0.85rem; color: #374151; vertical-align: middle; }
+    .tickets-table-card tbody tr { transition: background 0.2s; cursor: pointer; }
+    .tickets-table-card tbody tr:hover { background: #fafcfb; }
+    .tickets-table-card tbody tr:last-child td { border-bottom: none; }
+    
+    .ticket-id { font-weight: 600; color: #111827; }
+    .ticket-subject { color: #4b5563; max-width: 320px; }
+    .priority-badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+    .priority-high { background: #fee2e2; color: #991b1b; }
+    .priority-medium { background: #fef3c7; color: #92400e; }
+    .priority-low { background: #dcfce7; color: #166534; }
+    .ticket-time { color: #6b7280; font-size: 0.8rem; }
+    .no-tickets-message { padding: 40px; text-align: center; color: #6b7280; }
   </style>
 </head>
 <body class="admin-page">
@@ -100,7 +144,7 @@
   <aside class="sidebar" id="appSidebar">
     <div class="sidebar-top">
       <div class="sidebar-header">
-        <div class="bot-icon"><i class="ph-fill ph-ticket"></i></div>
+        <div class="bot-icon"><i class="ph-fill ph-magic-wand"></i></div>
         <div class="sidebar-brand-text">
           <h2>TicketGenie</h2>
           <span id="sidebarRole">IT Portal</span>
@@ -109,13 +153,17 @@
 
       <div class="nav-section">
         <div class="nav-title">Workspace</div>
-        <a href="dashboard.html" class="nav-link active">
+        <a href="admin_dashboard.html" class="nav-link active">
           <span class="menu-icon"><i class="ph-duotone ph-chart-pie-slice"></i></span>
           <span class="menu-text">My Dashboard</span>
         </a>
         <a href="announcements.html" class="nav-link">
           <span class="menu-icon"><i class="ph-duotone ph-megaphone"></i></span>
           <span class="menu-text">Announcements</span>
+        </a>
+        <a href="analytics.html" class="nav-link">
+          <span class="menu-icon"><i class="ph-duotone ph-trend-up"></i></span>
+          <span class="menu-text">Analytics</span>
         </a>
       </div>
 
@@ -131,15 +179,11 @@
         </a>
       </div>
 
-      <div class="nav-section" id="adminNav" style="display: none;">
+      <div class="nav-section" id="adminNav" style="display: block;">
         <div class="nav-title">Administration</div>
-        <a href="knowledge-base.html" class="nav-link">
+        <a href="policy_library.html" class="nav-link">
           <span class="menu-icon"><i class="ph-duotone ph-books"></i></span>
           <span class="menu-text">Policy Library</span>
-        </a>
-        <a href="analytics.html" class="nav-link">
-          <span class="menu-icon"><i class="ph-duotone ph-trend-up"></i></span>
-          <span class="menu-text">Analytics</span>
         </a>
         <a href="archive.html" class="nav-link">
           <span class="menu-icon"><i class="ph-duotone ph-archive"></i></span>
@@ -268,7 +312,7 @@
           </div>
         </div>
         
-        <div class="action-card" onclick="window.location.href='knowledge-base.html'">
+        <div class="action-card" onclick="window.location.href='policy_library.html'">
           <div class="icon-box icon-green"><i class="ph-duotone ph-books"></i></div>
           <div>
             <h5>Policy Library</h5>
@@ -300,13 +344,93 @@
           </div>
         </div>
       </div>
+
+      <div class="section-header">
+        <div>
+          <h4>Recent & Urgent Tickets</h4>
+          <p>Top priority items requiring immediate attention</p>
+        </div>
+        <a href="inbox.html" class="view-all">View all <i class="ph-bold ph-arrow-right"></i></a>
+      </div>
+
+      <div class="tickets-table-card">
+        <table id="urgentTicketsTable">
+          <thead>
+            <tr>
+              <th>Ticket ID</th>
+              <th>Subject</th>
+              <th>Priority</th>
+              <th>Time Submitted</th>
+            </tr>
+          </thead>
+          <tbody id="ticketsTableBody">
+            <tr onclick="window.location.href='inbox.html#T-1049'">
+              <td class="ticket-id">T-1049</td>
+              <td class="ticket-subject">H1B Visa LCA Document Signature</td>
+              <td><span class="priority-badge priority-high">High</span></td>
+              <td class="ticket-time">Today, 9:00 AM</td>
+            </tr>
+            <tr onclick="window.location.href='inbox.html#T-1045'">
+              <td class="ticket-id">T-1045</td>
+              <td class="ticket-subject">Missing overtime pay on last check</td>
+              <td><span class="priority-badge priority-high">High</span></td>
+              <td class="ticket-time">Today, 10:30 AM</td>
+            </tr>
+            <tr onclick="window.location.href='inbox.html#T-1041'">
+              <td class="ticket-id">T-1041</td>
+              <td class="ticket-subject">Laptop refresh request for new hire</td>
+              <td><span class="priority-badge priority-medium">Medium</span></td>
+              <td class="ticket-time">Today, 11:15 AM</td>
+            </tr>
+            <tr onclick="window.location.href='inbox.html#T-1037'">
+              <td class="ticket-id">T-1037</td>
+              <td class="ticket-subject">OPT status update and documentation</td>
+              <td><span class="priority-badge priority-high">High</span></td>
+              <td class="ticket-time">Yesterday, 3:45 PM</td>
+            </tr>
+            <tr onclick="window.location.href='inbox.html#T-1032'">
+              <td class="ticket-id">T-1032</td>
+              <td class="ticket-subject">Annual compliance training completion</td>
+              <td><span class="priority-badge priority-low">Low</span></td>
+              <td class="ticket-time">Yesterday, 2:20 PM</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <button class="fab-genie" onclick="alert('Genie AI Activated!')">
-      <i class="ph-fill ph-magic-wand"></i> Ask Genie
-    </button>
+    <div class="genie-container">
+      <button class="genie-button" id="genieButton" type="button"><i class="ph-fill ph-magic-wand"></i> Ask Genie</button>
+      <div class="genie-chat" id="genieChat">
+        <div class="genie-chat-header">
+          <div class="genie-header-info">
+            <div class="genie-avatar"><i class="ph-fill ph-magic-wand"></i></div>
+            <div><strong>Genie AI</strong><span><span class="genie-status-dot"></span> Online</span></div>
+          </div>
+          <button class="genie-close" id="closeGenieButton" type="button"><i class="ph ph-x"></i></button>
+        </div>
+        <div class="genie-messages" id="genieMessages">
+          <div class="genie-message">
+            <div class="genie-message-avatar"><i class="ph-fill ph-magic-wand"></i></div>
+            <div class="genie-bubble">Hi! I'm Genie. I can help you manage tickets, find information, or guide you through common tasks.</div>
+          </div>
+          <div class="genie-suggestions">
+            <button class="genie-suggestion" type="button">Check tickets</button>
+            <button class="genie-suggestion" type="button">Create ticket</button>
+            <button class="genie-suggestion" type="button">Find policies</button>
+          </div>
+        </div>
+        <div class="genie-input-area">
+          <input type="text" id="genieInput" placeholder="Ask Genie something..." autocomplete="off">
+          <button type="button" id="genieSendButton"><i class="ph-fill ph-arrow-up"></i></button>
+        </div>
+        <div class="genie-disclaimer">Genie may occasionally provide inaccurate information.</div>
+      </div>
+    </div>
   </main>
 
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="../js/script.js"></script>
   <script>
     function toggleSidebar() { 
       document.getElementById('appSidebar').classList.toggle('collapsed'); 
@@ -327,6 +451,9 @@
     } else { 
       document.getElementById('loginWarning').style.display = 'block'; 
     }
+    
+    // Initialize Genie Chatbot
+    initializeGenie();
   </script>
 </body>
 </html>

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,7 +29,7 @@
     .sidebar-footer { padding: 24px; font-size: 0.75rem; color: #a5b4fc; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 8px; }
     .status-dot { width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; flex-shrink: 0; }
 
-    .sidebar.collapsed .sidebar-brand-text, .sidebar.collapsed .nav-title, .sidebar.collapsed .sidebar-footer-text { display: none; }
+    .sidebar.collapsed .sidebar-brand-text, .sidebar.collapsed .nav-title, .sidebar.collapsed .menu-text, .sidebar.collapsed .sidebar-footer-text { display: none; }
     .sidebar.collapsed .sidebar-header { justify-content: center; padding: 24px 0; }
     .sidebar.collapsed .nav-link { justify-content: center; padding: 14px 0; margin: 0 8px 8px; }
     .sidebar.collapsed .nav-link span:not(.menu-icon) { display: none; }
@@ -65,6 +64,36 @@
     .msg { font-size: 0.85rem; padding: 12px; border-radius: 8px; max-width: 90%; }
     .msg-user { background: white; border: 1px solid #e5e7eb; align-self: flex-end; border-bottom-right-radius: 2px; }
     .msg-ai { background: #f3f4f6; color: #1f2937; align-self: flex-start; border-bottom-left-radius: 2px; }
+    
+    /* Genie Chatbot Styles */
+    .genie-container { position: fixed; bottom: 28px; right: 28px; z-index: 1000; }
+    .genie-button { height: 45px; padding: 0 17px; border: none; border-radius: 23px; background: #2b1b38; color: white; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; transition: 0.2s; }
+    .genie-button:hover { background: #4f46e5; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(79,70,229,0.3); }
+    .genie-button i { font-size: 1.1rem; color: #facc15; }
+    .genie-chat { position: fixed; right: 28px; bottom: 85px; width: 355px; height: 505px; background: white; border: 1px solid #dfe5e1; border-radius: 12px; box-shadow: 0 18px 45px rgba(43,27,54,0.18); display: none; flex-direction: column; overflow: hidden; z-index: 999; }
+    .genie-chat.open { display: flex; animation: genieOpen 0.2s ease-out; }
+    @keyframes genieOpen { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .genie-chat-header { height: 68px; padding: 0 16px; background: #2b1b38; color: white; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .genie-header-info { display: flex; align-items: center; gap: 10px; }
+    .genie-avatar { width: 34px; height: 34px; border-radius: 8px; background: #6f4b82; display: flex; align-items: center; justify-content: center; color: white; }
+    .genie-status-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; }
+    .genie-close { width: 30px; height: 30px; border: none; background: transparent; color: #a0aaa4; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+    .genie-close:hover { color: white; background: rgba(255,255,255,0.1); }
+    .genie-messages { flex: 1; overflow-y: auto; padding: 18px 15px; background: #fafcfb; }
+    .genie-message { display: flex; gap: 8px; margin-bottom: 15px; }
+    .genie-message-avatar { width: 26px; height: 26px; border-radius: 7px; background: #f1ebf4; color: #6f4b82; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 10px; }
+    .genie-bubble { max-width: 255px; background: white; border: 1px solid #e1e6e2; border-radius: 5px 10px 10px 10px; padding: 10px 12px; color: #5f6b63; font-size: 0.85rem; line-height: 1.55; }
+    .genie-message-user { justify-content: flex-end; }
+    .genie-message-user .genie-bubble { background: #6f4b82; color: white; border-color: #6f4b82; border-radius: 10px 5px 10px 10px; }
+    .genie-suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin-left: 34px; margin-bottom: 12px; }
+    .genie-suggestion { border: 1px solid #d2c6d6; background: white; color: #6f4b82; border-radius: 15px; padding: 6px 10px; font-size: 0.8rem; cursor: pointer; transition: 0.2s; }
+    .genie-suggestion:hover { background: #f1ebf4; }
+    .genie-input-area { min-height: 58px; padding: 10px; border-top: 1px solid #e5eae6; background: white; display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+    .genie-input-area input { flex: 1; height: 37px; border: 1px solid #dfe5e1; border-radius: 7px; padding: 0 11px; outline: none; font-size: 0.85rem; }
+    .genie-input-area input:focus { border-color: #6f4b82; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+    .genie-input-area button { width: 37px; height: 37px; flex-shrink: 0; border: none; border-radius: 7px; background: #6f4b82; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .genie-input-area button:hover { background: #533760; }
+    .genie-disclaimer { padding: 0 12px 9px; background: white; color: #a0a8a3; text-align: center; font-size: 0.7rem; }
   </style>
 </head>
 <body class="admin-page">
@@ -72,23 +101,23 @@
   <aside class="sidebar" id="appSidebar">
     <div class="sidebar-top">
       <div class="sidebar-header">
-        <div class="bot-icon"><i class="ph-fill ph-ticket"></i></div>
+        <div class="bot-icon"><i class="ph-fill ph-magic-wand"></i></div>
         <div class="sidebar-brand-text"><h2>TicketGenie</h2><span id="sidebarRole">Unified Portal</span></div>
       </div>
       <div class="nav-section">
         <div class="nav-title">Workspace</div>
-        <a href="dashboard.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-chart-pie-slice"></i></span><span class="menu-text">My Dashboard</span></a>
+        <a href="admin_dashboard.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-chart-pie-slice"></i></span><span class="menu-text">My Dashboard</span></a>
         <a href="announcements.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-megaphone"></i></span><span class="menu-text">Announcements</span></a>
+        <a href="analytics.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-trend-up"></i></span><span class="menu-text">Analytics</span></a>
       </div>
       <div class="nav-section">
         <div class="nav-title">Ticketing System</div>
         <a href="submit-ticket.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-plus-circle"></i></span><span class="menu-text">Submit Request</span></a>
         <a href="inbox.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-tray"></i></span><span class="menu-text">Team Inbox</span></a>
       </div>
-      <div class="nav-section" id="adminNav" style="display: none;">
+      <div class="nav-section" id="adminNav" style="display: block;">
         <div class="nav-title">Administration</div>
-        <a href="knowledge-base.html" class="nav-link active"><span class="menu-icon"><i class="ph-duotone ph-books"></i></span><span class="menu-text">Policy Library</span></a>
-        <a href="analytics.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-trend-up"></i></span><span class="menu-text">Analytics</span></a>
+        <a href="policy_library.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-books"></i></span><span class="menu-text">Policy Library</span></a>
         <a href="archive.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-archive"></i></span><span class="menu-text">Ticket Archive</span></a>
       </div>
       <div class="nav-section">
@@ -137,6 +166,35 @@
         </div>
       </div>
     </div>
+
+    <div class="genie-container">
+      <button class="genie-button" id="genieButton" type="button"><i class="ph-fill ph-magic-wand"></i> Ask Genie</button>
+      <div class="genie-chat" id="genieChat">
+        <div class="genie-chat-header">
+          <div class="genie-header-info">
+            <div class="genie-avatar"><i class="ph-fill ph-magic-wand"></i></div>
+            <div><strong>Genie AI</strong><span><span class="genie-status-dot"></span> Online</span></div>
+          </div>
+          <button class="genie-close" id="closeGenieButton" type="button"><i class="ph ph-x"></i></button>
+        </div>
+        <div class="genie-messages" id="genieMessages">
+          <div class="genie-message">
+            <div class="genie-message-avatar"><i class="ph-fill ph-magic-wand"></i></div>
+            <div class="genie-bubble">Hi! I'm Genie. I can help you find policy guidance, summarize documents, and answer general admin questions.</div>
+          </div>
+          <div class="genie-suggestions">
+            <button class="genie-suggestion" type="button">Find policy</button>
+            <button class="genie-suggestion" type="button">Summarize docs</button>
+            <button class="genie-suggestion" type="button">Need help</button>
+          </div>
+        </div>
+        <div class="genie-input-area">
+          <input type="text" id="genieInput" placeholder="Ask Genie something..." autocomplete="off">
+          <button type="button" id="genieSendButton"><i class="ph-fill ph-arrow-up"></i></button>
+        </div>
+        <div class="genie-disclaimer">Genie may occasionally provide inaccurate information.</div>
+      </div>
+    </div>
   </main>
 
   <script>
@@ -149,8 +207,9 @@
       document.getElementById('navSubRole').innerText = `${user.role} Admin`;
       document.getElementById('navAvatar').innerText = user.name.charAt(0).toUpperCase();
       if (user.role === 'HR' || user.role === 'Management') document.getElementById('adminNav').style.display = 'block';
-      else { window.location.href = 'dashboard.html'; }
-    } else { window.location.href = 'index.html'; }
+      else { window.location.href = 'admin_dashboard.html'; }
+    } else { window.location.href = '../index.html'; }
+    initializeGenie();
   </script>
 </body>
 
