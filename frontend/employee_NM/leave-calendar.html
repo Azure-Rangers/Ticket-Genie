@@ -3,81 +3,264 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leave Calendar | TicketGenie</title>
+    <title>Leave Calendar | TicketGenie Enterprise</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f8fafc;
+            color: #0f172a;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .main-content {
+            flex-grow: 1;
+            height: 100vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            background: #f8fafc;
+        }
+        .topbar {
+            height: 75px;
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 32px;
+            box-sizing: border-box;
+            flex-shrink: 0;
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
 
-<div id="shared-sidebar"></div>
+<aside class="sidebar">
+    <div class="brand">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="brand-icon">
+                <i class="fa-solid fa-ticket"></i>
+            </div>
+            <div>
+                <h2>TicketGenie</h2>
+                <span>Employee Portal</span>
+            </div>
+        </div>
+    </div>
+
+    <nav class="navigation">
+        <div style="height: 1px; background: #402b4a; margin: 6px 10px 4px 10px;"></div>
+        <div class="nav-title" style="font-size: 15px !important; font-weight: 700 !important; letter-spacing: 0.8px !important;">Workspace</div>
+        <a href="index.html" class="nav-item">
+            <i class="fa-solid fa-house"></i><span>Dashboard</span>
+        </a>
+        <a href="new-request.html" class="nav-item">
+            <i class="fa-solid fa-plus"></i><span>Create Request</span>
+        </a>
+        <a href="my-tickets.html" class="nav-item">
+            <i class="fa-solid fa-ticket"></i><span>My Requests</span>
+        </a>
+        <a href="#" style="display:none;" class="nav-item">
+            <i class="fa-regular fa-comments"></i><span>Conversation History</span>
+        </a>
+
+        <div style="height: 1px; background: #402b4a; margin: 18px 10px 4px 10px;"></div>
+        <div class="nav-title" style="font-size: 15px !important; font-weight: 700 !important; letter-spacing: 0.8px !important;">Time Off & Company</div>
+        <a href="leave-calendar.html" class="nav-item">
+            <i class="fa-solid fa-calendar-days"></i><span>Leave Calendar</span>
+        </a>
+        <a href="announcements.html" class="nav-item">
+            <i class="fa-solid fa-bullhorn"></i><span>Announcements</span>
+        </a>
+
+        <div style="height: 1px; background: #402b4a; margin: 18px 10px 4px 10px;"></div>
+        <div class="nav-title" style="font-size: 15px !important; font-weight: 700 !important; letter-spacing: 0.8px !important;">Resources</div>
+        <a href="knowledge-base.html" class="nav-item">
+            <i class="fa-solid fa-book-open"></i><span>Knowledge Base</span>
+        </a>
+        <a href="notifications.html" class="nav-item">
+            <i class="fa-solid fa-bell"></i><span>Notifications</span><span class="notification-count">3</span>
+        </a>
+        <a href="profile.html" class="nav-item">
+            <i class="fa-solid fa-user-gear"></i><span>Profile & Credentials</span>
+        </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+        <div style="height: 1px; background: #402b4a; margin: 15px 0;"></div>
+        <a href="#" id="signOutBtn" class="nav-item" onclick="handleSignOut(event)" style="color: #fca5a5;">
+            <i class="fa-solid fa-right-from-bracket" style="color: #f87171;"></i><span>Sign Out</span>
+        </a>
+    </div>
+</aside>
 
 <main class="main-content">
-    <div id="shared-topnav"></div>
-
-    <section class="section">
-        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <div>
-                <h3>Team & Personal Time Off</h3>
-                <p>Track company holidays, team leaves, and schedule your own time off.</p>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <select style="padding: 8px 12px; border: 1px solid #dcd2e3; border-radius: 6px; font-size: 13px; background: #fff; color: #2b1b36;">
-                    <option>Month View</option>
-                    <option>Week View</option>
-                    <option>List View</option>
-                </select>
-                <button type="button" style="background: #6f4b82; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">
-                    <i class="fa-solid fa-plus"></i> Request Leave
-                </button>
+    <header class="topbar">
+        <div class="header-left" style="display: flex; align-items: center; gap: 20px;">
+            <button class="icon-button" id="sidebarToggle" type="button" aria-label="Toggle Sidebar">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="page-title">
+                <!-- Title removed from topbar header -->
             </div>
         </div>
 
-        <!-- Calendar Container -->
+        <div class="topbar-actions" style="display: flex; align-items: center; gap: 16px;">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Search..." id="globalSearch">
+                <span class="shortcut">⌘ K</span>
+            </div>
+            <button id="myCustomDarkToggle" class="icon-button" aria-label="Toggle Dark Mode" style="position: relative; display: flex; align-items: center; justify-content: center; width: 37px; height: 37px;">
+    <!-- Moon SVG for Light Mode -->
+    <svg id="customMoon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    <!-- Sun SVG for Dark Mode -->
+    <svg id="customSun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+</button>
+            <!-- Profile Dropdown Menu with Green Profile Icon -->
+            <div style="position: relative; display: inline-block;">
+    <button id="profileMenuBtn" type="button" class="icon-button" aria-label="Profile Menu" style="width: 38px; height: 38px; border-radius: 50%; background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; transition: all 0.2s ease;" onmouseover="this.style.background='#e9d5ff'; this.style.borderColor='#c084fc';" onmouseout="this.style.background='#f3e8ff'; this.style.borderColor='#d8b4fe';">
+        <i class="fa-solid fa-user"></i>
+    </button>
+    
+    <div id="profileDropdown" style="display: none; position: absolute; right: 0; top: 46px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08); width: 240px; z-index: 1000; overflow: hidden; padding: 6px;">
+    <!-- User Info Header -->
+
+    <!-- View Switcher Section -->
+    <div style="padding: 4px 8px; font-size: 10px; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px;">SWITCH VIEW</div>
+    <button type="button" onclick="switchPortalView('employee')" style="width: 100%; text-align: left; background: transparent; border: none; padding: 9px 12px; font-size: 12px; color: #334155; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px; border-radius: 6px; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+        <i class="fa-solid fa-user" style="color: #9333ea; width: 16px; text-align: center;"></i> Employee View
+    </button>
+    <button type="button" onclick="switchPortalView('management')" style="width: 100%; text-align: left; background: transparent; border: none; padding: 9px 12px; font-size: 12px; color: #334155; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px; border-radius: 6px; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+        <i class="fa-solid fa-user-shield" style="color: #c026d3; width: 16px; text-align: center;"></i> Management View
+    </button>
+
+    <!-- Divider & Sign Out -->
+    <div style="height: 1px; background: #f1f5f9; margin: 6px 0;"></div>
+    <button type="button" onclick="handleSignOut(event)" style="width: 100%; text-align: left; background: transparent; border: none; padding: 9px 12px; font-size: 12px; color: #dc2626; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px; border-radius: 6px; transition: background 0.15s ease;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='transparent'">
+        <i class="fa-solid fa-right-from-bracket" style="color: #ef4444; width: 16px; text-align: center;"></i> Sign Out
+    </button>
+</div>
+</div>
+        </div>
+    </header>
+
+    <section class="section" style="padding-top: 32px; padding-left: 36px; padding-right: 36px; box-sizing: border-box;">
+        <!-- Page Title & Proper Spacing Correction -->
+        <div style="margin-bottom: 32px; padding-top: 8px;">
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 0;">
+                <div>
+                    <h3 style="font-size: 22px; color: #1e293b; margin-bottom: 4px; font-weight: 700;">Team & Personal Time Off</h3>
+                    <p style="font-size: 14px; color: #64748b; margin: 0;">Track company holidays, team leaves, and schedule your own time off.</p>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <select id="calendarViewSelect" style="padding: 9px 14px; border: 1px solid #d8b4fe; border-radius: 6px; font-size: 13px; background: #faf5ff; color: #581c87; cursor: pointer; font-weight: 600;">
+                        <option value="month">Month View</option>
+                        <option value="week">Week View</option>
+                        <option value="day">Day View</option>
+                        <option value="list">List View</option>
+                    </select>
+                    <button type="button" id="manualAddBtn" style="background: #e9d5ff; color: #581c87; border: 1px solid #d8b4fe; padding: 9px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s;" onmouseover="this.style.background='#d8b4fe'" onmouseout="this.style.background='#e9d5ff'">
+                        <i class="fa-solid fa-pen-to-square"></i> Manual Add
+                    </button>
+                    <a href="new-request.html" style="background: #6f4b82; color: #fff; text-decoration: none; padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(43, 27, 54, 0.1); transition: background 0.2s;" onmouseover="this.style.background='#5a3c69'" onmouseout="this.style.background='#6f4b82'">
+                        <i class="fa-solid fa-plus"></i> Request Leave
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clean Reference Calendar Container (Purple & Gold Styled) -->
         <div style="background: #ffffff; border: 1px solid #e1e6e2; border-left: 4px solid #d4a359; border-radius: 8px; padding: 24px; box-shadow: 0 4px 15px rgba(43, 27, 54, 0.03);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3 style="font-size: 16px; color: #2b1b36;"><i class="fa-solid fa-calendar" style="color: #d4a359; margin-right: 8px;"></i> August 2026</h3>
-                <div style="display: flex; gap: 8px;">
-                    <button style="padding: 6px 12px; border: 1px solid #dcd2e3; background: #faf7fc; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-chevron-left"></i></button>
-                    <button style="padding: 6px 12px; border: 1px solid #dcd2e3; background: #faf7fc; border-radius: 4px; cursor: pointer;">Today</button>
-                    <button style="padding: 6px 12px; border: 1px solid #dcd2e3; background: #faf7fc; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-chevron-right"></i></button>
+                <h3 id="calendarMonthTitle" style="font-size: 18px; font-weight: 700; color: #2b1b36; display: flex; align-items: center; gap: 8px;">
+                    August 2026
+                </h3>
+                <div id="calendarNavigationControls" style="display: flex; gap: 6px;">
+                    <div style="display: flex; background: #6f4b82; border-radius: 6px; overflow: hidden;">
+                        <button id="prevMonthBtn" style="padding: 6px 12px; border: none; background: transparent; cursor: pointer; color: #fff; font-size: 13px;"><i class="fa-solid fa-chevron-left"></i></button>
+                        <div style="width: 1px; background: #8a649d;"></div>
+                        <button id="nextMonthBtn" style="padding: 6px 12px; border: none; background: transparent; cursor: pointer; color: #fff; font-size: 13px;"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: 600; font-size: 12px; color: #6a5a7c; margin-bottom: 10px; text-transform: uppercase;">
-                <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;">
-                <div style="min-height: 80px; background: #fafafc; border: 1px solid #eee; border-radius: 6px; padding: 6px; opacity: 0.4;">26</div>
-                <div style="min-height: 80px; background: #fafafc; border: 1px solid #eee; border-radius: 6px; padding: 6px; opacity: 0.4;">27</div>
-                <div style="min-height: 80px; background: #fafafc; border: 1px solid #eee; border-radius: 6px; padding: 6px; opacity: 0.4;">28</div>
-                <div style="min-height: 80px; background: #fafafc; border: 1px solid #eee; border-radius: 6px; padding: 6px; opacity: 0.4;">29</div>
-                <div style="min-height: 80px; background: #fafafc; border: 1px solid #eee; border-radius: 6px; padding: 6px; opacity: 0.4;">30</div>
-                <div style="min-height: 80px; background: #fafafc; border: 1px solid #eee; border-radius: 6px; padding: 6px; opacity: 0.4;">31</div>
-                <div style="min-height: 80px; background: #fff; border: 1px solid #e1e6e2; border-radius: 6px; padding: 6px; font-weight:600;">1</div>
-
-                <div style="min-height: 80px; background: #fff; border: 1px solid #e1e6e2; border-radius: 6px; padding: 6px; font-weight:600;">2</div>
-                <div style="min-height: 80px; background: #fff; border: 1px solid #e1e6e2; border-radius: 6px; padding: 6px; font-weight:600;">3</div>
-                <div style="min-height: 80px; background: #fff; border: 1px solid #e1e6e2; border-radius: 6px; padding: 6px; font-weight:600;">4</div>
-                <div style="min-height: 80px; background: #fff; border: 1px solid #e1e6e2; border-radius: 6px; padding: 6px; font-weight:600;">5</div>
-                <div style="min-height: 80px; background: #fff; border: 1px solid #e1e6e2; border-radius: 6px; padding: 6px; font-weight:600;">6</div>
-                <div style="min-height: 80px; background: #fff; border: 1px solid #e1e6e2; border-radius: 6px; padding: 6px; font-weight:600;">7</div>
-                <div style="min-height: 80px; background: #fff; border: 1px solid #e1e6e2; border-radius: 6px; padding: 6px; font-weight:600;">8</div>
-
-                <div style="min-height: 80px; background: #fff; border: 1px solid #e1e6e2; border-radius: 6px; padding: 6px; font-weight:600;">9</div>
-                <div style="min-height: 80px; background: #fff; border: 1px solid #e1e6e2; border-radius: 6px; padding: 6px; font-weight:600;">10</div>
-                <div style="min-height: 80px; background: #fff; border: 1px solid #e1e6e2; border-radius: 6px; padding: 6px; font-weight:600;">11</div>
-                <div style="min-height: 80px; background: #fff; border: 1px solid #e1e6e2; border-radius: 6px; padding: 6px; font-weight:600;">12</div>
-                <div style="min-height: 80px; background: #fff; border: 1px solid #e1e6e2; border-radius: 6px; padding: 6px; font-weight:600;">13</div>
-                <div style="min-height: 80px; background: #faf7fc; border: 1px solid #dcd2e3; border-radius: 6px; padding: 6px; font-weight:600;">
-                    14
-                    <div style="background: #6f4b82; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-top: 4px;">PTO: You</div>
-                </div>
-                <div style="min-height: 80px; background: #fff; border: 1px solid #e1e6e2; border-radius: 6px; padding: 6px; font-weight:600;">15</div>
+            <!-- Dynamic View Container -->
+            <div id="calendarViewContainer">
+                <!-- Rendered dynamically by view mode -->
             </div>
         </div>
     </section>
 </main>
+
+<!-- Manual Add Modal Overlay -->
+<div id="manualAddModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;">
+    <div style="background: #fff; width: 100%; max-width: 480px; border-radius: 10px; padding: 28px; box-shadow: 0 10px 25px rgba(0,0,0,0.15);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="font-size: 18px; color: #2b1b36; margin: 0; display: flex; align-items: center; gap: 10px; font-weight: 700;">
+                <i class="fa-solid fa-pen-to-square" style="color: #6f4b82;"></i> Manual Add Time Off
+            </h3>
+            <button type="button" id="closeManualModal" style="background: transparent; border: none; font-size: 16px; color: #64748b; cursor: pointer;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <form id="manualAddForm" style="display: flex; flex-direction: column; gap: 16px;">
+            <div>
+                <label style="display: block; font-size: 13px; font-weight: 600; color: #1e293b; margin-bottom: 6px;">Event Name</label>
+                <input type="text" id="manualUser" placeholder="e.g. Annual Conference" required style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; color: #1e293b; box-sizing: border-box;">
+            </div>
+
+            <!-- All Day Toggle Button Area -->
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #faf5ff; border: 1px solid #e9d5ff; padding: 10px 14px; border-radius: 6px;">
+                <span style="font-size: 13px; font-weight: 600; color: #581c87; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-regular fa-calendar-check"></i> All Day Event
+                </span>
+                <label style="position: relative; display: inline-block; width: 44px; height: 24px; margin: 0;">
+                    <input type="checkbox" id="manualAllDay" style="opacity: 0; width: 0; height: 0;">
+                    <span id="allDaySlider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 24px;"></span>
+                </label>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #1e293b; margin-bottom: 6px;">Start Date</label>
+                    <input type="date" id="manualStartDate" required style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; color: #1e293b; box-sizing: border-box;" value="2026-08-15">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #1e293b; margin-bottom: 6px;">End Date</label>
+                    <input type="date" id="manualEndDate" required style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; color: #1e293b; box-sizing: border-box;" value="2026-08-15">
+                </div>
+            </div>
+            <div>
+                <label style="display: block; font-size: 13px; font-weight: 600; color: #1e293b; margin-bottom: 6px;">Leave / Event Type</label>
+                <input type="text" id="manualType" placeholder="e.g. Annual Leave, Conference" required style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; color: #1e293b; box-sizing: border-box;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 13px; font-weight: 600; color: #1e293b; margin-bottom: 6px;">Event Color Theme</label>
+                <select id="manualColorTheme" style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #fff; color: #1e293b; cursor: pointer; box-sizing: border-box;">
+                    <option value="purple">Purple (Default)</option>
+                    <option value="gold">Gold / Amber</option>
+                    <option value="blue">Blue</option>
+                    <option value="green">Green</option>
+                </select>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <button type="button" id="deleteEventFromModal" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 10px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: none; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-trash"></i> Delete Event
+                </button>
+                <div style="display: flex; gap: 10px; margin-left: auto;">
+                    <button type="button" id="cancelManualModal" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 10px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">Cancel</button>
+                    <button type="submit" style="background: #6f4b82; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">Add to Calendar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
 
 <!-- Genie AI Floating Button & Drawer -->
 <button class="genie-button" id="genieButton" type="button">
@@ -106,7 +289,491 @@
     <div class="genie-disclaimer">Genie may occasionally provide inaccurate information.</div>
 </div>
 
+<script>
+    // Style toggle slider dynamically
+    const styleEl = document.createElement('style');
+    styleEl.innerHTML = `
+        #allDaySlider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        #manualAllDay:checked + #allDaySlider {
+            background-color: #6f4b82;
+        }
+        #manualAllDay:checked + #allDaySlider:before {
+            transform: translateX(20px);
+        }
+    `;
+    document.head.appendChild(styleEl);
+
+    // Toggle Profile Dropdown
+    const profileBtn = document.getElementById('profileMenuBtn');
+    const profileDropdown = document.getElementById('profileDropdown');
+
+    profileBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        profileDropdown.style.display = profileDropdown.style.display === 'block' ? 'none' : 'block';
+    });
+
+    window.addEventListener('click', () => {
+        if (profileDropdown) {
+            profileDropdown.style.display = 'none';
+        }
+    });
+
+    function switchPortalView(viewType) {
+        if (viewType === 'management') {
+            alert('Switched to Management View mode.');
+        } else {
+            alert('Switched to Employee View mode.');
+        }
+    }
+
+    // Manual Add Modal Handlers
+    const manualModal = document.getElementById('manualAddModal');
+    const allDayCheckbox = document.getElementById('manualAllDay');
+    const startDateInput = document.getElementById('manualStartDate');
+    const endDateInput = document.getElementById('manualEndDate');
+    let editingEventId = null;
+
+    allDayCheckbox.addEventListener('change', () => {
+        if (allDayCheckbox.checked) {
+            endDateInput.value = startDateInput.value;
+            endDateInput.disabled = true;
+        } else {
+            endDateInput.disabled = false;
+        }
+    });
+
+    startDateInput.addEventListener('change', () => {
+        if (allDayCheckbox.checked) {
+            endDateInput.value = startDateInput.value;
+        }
+    });
+
+    document.getElementById('manualAddBtn').addEventListener('click', () => {
+        editingEventId = null;
+        document.getElementById('manualAddForm').reset();
+        allDayCheckbox.checked = false;
+        endDateInput.disabled = false;
+        document.getElementById('deleteEventFromModal').style.display = 'none';
+        manualModal.style.display = 'flex';
+    });
+
+    document.getElementById('closeManualModal').addEventListener('click', () => {
+        manualModal.style.display = 'none';
+    });
+    document.getElementById('cancelManualModal').addEventListener('click', () => {
+        manualModal.style.display = 'none';
+    });
+
+    let currentDate = new Date(2026, 7, 1);
+    let selectedDayDate = new Date();
+    let currentView = 'month';
+
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    let sampleLeaves = [
+        { id: 1, startDate: new Date(2026, 7, 14), endDate: new Date(2026, 7, 14), user: "Personal PTO", type: "PTO", allDay: true, color: "#6f4b82", bg: "#f3e8ff", border: "#d8b4fe" },
+        { id: 2, startDate: new Date(2026, 7, 10), endDate: new Date(2026, 7, 11), user: "Tech Conference", type: "Conference", allDay: false, color: "#d97706", bg: "#fef3c7", border: "#fde047" },
+        { id: 3, startDate: new Date(2026, 7, 18), endDate: new Date(2026, 7, 18), user: "Annual Leave", type: "Leave", allDay: true, color: "#6f4b82", bg: "#f3e8ff", border: "#d8b4fe" }
+    ];
+
+    const nationalHolidays = [
+        { date: new Date(2026, 8, 7), name: "Labor Day (National Holiday)", color: "#b8860b", bg: "#fef9e7", border: "#fde047" },
+        { date: new Date(2026, 6, 4), name: "Independence Day", color: "#b8860b", bg: "#fef9e7", border: "#fde047" }
+    ];
+
+    const colorPalettes = {
+        purple: { color: "#6f4b82", bg: "#f3e8ff", border: "#d8b4fe" },
+        gold: { color: "#b8860b", bg: "#fef9e7", border: "#fde047" },
+        blue: { color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe" },
+        green: { color: "#10b981", bg: "#f0fdf4", border: "#a7f3d0" }
+    };
+
+    document.getElementById('manualAddForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const userVal = document.getElementById('manualUser').value;
+        const startDateVal = document.getElementById('manualStartDate').value;
+        const endDateVal = allDayCheckbox.checked ? startDateVal : document.getElementById('manualEndDate').value;
+        const typeVal = document.getElementById('manualType').value;
+        const themeVal = document.getElementById('manualColorTheme').value;
+        const isAllDay = allDayCheckbox.checked;
+
+        if (userVal && startDateVal && endDateVal && typeVal) {
+            const [sy, sm, sd] = startDateVal.split('-').map(Number);
+            const [ey, em, ed] = endDateVal.split('-').map(Number);
+            const palette = colorPalettes[themeVal] || colorPalettes.purple;
+
+            const newStart = new Date(sy, sm - 1, sd);
+            const newEnd = new Date(ey, em - 1, ed);
+
+            if (editingEventId !== null) {
+                sampleLeaves = sampleLeaves.map(leave => {
+                    if (leave.id === editingEventId) {
+                        return {
+                            id: editingEventId,
+                            startDate: newStart,
+                            endDate: newEnd,
+                            user: userVal,
+                            type: typeVal,
+                            allDay: isAllDay,
+                            color: palette.color,
+                            bg: palette.bg,
+                            border: palette.border
+                        };
+                    }
+                    return leave;
+                });
+            } else {
+                sampleLeaves.push({
+                    id: Date.now(),
+                    startDate: newStart,
+                    endDate: newEnd,
+                    user: userVal,
+                    type: typeVal,
+                    allDay: isAllDay,
+                    color: palette.color,
+                    bg: palette.bg,
+                    border: palette.border
+                });
+            }
+
+            manualModal.style.display = 'none';
+            document.getElementById('manualAddForm').reset();
+            endDateInput.disabled = false;
+            updateCalendar();
+        }
+    });
+
+    document.getElementById('deleteEventFromModal').addEventListener('click', () => {
+        if (editingEventId !== null) {
+            deleteEvent(editingEventId);
+            manualModal.style.display = 'none';
+        }
+    });
+
+    function editEvent(id) {
+        const leave = sampleLeaves.find(l => l.id === id);
+        if (leave) {
+            editingEventId = id;
+            document.getElementById('manualUser').value = leave.user;
+            
+            const sMonth = String(leave.startDate.getMonth() + 1).padStart(2, '0');
+            const sDay = String(leave.startDate.getDate()).padStart(2, '0');
+            document.getElementById('manualStartDate').value = `${leave.startDate.getFullYear()}-${sMonth}-${sDay}`;
+
+            const eMonth = String(leave.endDate.getMonth() + 1).padStart(2, '0');
+            const eDay = String(leave.endDate.getDate()).padStart(2, '0');
+            document.getElementById('manualEndDate').value = `${leave.endDate.getFullYear()}-${eMonth}-${eDay}`;
+
+            allDayCheckbox.checked = !!leave.allDay;
+            endDateInput.disabled = !!leave.allDay;
+
+            document.getElementById('manualType').value = leave.type;
+            
+            for (const [key, palette] of Object.entries(colorPalettes)) {
+                if (palette.color === leave.color) {
+                    document.getElementById('manualColorTheme').value = key;
+                    break;
+                }
+            }
+
+            document.getElementById('deleteEventFromModal').style.display = 'inline-flex';
+            manualModal.style.display = 'flex';
+        }
+    }
+
+    function deleteEvent(id) {
+        sampleLeaves = sampleLeaves.filter(leave => leave.id !== id);
+        updateCalendar();
+    }
+
+    function openDayView(year, month, day) {
+        selectedDayDate = new Date(year, month, day);
+        document.getElementById('calendarViewSelect').value = 'day';
+        updateCalendar();
+    }
+
+    function updateCalendar() {
+        const viewSelect = document.getElementById('calendarViewSelect');
+        currentView = viewSelect.value;
+        const navControls = document.getElementById('calendarNavigationControls');
+
+        if (currentView === 'list') {
+            navControls.style.display = 'none';
+            document.getElementById('calendarMonthTitle').innerHTML = `Scheduled Leave Requests & Holidays`;
+            renderListView();
+        } else if (currentView === 'day') {
+            navControls.style.display = 'flex';
+            document.getElementById('calendarMonthTitle').innerHTML = `Day View: ${selectedDayDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+            renderDayView();
+        } else {
+            navControls.style.display = 'flex';
+            if (currentView === 'month') {
+                renderMonthView();
+            } else if (currentView === 'week') {
+                renderWeekView();
+            }
+        }
+    }
+
+    function renderMonthView() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        document.getElementById('calendarMonthTitle').innerHTML = `${monthNames[month]} ${year}`;
+
+        const container = document.getElementById('calendarViewContainer');
+        container.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: 600; font-size: 12px; color: #64748b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #e1e6e2; padding-bottom: 8px;">
+                <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+            </div>
+            <div id="calendarDaysGrid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: #e1e6e2; border: 1px solid #e1e6e2; border-radius: 6px; overflow: hidden;"></div>
+        `;
+
+        const grid = document.getElementById('calendarDaysGrid');
+        const firstDayIndex = new Date(year, month, 1).getDay();
+        const totalDays = new Date(year, month + 1, 0).getDate();
+        const prevTotalDays = new Date(year, month, 0).getDate();
+
+        for (let i = firstDayIndex - 1; i >= 0; i--) {
+            const dayNum = prevTotalDays - i;
+            const cell = document.createElement('div');
+            cell.style.cssText = "min-height: 100px; background: #fafafc; padding: 8px; opacity: 0.4; color: #64748b; font-size: 13px; text-align: right;";
+            cell.textContent = dayNum;
+            grid.appendChild(cell);
+        }
+
+        for (let i = 1; i <= totalDays; i++) {
+            const cell = document.createElement('div');
+            cell.style.cssText = "min-height: 100px; background: #fff; padding: 8px; font-weight: 600; color: #1e293b; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; transition: background 0.15s; font-size: 13px;";
+            cell.onmouseover = () => cell.style.background = '#faf5ff';
+            cell.onmouseout = () => cell.style.background = '#fff';
+
+            const dayTop = document.createElement('div');
+            dayTop.style.cssText = "text-align: right; color: #64748b; font-size: 12px;";
+            dayTop.textContent = i;
+            cell.appendChild(dayTop);
+
+            const eventsContainer = document.createElement('div');
+            eventsContainer.style.cssText = "display: flex; flex-direction: column; gap: 4px; margin-top: auto;";
+
+            const currentDateObj = new Date(year, month, i);
+
+            nationalHolidays.forEach(holiday => {
+                if (holiday.date.getFullYear() === year && holiday.date.getMonth() === month && holiday.date.getDate() === i) {
+                    const badge = document.createElement('div');
+                    badge.style.cssText = `background: ${holiday.color}; color: #fff; font-size: 11px; padding: 6px 8px; border-radius: 4px; font-weight: 600; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);`;
+                    badge.textContent = `🏛️ ${holiday.name}`;
+                    eventsContainer.appendChild(badge);
+                }
+            });
+
+            sampleLeaves.forEach(leave => {
+                if (currentDateObj >= leave.startDate && currentDateObj <= leave.endDate) {
+                    const badge = document.createElement('div');
+                    badge.style.cssText = `background: ${leave.color}; color: #fff; font-size: 12px; padding: 6px 10px; border-radius: 4px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer;`;
+                    badge.innerHTML = `
+                        <span style="flex: 1; text-align: center;">${leave.user}${leave.allDay ? ' (All Day)' : ''}</span>
+                        <button onclick="event.stopPropagation(); deleteEvent(${leave.id})" style="background: transparent; border: none; color: #fff; cursor: pointer; font-size: 11px;" title="Delete Event"><i class="fa-solid fa-xmark"></i></button>
+                    `;
+                    badge.onclick = (e) => {
+                        e.stopPropagation();
+                        editEvent(leave.id);
+                    };
+                    eventsContainer.appendChild(badge);
+                }
+            });
+
+            cell.appendChild(eventsContainer);
+
+            cell.addEventListener('click', () => {
+                openDayView(year, month, i);
+            });
+
+            grid.appendChild(cell);
+        }
+
+        const totalCellsSoFar = firstDayIndex + totalDays;
+        const nextDaysCount = totalCellsSoFar <= 35 ? 35 - totalCellsSoFar : 42 - totalCellsSoFar;
+        for (let i = 1; i <= nextDaysCount; i++) {
+            const cell = document.createElement('div');
+            cell.style.cssText = "min-height: 100px; background: #fafafc; padding: 8px; opacity: 0.4; color: #64748b; font-size: 13px; text-align: right;";
+            cell.textContent = i;
+            grid.appendChild(cell);
+        }
+    }
+
+    function renderWeekView() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const day = currentDate.getDate();
+
+        document.getElementById('calendarMonthTitle').innerHTML = `Week View: ${monthNames[month]} ${year}`;
+
+        const container = document.getElementById('calendarViewContainer');
+        container.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px;" id="weekGrid"></div>
+        `;
+
+        const weekGrid = document.getElementById('weekGrid');
+        
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(year, month, day + i);
+            const cell = document.createElement('div');
+            cell.style.cssText = "min-height: 160px; background: #fff; border: 1px solid #e1e6e2; border-radius: 8px; padding: 12px; cursor: pointer;";
+            cell.onclick = () => openDayView(d.getFullYear(), d.getMonth(), d.getDate());
+            
+            let html = `<div style="font-weight: 700; font-size: 13px; color: #1e293b; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">${monthNames[d.getMonth()]} ${d.getDate()}</div>`;
+
+            nationalHolidays.forEach(holiday => {
+                if (holiday.date.toDateString() === d.toDateString()) {
+                    html += `<div style="background: ${holiday.color}; color: #fff; font-size: 11px; padding: 6px; border-radius: 6px; font-weight: 600; margin-top: 6px;">🏛️ ${holiday.name}</div>`;
+                }
+            });
+
+            sampleLeaves.forEach(leave => {
+                if (d >= leave.startDate && d <= leave.endDate) {
+                    html += `
+                        <div onclick="event.stopPropagation(); editEvent(${leave.id})" style="background: ${leave.color}; color: #fff; font-size: 12px; padding: 8px; border-radius: 6px; font-weight: 600; margin-top: 6px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                            <span>${leave.user} (${leave.type})${leave.allDay ? ' - All Day' : ''}</span>
+                            <button onclick="event.stopPropagation(); deleteEvent(${leave.id})" style="background: transparent; border: none; color: #fff; cursor: pointer; font-size: 12px;" title="Delete Event"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    `;
+                }
+            });
+
+            cell.innerHTML = html;
+            weekGrid.appendChild(cell);
+        }
+    }
+
+    function renderDayView() {
+        const container = document.getElementById('calendarViewContainer');
+        let html = `
+            <div style="display: flex; flex-direction: column; gap: 12px; background: #faf7fc; border: 1px solid #dcd2e3; padding: 20px; border-radius: 8px;">
+                <h4 style="font-size: 16px; color: #2b1b36; margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-clock" style="color: #6f4b82;"></i> Schedule for ${selectedDayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                </h4>
+        `;
+
+        let matchedHolidays = nationalHolidays.filter(h => h.date.toDateString() === selectedDayDate.toDateString());
+        let matchedLeaves = sampleLeaves.filter(leave => selectedDayDate >= leave.startDate && selectedDayDate <= leave.endDate);
+
+        if (matchedHolidays.length === 0 && matchedLeaves.length === 0) {
+            html += `<p style="font-size: 13px; color: #64748b; margin: 0;">No leave events or holidays scheduled for this date.</p>`;
+        } else {
+            matchedHolidays.forEach(holiday => {
+                html += `
+                    <div style="background: ${holiday.bg}; border-left: 4px solid ${holiday.color}; padding: 14px 18px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                        <strong style="font-size: 14px; color: #1e293b; display: block; margin-bottom: 2px;">🏛️ ${holiday.name}</strong>
+                        <span style="font-size: 12px; color: #64748b;">National Public Holiday</span>
+                    </div>
+                `;
+            });
+
+            matchedLeaves.forEach(leave => {
+                html += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; border-left: 4px solid ${leave.color}; padding: 14px 18px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer;" onclick="editEvent(${leave.id})">
+                        <div>
+                            <strong style="font-size: 14px; color: #1e293b; display: block; margin-bottom: 2px;">${leave.user}</strong>
+                            <span style="font-size: 12px; color: #64748b;">Type: ${leave.type} ${leave.allDay ? '• All Day' : ''} | Approved (Click to Edit)</span>
+                        </div>
+                        <button onclick="event.stopPropagation(); deleteEvent(${leave.id})" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">
+                            <i class="fa-solid fa-trash"></i> Delete
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        html += `</div>`;
+        container.innerHTML = html;
+    }
+
+    function renderListView() {
+        const container = document.getElementById('calendarViewContainer');
+        let html = `
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: grid; grid-template-columns: 1.5fr 1.5fr 2fr 1fr 80px; gap: 16px; padding: 10px 16px; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; background: #f8fafc; border-radius: 6px;">
+                    <div>Date Range</div>
+                    <div>Event Name</div>
+                    <div>Leave Type</div>
+                    <div>Status</div>
+                    <div style="text-align: right;">Action</div>
+                </div>
+        `;
+
+        nationalHolidays.forEach(holiday => {
+            const dateStr = holiday.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            html += `
+                <div style="display: grid; grid-template-columns: 1.5fr 1.5fr 2fr 1fr 80px; gap: 16px; align-items: center; padding: 14px 16px; background: #fff; border: 1px solid #e1e6e2; border-radius: 6px; font-size: 13px; color: #1e293b;">
+                    <div style="font-weight: 600;">${dateStr}</div>
+                    <div style="color: #b8860b; font-weight: 600;">🏛️ ${holiday.name}</div>
+                    <div>Holiday</div>
+                    <div><span style="background: #fef9e7; color: #b8860b; border: 1px solid #fde047; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;">Official</span></div>
+                    <div></div>
+                </div>
+            `;
+        });
+
+        sampleLeaves.forEach(leave => {
+            const startStr = leave.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const endStr = leave.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const dateDisplay = startStr === endStr ? startStr : `${startStr} - ${endStr}`;
+
+            html += `
+                <div style="display: grid; grid-template-columns: 1.5fr 1.5fr 2fr 1fr 80px; gap: 16px; align-items: center; padding: 14px 16px; background: #fff; border: 1px solid #e1e6e2; border-radius: 6px; font-size: 13px; color: #1e293b;">
+                    <div style="font-weight: 600;">${dateDisplay}</div>
+                    <div style="cursor: pointer; color: #6f4b82; font-weight: 600;" onclick="editEvent(${leave.id})">${leave.user}${leave.allDay ? ' (All Day)' : ''}</div>
+                    <div>${leave.type}</div>
+                    <div><span style="background: #f0fdf4; color: #10b981; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;">Approved</span></div>
+                    <div style="text-align: right;">
+                        <button onclick="deleteEvent(${leave.id})" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;" title="Delete Event">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+        container.innerHTML = html;
+    }
+
+    document.getElementById('calendarViewSelect').addEventListener('change', updateCalendar);
+
+    document.getElementById('prevMonthBtn').addEventListener('click', () => {
+        if (currentView === 'day') {
+            selectedDayDate.setDate(selectedDayDate.getDate() - 1);
+            updateCalendar();
+        } else {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            updateCalendar();
+        }
+    });
+
+    document.getElementById('nextMonthBtn').addEventListener('click', () => {
+        if (currentView === 'day') {
+            selectedDayDate.setDate(selectedDayDate.getDate() + 1);
+            updateCalendar();
+        } else {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            updateCalendar();
+        }
+    });
+
+    // Initial render
+    updateCalendar();
+</script>
 <script src="../js/script.js"></script>
-<script src="components.js"></script>
 </body>
 </html>
