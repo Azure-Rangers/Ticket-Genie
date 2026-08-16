@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from models.chatbot import ChatIntent, ChatTurn, TicketDraft
+from models.chatbot import ChatIntent, ChatTurn, RequestType, TicketDraft
 from services.ai_service import ai_service as default_ai_service
 
 
@@ -45,6 +45,7 @@ class ChatbotDecision(BaseModel):
     knowledge_query: Optional[str] = None
     ticket_fields: Optional[ExtractedTicketFields] = None
     missing_fields: List[str] = Field(default_factory=list)
+    request_type: Optional[RequestType] = None
 
 
 CHATBOT_DECISION_PROMPT = """
@@ -105,7 +106,10 @@ leave_management):
   relative reference ("before Friday", "next Monday", "tomorrow"),
   resolve it relative to today's date, which is provided below. If you
   cannot confidently resolve a date, leave preferred_date null instead
-  of guessing.
+  of guessing. For leave_management, if the user gives a date range
+  (e.g. "August 20 to August 28"), preferred_date is the START date -
+  still restate the full range (both dates) in `description` so nothing
+  is lost, but never invent a second date field.
 - `category` must be chosen from the allowed list provided below for
   the current flow (support vs leave), matched by meaning - e.g. a
   laptop problem is "IT & Technology", a request for medical leave is
@@ -121,6 +125,30 @@ leave_management):
 TICKET STATUS:
 - If the user gives a ticket number (e.g. "HD-1024", "ticket 1024"),
   put it in ticket_fields.ticket_id exactly as given.
+
+REQUEST TYPE (only meaningful for create_ticket / support_issue /
+leave_management - leave it null for every other intent):
+The product has exactly three request forms - decide which existing one
+this belongs in:
+- leave_management: whenever intent is leave_management. This is fixed by
+  a hard business rule downstream regardless of what you put here, but
+  set it anyway for clarity.
+- anonymous: the user explicitly asks for the request to be anonymous,
+  says they don't want their name/identity attached, or explicitly says
+  they want to use the Anonymous Request option. Never choose this just
+  because a topic is sensitive - the user has to actually ask for
+  anonymity.
+- standard: an actual support/workplace request where the user has not
+  asked for anonymity.
+If intent is create_ticket or support_issue and you cannot confidently
+tell standard from anonymous from what's been said so far, leave
+request_type null and use action=ask_followup with a short message
+asking which one they want (Standard Request or Anonymous Request) - do
+not guess.
+
+For sensitive workplace issues (e.g. harassment, conflict, safety), stay
+neutral and factual in `description` and do not editorialize - and never
+assume the user wants anonymity unless they say so.
 
 Never fabricate company policy, ticket data, or URLs. Keep `message`
 short, professional, and appropriate for the chosen action (e.g. for

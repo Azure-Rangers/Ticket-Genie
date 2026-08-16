@@ -15,8 +15,15 @@ from typing import List, Optional
 
 from agents import chatbot_agent, knowledge_agent
 from agents.chatbot_agent import ChatbotDecision, NavigationTarget
+from agents.orchestrator import classify_ticket as default_classify_ticket
 from database.crud import get_ticket_by_id as default_get_ticket_by_id
-from models.chatbot import ChatAction, ChatIntent, ChatRequest, ChatResponse
+from models.chatbot import (
+    ChatAction,
+    ChatIntent,
+    ChatRequest,
+    ChatResponse,
+    RequestType,
+)
 from services import ticket_draft_service
 from services.ai_service import ai_service as default_ai_service
 from services.knowledge_service import (
@@ -176,22 +183,81 @@ def _handle_ticket_status(decision: ChatbotDecision, *, ticket_lookup) -> ChatRe
     )
 
 
-def _handle_ticket_drafting(
+AMBIGUOUS_REQUEST_TYPE_MESSAGE = (
+    "Would you like to submit this as a Standard Request or an Anonymous Request?"
+)
+
+
+def _resolve_request_type(
     request: ChatRequest, decision: ChatbotDecision, intent: ChatIntent
+) -> Optional[RequestType]:
+    """
+    Deterministic: leave is always forced to the Leave Management form,
+    regardless of what the model proposed. Otherwise prefer a
+    continuation's already-chosen form; only fall back to the model's
+    this-turn guess (standard/anonymous only - it never gets to claim
+    leave_management for a non-leave intent) when nothing is chosen yet.
+    Returns None when genuinely ambiguous - callers must ask, not guess.
+    """
+
+    if intent == ChatIntent.LEAVE_MANAGEMENT:
+        return RequestType.LEAVE_MANAGEMENT
+    if request.active_request_type in (RequestType.STANDARD, RequestType.ANONYMOUS):
+        return request.active_request_type
+    if decision.request_type in (RequestType.STANDARD, RequestType.ANONYMOUS):
+        return decision.request_type
+    return None
+
+
+def _handle_ticket_drafting(
+    request: ChatRequest,
+    decision: ChatbotDecision,
+    intent: ChatIntent,
+    *,
+    classify_ticket=default_classify_ticket,
 ) -> ChatResponse:
+    request_type = _resolve_request_type(request, decision, intent)
+
+    if request_type is None:
+        return ChatResponse(
+            message=AMBIGUOUS_REQUEST_TYPE_MESSAGE,
+            intent=intent,
+            ticket_draft=request.draft,
+            missing_fields=[
+                "whether this is a Standard Request or an Anonymous Request"
+            ],
+            ready_for_review=False,
+        )
+
     draft, missing = merge_extracted_fields(
         decision.ticket_fields,
         existing_draft=request.draft,
         gpt_missing_fields=decision.missing_fields,
         intent=intent,
+        request_type=request_type,
     )
+
+    if (
+        not missing
+        and request_type != RequestType.LEAVE_MANAGEMENT
+        and draft.category == "Other"
+    ):
+        reclassified = ticket_draft_service.reclassify_other_category(
+            draft.title or "",
+            draft.description or "",
+            classify_ticket=classify_ticket,
+        )
+        if reclassified:
+            draft.category = reclassified
 
     if missing:
         return ChatResponse(
             message=decision.message or _missing_fields_prompt(missing),
             intent=intent,
+            request_type=request_type,
             ticket_draft=draft,
             missing_fields=missing,
+            ready_for_review=False,
         )
 
     return ChatResponse(
@@ -201,8 +267,10 @@ def _handle_ticket_drafting(
             "anything that's not quite right, and submit it when you're ready."
         ),
         intent=intent,
+        request_type=request_type,
         ticket_draft=draft,
         missing_fields=[],
+        ready_for_review=True,
     )
 
 
@@ -277,6 +345,7 @@ def handle_message(
     ai_service=default_ai_service,
     retriever: KnowledgeRetriever = None,
     ticket_lookup=default_get_ticket_by_id,
+    classify_ticket=default_classify_ticket,
 ) -> ChatResponse:
     retriever = retriever or default_knowledge_retriever
     message = request.message.strip()
@@ -313,9 +382,11 @@ def handle_message(
 
     if intent == ChatIntent.LEAVE_MANAGEMENT:
         # Hard business rule: leave requests always go through the
-        # Standard Request ticket-drafting flow, regardless of the
+        # Leave Management ticket-drafting flow, regardless of the
         # action the model proposed.
-        return _handle_ticket_drafting(request, decision, intent)
+        return _handle_ticket_drafting(
+            request, decision, intent, classify_ticket=classify_ticket
+        )
 
     if intent == ChatIntent.TICKET_STATUS:
         return _handle_ticket_status(decision, ticket_lookup=ticket_lookup)
@@ -324,7 +395,9 @@ def handle_message(
         return _handle_navigation(decision, request.role)
 
     if intent in (ChatIntent.CREATE_TICKET, ChatIntent.SUPPORT_ISSUE):
-        return _handle_ticket_drafting(request, decision, intent)
+        return _handle_ticket_drafting(
+            request, decision, intent, classify_ticket=classify_ticket
+        )
 
     if intent == ChatIntent.KNOWLEDGE:
         return _handle_knowledge(

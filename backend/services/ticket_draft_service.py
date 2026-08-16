@@ -4,19 +4,23 @@ Ticket Drafting: deterministic validation + merge layer.
 Semantic extraction (what the user meant, what fields that implies) is
 GPT-5.2's job (backend/agents/chatbot_agent.py). This module never guesses
 meaning from the message text - it only validates what the model
-extracted against the schema TicketCreate/the Standard Request form
-actually allows, and merges it into the running TicketDraft. `priority`
-and `department` are never set here - those are internal routing fields
-owned by Saketh's classification/prioritization agents (backend/agents/*),
-not something the chatbot should guess.
+extracted against the schema TicketCreate/the Standard/Anonymous Request
+form actually allows, and merges it into the running TicketDraft.
+`priority` is never set here - that's an internal routing field owned by
+Saketh's classification agents (backend/agents/*), not something the
+chatbot should guess. `department` is only ever set here for the one hard
+business rule that isn't a guess: every Leave Management request routes
+deterministically to LEAVE_DEPARTMENT, never through classification.
 """
 
 import re
 from datetime import datetime
 from typing import List, Optional, Tuple
 
+from agents.category_agent import is_valid_department
 from agents.chatbot_agent import ExtractedTicketFields
-from models.chatbot import ChatIntent, TicketDraft
+from agents.orchestrator import classify_ticket as default_classify_ticket
+from models.chatbot import ChatIntent, RequestType, TicketDraft
 
 STANDARD_CATEGORIES = [
     "HR & Workforce Operations",
@@ -34,6 +38,30 @@ LEAVE_TYPES = [
     "Unpaid Leave",
     "Other",
 ]
+
+# Hard business rule: every Leave Management request routes directly to
+# this department, deterministically, skipping normal classification.
+# Reused straight from agents/category_agent.ALLOWED_DEPARTMENTS (the
+# single source of truth Saketh's classifier also uses, and the exact
+# spelling models.ticket.TicketCreate.department accepts) rather than a
+# second hardcoded vocabulary - see also services/ticket_service.py's
+# department_override, which is what makes this rule hold at submission
+# time too (classify_ticket() would otherwise silently overwrite it).
+LEAVE_DEPARTMENT = "Upper Management"
+assert is_valid_department(LEAVE_DEPARTMENT)
+
+# Deterministic map from the classifier's department taxonomy onto the
+# Standard/Anonymous Request form's own (coarser) category dropdown, used
+# only to fix up a draft that landed on "Other". "Workplace Operations
+# Team" has no equivalent bucket in that dropdown, so it intentionally has
+# no entry here - reclassify_other_category() falls back to leaving the
+# draft at "Other" (a real, valid value) rather than inventing one.
+_DEPARTMENT_TO_STANDARD_CATEGORY = {
+    "HR Team": "HR & Workforce Operations",
+    "IT Team": "IT & Technology",
+    "Accounting Team": "Account Management",
+    "Upper Management": "Upper Executive Management",
+}
 
 _ISO_DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _TICKET_ID_PATTERN = re.compile(r"^HD-\d+$", re.IGNORECASE)
@@ -133,6 +161,7 @@ def merge_extracted_fields(
     existing_draft: Optional[TicketDraft],
     gpt_missing_fields: List[str],
     intent: ChatIntent,
+    request_type: Optional[RequestType] = None,
 ) -> Tuple[TicketDraft, List[str]]:
     """
     Deterministically fold the model's extraction into the running draft,
@@ -159,6 +188,13 @@ def merge_extracted_fields(
         elif draft.description:
             draft.title = _fallback_title(draft.description)
 
+    if request_type == RequestType.ANONYMOUS:
+        draft.is_anonymous = True
+
+    if intent == ChatIntent.LEAVE_MANAGEMENT:
+        # Deterministic, never GPT-controlled - see LEAVE_DEPARTMENT.
+        draft.department = LEAVE_DEPARTMENT
+
     missing = _filter_missing_fields(gpt_missing_fields, draft)
 
     if not draft.description and not any(
@@ -173,3 +209,28 @@ def merge_extracted_fields(
         missing.append(label)
 
     return draft, missing
+
+
+def reclassify_other_category(
+    title: str,
+    description: str,
+    *,
+    classify_ticket=default_classify_ticket,
+) -> Optional[str]:
+    """
+    A Standard/Anonymous draft landed on "Other". Reuse Saketh's existing,
+    already-wired-into-real-ticket-submission classifier
+    (agents.orchestrator.classify_ticket) - the same one
+    services/ticket_service.py calls at actual submission time - rather
+    than building a second classifier inside the chatbot. classify_ticket
+    never raises, so this only guards against it returning something that
+    doesn't map onto the Standard Request form's own category vocabulary.
+    Returns None (safe fallback - leave the draft at "Other", a real
+    allowed value) when nothing confidently maps.
+    """
+
+    try:
+        classification = classify_ticket(title, description)
+    except Exception:
+        return None
+    return _DEPARTMENT_TO_STANDARD_CATEGORY.get(classification.department)
