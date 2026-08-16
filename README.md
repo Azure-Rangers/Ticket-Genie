@@ -68,30 +68,6 @@ AppServiceConsoleLogs
 | order by TimeGenerated desc
 ```
 
-### 4. Exposing Docker Startup Logs in CI/CD Pipelines
-By default, `az webapp restart` returns `200 OK` asynchronously before the container actually pulls and boots. To expose startup logs and fail the CI/CD pipeline on container crash, add a post-deployment health poll step to `azure-pipelines.yml`:
-
-```yaml
-- script: |
-    echo "Waiting for web app container warmup..."
-    for i in {1..12}; do
-      STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://$(frontendWebAppName).azurewebsites.net/healthz || true)
-      if [ "$STATUS" = "200" ]; then
-        echo "Frontend container healthy!"
-        exit 0
-      fi
-      echo "Attempt $i: Status $STATUS. Retrying in 10s..."
-      sleep 10
-    done
-
-    echo "ERROR: Web app failed healthcheck! Fetching docker logs..."
-    az webapp log download --resource-group "$(resourceGroupName)" --name "$(frontendWebAppName)" --log-file container_logs.zip
-    unzip -q container_logs.zip -d logs/
-    cat logs/LogFiles/*_docker.log | tail -n 100
-    exit 1
-  displayName: "Verify Container Health & Print Logs on Failure"
-```
-
 ---
 
 ## Environment & Secrets Setup
