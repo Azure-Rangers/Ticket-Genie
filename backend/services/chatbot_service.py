@@ -56,6 +56,23 @@ COULD_NOT_VERIFY_MESSAGE = (
     "articles, or I can help you open a support request."
 )
 
+
+def _gpt_unavailable_response() -> ChatResponse:
+    """
+    Safe fallback for any GPT/Azure OpenAI failure (including a decision
+    that never raised but also never materialized). Never fabricates an
+    intent, request_type, ticket_draft, navigation action, or RAG content
+    - just a fixed message and the general intent so the frontend never
+    opens a form or navigates on a failed turn.
+    """
+
+    return ChatResponse(
+        message=GPT_UNAVAILABLE_MESSAGE,
+        intent=ChatIntent.GENERAL,
+        suggestions=PREDEFINED_SUGGESTIONS,
+    )
+
+
 _MANAGEMENT_HOME = "pages/management-portal.html"
 
 
@@ -183,30 +200,31 @@ def _handle_ticket_status(decision: ChatbotDecision, *, ticket_lookup) -> ChatRe
     )
 
 
-AMBIGUOUS_REQUEST_TYPE_MESSAGE = (
-    "Would you like to submit this as a Standard Request or an Anonymous Request?"
-)
-
-
 def _resolve_request_type(
     request: ChatRequest, decision: ChatbotDecision, intent: ChatIntent
-) -> Optional[RequestType]:
+) -> RequestType:
     """
     Deterministic: leave is always forced to the Leave Management form,
     regardless of what the model proposed. Otherwise prefer a
-    continuation's already-chosen form; only fall back to the model's
-    this-turn guess (standard/anonymous only - it never gets to claim
-    leave_management for a non-leave intent) when nothing is chosen yet.
-    Returns None when genuinely ambiguous - callers must ask, not guess.
+    continuation's already-chosen form - this can be `anonymous` from an
+    earlier explicit UI/user choice, and is always honored as-is. For a
+    fresh decision, the model's `anonymous` claim is only accepted when
+    it also marked `anonymity_requested` - i.e. the user's own words
+    explicitly asked for anonymity, not just a sensitive-sounding topic;
+    otherwise (including when GPT incorrectly proposes anonymous with no
+    such evidence) it's deterministically downgraded to standard.
+    Standard is the default for every ordinary support/workplace
+    request - we never ask the user to pick between Standard and
+    Anonymous.
     """
 
     if intent == ChatIntent.LEAVE_MANAGEMENT:
         return RequestType.LEAVE_MANAGEMENT
     if request.active_request_type in (RequestType.STANDARD, RequestType.ANONYMOUS):
         return request.active_request_type
-    if decision.request_type in (RequestType.STANDARD, RequestType.ANONYMOUS):
-        return decision.request_type
-    return None
+    if decision.request_type == RequestType.ANONYMOUS and decision.anonymity_requested:
+        return RequestType.ANONYMOUS
+    return RequestType.STANDARD
 
 
 def _handle_ticket_drafting(
@@ -217,17 +235,6 @@ def _handle_ticket_drafting(
     classify_ticket=default_classify_ticket,
 ) -> ChatResponse:
     request_type = _resolve_request_type(request, decision, intent)
-
-    if request_type is None:
-        return ChatResponse(
-            message=AMBIGUOUS_REQUEST_TYPE_MESSAGE,
-            intent=intent,
-            ticket_draft=request.draft,
-            missing_fields=[
-                "whether this is a Standard Request or an Anonymous Request"
-            ],
-            ready_for_review=False,
-        )
 
     draft, missing = merge_extracted_fields(
         decision.ticket_fields,
@@ -370,11 +377,17 @@ def handle_message(
             ai_service=ai_service,
         )
     except Exception:
-        return ChatResponse(
-            message=GPT_UNAVAILABLE_MESSAGE,
-            intent=ChatIntent.GENERAL,
-            suggestions=PREDEFINED_SUGGESTIONS,
-        )
+        return _gpt_unavailable_response()
+
+    if decision is None:
+        # Defense in depth: ai_service.generate() is contractually
+        # supposed to always raise AIServiceError rather than return None
+        # on failure (see its docstring), so the `except` above should
+        # already catch every upstream/connection failure. This guards
+        # against ever dereferencing a None decision if that contract is
+        # violated by a future change, instead of crashing with a 500 -
+        # never fabricate an intent/request_type/ticket_draft here.
+        return _gpt_unavailable_response()
 
     # A continuation always keeps the flow's intent - the model doesn't get
     # to silently change it mid-draft.

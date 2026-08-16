@@ -20,7 +20,9 @@ def process_new_ticket(ticket: TicketCreate, db: Optional[Session] = None):
         span.set_attribute("ticket.title", ticket.title)
 
         # Leave Management deterministic routing override
-        if ticket.department_override and is_valid_department(ticket.department_override):
+        if ticket.department_override and is_valid_department(
+            ticket.department_override
+        ):
             span.set_attribute("ticket.assigned_department", ticket.department_override)
             span.set_attribute("ticket.assigned_category", ticket.category or "Other")
             span.set_attribute("ticket.assigned_priority", ticket.priority or "Medium")

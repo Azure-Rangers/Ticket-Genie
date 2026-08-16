@@ -46,6 +46,16 @@ class ChatbotDecision(BaseModel):
     ticket_fields: Optional[ExtractedTicketFields] = None
     missing_fields: List[str] = Field(default_factory=list)
     request_type: Optional[RequestType] = None
+    anonymity_requested: bool = Field(
+        default=False,
+        description=(
+            "True only if the user's own words explicitly asked to remain "
+            "anonymous or not have their name/identity attached. Must be "
+            "true whenever request_type=anonymous is chosen - the backend "
+            "deterministically downgrades an anonymous request_type back "
+            "to standard when this is false."
+        ),
+    )
 
 
 CHATBOT_DECISION_PROMPT = """
@@ -133,18 +143,22 @@ this belongs in:
 - leave_management: whenever intent is leave_management. This is fixed by
   a hard business rule downstream regardless of what you put here, but
   set it anyway for clarity.
-- anonymous: the user explicitly asks for the request to be anonymous,
-  says they don't want their name/identity attached, or explicitly says
-  they want to use the Anonymous Request option. Never choose this just
-  because a topic is sensitive - the user has to actually ask for
-  anonymity.
-- standard: an actual support/workplace request where the user has not
-  asked for anonymity.
-If intent is create_ticket or support_issue and you cannot confidently
-tell standard from anonymous from what's been said so far, leave
-request_type null and use action=ask_followup with a short message
-asking which one they want (Standard Request or Anonymous Request) - do
-not guess.
+- standard: the DEFAULT for every ordinary support/workplace
+  request/issue (e.g. "my VPN isn't working", "I need two monitors", "I
+  need help with a reimbursement"). Most requests are standard - when in
+  doubt, choose standard.
+- anonymous: choose this ONLY when the user's own words explicitly ask
+  for anonymity - they say they don't want their name/identity attached,
+  ask to stay anonymous, or explicitly say they want the Anonymous
+  Request option. When (and only when) you choose anonymous, also set
+  anonymity_requested=true. Never choose anonymous just because a topic
+  is sensitive, personal, or uncomfortable (e.g. harassment, conflict,
+  a health issue) - the user has to actually ask for anonymity in their
+  own words. If they haven't, choose standard even for a sensitive
+  topic.
+For create_ticket or support_issue, never leave request_type null and
+never ask the user to pick between Standard and Anonymous - default to
+standard whenever anonymity wasn't explicitly requested.
 
 For sensitive workplace issues (e.g. harassment, conflict, safety), stay
 neutral and factual in `description` and do not editorialize - and never

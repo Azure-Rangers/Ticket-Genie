@@ -74,6 +74,102 @@ def _standard_decision(**overrides):
 
 
 # ---------------------------------------------------------------------------
+# Standard-is-the-default scenarios (explicit product requirement: never
+# ask Standard vs Anonymous for an ordinary support request).
+# ---------------------------------------------------------------------------
+
+
+def test_vpn_issue_defaults_to_standard():
+    decision = _standard_decision(
+        ticket_fields=ExtractedTicketFields(
+            title="VPN not working",
+            description="My VPN is not working.",
+            category="IT & Technology",
+        )
+    )
+    response = ask("I am facing issues with my VPN", decision=decision)
+    assert response.request_type == RequestType.STANDARD
+    assert response.ready_for_review is True
+
+
+def test_two_monitors_defaults_to_standard():
+    response = ask("I need two monitors", decision=_standard_decision())
+    assert response.request_type == RequestType.STANDARD
+
+
+def test_reimbursement_help_defaults_to_standard():
+    decision = _standard_decision(
+        ticket_fields=ExtractedTicketFields(
+            title="Reimbursement help",
+            description="I need help with reimbursement.",
+            category="Account Management",
+        )
+    )
+    response = ask("I need help with reimbursement", decision=decision)
+    assert response.request_type == RequestType.STANDARD
+
+
+def test_explicit_anonymity_in_free_text_selects_anonymous():
+    decision = _standard_decision(
+        request_type=RequestType.ANONYMOUS,
+        anonymity_requested=True,
+        ticket_fields=ExtractedTicketFields(
+            title="Anonymous report",
+            description="I need to report an issue but want to stay anonymous.",
+            category="HR & Workforce Operations",
+        ),
+    )
+    response = ask(
+        "I need to report an issue but want to stay anonymous.", decision=decision
+    )
+    assert response.request_type == RequestType.ANONYMOUS
+    assert response.ticket_draft.is_anonymous is True
+
+
+def test_explicit_anonymous_ui_selection_is_respected():
+    # e.g. the user picked the Anonymous Request tab explicitly - echoed
+    # back as active_request_type - even if this turn's free text alone
+    # wouldn't have implied anonymity.
+    decision = _standard_decision(request_type=None)
+    response = ask(
+        "It happened yesterday.",
+        decision=decision,
+        active_intent=ChatIntent.SUPPORT_ISSUE,
+        active_request_type=RequestType.ANONYMOUS,
+        draft=TicketDraft(description="I need to report a concern."),
+    )
+    assert response.request_type == RequestType.ANONYMOUS
+    assert response.ticket_draft.is_anonymous is True
+
+
+def test_leave_request_selects_leave_management():
+    decision = _standard_decision(
+        intent=ChatIntent.LEAVE_MANAGEMENT,
+        request_type=RequestType.LEAVE_MANAGEMENT,
+        ticket_fields=ExtractedTicketFields(
+            description="Requesting PTO next week.", category="Paid Time Off (PTO)"
+        ),
+    )
+    response = ask(
+        "I'd like to request PTO next week.",
+        decision=decision,
+        active_intent=ChatIntent.LEAVE_MANAGEMENT,
+    )
+    assert response.request_type == RequestType.LEAVE_MANAGEMENT
+
+
+def test_gpt_proposing_anonymous_without_explicit_evidence_is_deterministically_downgraded():
+    # GPT sets request_type=anonymous but never marked anonymity_requested
+    # - nothing in the conversation actually asked for anonymity.
+    decision = _standard_decision(
+        request_type=RequestType.ANONYMOUS, anonymity_requested=False
+    )
+    response = ask("I am facing issues with my VPN", decision=decision)
+    assert response.request_type == RequestType.STANDARD
+    assert response.ticket_draft.is_anonymous is False
+
+
+# ---------------------------------------------------------------------------
 # Form selection
 # ---------------------------------------------------------------------------
 
@@ -87,6 +183,7 @@ def test_standard_request_selected_when_no_anonymity_requested():
 def test_anonymous_selected_when_user_explicitly_asks():
     decision = _standard_decision(
         request_type=RequestType.ANONYMOUS,
+        anonymity_requested=True,
         ticket_fields=ExtractedTicketFields(
             title="Workplace concern",
             description="I need to report a workplace issue but want to remain anonymous.",
@@ -119,15 +216,24 @@ def test_leave_intent_always_resolves_to_leave_management_request_type():
     assert response.request_type == RequestType.LEAVE_MANAGEMENT
 
 
-def test_ambiguous_standard_vs_anonymous_asks_instead_of_guessing():
+def test_ambiguous_request_type_defaults_to_standard_without_asking():
+    # No standard-vs-anonymous clarifying question should ever be asked -
+    # ordinary requests just default to standard.
     decision = _standard_decision(request_type=None)
     response = ask("My VPN has been broken since this morning.", decision=decision)
-    assert response.request_type is None
-    assert response.ready_for_review is False
-    assert (
-        "standard" in response.message.lower()
-        or "anonymous" in response.message.lower()
+    assert response.request_type == RequestType.STANDARD
+    assert "anonymous" not in response.message.lower()
+
+
+def test_gpt_anonymous_without_explicit_anonymity_downgrades_to_standard():
+    # GPT incorrectly proposes anonymous but never set anonymity_requested
+    # - the deterministic backend check must downgrade this to standard.
+    decision = _standard_decision(
+        request_type=RequestType.ANONYMOUS, anonymity_requested=False
     )
+    response = ask("My VPN has been broken since this morning.", decision=decision)
+    assert response.request_type == RequestType.STANDARD
+    assert response.ticket_draft.is_anonymous is False
 
 
 def test_sensitive_topic_never_assumed_anonymous():
@@ -142,7 +248,7 @@ def test_sensitive_topic_never_assumed_anonymous():
     response = ask(
         "I want to report a harassment incident with my manager.", decision=decision
     )
-    assert response.request_type != RequestType.ANONYMOUS
+    assert response.request_type == RequestType.STANDARD
 
 
 def test_continuation_keeps_previously_chosen_request_type():
@@ -276,6 +382,7 @@ def test_other_category_reclassified_via_existing_classifier_for_standard():
 def test_other_category_reclassified_for_anonymous_too():
     decision = _standard_decision(
         request_type=RequestType.ANONYMOUS,
+        anonymity_requested=True,
         ticket_fields=ExtractedTicketFields(
             title="Accounting concern",
             description="There's a billing discrepancy on my company card.",
