@@ -241,6 +241,9 @@ function initializeNewRequestForm() {
     });
 }
 
+let loadedMyTicketsMap = {};
+let currentOpenTicketId = null;
+
 function renderMyTickets(tickets) {
     const list = document.getElementById("myTicketsList");
     if (!list) return;
@@ -249,6 +252,9 @@ function renderMyTickets(tickets) {
         list.innerHTML = '<div class="table-row"><div class="request-info"><div><strong>No tickets found</strong><span>Your submitted requests will appear here.</span></div></div></div>';
         return;
     }
+
+    loadedMyTicketsMap = {};
+    tickets.forEach(t => { loadedMyTicketsMap[t.id] = t; });
 
     list.innerHTML = tickets.map(ticket => `
         <div class="table-row ticket-clickable" data-ticket-id="${escapeHTML(ticket.id)}">
@@ -265,9 +271,122 @@ function renderMyTickets(tickets) {
 
     list.querySelectorAll(".ticket-clickable").forEach(row => {
         row.addEventListener("click", () => {
-            window.location.href = `chat-history.html?ticket=${encodeURIComponent(row.dataset.ticketId)}`;
+            const ticketId = row.dataset.ticketId;
+            if (ticketId) {
+                window.location.href = `ticket-detail.html?ticket=${encodeURIComponent(ticketId)}`;
+            }
         });
     });
+}
+
+async function openTicketChatModal(ticketId, ticketObj = null) {
+    const modal = document.getElementById("ticketModal");
+    if (!modal) return;
+
+    currentOpenTicketId = ticketId;
+
+    let ticket = ticketObj || loadedMyTicketsMap[ticketId];
+    if (!ticket) {
+        try {
+            const res = await fetch(`${API_BASE_URL}/tickets/${ticketId}`);
+            if (res.ok) ticket = await res.json();
+        } catch (e) {}
+    }
+
+    const modalTitle = document.getElementById("modalTicketTitle");
+    const modalId = document.getElementById("modalTicketId");
+    const modalStatus = document.getElementById("modalTicketStatus");
+    const modalCategory = document.getElementById("modalTicketCategory");
+    const modalPriority = document.getElementById("modalTicketPriority");
+    const modalDate = document.getElementById("modalTicketDate");
+    const modalDesc = document.getElementById("modalTicketDescription");
+
+    if (modalTitle) modalTitle.textContent = ticket ? ticket.title : `Ticket #${ticketId}`;
+    if (modalId) modalId.textContent = `#${ticketId}`;
+
+    if (modalStatus) {
+        const st = ticket ? (ticket.status || "Open") : "Open";
+        modalStatus.textContent = st;
+        modalStatus.className = `status ${st.toLowerCase().replaceAll(" ", "-")}`;
+    }
+
+    if (modalCategory) modalCategory.textContent = ticket ? (ticket.department || ticket.category || "General") : "General";
+
+    if (modalPriority) {
+        const pr = ticket ? (ticket.priority || "Medium") : "Medium";
+        modalPriority.textContent = pr;
+        modalPriority.className = `priority ${pr.toLowerCase()}`;
+    }
+
+    if (modalDate) modalDate.textContent = ticket ? (ticket.date || (ticket.createdAt ? ticket.createdAt.split("T")[0] : "Today")) : "Today";
+    if (modalDesc) modalDesc.textContent = ticket ? (ticket.description || "No description provided.") : "No description provided.";
+
+
+    await renderModalComments(ticketId);
+
+    modal.style.display = "flex";
+    requestAnimationFrame(() => modal.classList.add("show"));
+
+    const threadContainer = document.getElementById("modalChatThread");
+    if (threadContainer) threadContainer.scrollTop = threadContainer.scrollHeight;
+}
+
+async function renderModalComments(ticketId) {
+    const threadContainer = document.getElementById("modalChatThread");
+    if (!threadContainer) return;
+
+    const comments = await apiGetComments(ticketId);
+
+    if (!comments || comments.length === 0) {
+        threadContainer.innerHTML = `
+            <div style="text-align: center; color: #8a7896; font-size: 12px; padding: 20px; background: #faf7fc; border-radius: 8px;">
+                <i class="fa-regular fa-comments" style="font-size: 1.5rem; margin-bottom: 6px; display: block; color: #b4a2c0;"></i>
+                No messages from HR yet. Type below to send a message to support.
+            </div>
+        `;
+        return;
+    }
+
+    threadContainer.innerHTML = comments.map(c => {
+        const isEmployee = (c.sender_role || "").toLowerCase() === "employee";
+        const senderRoleText = c.sender_role || (isEmployee ? "Employee" : "HR Support");
+        const timeText = c.createdAt ? c.createdAt.replace("T", " ").substring(0, 16) : "Just now";
+
+        if (isEmployee) {
+            return `
+                <div class="chat-msg-bubble-wrapper employee-msg">
+                    <div class="chat-msg-header">
+                        <span class="chat-msg-time">${escapeHTML(timeText)}</span>
+                        <span>You (${escapeHTML(senderRoleText)})</span>
+                    </div>
+                    <div class="chat-bubble-content">
+                        ${escapeHTML(c.message)}
+                    </div>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="chat-msg-bubble-wrapper hr-msg">
+                    <div class="chat-msg-header">
+                        <span class="chat-msg-badge"><i class="fa-solid fa-user-shield"></i> ${escapeHTML(senderRoleText)}</span>
+                        <span class="chat-msg-time">${escapeHTML(timeText)}</span>
+                    </div>
+                    <div class="chat-bubble-content">
+                        ${escapeHTML(c.message)}
+                    </div>
+                </div>
+            `;
+        }
+    }).join("");
+
+    threadContainer.scrollTop = threadContainer.scrollHeight;
+}
+
+function closeTicketChatModal() {
+    const modal = document.getElementById("ticketModal");
+    if (!modal) return;
+    modal.classList.remove("show");
+    setTimeout(() => { modal.style.display = "none"; }, 200);
 }
 
 async function initializeMyTickets() {
@@ -308,26 +427,57 @@ function showSuccessMessage(ticket) {
 }
 
 /* =========================================================
-   MY TICKETS
-   TICKET TO CHAT HISTORY NAVIGATION
+   MY TICKETS - MODAL & CHAT HANDLERS
    ========================================================= */
 document.addEventListener("DOMContentLoaded", () => {
     initializeProfileDropdown();
     initializeNewRequestForm();
     initializeMyTickets();
 
-    const clickableRows = document.querySelectorAll(".ticket-clickable");
+    // Modal Close buttons & Backdrop handlers
+    const modalCloseBtn = document.getElementById("ticketModalClose");
+    const footerCloseBtn = document.getElementById("modalCloseButton");
+    const modal = document.getElementById("ticketModal");
 
-    clickableRows.forEach(row => {
-        row.addEventListener("click", () => {
-            const ticketId = row.getAttribute("data-ticket-id");
-            if (!ticketId) return;
+    if (modalCloseBtn) modalCloseBtn.addEventListener("click", closeTicketChatModal);
+    if (footerCloseBtn) footerCloseBtn.addEventListener("click", closeTicketChatModal);
 
-            // Redirect to your chat-history.html page with the ticket query parameter
-            window.location.href = `chat-history.html?ticket=${ticketId}`;
+    if (modal) {
+        modal.addEventListener("click", (e) => {
+            if (e.target === modal) closeTicketChatModal();
         });
+    }
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeTicketChatModal();
     });
+
+    // Chat Form Submit Handler (Employee posting reply to HR)
+    const chatForm = document.getElementById("modalChatForm");
+    const chatInput = document.getElementById("modalChatInput");
+
+    async function submitModalComment() {
+        if (!chatInput || !currentOpenTicketId) return;
+        const msg = chatInput.value.trim();
+        if (!msg) return;
+
+        chatInput.value = "";
+        
+        // Post comment to backend
+        await apiPostComment(currentOpenTicketId, msg, "Employee");
+
+        // Re-render comment thread
+        await renderModalComments(currentOpenTicketId);
+    }
+
+    if (chatForm) {
+        chatForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            await submitModalComment();
+        });
+    }
 });
+
 
 /* =========================================================
    P0 FEATURE API EXTENSIONS (ReAct, Document Export, Exec Actions, Comments)

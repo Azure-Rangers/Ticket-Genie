@@ -10,7 +10,6 @@ function getEmployeePages() {
     { href: "my-tickets.html", title: "My Tickets" },
     { href: "leave-calendar.html", title: "Leave Calendar" },
     { href: "knowledge-base.html", title: "Knowledge Base" },
-    { href: "chat-history.html", title: "Chat History" },
     { href: "announcements.html", title: "Announcements" },
     { href: "notifications.html", title: "Notifications" },
     { href: "profile.html", title: "Profile & Credentials" }
@@ -54,9 +53,6 @@ function renderEmployeeNMSidebar() {
         </a>
         <a href="new-request.html" class="nav-item ${currentFile === 'new-request.html' ? 'active' : ''}">
           <i class="fa-solid fa-plus"></i><span>New Request</span>
-        </a>
-        <a href="chat-history.html" class="nav-item ${currentFile === 'chat-history.html' ? 'active' : ''}">
-          <i class="fa-regular fa-comments"></i><span>Chat History</span>
         </a>
 
         <div class="nav-title">TIME OFF & COMPANY</div>
