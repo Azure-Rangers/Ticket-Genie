@@ -239,11 +239,83 @@
         }
     });
 
-    function switchPortalView(viewType) {
+    
+/* =========================================================
+   CUSTOM TOAST / NOTIFICATION BANNER SYSTEM
+========================================================= */
+function showNotification(message, type = "success", duration = 3500) {
+    let container = document.getElementById("toastNotificationContainer");
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "toastNotificationContainer";
+        container.style.cssText = "position: fixed; top: 24px; right: 24px; z-index: 99999; display: flex; flex-direction: column; gap: 12px; max-width: 420px; pointer-events: none;";
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement("div");
+    toast.className = `toast-banner toast-${type}`;
+    
+    let icon = '<i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 18px;"></i>';
+    let borderColor = '#10b981';
+    
+    if (type === 'error' || type === 'danger') {
+        icon = '<i class="fa-solid fa-circle-xmark" style="color: #ef4444; font-size: 18px;"></i>';
+        borderColor = '#ef4444';
+    } else if (type === 'warning') {
+        icon = '<i class="fa-solid fa-triangle-exclamation" style="color: #f59e0b; font-size: 18px;"></i>';
+        borderColor = '#f59e0b';
+    } else if (type === 'info') {
+        icon = '<i class="fa-solid fa-circle-info" style="color: #3b82f6; font-size: 18px;"></i>';
+        borderColor = '#3b82f6';
+    }
+
+    toast.style.cssText = `
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-left: 4px solid ${borderColor};
+        border-radius: 8px;
+        padding: 14px 18px;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 500;
+        color: #0f172a;
+        pointer-events: auto;
+        opacity: 0;
+        transform: translateY(-16px) scale(0.96);
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    `;
+
+    toast.innerHTML = `
+        <div style="flex-shrink: 0; display: flex; align-items: center;">${icon}</div>
+        <div style="flex: 1; line-height: 1.4;">${message}</div>
+        <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 14px; padding: 2px 4px;">&times;</button>
+    `;
+
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0) scale(1)';
+    });
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-12px) scale(0.96)';
+        setTimeout(() => { toast.remove(); }, 250);
+    }, duration);
+}
+
+window.showNotification = showNotification;
+
+function switchPortalView(viewType) {
         if (viewType === 'management') {
-            alert('Switched to Management View mode.');
+            showNotification('Switched to Management View mode.', "info");
         } else {
-            alert('Switched to Employee View mode.');
+            showNotification('Switched to Employee View mode.', "info");
         }
     }
 </script>
