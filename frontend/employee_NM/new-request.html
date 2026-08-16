@@ -188,7 +188,7 @@
                         <strong>When to use this request:</strong> Use this form for general IT support, software/hardware access issues, account management, HR operational questions, or administrative requests linked to your active profile.
                     </div>
 
-                    <form id="standardTicketForm" onsubmit="submitStandardTicket(event)" style="display: flex; flex-direction: column; gap: 24px;">
+                    <form id="standardTicketForm" onsubmit="event.preventDefault(); if (typeof submitStandardTicket === 'function') { submitStandardTicket(event); } else { window.submitStandardTicket && window.submitStandardTicket(event); } return false;" style="display: flex; flex-direction: column; gap: 24px;">
                         <div>
                             <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">Request Title / Subject</label>
                             <input id="standardSubject" type="text" required placeholder="e.g., VPN Connection Issue / Account Provisioning" style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
@@ -221,7 +221,7 @@
                             </div>
                         </div>
 
-                        <button id="submitStandardBtn" type="submit" onclick="submitStandardTicket(event)" style="background: #3b82f6; color: #fff; border: none; padding: 14px 28px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; align-self: flex-start; transition: background 0.2s;">
+                        <button id="submitStandardBtn" type="submit" onclick="event.preventDefault(); if (typeof submitStandardTicket === 'function') { submitStandardTicket(event); } else { window.submitStandardTicket && window.submitStandardTicket(event); } return false;" style="background: #3b82f6; color: #fff; border: none; padding: 14px 28px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; align-self: flex-start; transition: background 0.2s;">
                             <i class="fa-solid fa-paper-plane" style="margin-right: 6px;"></i> Submit Standard Ticket
                         </button>
                     </form>
@@ -432,6 +432,85 @@
             alert('Switched to Employee View mode.');
         }
     }
+
+    
+    // Inline robust submit handlers for new-request form
+    async function submitStandardTicket(event) {
+        if (event) event.preventDefault();
+        
+        const subjectEl = document.getElementById("standardSubject");
+        const deptEl = document.getElementById("standardDepartment");
+        const descEl = document.getElementById("standardDescription");
+        
+        const subject = subjectEl ? subjectEl.value.trim() : "";
+        const department = deptEl ? deptEl.value : "IT & Technology";
+        const description = descEl ? descEl.value.trim() : "";
+        
+        if (!subject || !description) {
+            alert("Please fill in the Request Title / Subject and Description before submitting.");
+            return false;
+        }
+
+        const submitBtn = document.getElementById("submitStandardBtn");
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i> Submitting...';
+        }
+
+        let backendDept = "IT Team";
+        if (department.includes("HR")) backendDept = "HR Team";
+        else if (department.includes("Account")) backendDept = "Accounting Team";
+        else if (department.includes("Upper") || department.includes("Admin")) backendDept = "Upper Management";
+        else if (department.includes("Workplace")) backendDept = "Workplace Operations Team";
+
+        const payload = {
+            title: subject,
+            description: description,
+            category: "IT Support",
+            priority: "Medium",
+            department: backendDept,
+            requester_id: "nm@company.com"
+        };
+
+        try {
+            if (typeof apiCreateTicket === "function") {
+                await apiCreateTicket(payload);
+            } else {
+                await fetch("/api/tickets", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+            }
+        } catch (e) {
+            console.warn("API POST failed, using local storage fallback:", e);
+        }
+
+        try {
+            const STORAGE_KEY = "ticketGenieTickets";
+            const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+            const newTicket = {
+                id: "HD-" + Math.floor(1000 + Math.random() * 9000),
+                title: subject,
+                category: "IT Support",
+                department: backendDept,
+                priority: "Medium",
+                status: "Open",
+                description: description,
+                date: new Date().toISOString().split("T")[0],
+                createdAt: new Date().toISOString()
+            };
+            existing.unshift(newTicket);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+        } catch (e) {
+            console.error("Local storage save error:", e);
+        }
+
+        alert("Support Request Submitted Successfully!");
+        window.location.href = "my-tickets.html";
+        return false;
+    }
+    window.submitStandardTicket = submitStandardTicket;
 
     function switchTab(tabType) {
         const standardContent = document.getElementById('standardTabContent');
