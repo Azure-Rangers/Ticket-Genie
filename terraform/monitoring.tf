@@ -14,6 +14,7 @@ resource "azurerm_application_insights" "appi" {
   resource_group_name = data.azurerm_resource_group.rg.name
   workspace_id        = azurerm_log_analytics_workspace.law.id
   application_type    = "web"
+  sampling_percentage = 100
 }
 
 # --- OpenAPI Auto-Generated Dashboard Workbook ---
