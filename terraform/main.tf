@@ -81,6 +81,7 @@ resource "azurerm_linux_web_app" "backend" {
     "WEBSITES_ENABLE_APP_SERVICE_STORAGE"        = "false"
     "APPLICATIONINSIGHTS_CONNECTION_STRING"      = azurerm_application_insights.appi.connection_string
     "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
+    "OTEL_TRACES_SAMPLER"                        = "always_on"
   }
 
   lifecycle {
