@@ -55,7 +55,8 @@ async function apiFetchTickets(params = {}) {
         const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
-        return Array.isArray(data) ? data : (data.tickets || []);
+        const list = Array.isArray(data) ? data : (data.tickets || []);
+        if (list.length > 0) return list;
     } catch (err) {
         console.warn("Backend API not reachable, using local storage tickets:", err);
     }
@@ -221,11 +222,13 @@ function showSuccessMessage(ticket) {
 /* =========================================================
    MY TICKETS
 ========================================================= */
-function initializeMyTickets() {
-    const table = document.querySelector(".tickets-table");
-    if (!table) return;
+async function initializeMyTickets() {
+    const target = document.getElementById("myTicketsList") || document.querySelector(".tickets-table");
+    if (!target) return;
 
-    renderTickets();
+    let tickets = await apiFetchTickets();
+    if (!tickets || tickets.length === 0) tickets = getTickets();
+    renderMyTickets(tickets);
 
     const searchInput = document.getElementById("ticketSearch");
     if (searchInput) {
@@ -887,7 +890,7 @@ function renderMyTickets(tickets) {
 
 async function loadDashboardTickets() {
     const container = document.getElementById("recentTicketsContainer");
-    const tickets = await apiFetchTickets({ requesterId: getCurrentRequesterId() });
+    let tickets = await apiFetchTickets({ requesterId: getCurrentRequesterId() }); if (!tickets || tickets.length === 0) tickets = getTickets();
 
     const openCount = tickets.filter(t => (t.status || "").toLowerCase() === "open").length;
     const inProgCount = tickets.filter(t => ["in progress", "pending"].includes((t.status || "").toLowerCase())).length;
