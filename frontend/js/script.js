@@ -12,6 +12,7 @@ function getTickets() {
     const tickets = localStorage.getItem(STORAGE_KEY);
     if (!tickets) {
         const defaultTickets = [
+            { id: "HD-1682", title: "Equipment Upgrade Request (4K Monitor & Dock)", category: "IT Support", priority: "High", status: "Open", description: "Requesting an extra 4K monitor and USB-C dock for home office setup.", date: "2026-08-16", createdAt: "2026-08-16T10:00:00" },
             { id: "HD-1024", title: "Payroll Issue", category: "Payroll", priority: "High", status: "In Progress", description: "Having an issue with my latest paycheck.", date: "2026-08-08", createdAt: "2026-08-08T10:00:00" },
             { id: "HD-1025", title: "Benefits Question", category: "Benefits", priority: "Medium", status: "Open", description: "I have a question about my benefits.", date: "2026-08-07", createdAt: "2026-08-07T10:00:00" },
             { id: "HD-1026", title: "Laptop Request", category: "IT Support", priority: "Low", status: "Resolved", description: "Requesting a replacement laptop.", date: "2026-08-05", createdAt: "2026-08-05T10:00:00" },
