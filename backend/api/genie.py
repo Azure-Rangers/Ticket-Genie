@@ -1,4 +1,7 @@
+from typing import Optional
+
 from fastapi import APIRouter
+from pydantic import BaseModel
 
 from models.ticket import GenieChatRequest, GenieChatResponse
 
@@ -43,3 +46,52 @@ def genie_chat(request: GenieChatRequest):
         suggestions = ["Check my tickets", "IT help", "Payroll help", "Time off"]
 
     return GenieChatResponse(reply=reply, suggestions=suggestions)
+
+
+# ---------------------------------------------------------------------------
+# ReAct Agent Loop Engine Endpoints
+# ---------------------------------------------------------------------------
+
+
+class ReActAgentRequest(BaseModel):
+    message: str
+    role: Optional[str] = "Super Admin"
+    user_id: Optional[str] = "user"
+
+
+class ExecutiveActionRequest(BaseModel):
+    command: str
+    user_id: Optional[str] = "exec_user"
+
+
+@router.post("/react")
+def run_react_chat(req: ReActAgentRequest):
+    from agents.react_orchestrator import run_react_agent_loop
+
+    result = run_react_agent_loop(
+        user_prompt=req.message,
+        role=req.role or "Super Admin",
+        user_id=req.user_id or "user",
+    )
+    return {
+        "reply": result.final_response,
+        "iterations_used": result.iterations_used,
+        "steps": [s.model_dump() for s in result.steps],
+    }
+
+
+@router.post("/exec-agent")
+def handle_exec_agent_command(req: ExecutiveActionRequest):
+    from agents.exec_agent import execute_upper_management_action
+
+    return execute_upper_management_action(
+        command_prompt=req.command,
+        user_id=req.user_id or "exec_user",
+    )
+
+
+@router.get("/exec-briefing")
+def handle_exec_briefing():
+    from agents.exec_agent import get_executive_leave_briefing
+
+    return get_executive_leave_briefing()

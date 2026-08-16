@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TicketGenie - Ticket Archive</title>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    /* PAGE SPECIFIC ARCHIVE STYLES */
+    .page-padding { padding: 40px; max-width: 1200px; margin: 0 auto; width: 100%; }
+    .eyebrow-text { font-size: 0.7rem; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .page-title { font-size: 1.75rem; color: #111827; font-weight: 600; margin-bottom: 24px; }
+    
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; background: white; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; }
+    .search-large { display: flex; align-items: center; background: #f9fafb; border: 1px solid #d1d5db; padding: 10px 16px; border-radius: 8px; width: 400px; }
+    .search-large input { border: none; background: transparent; outline: none; margin-left: 8px; font-size: 0.9rem; width: 100%; }
+    .filter-group { display: flex; gap: 12px; }
+    .filter-group select { padding: 10px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.85rem; outline: none; background: white; cursor: pointer; }
+    .btn-export { background: #ffffff; color: #374151; border: 1px solid #d1d5db; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
+    .btn-export:hover { background: #f3f4f6; }
+
+    .table-card { background: white; border-radius: 8px; border: 1px solid #e5e7eb; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; font-size: 0.75rem; color: #6b7280; text-transform: uppercase; padding: 16px 24px; border-bottom: 1px solid #e5e7eb; background: #f9fafb; letter-spacing: 0.5px; }
+    td { padding: 16px 24px; border-bottom: 1px solid #f3f4f6; font-size: 0.85rem; color: #374151; vertical-align: top; }
+    
+    .ticket-id { font-family: monospace; color: #6b7280; font-size: 0.8rem; }
+    .ticket-subject { font-weight: 600; color: #111827; margin-bottom: 4px; display: block; font-size: 0.95rem; }
+    .ai-summary { background: #f8fafc; border-left: 3px solid #4f46e5; padding: 10px 12px; font-size: 0.8rem; color: #475569; margin-top: 8px; border-radius: 0 4px 4px 0; }
+  </style>
+</head>
+  <div id="shared-sidebar"></div>
+
+  <main class="main-content">
+    <div id="shared-topnav"></div>
+
+    <div class="page-padding">
+      <div class="eyebrow-text">Compliance & Security</div>
+      <h1 class="page-title">Audit Trail & Closed Records</h1>
+
+      <div class="toolbar">
+        <div class="search-large">
+          <i class="ph-bold ph-magnifying-glass" style="color: #9ca3af;"></i>
+          <input type="text" placeholder="Search by email, ID, or keyword...">
+        </div>
+        <div class="filter-group">
+          <select><option>All Departments</option><option>Human Resources</option><option>IT Support</option><option>Finance</option></select>
+          <select><option>Last 30 Days</option><option>Last Year</option></select>
+          <button class="btn-export" onclick="alert('Exporting securely via Azure Blob Storage...')"><i class="ph-bold ph-download-simple"></i> Export CSV</button>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr><th>Ticket Info</th><th>Department</th><th>Resolution Detail & AI Summary</th><th>Closed By</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="ticket-id">#T-842</span><span class="ticket-subject">Direct Deposit Update</span><div style="font-size: 0.75rem; color: #6b7280;">j.doe@company.com</div></td>
+              <td>Accounting</td>
+              <td><span style="font-weight: 600; color: #4f46e5; font-size: 0.75rem;"><i class="ph-fill ph-magic-wand"></i> AI Auto-Resolved</span><div class="ai-summary">Employee unable to update routing number. AI provided guide and verified successful update via API.</div></td>
+              <td>TicketGenie System<br><span style="font-size: 0.75rem; color: #6b7280;">Aug 12, 2026</span></td>
+            </tr>
+            <tr>
+              <td><span class="ticket-id">#T-840</span><span class="ticket-subject">Harassment Complaint</span><div style="font-size: 0.75rem; color: #6b7280;">[Anonymous]</div></td>
+              <td>HR - Relations<br><span style="font-size:0.7rem; color:#b91c1c; font-weight:bold;">🔒 SENSITIVE</span></td>
+              <td><span style="font-weight: 600; color: #374151; font-size: 0.75rem;"><i class="ph-fill ph-user"></i> Human Resolved</span><div class="ai-summary" style="border-color: #b91c1c; background: #fef2f2;"><strong>Audit Note:</strong> AI summarization disabled for compliance. Resolution details archived in secure vault.</div></td>
+              <td>Sarah Jenkins (HR)<br><span style="font-size: 0.75rem; color: #6b7280;">Aug 10, 2026</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Floating Genie Widget Button -->
+  <button class="fab-genie" id="genieButton" type="button" title="Ask Genie AI">
+    <i class="ph-fill ph-magic-wand"></i> Ask Genie
+  </button>
+
+  <!-- Genie AI Chat Panel -->
+  <div class="genie-chat" id="genieChat">
+    <div class="genie-chat-header">
+      <div class="genie-header-info">
+        <div class="genie-avatar"><i class="ph-fill ph-magic-wand"></i></div>
+        <div><strong>Genie AI Assistant</strong><span><span class="genie-status-dot"></span> Online</span></div>
+      </div>
+      <button class="genie-close" id="closeGenieButton" type="button" aria-label="Close"><i class="ph-bold ph-x"></i></button>
+    </div>
+    <div class="genie-messages" id="genieMessages">
+      <div class="genie-message">
+        <div class="genie-message-avatar"><i class="ph-fill ph-magic-wand"></i></div>
+        <div class="genie-bubble">Hi! I'm Genie, your AI Assistant. How can I help you manage tickets, policies, or workspace requests today?</div>
+      </div>
+    </div>
+    <div class="genie-suggestions">
+      <button type="button" class="genie-suggestion">Show open ticket queue</button>
+      <button type="button" class="genie-suggestion">How do I route tickets?</button>
+    </div>
+    <div class="genie-input-area">
+      <input type="text" id="genieInput" placeholder="Ask Genie something..." autocomplete="off">
+      <button type="button" id="genieSendButton" aria-label="Send"><i class="ph-bold ph-paper-plane-right"></i></button>
+    </div>
+    <div class="genie-disclaimer">TicketGenie AI Assistant • Operations Help</div>
+  </div>
+
+  <script src="../js/script.js"></script>
+  <script>
+    function toggleSidebar() { document.getElementById('appSidebar').classList.toggle('collapsed'); }
+    let userDataString = localStorage.getItem('portalUser');
+    if (!userDataString) {
+      const defaultUser = { name: "Admin AV", role: "Operations Admin", email: "admin@ticketgenie.com" };
+      localStorage.setItem('portalUser', JSON.stringify(defaultUser));
+      userDataString = JSON.stringify(defaultUser);
+    }
+    const user = JSON.parse(userDataString);
+    if (document.getElementById('sidebarRole')) document.getElementById('sidebarRole').innerText = `${user.role} Portal`;
+    if (document.getElementById('navName')) document.getElementById('navName').innerText = user.name;
+    if (document.getElementById('navSubRole')) document.getElementById('navSubRole').innerText = `${user.role} Admin`;
+    if (document.getElementById('navAvatar')) document.getElementById('navAvatar').innerText = user.name.charAt(0).toUpperCase();
+
+  </script>
+  <script src="../js/script.js"></script>
+  <script src="components.js"></script>
+</body>
+</html>

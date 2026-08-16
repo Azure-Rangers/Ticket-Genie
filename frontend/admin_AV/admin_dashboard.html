@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operations Dashboard | TicketGenie</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body class="admin-page">
+
+  <div id="shared-sidebar"></div>
+
+  <main class="main-content">
+    <div id="shared-topnav"></div>
+
+    <div class="page-padding">
+      <div id="loginWarning" style="display:none; background-color: #fee2e2; color: #b91c1c; padding: 12px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fca5a5; font-weight: 600;">⚠️ You are in preview mode.</div>
+      
+      <div class="eyebrow-text">OPERATIONS OVERVIEW</div>
+      <h1 class="page-title" id="welcomeMessage">IT Operations Dashboard</h1>
+
+      <div class="section-header">
+        <div>
+          <h4>Help Desk Load</h4>
+          <p>Live view of tickets and pending tasks</p>
+        </div>
+        <a href="inbox.html" class="view-all">View inbox <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-info">
+            <span class="metric-title">Open Tickets</span>
+            <span class="metric-value" id="openCount">8</span>
+            <span class="metric-sub">Pending assignment</span>
+          </div>
+          <div class="icon-box icon-purple"><i class="fa-solid fa-folder-open"></i></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-info">
+            <span class="metric-title">In Progress</span>
+            <span class="metric-value" id="inProgressCount">2</span>
+            <span class="metric-sub">Active support</span>
+          </div>
+          <div class="icon-box icon-orange"><i class="fa-solid fa-clock"></i></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-info">
+            <span class="metric-title">Resolved</span>
+            <span class="metric-value" id="resolvedCount">86</span>
+            <span class="metric-sub">Completed</span>
+          </div>
+          <div class="icon-box icon-green"><i class="fa-solid fa-circle-check"></i></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-info">
+            <span class="metric-title">System Status</span>
+            <span class="metric-value" style="font-size: 1.3rem; color: #16a34a;">Operational</span>
+            <span class="metric-sub">All services live</span>
+          </div>
+          <div class="icon-box icon-blue"><i class="fa-solid fa-shield-halved"></i></div>
+        </div>
+      </div>
+
+      <div class="section-header" style="margin-top: 30px;">
+        <div>
+          <h4>Quick Actions</h4>
+          <p>Common operational shortcuts</p>
+        </div>
+      </div>
+
+      <div class="quick-actions-grid">
+        <div class="action-card" onclick="window.location.href='inbox.html'">
+          <div class="icon-box icon-purple"><i class="fa-solid fa-inbox"></i></div>
+          <div>
+            <h5>Team Inbox</h5>
+            <p>Review and route open requests</p>
+          </div>
+        </div>
+        
+        <div class="action-card" onclick="window.location.href='submit-ticket.html'">
+          <div class="icon-box icon-purple"><i class="fa-solid fa-plus"></i></div>
+          <div>
+            <h5>Create Request</h5>
+            <p>Submit manual ticket</p>
+          </div>
+        </div>
+        
+        <div class="action-card" onclick="window.location.href='knowledge-base.html'">
+          <div class="icon-box icon-green"><i class="fa-solid fa-book-open"></i></div>
+          <div>
+            <h5>Policy Library</h5>
+            <p>Manage RAG documents</p>
+          </div>
+        </div>
+        
+        <div class="action-card" onclick="window.location.href='analytics.html'">
+          <div class="icon-box icon-orange"><i class="fa-solid fa-chart-line"></i></div>
+          <div>
+            <h5>Analytics</h5>
+            <p>Check SLA & Capacity</p>
+          </div>
+        </div>
+        
+        <div class="action-card" onclick="window.location.href='archive.html'">
+          <div class="icon-box icon-blue"><i class="fa-solid fa-box-archive"></i></div>
+          <div>
+            <h5>Ticket Archive</h5>
+            <p>View closed & audited tickets</p>
+          </div>
+        </div>
+
+        <div class="action-card" onclick="window.location.href='announcements.html'">
+          <div class="icon-box icon-purple"><i class="fa-solid fa-bullhorn"></i></div>
+          <div>
+            <h5>Announcements</h5>
+            <p>Publish staff memos</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="../js/script.js"></script>
+  <script src="components.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      try {
+        const tickets = await apiFetchTickets();
+        if (tickets && tickets.length > 0) {
+          const open = tickets.filter(t => t.status === "Open").length;
+          const inProg = tickets.filter(t => t.status === "In Progress" || t.status === "Pending").length;
+          const resolved = tickets.filter(t => t.status === "Resolved").length;
+          document.getElementById("openCount").textContent = open;
+          document.getElementById("inProgressCount").textContent = inProg;
+          document.getElementById("resolvedCount").textContent = resolved;
+        }
+      } catch (err) {}
+    });
+  </script>
+</body>
+</html>

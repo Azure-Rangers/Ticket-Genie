@@ -8,6 +8,13 @@ services:
       - "8000:8000"
     environment:
       - PORT=8000
+      - DATABASE_URL=sqlite:////data/ticketgenie.db
+      - USE_MOCK_AI=false
+      - AZURE_OPENAI_DEPLOYMENT=gpt-5.2
+    env_file:
+      - .env
+    volumes:
+      - ticketgenie-data:/data
 
   frontend:
     build:
@@ -16,5 +23,12 @@ services:
     container_name: ticketgenie-frontend
     ports:
       - "8080:80"
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - PORT=80
+      - SERVER_NAME=localhost
     depends_on:
       - backend
+
+volumes:
+  ticketgenie-data:

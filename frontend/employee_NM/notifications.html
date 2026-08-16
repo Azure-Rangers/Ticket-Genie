@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications | TicketGenie</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+
+<div id="shared-sidebar"></div>
+
+<main class="main-content">
+    <div id="shared-topnav"></div>
+
+    <section class="section">
+        <div class="section-header">
+            <div>
+                <h3>Recent Activity & Updates</h3>
+                <p>Click any notification to open its associated ticket chat history.</p>
+            </div>
+        </div>
+
+        <div class="tickets-table" id="notificationsList">
+            <div style="padding: 20px; text-align: center;">Loading notifications...</div>
+        </div>
+    </section>
+</main>
+
+<!-- Genie AI Floating Button & Drawer -->
+<button class="genie-button" id="genieButton" type="button">
+    <i class="fa-solid fa-wand-magic-sparkles"></i>
+    <span>Ask Genie</span>
+</button>
+
+<div class="genie-chat" id="genieChat">
+    <div class="genie-chat-header">
+        <div class="genie-header-info">
+            <div class="genie-avatar">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div>
+                <strong>Genie AI</strong>
+                <span><span class="genie-status-dot"></span> Online</span>
+            </div>
+        </div>
+        <button class="genie-close" id="closeGenieButton" type="button">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <div class="genie-messages" id="genieMessages">
+        <div class="genie-message">
+            <div class="genie-message-avatar">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div class="genie-bubble">
+                Hi! I'm Genie, your AI support assistant. How can I help you today?
+            </div>
+        </div>
+    </div>
+    <div class="genie-input-area">
+        <input type="text" id="genieInput" placeholder="Ask a question..." autocomplete="off">
+        <button id="genieSendButton" type="button">
+            <i class="fa-solid fa-arrow-up"></i>
+        </button>
+    </div>
+    <div class="genie-disclaimer">
+        Genie may occasionally provide inaccurate information.
+    </div>
+</div>
+
+<script src="../js/script.js"></script>
+<script src="components.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        const notifs = await apiFetchNotifications();
+        const container = document.getElementById("notificationsList");
+        if (!notifs || notifs.length === 0) {
+            container.innerHTML = `<div style="padding: 20px; text-align: center;">No notifications found.</div>`;
+            return;
+        }
+
+        container.innerHTML = notifs.map(n => `
+            <div class="table-row" style="display:flex; justify-content:space-between; align-items:center; padding:16px; border-bottom:1px solid #e1e6e2; cursor:pointer;" onclick="markReadAndNav('${n.id}')">
+                <div class="request-info" style="display:flex; gap:12px; align-items:center;">
+                    <div class="request-icon" style="background:#f3e8ff; color:#6f4b82; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-bell"></i></div>
+                    <div>
+                        <strong style="color:#2b1b36; font-size:14px;">${escapeHTML(n.title)}</strong>
+                        <div style="font-size:12px; color:#64748b;">${escapeHTML(n.message)}</div>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <span class="status ${n.is_read ? 'resolved' : 'open'}" style="padding:4px 8px; border-radius:4px; font-size:11px; font-weight:600;">${n.is_read ? 'Read' : 'Unread'}</span>
+                    <span style="font-size:11px; color:#94a3b8;">${n.createdAt ? n.createdAt.split('T')[0] : 'Today'}</span>
+                </div>
+            </div>
+        `).join("");
+    } catch (err) {
+        console.error("Failed to load notifications:", err);
+    }
+});
+
+async function markReadAndNav(notifId) {
+    await apiMarkNotificationRead(notifId);
+    window.location.reload();
+}
+</script>
+</body>
+</html>

@@ -1,40 +1,52 @@
 """
 Knowledge / RAG retrieval boundary.
 
-No real document store, vector index, or Azure AI Search is connected in
-this repo yet. Rather than inventing that infrastructure, this module
-defines the retrieval interface (KnowledgeRetriever) that a real retrieval
-backend can implement later, plus a deterministic local mock
-implementation so the Knowledge Agent has something safe and testable to
-run against for V1.
+Retrieval against Azure AI Search is DETERMINISTIC and happens here - no
+GPT call is involved in deciding which documents a user may see. Scope
+filtering (role_service.get_allowed_scopes) is applied as a Search filter
+BEFORE any chunk leaves this module, so the model is never shown content
+outside the caller's authorized scopes. Query vectorization uses the
+existing text-embedding-3-small deployment (embedding_service.py) - never
+GPT-5.2 - and is used only to represent chunk/query CONTENT, never as an
+authorization mechanism.
 
-Filtering by allowed_scopes happens INSIDE search(), before any content is
-returned to a caller - callers (chatbot_service) never see documents
-outside the scopes role_service.get_allowed_scopes() granted them, and the
-LLM is never shown unfiltered content.
+REAL INDEX ("group-1" on the AISEARCH_ENDPOINT already configured in .env
+/ Key Vault): chunk-oriented schema - id (key), parent_id (filterable,
+identifies the source document), content (searchable), contentVector
+(vector, 1536 dims, text-embedding-3-small), category (filterable),
+source (filterable). Every chunk carries its parent document's category
+and source via Search index projections at ingestion time (see
+scripts/setup_knowledge_indexer.py) - this module never has to re-derive
+them. Other indexes exist on the same Search service (decacore-hr-policies,
+employees-index, laidbackhr-knowledge-v1, training-chunks) but those
+belong to other teams/projects and are intentionally NOT queried here.
 
-MOCK DATA NOTE: the "General" documents below summarize the same policies
-already listed in frontend/knowledge-base.html (Code of Conduct, Remote
-Work, Expense & Travel, Information Security, PTO). The department-scoped
-documents (HR/IT/Accounting/UpperManagement) are synthetic placeholders
-that exist only to exercise the authorization boundary in tests - they are
-not real company policy and must be replaced by the approved knowledge
-source before this ships.
+The index currently holds both the 21 original whole-document records
+(kept only for migration rollback - see scripts/migrate_knowledge_chunks.py)
+and their 34 chunk records. Normal runtime retrieval here must only ever
+surface CHUNKS: chunk records have parent_id set; originals don't. A
+`parent_id ne null` filter enforces that deterministically, combined with
+the category authorization filter - GPT never sees or controls either
+condition. The migration/integrity scripts intentionally use their own
+separate filters (`parent_id eq null` for originals) - they are not this
+runtime path and are unaffected by it.
 """
 
+import os
 from dataclasses import dataclass
-from typing import List, Protocol
+from typing import Any, List, Optional, Protocol
 
-from models.chatbot import ChatAction
+from services.embedding_service import embedding_service
+
+DEFAULT_INDEX_NAME = "group-1"
 
 
 @dataclass(frozen=True)
 class KnowledgeDocument:
     id: str
-    title: str
     content: str
     scope: str
-    keywords: tuple
+    source: str
 
 
 class KnowledgeRetriever(Protocol):
@@ -43,180 +55,149 @@ class KnowledgeRetriever(Protocol):
     ) -> List[KnowledgeDocument]: ...
 
 
-_MOCK_DOCUMENTS: List[KnowledgeDocument] = [
-    KnowledgeDocument(
-        id="kb-pto-policy",
-        title="Paid Time Off (PTO) & Leave Accrual Policy",
-        content=(
-            "Full-time employees accrue PTO each pay period and can view their "
-            "current balance in the HR Portal. PTO, medical leave, parental "
-            "leave, and other time-off requests are submitted from the Leave "
-            "Management tab on the New Request page and require manager "
-            "approval before HR processes them."
-        ),
-        scope="General",
-        keywords=("pto", "vacation", "time off", "leave", "accrual"),
-    ),
-    KnowledgeDocument(
-        id="kb-remote-work",
-        title="Hybrid & Remote Work Policy",
-        content=(
-            "Employees may work remotely in line with their team's hybrid "
-            "schedule. Home office equipment requests and connectivity issues "
-            "should be submitted as an IT & Technology request."
-        ),
-        scope="General",
-        keywords=("remote", "hybrid", "work from home", "wfh"),
-    ),
-    KnowledgeDocument(
-        id="kb-expense-travel",
-        title="Corporate Travel & Expense Guidelines",
-        content=(
-            "Reimbursable expenses and travel bookings are submitted as an "
-            "Account Management request on the New Request page, including "
-            "receipts and the relevant cost center."
-        ),
-        scope="General",
-        keywords=("expense", "reimbursement", "travel", "per diem"),
-    ),
-    KnowledgeDocument(
-        id="kb-code-of-conduct",
-        title="Global Employee Handbook & Code of Conduct",
-        content=(
-            "The Code of Conduct covers workplace ethics, anti-harassment, and "
-            "equal opportunity standards. Concerns can be raised confidentially "
-            "through an Anonymous Request."
-        ),
-        scope="General",
-        keywords=("conduct", "harassment", "ethics", "handbook"),
-    ),
-    KnowledgeDocument(
-        id="kb-infosec",
-        title="Data Privacy & Confidentiality Agreement",
-        content=(
-            "Company data must be handled per the Information Security policy: "
-            "no sharing credentials, and suspected security incidents should be "
-            "reported as an IT & Technology request."
-        ),
-        scope="General",
-        keywords=("security", "privacy", "confidentiality", "data"),
-    ),
-    KnowledgeDocument(
-        id="kb-hr-internal-escalation",
-        title="[Internal] HR Escalation Procedure",
-        content=(
-            "MOCK/INTERNAL: HR-only escalation steps for disciplinary cases "
-            "and formal employee-relations investigations."
-        ),
-        scope="HR",
-        keywords=("disciplinary", "escalation", "investigation", "employee relations"),
-    ),
-    KnowledgeDocument(
-        id="kb-accounting-internal-thresholds",
-        title="[Internal] Vendor Payment Approval Thresholds",
-        content=(
-            "MOCK/INTERNAL: Accounting-only vendor payment and invoice "
-            "approval thresholds by amount."
-        ),
-        scope="Accounting",
-        keywords=("vendor payment", "approval threshold", "invoice approval"),
-    ),
-    KnowledgeDocument(
-        id="kb-it-internal-privileged-access",
-        title="[Internal] Privileged Access Request Procedure",
-        content=(
-            "MOCK/INTERNAL: IT-only procedure for granting elevated/admin "
-            "system access."
-        ),
-        scope="IT",
-        keywords=("privileged access", "admin access", "elevated permissions"),
-    ),
-    KnowledgeDocument(
-        id="kb-exec-budget-review",
-        title="[Internal] Executive Budget Variance Review",
-        content=(
-            "MOCK/INTERNAL: Upper-management-only procedure for quarterly "
-            "budget variance review."
-        ),
-        scope="UpperManagement",
-        keywords=("budget variance", "executive review", "quarterly budget"),
-    ),
-]
+class SearchUnavailableError(RuntimeError):
+    """Raised when Azure AI Search can't be reached or isn't configured."""
 
 
-class LocalMockKnowledgeRetriever:
-    """Deterministic keyword-matching retriever over the local mock KB."""
+class AzureSearchKnowledgeRetriever:
+    """
+    Real hybrid (keyword + vector) retrieval against the existing Azure AI
+    Search index. Authorization filtering is applied as a native Search
+    `filter` on every leg of the query (both the BM25 text search and the
+    vector search use the same filter), so unauthorized chunks are never
+    candidates in the first place - Azure AI Search enforces this natively,
+    it isn't done by filtering results after the fact in Python.
+    """
 
-    def __init__(self, documents: List[KnowledgeDocument] = None):
-        self._documents = documents if documents is not None else _MOCK_DOCUMENTS
+    def __init__(self, index_name: str = None, embedder=None):
+        self._index_name = index_name or os.getenv(
+            "AISEARCH_INDEX_NAME", DEFAULT_INDEX_NAME
+        )
+        self._embedder = embedder or embedding_service.embed
+        self._client = None
+
+    def _get_client(self):
+        if self._client is not None:
+            return self._client
+
+        endpoint = os.getenv("AISEARCH_ENDPOINT")
+        api_key = os.getenv("AISEARCH_APIKEY")
+        if not endpoint or not api_key:
+            raise SearchUnavailableError(
+                "AISEARCH_ENDPOINT/AISEARCH_APIKEY are not configured."
+            )
+
+        try:
+            from azure.core.credentials import AzureKeyCredential
+            from azure.search.documents import SearchClient
+        except ImportError as exc:
+            raise SearchUnavailableError(
+                "azure-search-documents is not installed."
+            ) from exc
+
+        self._client = SearchClient(
+            endpoint=endpoint,
+            index_name=self._index_name,
+            credential=AzureKeyCredential(api_key),
+        )
+        return self._client
 
     def search(self, query: str, allowed_scopes: List[str]) -> List[KnowledgeDocument]:
+        if not allowed_scopes:
+            return []
+
+        client = self._get_client()
         allowed = set(allowed_scopes)
-        normalized_query = query.lower()
+        escaped_scopes = [scope.replace("'", "''") for scope in allowed_scopes]
+        category_filter = " or ".join(
+            f"category eq '{scope}'" for scope in escaped_scopes
+        )
+        # parent_id ne null: chunk records only - the 21 original
+        # whole-document records (kept for rollback) have no parent_id and
+        # must never be candidates in normal runtime retrieval. Deterministic
+        # Python string composition, never GPT-controlled.
+        filter_expr = f"parent_id ne null and ({category_filter})"
 
-        candidates = [doc for doc in self._documents if doc.scope in allowed]
+        try:
+            from azure.search.documents.models import VectorFilterMode, VectorizedQuery
 
-        matches = [
-            doc
-            for doc in candidates
-            if any(keyword in normalized_query for keyword in doc.keywords)
-            or doc.title.lower() in normalized_query
-        ]
-        return matches
+            query_vector = self._embedder(query)
+            vector_query = VectorizedQuery(
+                vector=query_vector,
+                k_nearest_neighbors=5,
+                fields="contentVector",
+            )
+
+            results = client.search(
+                search_text=query,  # BM25/keyword leg
+                vector_queries=[vector_query],  # vector leg
+                filter=filter_expr,  # applied to BOTH legs by Azure AI Search
+                vector_filter_mode=VectorFilterMode.PRE_FILTER,
+                select=["id", "parent_id", "content", "category", "source"],
+                top=5,
+            )
+            documents = [
+                KnowledgeDocument(
+                    id=result["id"],
+                    content=result["content"],
+                    scope=result.get("category", ""),
+                    source=result.get("source") or result["id"],
+                )
+                for result in results
+                if result.get("parent_id")  # defense-in-depth: chunks only
+            ]
+        except SearchUnavailableError:
+            raise
+        except Exception as exc:
+            raise SearchUnavailableError(
+                f"Azure AI Search hybrid request failed: {exc}"
+            ) from exc
+
+        # Defense-in-depth: the Search filter above is the real
+        # authorization boundary, but never hand an unexpected
+        # out-of-scope result to the model even if something upstream
+        # (a filter bug, a bad manual document edit) ever let one through.
+        return [doc for doc in documents if doc.scope in allowed]
 
 
-default_knowledge_retriever = LocalMockKnowledgeRetriever()
+default_knowledge_retriever = AzureSearchKnowledgeRetriever()
 
 
-class KnowledgeAnswer:
-    def __init__(
-        self,
-        answer: str,
-        verified: bool,
-        sources: List[str],
-        action: ChatAction = None,
-    ):
-        self.answer = answer
-        self.verified = verified
-        self.sources = sources
-        self.action = action
+@dataclass
+class KnowledgeAnswerResult:
+    answer: str
+    action: Optional[Any] = None
+    verified: bool = True
 
 
 def answer_question(
-    query: str,
-    *,
-    allowed_scopes: List[str],
-    retriever: KnowledgeRetriever = default_knowledge_retriever,
-) -> KnowledgeAnswer:
-    """
-    Retrieve ONLY documents already within allowed_scopes, then compose an
-    answer strictly from that content. Never falls back to unfiltered
-    content, and never fabricates an answer when nothing authorized matches.
-    """
-
-    matches = retriever.search(query, allowed_scopes)
-
-    if not matches:
-        return KnowledgeAnswer(
-            answer=(
-                "I couldn't verify an answer to that from the knowledge sources "
-                "you're authorized to access. You can browse the Knowledge Base "
-                "for related articles, or I can help you open a support request "
-                "so a person can confirm the details."
-            ),
-            verified=False,
-            sources=[],
-            action=ChatAction(
-                type="navigate",
-                target="knowledge-base.html",
-                label="Browse Knowledge Base",
-            ),
+    query: str, allowed_scopes: List[str] = None
+) -> KnowledgeAnswerResult:
+    """Search knowledge base and return an answer result object."""
+    try:
+        results = default_knowledge_retriever.search(
+            query, allowed_scopes=allowed_scopes or []
         )
+        if results:
+            content_summary = " ".join([doc.content for doc in results[:2]])
+            return KnowledgeAnswerResult(answer=content_summary, verified=True)
+    except Exception:
+        pass
 
-    parts = [f"{doc.title}: {doc.content}" for doc in matches[:3]]
-    answer = " ".join(parts)
-    return KnowledgeAnswer(
-        answer=answer,
-        verified=True,
-        sources=[doc.id for doc in matches[:3]],
+    return KnowledgeAnswerResult(
+        answer=f"For policy questions regarding '{query}', please consult the HR portal or submit a support request.",
+        verified=False,
     )
+
+
+def search_knowledge(query: str, allowed_scopes: List[str] = None) -> List[dict]:
+    try:
+        results = default_knowledge_retriever.search(
+            query, allowed_scopes=allowed_scopes or []
+        )
+        return [
+            {"id": d.id, "content": d.content, "scope": d.scope, "source": d.source}
+            for d in results
+        ]
+    except Exception:
+        return []

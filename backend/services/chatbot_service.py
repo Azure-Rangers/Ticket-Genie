@@ -1,26 +1,53 @@
 """
 Chatbot Agent: role-aware workplace assistant.
 
-Routing is done with plain deterministic Python logic (no model call) so a
-single user message doesn't fan out into several independent LLM calls.
-The Knowledge Agent and Ticket Drafting Agent are invoked as ordinary
-service calls from here, not as separate autonomous agents.
+Semantic understanding (what the user means) comes from a single GPT-5.2
+structured-output call per turn (agents/chatbot_agent.py). Everything that
+must be trustworthy regardless of what the model says stays deterministic
+Python here: route mapping, the leave-management business rule, knowledge
+authorization/retrieval, ticket-field validation, and failure handling.
+Knowledge answers get one additional GPT-5.2 call to compose a grounded
+response from already-authorized, already-retrieved content - the model
+never chooses what it's allowed to see.
 """
 
-import re
 from typing import List, Optional
 
+from agents import chatbot_agent, knowledge_agent
+from agents.chatbot_agent import ChatbotDecision, NavigationTarget
+from database.crud import get_ticket_by_id as default_get_ticket_by_id
 from models.chatbot import ChatAction, ChatIntent, ChatRequest, ChatResponse
 from services import ticket_draft_service
-from services.knowledge_service import answer_question
+from services.ai_service import ai_service as default_ai_service
+from services.knowledge_service import (
+    KnowledgeRetriever,
+    SearchUnavailableError,
+    default_knowledge_retriever,
+)
 from services.role_service import get_allowed_scopes
-from services.ticket_draft_service import contains_any_keyword, contains_keyword
+from services.ticket_draft_service import merge_extracted_fields, validate_ticket_id
 
 PREDEFINED_SUGGESTIONS = [
     "Ask a question",
     "Help me create a ticket",
     "Check my ticket status",
 ]
+
+GPT_UNAVAILABLE_MESSAGE = (
+    "I'm having trouble reaching the assistant service right now. Please "
+    "try again in a moment, or use New Request / Knowledge Base directly "
+    "from the navigation."
+)
+SEARCH_UNAVAILABLE_MESSAGE = (
+    "I can't reach the knowledge search service right now, so I can't "
+    "verify an answer to that. You can browse the Knowledge Base directly, "
+    "or I can help you open a support request."
+)
+COULD_NOT_VERIFY_MESSAGE = (
+    "I couldn't verify an answer to that from the knowledge sources you're "
+    "authorized to access. You can browse the Knowledge Base for related "
+    "articles, or I can help you open a support request."
+)
 
 _MANAGEMENT_HOME = "pages/management-portal.html"
 
@@ -29,283 +56,108 @@ def _route(employee_page: str, management_page: str = None) -> dict:
     return {"employee": employee_page, "management": management_page or employee_page}
 
 
-_ROUTES = {
-    "dashboard": _route("index.html", _MANAGEMENT_HOME),
-    "home": _route("index.html", _MANAGEMENT_HOME),
-    "help & support": _route("index.html", _MANAGEMENT_HOME),
-    "my tickets": _route("my-tickets.html"),
-    "tickets": _route("my-tickets.html"),
-    "new request": _route("new-request.html"),
-    "knowledge base": _route("knowledge-base.html"),
-    "policies": _route("knowledge-base.html"),
-    "notifications": _route("notifications.html"),
-    "chat history": _route("chat-history.html"),
+_ROUTE_MAP = {
+    NavigationTarget.DASHBOARD: _route("index.html", _MANAGEMENT_HOME),
+    NavigationTarget.NEW_REQUEST: _route("new-request.html"),
+    NavigationTarget.MY_TICKETS: _route("my-tickets.html"),
+    NavigationTarget.KNOWLEDGE_BASE: _route("knowledge-base.html"),
+    NavigationTarget.NOTIFICATIONS: _route("notifications.html"),
+    NavigationTarget.CHAT_HISTORY: _route("chat-history.html"),
 }
 
-_NAV_VERBS = (
-    "access",
-    "open",
-    "find",
-    "get to",
-    "navigate",
-    "go to",
-    "where is",
-    "where's",
+_TICKET_DRAFT_INTENTS = (
+    ChatIntent.CREATE_TICKET,
+    ChatIntent.SUPPORT_ISSUE,
+    ChatIntent.LEAVE_MANAGEMENT,
 )
 
-_LEAVE_NOUNS = (
-    "medical leave",
-    "parental leave",
-    "family leave",
-    "extended leave",
-    "sick leave",
-    "maternity leave",
-    "paternity leave",
-    "bereavement leave",
-    "bereavement",
-    "personal leave",
-    "unpaid leave",
-    "leave request",
-    "returning from leave",
-    "extending leave",
-    "pto",
-    "time off",
-    "vacation",
-    "leave",
-)
-
-_LEAVE_ACTION_PHRASES = (
-    "i need",
-    "i want",
-    "requesting",
-    "request for",
-    "request leave",
-    "apply for",
-    "applying for",
-    "need to take",
-    "want to take",
-    "start my",
-    "starting my",
-    "extend my",
-    "extending my",
-    "returning from",
-    "return from",
-    "how do i request",
-    "can i request",
-    "need leave",
-    "need time off",
-)
-
-_POLICY_MARKERS = (
-    "what is",
-    "what's",
-    "policy",
-    "how many days",
-    "how much",
-    "am i eligible",
-    "am i entitled",
-    "eligib",
-    "accrual",
-    "how does",
-    "explain",
-    "what are the rules",
-)
-
-_TICKET_STATUS_PHRASES = (
-    "ticket status",
-    "status of my ticket",
-    "where is ticket",
-    "check my ticket",
-)
-_TICKET_ID_PATTERN = re.compile(r"\b(hd-\d+|ticket\s*#?\s*(\d+))\b", re.IGNORECASE)
-
-_CREATE_TICKET_PHRASES = (
-    "create a ticket",
-    "help me create a ticket",
-    "open a ticket",
-    "file a ticket",
-    "submit a ticket",
-    "raise a ticket",
-    "start a ticket",
-    "create a request",
-    "help me create a request",
-)
-
-_HOW_TO_PHRASES = ("how do i", "how to", "where do i", "where can i")
-
-_SUPPORT_ISSUE_KEYWORDS = (
-    "won't turn on",
-    "not working",
-    "not paid",
-    "hasn't been paid",
-    "has not been paid",
-    "broken",
-    "crashes",
-    "crashed",
-    "error",
-    "cannot access",
-    "can't access",
-    "unable to",
-    "stopped working",
-    "issue with",
-    "problem with",
-    "won't start",
-    "not received",
+_KNOWLEDGE_BASE_ACTION = ChatAction(
+    type="navigate", target="knowledge-base.html", label="Browse Knowledge Base"
 )
 
 
-def _normalize(message: str) -> str:
-    return message.lower().strip()
-
-
-def _match_route(lowered: str) -> Optional[str]:
-    for noun in _ROUTES:
-        if contains_keyword(lowered, noun):
-            return noun
-    return None
-
-
-def _resolve_route_target(noun: str, role: Optional[str]) -> str:
-    routes = _ROUTES[noun]
+def _resolve_route_target(target: NavigationTarget, role: Optional[str]) -> str:
+    routes = _ROUTE_MAP[target]
     is_management = (role or "").strip().lower() == "management"
     return routes["management"] if is_management else routes["employee"]
 
 
-def _is_leave_intent(lowered: str) -> bool:
-    if not contains_any_keyword(lowered, _LEAVE_NOUNS):
-        return False
+def _shortcut_for_intent(intent: ChatIntent) -> ChatResponse:
+    """A predefined button was clicked with no free-text yet - no GPT call needed."""
 
-    has_policy_marker = contains_any_keyword(lowered, _POLICY_MARKERS)
-    has_action_phrase = contains_any_keyword(lowered, _LEAVE_ACTION_PHRASES)
-
-    if has_policy_marker and not has_action_phrase:
-        return False
-
-    return True
-
-
-def classify_intent(message: str) -> ChatIntent:
-    lowered = _normalize(message)
-
-    has_status_phrase = contains_any_keyword(lowered, _TICKET_STATUS_PHRASES)
-    if has_status_phrase or _TICKET_ID_PATTERN.search(lowered):
-        return ChatIntent.TICKET_STATUS
-
-    if _is_leave_intent(lowered):
-        return ChatIntent.LEAVE_MANAGEMENT
-
-    matched_route = _match_route(lowered)
-    if matched_route and contains_any_keyword(lowered, _NAV_VERBS):
-        return ChatIntent.NAVIGATION
-
-    if contains_any_keyword(lowered, _CREATE_TICKET_PHRASES):
-        return ChatIntent.CREATE_TICKET
-
-    if contains_any_keyword(lowered, _POLICY_MARKERS):
-        return ChatIntent.KNOWLEDGE
-
-    if contains_any_keyword(lowered, _SUPPORT_ISSUE_KEYWORDS):
-        return ChatIntent.SUPPORT_ISSUE
-
-    if contains_any_keyword(lowered, _HOW_TO_PHRASES):
-        return ChatIntent.HOW_TO
-
-    if lowered.endswith("?"):
-        return ChatIntent.KNOWLEDGE
-
-    return ChatIntent.GENERAL
-
-
-def _history_user_messages(request: ChatRequest) -> List[str]:
-    return [turn.message for turn in request.history if turn.role == "user"]
-
-
-def _handle_navigation(request: ChatRequest, lowered: str) -> ChatResponse:
-    noun = _match_route(lowered)
-    target = _resolve_route_target(noun, request.role)
-    label = noun.title() if noun else "that page"
+    if intent == ChatIntent.TICKET_STATUS:
+        return ChatResponse(
+            message=(
+                "You can view all your requests and their status under My "
+                "Tickets, or tell me a ticket number and I'll pull it up."
+            ),
+            intent=intent,
+            action=ChatAction(
+                type="navigate", target="my-tickets.html", label="My Tickets"
+            ),
+            suggestions=PREDEFINED_SUGGESTIONS,
+        )
+    if intent in _TICKET_DRAFT_INTENTS:
+        return ChatResponse(
+            message=(
+                "Sure - briefly describe what's going on and I'll help put "
+                "together a request."
+            ),
+            intent=intent,
+            missing_fields=["a description of the issue"],
+        )
+    if intent == ChatIntent.KNOWLEDGE:
+        return ChatResponse(message="What would you like to know?", intent=intent)
     return ChatResponse(
-        message=f"You can get to {label} from the main navigation.",
+        message="What can I help you with?",
+        intent=ChatIntent.GENERAL,
+        suggestions=PREDEFINED_SUGGESTIONS,
+    )
+
+
+def _handle_navigation(decision: ChatbotDecision, role: Optional[str]) -> ChatResponse:
+    if decision.navigation_target is None:
+        return ChatResponse(
+            message=decision.message,
+            intent=ChatIntent.HOW_TO,
+            suggestions=PREDEFINED_SUGGESTIONS,
+        )
+
+    target = _resolve_route_target(decision.navigation_target, role)
+    label = decision.navigation_target.value.replace("_", " ").title()
+    return ChatResponse(
+        message=decision.message,
         intent=ChatIntent.NAVIGATION,
-        action=ChatAction(type="navigate", target=target, label=label.title()),
+        action=ChatAction(type="navigate", target=target, label=label),
         suggestions=PREDEFINED_SUGGESTIONS,
     )
 
 
-def _handle_how_to(request: ChatRequest, lowered: str) -> ChatResponse:
-    if "reimburs" in lowered or "expense" in lowered:
-        return ChatResponse(
-            message=(
-                "Submit reimbursements from New Request using the Account "
-                "Management category, with receipts attached."
-            ),
-            intent=ChatIntent.HOW_TO,
-            action=ChatAction(
-                type="navigate", target="new-request.html", label="New Request"
-            ),
-            suggestions=PREDEFINED_SUGGESTIONS,
-        )
-
-    if "ticket" in lowered or "request" in lowered or "submit" in lowered:
-        return ChatResponse(
-            message=(
-                "Go to New Request, fill in a subject, category, and "
-                "description, then submit. You can track it afterward under "
-                "My Tickets."
-            ),
-            intent=ChatIntent.HOW_TO,
-            action=ChatAction(
-                type="navigate", target="new-request.html", label="New Request"
-            ),
-            suggestions=PREDEFINED_SUGGESTIONS,
-        )
-
-    if "polic" in lowered or "find" in lowered:
-        return ChatResponse(
-            message="Check the Knowledge Base for policies and how-to articles.",
-            intent=ChatIntent.HOW_TO,
-            action=ChatAction(
-                type="navigate", target="knowledge-base.html", label="Knowledge Base"
-            ),
-            suggestions=PREDEFINED_SUGGESTIONS,
-        )
-
-    return ChatResponse(
-        message=(
-            "Tell me a bit more about what you're trying to do and I can "
-            "point you to the right place or help you get it done."
-        ),
-        intent=ChatIntent.HOW_TO,
-        suggestions=PREDEFINED_SUGGESTIONS,
-    )
-
-
-def _handle_knowledge(request: ChatRequest) -> ChatResponse:
-    allowed_scopes = get_allowed_scopes(request.role, request.department)
-    result = answer_question(request.message, allowed_scopes=allowed_scopes)
-
-    return ChatResponse(
-        message=result.answer,
-        intent=ChatIntent.KNOWLEDGE,
-        action=result.action,
-        knowledge_verified=result.verified,
-        suggestions=PREDEFINED_SUGGESTIONS,
-    )
-
-
-def _handle_ticket_status(request: ChatRequest, lowered: str) -> ChatResponse:
-    match = _TICKET_ID_PATTERN.search(lowered)
+def _handle_ticket_status(decision: ChatbotDecision, *, ticket_lookup) -> ChatResponse:
     ticket_id = None
-    if match:
-        full_match = match.group(1)
-        if full_match.startswith("hd"):
-            ticket_id = full_match.upper()
-        else:
-            ticket_id = f"HD-{match.group(2)}"
+    if decision.ticket_fields:
+        # Validate the format BEFORE it ever reaches a database call.
+        ticket_id = validate_ticket_id(decision.ticket_fields.ticket_id)
 
     if ticket_id:
+        ticket = ticket_lookup(ticket_id)
+        if ticket is None:
+            return ChatResponse(
+                message=(
+                    f"I couldn't find a ticket {ticket_id}. Double-check the "
+                    "number, or browse My Tickets to find it."
+                ),
+                intent=ChatIntent.TICKET_STATUS,
+                action=ChatAction(
+                    type="navigate", target="my-tickets.html", label="My Tickets"
+                ),
+                suggestions=PREDEFINED_SUGGESTIONS,
+            )
         return ChatResponse(
-            message=f"Let me pull up ticket {ticket_id} for you.",
+            message=(
+                f"Ticket {ticket_id} ({ticket['title']}) is currently "
+                f"'{ticket['status']}'."
+            ),
             intent=ChatIntent.TICKET_STATUS,
             action=ChatAction(
                 type="lookup_ticket", target="my-tickets.html", ticket_id=ticket_id
@@ -313,8 +165,9 @@ def _handle_ticket_status(request: ChatRequest, lowered: str) -> ChatResponse:
             suggestions=PREDEFINED_SUGGESTIONS,
         )
 
+    fallback_message = "You can view your requests and their status under My Tickets."
     return ChatResponse(
-        message="You can view your requests and their status under My Tickets.",
+        message=decision.message or fallback_message,
         intent=ChatIntent.TICKET_STATUS,
         action=ChatAction(
             type="navigate", target="my-tickets.html", label="My Tickets"
@@ -323,53 +176,31 @@ def _handle_ticket_status(request: ChatRequest, lowered: str) -> ChatResponse:
     )
 
 
-def _handle_ticket_drafting(request: ChatRequest) -> ChatResponse:
-    draft, missing = ticket_draft_service.build_support_draft(
-        request.message,
-        history_user_messages=_history_user_messages(request),
+def _handle_ticket_drafting(
+    request: ChatRequest, decision: ChatbotDecision, intent: ChatIntent
+) -> ChatResponse:
+    draft, missing = merge_extracted_fields(
+        decision.ticket_fields,
         existing_draft=request.draft,
+        gpt_missing_fields=decision.missing_fields,
+        intent=intent,
     )
 
     if missing:
         return ChatResponse(
-            message=_missing_fields_prompt(missing),
-            intent=ChatIntent.SUPPORT_ISSUE,
+            message=decision.message or _missing_fields_prompt(missing),
+            intent=intent,
             ticket_draft=draft,
             missing_fields=missing,
         )
 
     return ChatResponse(
         message=(
-            "Here's a draft based on what you told me - review it, edit "
+            decision.message
+            or "Here's a draft based on what you told me - review it, edit "
             "anything that's not quite right, and submit it when you're ready."
         ),
-        intent=ChatIntent.SUPPORT_ISSUE,
-        ticket_draft=draft,
-        missing_fields=[],
-    )
-
-
-def _handle_leave_management(request: ChatRequest) -> ChatResponse:
-    draft, missing = ticket_draft_service.build_leave_draft(
-        request.message,
-        history_user_messages=_history_user_messages(request),
-        existing_draft=request.draft,
-    )
-
-    if missing:
-        return ChatResponse(
-            message=_missing_fields_prompt(missing),
-            intent=ChatIntent.LEAVE_MANAGEMENT,
-            ticket_draft=draft,
-            missing_fields=missing,
-        )
-
-    return ChatResponse(
-        message=(
-            "Here's your leave request draft - review it, edit anything "
-            "that's not quite right, and submit it when you're ready."
-        ),
-        intent=ChatIntent.LEAVE_MANAGEMENT,
+        intent=intent,
         ticket_draft=draft,
         missing_fields=[],
     )
@@ -377,53 +208,131 @@ def _handle_leave_management(request: ChatRequest) -> ChatResponse:
 
 def _missing_fields_prompt(missing: List[str]) -> str:
     if len(missing) == 1:
-        return f"Could you tell me more about the {missing[0]}?"
+        return f"Could you tell me more about {missing[0]}?"
     joined = ", ".join(missing[:-1]) + f", and {missing[-1]}"
-    return f"Could you tell me more about the {joined}?"
+    return f"Could you tell me more about {joined}?"
 
 
-def handle_message(request: ChatRequest) -> ChatResponse:
-    lowered = _normalize(request.message)
+def _handle_knowledge(
+    request: ChatRequest,
+    decision: ChatbotDecision,
+    *,
+    retriever: KnowledgeRetriever,
+    ai_service,
+) -> ChatResponse:
+    # TODO(auth): request.role/request.department are client-supplied, not
+    # verified server-side (no auth/session system exists yet - see
+    # role_service.py's module docstring for the tracked gap). This is NOT
+    # production-secure: a caller could claim any role/department. Once
+    # real authentication exists, resolve these from the trusted
+    # session/JWT here instead of trusting the request body.
+    allowed_scopes = get_allowed_scopes(request.role, request.department)
+    query = decision.knowledge_query or request.message
 
-    if not lowered:
+    try:
+        documents = retriever.search(query, allowed_scopes)
+    except SearchUnavailableError:
+        return ChatResponse(
+            message=SEARCH_UNAVAILABLE_MESSAGE,
+            intent=ChatIntent.KNOWLEDGE,
+            knowledge_verified=False,
+            action=_KNOWLEDGE_BASE_ACTION,
+            suggestions=PREDEFINED_SUGGESTIONS,
+        )
+
+    if not documents:
+        return ChatResponse(
+            message=COULD_NOT_VERIFY_MESSAGE,
+            intent=ChatIntent.KNOWLEDGE,
+            knowledge_verified=False,
+            action=_KNOWLEDGE_BASE_ACTION,
+            suggestions=PREDEFINED_SUGGESTIONS,
+        )
+
+    try:
+        grounded = knowledge_agent.answer_from_context(
+            query, documents, ai_service=ai_service
+        )
+    except Exception:
+        return ChatResponse(
+            message=GPT_UNAVAILABLE_MESSAGE,
+            intent=ChatIntent.KNOWLEDGE,
+            knowledge_verified=False,
+            action=_KNOWLEDGE_BASE_ACTION,
+            suggestions=PREDEFINED_SUGGESTIONS,
+        )
+
+    return ChatResponse(
+        message=grounded.answer,
+        intent=ChatIntent.KNOWLEDGE,
+        knowledge_verified=grounded.verified,
+        action=None if grounded.verified else _KNOWLEDGE_BASE_ACTION,
+        suggestions=PREDEFINED_SUGGESTIONS,
+    )
+
+
+def handle_message(
+    request: ChatRequest,
+    *,
+    ai_service=default_ai_service,
+    retriever: KnowledgeRetriever = None,
+    ticket_lookup=default_get_ticket_by_id,
+) -> ChatResponse:
+    retriever = retriever or default_knowledge_retriever
+    message = request.message.strip()
+
+    if not message:
+        if request.active_intent:
+            return _shortcut_for_intent(request.active_intent)
         return ChatResponse(
             message="I'm Genie, your workplace assistant. What can I help you with?",
             intent=ChatIntent.GENERAL,
             suggestions=PREDEFINED_SUGGESTIONS,
         )
 
-    if request.draft is not None or request.active_intent in (
-        ChatIntent.LEAVE_MANAGEMENT,
-        ChatIntent.SUPPORT_ISSUE,
-        ChatIntent.CREATE_TICKET,
-    ):
-        if request.active_intent == ChatIntent.LEAVE_MANAGEMENT:
-            return _handle_leave_management(request)
-        return _handle_ticket_drafting(request)
+    try:
+        decision = chatbot_agent.decide(
+            message,
+            history=request.history,
+            existing_draft=request.draft,
+            known_intent=request.active_intent,
+            standard_categories=ticket_draft_service.STANDARD_CATEGORIES,
+            leave_types=ticket_draft_service.LEAVE_TYPES,
+            ai_service=ai_service,
+        )
+    except Exception:
+        return ChatResponse(
+            message=GPT_UNAVAILABLE_MESSAGE,
+            intent=ChatIntent.GENERAL,
+            suggestions=PREDEFINED_SUGGESTIONS,
+        )
 
-    intent = classify_intent(request.message)
+    # A continuation always keeps the flow's intent - the model doesn't get
+    # to silently change it mid-draft.
+    intent = request.active_intent or decision.intent
+
+    if intent == ChatIntent.LEAVE_MANAGEMENT:
+        # Hard business rule: leave requests always go through the
+        # Standard Request ticket-drafting flow, regardless of the
+        # action the model proposed.
+        return _handle_ticket_drafting(request, decision, intent)
 
     if intent == ChatIntent.TICKET_STATUS:
-        return _handle_ticket_status(request, lowered)
-    if intent == ChatIntent.LEAVE_MANAGEMENT:
-        return _handle_leave_management(request)
+        return _handle_ticket_status(decision, ticket_lookup=ticket_lookup)
+
     if intent == ChatIntent.NAVIGATION:
-        return _handle_navigation(request, lowered)
-    if intent == ChatIntent.CREATE_TICKET:
-        return _handle_ticket_drafting(request)
+        return _handle_navigation(decision, request.role)
+
+    if intent in (ChatIntent.CREATE_TICKET, ChatIntent.SUPPORT_ISSUE):
+        return _handle_ticket_drafting(request, decision, intent)
+
     if intent == ChatIntent.KNOWLEDGE:
-        return _handle_knowledge(request)
-    if intent == ChatIntent.SUPPORT_ISSUE:
-        return _handle_ticket_drafting(request)
-    if intent == ChatIntent.HOW_TO:
-        return _handle_how_to(request, lowered)
+        return _handle_knowledge(
+            request, decision, retriever=retriever, ai_service=ai_service
+        )
 
     return ChatResponse(
-        message=(
-            "I'm Genie, your workplace assistant. I can help you navigate "
-            "TicketGenie, answer policy questions, or start a support "
-            "request."
-        ),
-        intent=ChatIntent.GENERAL,
+        message=decision.message,
+        intent=intent,
         suggestions=PREDEFINED_SUGGESTIONS,
     )

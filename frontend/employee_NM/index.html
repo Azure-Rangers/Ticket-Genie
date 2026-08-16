@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help & Support | TicketGenie</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+
+<div id="shared-sidebar"></div>
+
+<main class="main-content">
+    <div id="shared-topnav"></div>
+
+    <section class="welcome-section">
+        <p class="eyebrow">PORTAL OVERVIEW</p>
+        <h2>Welcome back, Nishita</h2>
+        <p>Manage your active requests, browse solutions, and track ticket resolutions.</p>
+    </section>
+
+    <!-- Overview Cards Section -->
+    <section class="section">
+        <div class="ticket-overview">
+            <div class="overview-card">
+                <div class="overview-top">
+                    <span>Open</span>
+                    <div class="overview-icon purple"><i class="fa-solid fa-folder-open"></i></div>
+                </div>
+                <strong id="countOpen">0</strong>
+                <p>Currently being reviewed</p>
+            </div>
+            <div class="overview-card">
+                <div class="overview-top">
+                    <span>In Progress</span>
+                    <div class="overview-icon purple"><i class="fa-solid fa-spinner"></i></div>
+                </div>
+                <strong id="countInProgress">0</strong>
+                <p>Being actively worked on</p>
+            </div>
+            <div class="overview-card">
+                <div class="overview-top">
+                    <span>Resolved</span>
+                    <div class="overview-icon purple"><i class="fa-solid fa-circle-check"></i></div>
+                </div>
+                <strong id="countResolved">0</strong>
+                <p>Successfully completed</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Recent Tickets Section -->
+    <section class="section">
+        <div class="section-header">
+            <div>
+                <h3>Recent Support Requests</h3>
+                <p>Track the status of your submitted tickets.</p>
+            </div>
+            <a href="my-tickets.html">View all tickets <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+
+        <div class="tickets-table" id="recentTicketsContainer">
+            <div class="table-header">
+                <div>Request</div>
+                <div>Category</div>
+                <div>Status</div>
+                <div>Priority</div>
+                <div>Date</div>
+            </div>
+            <div style="padding: 20px; text-align: center;">Loading recent tickets...</div>
+        </div>
+    </section>
+</main>
+
+<!-- Genie AI Floating Button & Drawer -->
+<button class="genie-button" id="genieButton" type="button">
+    <i class="fa-solid fa-wand-magic-sparkles"></i>
+    <span>Ask Genie</span>
+</button>
+
+<div class="genie-chat" id="genieChat">
+    <div class="genie-chat-header">
+        <div class="genie-header-info">
+            <div class="genie-avatar">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div>
+                <strong>Genie AI</strong>
+                <span><span class="genie-status-dot"></span> Online</span>
+            </div>
+        </div>
+        <button class="genie-close" id="closeGenieButton" type="button">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <div class="genie-messages" id="genieMessages">
+        <div class="genie-message">
+            <div class="genie-message-avatar">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div class="genie-bubble">
+                Hi! I'm Genie, your AI support assistant. How can I help you today?
+            </div>
+        </div>
+    </div>
+    <div class="genie-input-area">
+        <input type="text" id="genieInput" placeholder="Ask a question..." autocomplete="off">
+        <button id="genieSendButton" type="button">
+            <i class="fa-solid fa-arrow-up"></i>
+        </button>
+    </div>
+    <div class="genie-disclaimer">
+        Genie may occasionally provide inaccurate information.
+    </div>
+</div>
+
+<script src="../js/script.js"></script>
+<script src="components.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        const tickets = await apiFetchTickets();
+        const open = tickets.filter(t => (t.status || "").toLowerCase() === "open").length;
+        const inProg = tickets.filter(t => ["in progress", "pending"].includes((t.status || "").toLowerCase())).length;
+        const resolved = tickets.filter(t => (t.status || "").toLowerCase() === "resolved").length;
+
+        document.getElementById("countOpen").textContent = open;
+        document.getElementById("countInProgress").textContent = inProg;
+        document.getElementById("countResolved").textContent = resolved;
+
+        const container = document.getElementById("recentTicketsContainer");
+        if (!tickets || tickets.length === 0) {
+            container.innerHTML = `
+                <div class="table-header"><div>Request</div><div>Category</div><div>Status</div><div>Priority</div><div>Date</div></div>
+                <div style="padding: 20px; text-align: center;">No tickets found.</div>
+            `;
+            return;
+        }
+
+        const rowsHtml = tickets.slice(0, 5).map(t => `
+            <div class="table-row ticket-clickable" style="cursor:pointer;" onclick="window.location.href='ticket-detail.html?ticket=${t.id}'">
+                <div class="request-info">
+                    <div class="request-icon"><i class="fa-solid fa-file-lines"></i></div>
+                    <div>
+                        <strong>${escapeHTML(t.title)}</strong>
+                        <span>#${t.id}</span>
+                    </div>
+                </div>
+                <div>${escapeHTML(t.category || 'General')}</div>
+                <div><span class="status ${ (t.status||'').toLowerCase().replace(' ', '-') }">${t.status}</span></div>
+                <div><span class="priority ${(t.priority||'Medium').toLowerCase()}">${t.priority || 'Medium'}</span></div>
+                <div>${t.date || 'Recently'}</div>
+            </div>
+        `).join("");
+
+        container.innerHTML = `
+            <div class="table-header"><div>Request</div><div>Category</div><div>Status</div><div>Priority</div><div>Date</div></div>
+            ${rowsHtml}
+        `;
+    } catch (err) {
+        console.error("Failed to load employee dashboard data:", err);
+    }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TicketGenie - Knowledge Base</title>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    /* PAGE SPECIFIC KNOWLEDGE BASE STYLES */
+
+    /* KB STYLES */
+    .page-padding { padding: 40px; max-width: 1400px; margin: 0 auto; width: 100%; }
+    .eyebrow-text { font-size: 0.7rem; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .page-title { font-size: 1.75rem; color: #111827; font-weight: 600; margin-bottom: 32px; }
+    
+    .content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    .card { background: white; border-radius: 8px; border: 1px solid #e5e7eb; padding: 32px; display: flex; flex-direction: column; gap: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+    .card h2 { font-size: 1.1rem; color: #111827; border-bottom: 1px solid #f3f4f6; padding-bottom: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .upload-zone { border: 2px dashed #cbd5e1; border-radius: 8px; padding: 32px; text-align: center; background: #f9fafb; cursor: pointer; transition: 0.2s; }
+    .upload-zone:hover { border-color: #818cf8; background: #eef2ff; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; font-size: 0.75rem; color: #6b7280; text-transform: uppercase; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb; }
+    td { padding: 16px 0; border-bottom: 1px solid #f3f4f6; font-size: 0.85rem; }
+    .sandbox-chat { flex: 1; border: 1px solid #e5e7eb; border-radius: 8px; background: #fdfdfd; padding: 20px; display: flex; flex-direction: column; gap: 16px; height: 350px; overflow-y: auto; }
+    .msg { font-size: 0.85rem; padding: 12px; border-radius: 8px; max-width: 90%; }
+    .msg-user { background: white; border: 1px solid #e5e7eb; align-self: flex-end; border-bottom-right-radius: 2px; }
+    .msg-ai { background: #f3f4f6; color: #1f2937; align-self: flex-start; border-bottom-left-radius: 2px; }
+  </style>
+</head>
+  <div id="shared-sidebar"></div>
+
+  <main class="main-content">
+    <div id="shared-topnav"></div>
+
+    <div class="page-padding">
+      <div class="eyebrow-text">RAG Document Management</div>
+      <h1 class="page-title">Policy Library</h1>
+      
+      <div class="content-grid">
+        <div class="card">
+          <h2><i class="ph-duotone ph-upload-simple"></i> Upload Guideline</h2>
+          <div class="upload-zone"><i class="ph-duotone ph-file-pdf" style="font-size: 2.5rem; color: #a5b4fc; margin-bottom: 8px; display:block;"></i>Drop files for Azure AI indexing</div>
+          <table>
+            <thead><tr><th>Document</th><th>AI Treatment</th></tr></thead>
+            <tbody>
+              <tr><td><strong>OPT_Guidelines.pdf</strong></td><td><span style="color:#b91c1c; font-size:0.75rem; font-weight:600; padding:4px 8px; background:#fee2e2; border-radius:6px;">No Summary (Sensitive)</span></td></tr>
+              <tr><td><strong>IT_Policy.pdf</strong></td><td><span style="color:#15803d; font-size:0.75rem; font-weight:600; padding:4px 8px; background:#dcfce7; border-radius:6px;">Standard RAG</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="card">
+          <h2><i class="ph-fill ph-magic-wand" style="color:#facc15;"></i> RAG Sandbox</h2>
+          <div class="sandbox-chat">
+            <div class="msg msg-user">Laptop policy?</div>
+            <div class="msg msg-ai">Refresh every 3 years. <span style="display:block; font-size:0.7rem; color:#6b7280; margin-top:4px;">Source: IT_Policy.pdf</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function toggleSidebar() { document.getElementById('appSidebar').classList.toggle('collapsed'); }
+    let userDataString = localStorage.getItem('portalUser');
+    if (!userDataString) {
+      const defaultUser = { name: "Admin AV", role: "Operations Admin", email: "admin@ticketgenie.com" };
+      localStorage.setItem('portalUser', JSON.stringify(defaultUser));
+      userDataString = JSON.stringify(defaultUser);
+    }
+    const user = JSON.parse(userDataString);
+    if (document.getElementById('sidebarRole')) document.getElementById('sidebarRole').innerText = `${user.role} Portal`;
+    if (document.getElementById('navName')) document.getElementById('navName').innerText = user.name;
+    if (document.getElementById('navSubRole')) document.getElementById('navSubRole').innerText = `${user.role} Admin`;
+    if (document.getElementById('navAvatar')) document.getElementById('navAvatar').innerText = user.name.charAt(0).toUpperCase();
+
+  </script>
+
+  <!-- Floating Genie Widget Button -->
+  <button class="fab-genie" id="genieButton" type="button" title="Ask Genie AI">
+    <i class="ph-fill ph-magic-wand"></i> Ask Genie
+  </button>
+
+  <!-- Genie AI Chat Panel -->
+  <div class="genie-chat" id="genieChat">
+    <div class="genie-chat-header">
+      <div class="genie-header-info">
+        <div class="genie-avatar"><i class="ph-fill ph-magic-wand"></i></div>
+        <div><strong>Genie AI Assistant</strong><span><span class="genie-status-dot"></span> Online</span></div>
+      </div>
+      <button class="genie-close" id="closeGenieButton" type="button" aria-label="Close"><i class="ph-bold ph-x"></i></button>
+    </div>
+    <div class="genie-messages" id="genieMessages">
+      <div class="genie-message">
+        <div class="genie-message-avatar"><i class="ph-fill ph-magic-wand"></i></div>
+        <div class="genie-bubble">Hi! I'm Genie, your AI Assistant. How can I help you manage tickets, policies, or workspace requests today?</div>
+      </div>
+    </div>
+    <div class="genie-suggestions">
+      <button type="button" class="genie-suggestion">Show open ticket queue</button>
+      <button type="button" class="genie-suggestion">How do I route tickets?</button>
+    </div>
+    <div class="genie-input-area">
+      <input type="text" id="genieInput" placeholder="Ask Genie something..." autocomplete="off">
+      <button type="button" id="genieSendButton" aria-label="Send"><i class="ph-bold ph-paper-plane-right"></i></button>
+    </div>
+    <div class="genie-disclaimer">TicketGenie AI Assistant • Operations Help</div>
+  </div>
+
+  <script src="../js/script.js"></script>
+  <script src="components.js"></script>
+</body>
+</html>

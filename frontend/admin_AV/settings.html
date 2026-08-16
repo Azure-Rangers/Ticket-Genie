@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TicketGenie - Settings</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    /* PAGE SPECIFIC SETTINGS STYLES */
+
+    .page-padding { padding: 40px; max-width: 600px; margin: 0 auto; width: 100%; }
+    .eyebrow-text { font-size: 0.7rem; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .page-title { font-size: 1.75rem; color: #111827; font-weight: 600; margin-bottom: 32px; }
+    
+    .settings-card { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 32px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+    .input-group { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
+    .input-group label { font-size: 0.8rem; font-weight: 600; color: #374151; }
+    .input-group select { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; outline: none; }
+    .btn-row { display: flex; gap: 12px; margin-top: 24px; }
+    .btn-save { flex: 1; padding: 10px; background: #2b1b38; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn-save:hover { background: #4f46e5; }
+    .btn-logout { padding: 10px 20px; background: white; border: 1px solid #d1d5db; color: #dc2626; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn-logout:hover { background: #fee2e2; border-color: #fca5a5; }
+  </style>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+  <div id="shared-sidebar"></div>
+
+  <main class="main-content">
+    <div id="shared-topnav"></div>
+
+    <div class="page-padding">
+      <div class="eyebrow-text">Account Management</div>
+      <h1 class="page-title">Profile Settings</h1>
+      <div class="settings-card">
+        <div class="input-group">
+          <label>Department Role (Demo Switcher)</label>
+          <select id="editRole">
+            <option value="HR">Human Resources</option>
+            <option value="IT">Information Technology</option>
+            <option value="Accounting">Accounting & Finance</option>
+            <option value="Management">Upper Management</option>
+          </select>
+        </div>
+        <div class="btn-row">
+          <button class="btn-logout" onclick="logout()">Log Out</button>
+          <button class="btn-save" onclick="saveSettings()">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Floating Genie Widget Button -->
+  <button class="fab-genie" id="genieButton" type="button" title="Ask Genie AI">
+    <i class="ph-fill ph-magic-wand"></i> Ask Genie
+  </button>
+
+  <!-- Genie AI Chat Panel -->
+  <div class="genie-chat" id="genieChat">
+    <div class="genie-chat-header">
+      <div class="genie-header-info">
+        <div class="genie-avatar"><i class="ph-fill ph-magic-wand"></i></div>
+        <div><strong>Genie AI Assistant</strong><span><span class="genie-status-dot"></span> Online</span></div>
+      </div>
+      <button class="genie-close" id="closeGenieButton" type="button" aria-label="Close"><i class="ph-bold ph-x"></i></button>
+    </div>
+    <div class="genie-messages" id="genieMessages">
+      <div class="genie-message">
+        <div class="genie-message-avatar"><i class="ph-fill ph-magic-wand"></i></div>
+        <div class="genie-bubble">Hi! I'm Genie, your AI Assistant. How can I help you manage tickets, policies, or workspace requests today?</div>
+      </div>
+    </div>
+    <div class="genie-suggestions">
+      <button type="button" class="genie-suggestion">Show open ticket queue</button>
+      <button type="button" class="genie-suggestion">How do I route tickets?</button>
+    </div>
+    <div class="genie-input-area">
+      <input type="text" id="genieInput" placeholder="Ask Genie something..." autocomplete="off">
+      <button type="button" id="genieSendButton" aria-label="Send"><i class="ph-bold ph-paper-plane-right"></i></button>
+    </div>
+    <div class="genie-disclaimer">TicketGenie AI Assistant • Operations Help</div>
+  </div>
+
+  <script src="../js/script.js"></script>
+  <script>
+    let currentUser = {};
+    function toggleSidebar() { document.getElementById('appSidebar').classList.toggle('collapsed'); }
+    let userDataString = localStorage.getItem('portalUser');
+    if (!userDataString) {
+      currentUser = { name: "Admin AV", role: "Operations Admin", email: "admin@ticketgenie.com" };
+      localStorage.setItem('portalUser', JSON.stringify(currentUser));
+      userDataString = JSON.stringify(currentUser);
+    } else {
+      currentUser = JSON.parse(userDataString);
+    }
+    if (document.getElementById('sidebarRole')) document.getElementById('sidebarRole').innerText = `${currentUser.role} Portal`;
+    if (document.getElementById('navName')) document.getElementById('navName').innerText = currentUser.name;
+    if (document.getElementById('navSubRole')) document.getElementById('navSubRole').innerText = `${currentUser.role} Admin`;
+    if (document.getElementById('navAvatar')) document.getElementById('navAvatar').innerText = currentUser.name.charAt(0).toUpperCase();
+    if (document.getElementById('editRole')) document.getElementById('editRole').value = currentUser.role || 'Operations Admin';
+
+    function saveSettings() {
+      currentUser.role = document.getElementById('editRole').value;
+      localStorage.setItem('portalUser', JSON.stringify(currentUser));
+      window.location.reload(); 
+    }
+    function logout() { localStorage.removeItem('portalUser'); window.location.href = '../index.html'; }
+  </script>
+  <script src="../js/script.js"></script>
+  <script src="components.js"></script>
+</body>
+</html>

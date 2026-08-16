@@ -25,7 +25,9 @@ backend = [
     "pyyaml>=6.0.0",
     "sqlalchemy>=2.0.0",
     "pyodbc>=5.0.0",
-    "openai>=2.8.0",
+    "openai>=1.30.0",
+    "azure-search-documents>=11.4.0",
+    "azure-storage-blob>=12.19.0",
 ]
 dev = [
     "ruff>=0.3.0",
@@ -45,7 +47,7 @@ src = ["backend", "."]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B"]
-ignore = ["B008"]
+ignore = ["B008", "E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["api", "database", "models", "services", "telemetry"]

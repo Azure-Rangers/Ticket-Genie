@@ -1,0 +1,561 @@
+/* ==========================================================================
+   TicketGenie - Admin Portal (admin_AV) Design System & Stylesheet
+   ========================================================================== */
+
+/* --- RESET & CORE BASE STYLES --- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+
+body {
+  display: flex;
+  height: 100vh;
+  background-color: #f9fafb;
+  color: #1f2937;
+  margin: 0;
+  overflow: hidden;
+}
+
+button {
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+  font-family: inherit;
+}
+
+/* --- SIDEBAR & TOPNAV DESIGN SYSTEM INHERITED FROM /css/style.css --- */
+
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  background: #eef2ff;
+  color: #4f46e5;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+/* --- COMMON PAGE LAYOUT & SCROLL FIXES --- */
+body.admin-page .main-content {
+  padding: 0 !important;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.inbox-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  height: calc(100vh - 70px);
+  background: #f4f5f8;
+}
+
+.ticket-list-pane {
+  width: 380px;
+  min-width: 280px;
+  max-width: 600px;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.ticket-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: calc(100vh - 170px);
+}
+
+.ticket-detail-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: calc(100vh - 70px);
+  padding: 32px 40px;
+}
+
+.page-padding {
+  padding: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.eyebrow-text {
+  font-size: 0.7rem;
+  color: #6b7280;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.page-title {
+  font-size: 1.75rem;
+  color: #111827;
+  font-weight: 600;
+  margin-bottom: 32px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 16px;
+}
+
+.section-header h4 {
+  font-size: 1.1rem;
+  color: #111827;
+  font-weight: 600;
+}
+
+.section-header p {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.view-all {
+  font-size: 0.85rem;
+  color: #4f46e5;
+  text-decoration: none;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.view-all:hover {
+  text-decoration: underline;
+}
+
+#loginWarning {
+  display: none;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #fca5a5;
+  font-weight: 600;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+/* --- DASHBOARD & METRIC CARDS --- */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.metric-card {
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.metric-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metric-title {
+  font-size: 0.85rem;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1;
+}
+
+.metric-sub {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.4rem;
+}
+
+.icon-purple { background: #eef2ff; color: #4f46e5; }
+.icon-orange { background: #fff7ed; color: #ea580c; }
+.icon-red { background: #fef2f2; color: #dc2626; }
+.icon-green { background: #f0fdf4; color: #16a34a; }
+.icon-blue { background: #f0f9ff; color: #0284c7; }
+
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.action-card {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.action-card:hover {
+  border-color: #a5b4fc;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  transform: translateY(-2px);
+}
+
+.action-card h5 {
+  font-size: 0.95rem;
+  color: #111827;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.action-card p {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+/* --- BUTTON SYSTEM & LOADING STATES --- */
+.btn-primary {
+  background: #2b1b38;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.btn-primary:hover {
+  background: #4f46e5;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2);
+}
+
+.btn-secondary {
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.btn-secondary:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  box-shadow: 0 0 0 4px rgba(107, 114, 128, 0.15);
+}
+
+.btn-loading {
+  color: transparent !important;
+  pointer-events: none;
+}
+
+.btn-loading::after {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: button-spin 0.6s linear infinite;
+}
+
+.btn-primary.btn-loading::after {
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+}
+
+@keyframes button-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* --- FLOATING TICKET GENIE WIDGET & CHAT --- */
+.fab-genie {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  background: #2b1b38;
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 30px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 1000;
+  transition: 0.2s;
+}
+
+.fab-genie i {
+  font-size: 1.2rem;
+  color: #facc15;
+}
+
+.fab-genie:hover {
+  background: #4f46e5;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3);
+}
+
+.genie-chat {
+  position: fixed;
+  right: 32px;
+  bottom: 90px;
+  width: 360px;
+  height: 500px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1000;
+}
+
+.genie-chat.open {
+  display: flex;
+  animation: genieOpen 0.2s ease-out;
+}
+
+@keyframes genieOpen {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.genie-chat-header {
+  height: 64px;
+  padding: 0 20px;
+  background: #2b1b38;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.genie-header-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.genie-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #facc15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.genie-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  display: inline-block;
+  margin-right: 4px;
+}
+
+.genie-close {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: #a5b4fc;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.genie-close:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.genie-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background: #f9fafb;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.genie-message {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.genie-message-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #eef2ff;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+}
+
+.genie-bubble {
+  max-width: 260px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px 12px 12px 12px;
+  padding: 10px 14px;
+  color: #374151;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.genie-message-user {
+  justify-content: flex-end;
+}
+
+.genie-message-user .genie-bubble {
+  background: #2b1b38;
+  color: white;
+  border-color: #2b1b38;
+  border-radius: 12px 4px 12px 12px;
+}
+
+.genie-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 16px 10px;
+  background: #f9fafb;
+}
+
+.genie-suggestion {
+  border: 1px solid #cbd5e1;
+  background: white;
+  color: #475569;
+  border-radius: 12px;
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.genie-suggestion:hover {
+  border-color: #4f46e5;
+  color: #4f46e5;
+  background: #eef2ff;
+}
+
+.genie-input-area {
+  min-height: 56px;
+  padding: 10px 16px;
+  border-top: 1px solid #e5e7eb;
+  background: white;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.genie-input-area input {
+  flex: 1;
+  height: 38px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0 12px;
+  outline: none;
+  font-size: 0.85rem;
+}
+
+.genie-input-area input:focus {
+  border-color: #4f46e5;
+}
+
+.genie-input-area button {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 8px;
+  background: #2b1b38;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  transition: 0.2s;
+}
+
+.genie-input-area button:hover {
+  background: #4f46e5;
+}
+
+.genie-disclaimer {
+  padding: 4px 12px 8px;
+  background: white;
+  color: #9ca3af;
+  text-align: center;
+  font-size: 0.7rem;
+}

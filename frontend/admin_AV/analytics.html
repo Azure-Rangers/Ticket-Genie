@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TicketGenie - Analytics</title>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    /* PAGE SPECIFIC ANALYTICS STYLES */
+    
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .time-filter { display: flex; gap: 12px; align-items: center; }
+    .time-filter select { padding: 10px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.9rem; font-weight: 600; color: #374151; cursor: pointer; outline: none; transition: 0.2s; }
+    .time-filter select:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+    
+    button { transition: all 0.2s ease; cursor: pointer; position: relative; }
+    .btn-ai-report { background: linear-gradient(135deg, #4f46e5, #7e22ce); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2); }
+    .btn-ai-report:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3); }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+    .kpi-card { background: white; border: 1px solid #e5e7eb; padding: 24px; border-radius: 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); transition: 0.3s; }
+    .kpi-title { font-size: 0.8rem; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-val { font-size: 2.2rem; font-weight: 700; color: #111827; }
+    .kpi-trend { font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+    .trend-up { color: #16a34a; } .trend-down { color: #dc2626; } .trend-neutral { color: #6b7280; }
+
+    .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    .chart-card { background: white; border: 1px solid #e5e7eb; padding: 24px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+    .chart-card h3 { font-size: 1.1rem; color: #111827; margin-bottom: 8px; }
+    .chart-card p { font-size: 0.85rem; color: #6b7280; margin-bottom: 24px; }
+
+    /* Custom CSS Bar Chart */
+    .css-bar-chart { display: flex; align-items: flex-end; gap: 16px; height: 220px; padding-bottom: 30px; position: relative; border-bottom: 1px solid #e5e7eb; margin-top: 20px; }
+    .bar-column { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; position: relative; }
+    .bar { width: 100%; max-width: 48px; border-radius: 6px 6px 0 0; transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
+    .bar-label { position: absolute; bottom: -25px; font-size: 0.75rem; color: #6b7280; font-weight: 600; text-align: center; width: 100%; }
+    .bar-value { position: absolute; top: -25px; font-size: 0.85rem; font-weight: 700; color: #374151; opacity: 0; transition: opacity 0.3s 0.6s; }
+    .css-bar-chart.loaded .bar-value { opacity: 1; }
+
+    /* Capacity Bar */
+    .capacity-container { display: flex; flex-direction: column; justify-content: center; height: 100%; gap: 16px; }
+    .cap-header { display: flex; justify-content: space-between; align-items: flex-end; }
+    .cap-hours { font-size: 2.5rem; font-weight: bold; color: #111827; line-height: 1; }
+    .cap-max { font-size: 1rem; color: #6b7280; font-weight: normal; }
+    .cap-track { width: 100%; height: 24px; background: #f3f4f6; border-radius: 12px; overflow: hidden; }
+    .cap-fill { height: 100%; background: linear-gradient(90deg, #4f46e5, #c026d3); border-radius: 12px; transition: width 0.6s ease; }
+
+    /* --- AI REPORT MODAL --- */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(31, 41, 55, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px; backdrop-filter: blur(4px); }
+    .modal-overlay.active { display: flex; animation: fadeIn 0.2s; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    
+    .ai-report-modal { background: white; width: 100%; max-width: 650px; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); transform: translateY(20px); transition: 0.3s; }
+    .modal-overlay.active .ai-report-modal { transform: translateY(0); }
+    
+    .modal-header { background: linear-gradient(135deg, #2b1b38, #4f46e5); color: white; padding: 24px 32px; display: flex; justify-content: space-between; align-items: center; }
+    .modal-header h2 { font-size: 1.25rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .btn-close { background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
+    .btn-close:hover { background: rgba(255,255,255,0.3); }
+
+    .modal-body { padding: 32px; max-height: 70vh; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
+    .report-section { border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; background: #fdfdfd; }
+    .report-section h3 { font-size: 0.9rem; font-weight: 700; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
+    .report-section p { font-size: 0.95rem; color: #374151; line-height: 1.6; }
+    .highlight-stat { font-weight: bold; color: #111827; background: #eef2ff; padding: 2px 6px; border-radius: 4px; }
+
+    /* Button Loading state */
+    .btn-loading { color: transparent !important; pointer-events: none; }
+    .btn-loading::after { content: ""; position: absolute; width: 18px; height: 18px; top: 0; left: 0; right: 0; bottom: 0; margin: auto; border: 3px solid rgba(255,255,255,0.3); border-top-color: #ffffff; border-radius: 50%; animation: button-spin 0.6s linear infinite; }
+    @keyframes button-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    /* GENIE WIDGET & CHAT */
+  </style>
+</head>
+  <div id="shared-sidebar"></div>
+
+  <main class="main-content">
+    <div id="shared-topnav"></div>
+
+    <div class="page-padding">
+      <div class="eyebrow-text">Department Insights</div>
+      <h1 class="page-title">Performance Analytics</h1>
+      
+      <div class="toolbar">
+        <div class="time-filter">
+          <span style="font-size: 0.85rem; color: #6b7280; font-weight: 600;">TIMEFRAME:</span>
+          <select id="timeFilter" onchange="updateData()">
+            <option value="thisWeek">This Week</option>
+            <option value="lastWeek">Last Week</option>
+            <option value="thisMonth">This Month (MTD)</option>
+          </select>
+        </div>
+        <button class="btn-ai-report" onclick="generateReport(this)"><i class="ph-fill ph-magic-wand" style="font-size: 1.2rem; color: #facc15;"></i> Generate End-of-Week Update</button>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-title">Resolution Time</div><div class="kpi-val" id="kpi-res">4.2h</div><div class="kpi-trend trend-up" id="trend-res">↓ 1.5 hrs improvement</div></div>
+        <div class="kpi-card"><div class="kpi-title">AI Deflection</div><div class="kpi-val" id="kpi-def">68%</div><div class="kpi-trend trend-up" id="trend-def">↑ 12% vs previous</div></div>
+        <div class="kpi-card"><div class="kpi-title">SLA Breaches</div><div class="kpi-val" id="kpi-sla" style="color:#dc2626;">3</div><div class="kpi-trend trend-down" id="trend-sla">↑ 1 breach vs previous</div></div>
+        <div class="kpi-card"><div class="kpi-title">Total Tickets</div><div class="kpi-val" id="kpi-vol">241</div><div class="kpi-trend trend-neutral" id="trend-vol">Stable volume</div></div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3 style="font-size:1.05rem; margin-bottom:4px;">Ticket Volume by Category</h3>
+          <p style="font-size: 0.8rem; color: #6b7280; margin-bottom: 16px;">Distribution of incoming requests for the selected timeframe.</p>
+          <div class="css-bar-chart" id="barChart">
+            <div class="bar-column"><div class="bar-value" id="bar-val-0">120</div><div class="bar" id="bar-h-0" style="height: 0%; background: #4f46e5;"></div><div class="bar-label">IT</div></div>
+            <div class="bar-column"><div class="bar-value" id="bar-val-1">85</div><div class="bar" id="bar-h-1" style="height: 0%; background: #0ea5e9;"></div><div class="bar-label">Payroll</div></div>
+            <div class="bar-column"><div class="bar-value" id="bar-val-2">60</div><div class="bar" id="bar-h-2" style="height: 0%; background: #10b981;"></div><div class="bar-label">Visas</div></div>
+            <div class="bar-column"><div class="bar-value" id="bar-val-3">30</div><div class="bar" id="bar-h-3" style="height: 0%; background: #f59e0b;"></div><div class="bar-label">Benefits</div></div>
+            <div class="bar-column"><div class="bar-value" id="bar-val-4">15</div><div class="bar" id="bar-h-4" style="height: 0%; background: #8b5cf6;"></div><div class="bar-label">Facilities</div></div>
+          </div>
+        </div>
+        
+        <div class="chart-card">
+          <h3 style="font-size:1.05rem; margin-bottom:4px;">Team Capacity Tracker</h3>
+          <p style="font-size: 0.8rem; color: #6b7280; margin-bottom: 24px;">Logged hours vs. the 170-hour maximum threshold.</p>
+          <div class="capacity-container">
+            <div class="cap-header"><div class="cap-hours" id="capHours">85 <span class="cap-max">/ 170 hrs</span></div><div style="color: #ea580c; font-weight: 600; font-size: 0.9rem;" id="capUtil">50% Utilized</div></div>
+            <div class="cap-track"><div class="cap-fill" id="capFill" style="width: 0%;"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-grid" style="margin-top: 24px;">
+        <div class="chart-card" style="background: linear-gradient(to bottom right, #ffffff, #fefce8); border-color: #fde047;">
+          <h3 style="display: flex; align-items: center; gap: 8px;"><i class="ph-fill ph-magic-wand" style="color:#eab308;"></i> Workforce Pulse</h3>
+          <p style="font-size: 0.85rem; color: #854d0e; margin-bottom: 16px;">AI sentiment analysis across all departments.</p>
+          <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #fef08a; box-shadow: 0 1px 2px rgba(234, 179, 8, 0.1);">
+            <h4 style="font-size: 0.95rem; color: #9a3412; margin-bottom: 8px; display: flex; justify-content: space-between;">Overall Mood: Stressed <i class="ph-bold ph-trend-down"></i></h4>
+            <p style="font-size: 0.85rem; color: #4b5563; line-height: 1.6;"><strong>Trend Analysis:</strong> 65% of IT tickets this week express frustration due to wait times exceeding 48 hours. Conversely, HR Benefits inquiries show positive engagement following the new policy memo.</p>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <h3 style="margin-bottom: 4px;">Resolution by Severity</h3>
+          <p style="font-size: 0.8rem; color: #6b7280; margin-bottom: 20px;">Effectiveness at solving each priority level (Weekly Update).</p>
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px;"><span>Priority 1 (Critical)</span> <span style="color: #16a34a;">90% Auto-Resolved</span></div>
+              <div style="width: 100%; height: 8px; background: #fee2e2; border-radius: 4px; overflow: hidden;"><div style="width: 90%; height: 100%; background: #dc2626; border-radius: 4px;"></div></div>
+            </div>
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px;"><span>Priority 2 (High)</span> <span style="color: #16a34a;">82% Solved Quickly</span></div>
+              <div style="width: 100%; height: 8px; background: #ffedd5; border-radius: 4px; overflow: hidden;"><div style="width: 82%; height: 100%; background: #ea580c; border-radius: 4px;"></div></div>
+            </div>
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px;"><span>Priority 3 (Medium)</span> <span style="color: #6b7280;">65% Solved</span></div>
+              <div style="width: 100%; height: 8px; background: #fef08a; border-radius: 4px; overflow: hidden;"><div style="width: 65%; height: 100%; background: #ca8a04; border-radius: 4px;"></div></div>
+            </div>
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px;"><span>Priority 4 (Low)</span> <span style="color: #6b7280;">75% Solved</span></div>
+              <div style="width: 100%; height: 8px; background: #e0f2fe; border-radius: 4px; overflow: hidden;"><div style="width: 75%; height: 100%; background: #0284c7; border-radius: 4px;"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal-overlay" id="aiModal">
+    <div class="ai-report-modal">
+      <div class="modal-header">
+        <h2><i class="ph-fill ph-magic-wand" style="color: #facc15;"></i> End of Week Update</h2>
+        <button class="btn-close" onclick="closeReport()"><i class="ph-bold ph-x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="report-section">
+          <h3>Health of Workspace</h3>
+          <p>The overarching pulse of the workforce is <span class="highlight-stat">Neutral/Stressed</span>. Sentiment analysis indicates high frustration in IT tickets due to recent VPN outages. HR interactions regarding benefits show positive engagement.</p>
+        </div>
+        <div class="report-section">
+          <h3>SLA & Severity Performance</h3>
+          <p>Your team effectively upheld SLA requirements this week. <span class="highlight-stat">94%</span> of <strong>Priority 1 (Critical)</strong> tickets were resolved within the 2-hour window. There were <span class="highlight-stat" style="color: #dc2626; background: #fee2e2;">3 SLA breaches</span>, primarily in the Payroll department.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let userDataString = localStorage.getItem('portalUser');
+    if (!userDataString) {
+      const defaultUser = { name: "Admin AV", role: "Operations Admin", email: "admin@ticketgenie.com" };
+      localStorage.setItem('portalUser', JSON.stringify(defaultUser));
+      userDataString = JSON.stringify(defaultUser);
+    }
+    const user = JSON.parse(userDataString);
+    if (document.getElementById('sidebarRole')) document.getElementById('sidebarRole').innerText = `${user.role} Portal`;
+    if (document.getElementById('navName')) document.getElementById('navName').innerText = user.name;
+    if (document.getElementById('navSubRole')) document.getElementById('navSubRole').innerText = `${user.role} Admin`;
+    if (document.getElementById('navAvatar')) document.getElementById('navAvatar').innerText = user.name.charAt(0).toUpperCase();
+
+
+    const dataStore = {
+      thisWeek: { resTime: "4.2h", defRate: "68%", sla: "3", vol: "241", tRes: "↓ 1.5 hrs", tDef: "↑ 12%", tSla: "↑ 1 breach", tVol: "Stable", bars: [120, 85, 60, 30, 15], cap: 85 },
+      lastWeek: { resTime: "5.7h", defRate: "56%", sla: "2", vol: "235", tRes: "↑ 0.4 hrs", tDef: "↓ 5%", tSla: "Stable", tVol: "↓ 12 tickets", bars: [100, 95, 40, 20, 10], cap: 130 },
+      thisMonth: { resTime: "4.9h", defRate: "62%", sla: "11", vol: "1,402", tRes: "↓ 0.2 hrs", tDef: "↑ 8%", tSla: "↑ 4 breaches", tVol: "↑ 15% volume", bars: [420, 215, 310, 180, 95], cap: 145 }
+    };
+
+    function updateData() {
+      const time = document.getElementById('timeFilter').value;
+      const data = dataStore[time];
+      document.getElementById('kpi-res').innerText = data.resTime;
+      document.getElementById('trend-res').innerText = data.tRes;
+      document.getElementById('kpi-def').innerText = data.defRate;
+      document.getElementById('trend-def').innerText = data.tDef;
+      document.getElementById('kpi-sla').innerText = data.sla;
+      document.getElementById('trend-sla').innerText = data.tSla;
+      document.getElementById('kpi-vol').innerText = data.vol;
+      document.getElementById('trend-vol').innerText = data.tVol;
+
+      const maxBar = Math.max(...data.bars);
+      setTimeout(() => {
+        data.bars.forEach((val, i) => {
+          const heightPct = (val / maxBar) * 85; 
+          document.getElementById(`bar-h-${i}`).style.height = `${heightPct}%`;
+          document.getElementById(`bar-val-${i}`).innerText = val;
+        });
+        document.getElementById('barChart').classList.add('loaded');
+      }, 100);
+
+      const capPct = Math.round((data.cap / 170) * 100);
+      document.getElementById('capHours').innerHTML = `${data.cap} <span class="cap-max">/ 170 hrs</span>`;
+      document.getElementById('capUtil').innerText = `${capPct}% Utilized`;
+      document.getElementById('capFill').style.width = `${capPct}%`;
+      if (capPct >= 85) document.getElementById('capUtil').style.color = '#dc2626';
+      else document.getElementById('capUtil').style.color = '#ea580c';
+    }
+  <!-- Floating Genie Widget Button -->
+  <button class="fab-genie" id="genieButton" type="button" title="Ask Genie AI">
+    <i class="ph-fill ph-magic-wand"></i> Ask Genie
+  </button>
+
+  <!-- Genie AI Chat Panel -->
+  <div class="genie-chat" id="genieChat">
+    <div class="genie-chat-header">
+      <div class="genie-header-info">
+        <div class="genie-avatar"><i class="ph-fill ph-magic-wand"></i></div>
+        <div><strong>Genie AI Assistant</strong><span><span class="genie-status-dot"></span> Online</span></div>
+      </div>
+      <button class="genie-close" id="closeGenieButton" type="button" aria-label="Close"><i class="ph-bold ph-x"></i></button>
+    </div>
+    <div class="genie-messages" id="genieMessages">
+      <div class="genie-message">
+        <div class="genie-message-avatar"><i class="ph-fill ph-magic-wand"></i></div>
+        <div class="genie-bubble">Hi! I'm Genie, your AI Assistant. How can I help you manage tickets, policies, or workspace requests today?</div>
+      </div>
+    </div>
+    <div class="genie-suggestions">
+      <button type="button" class="genie-suggestion">Show open ticket queue</button>
+      <button type="button" class="genie-suggestion">How do I route tickets?</button>
+    </div>
+    <div class="genie-input-area">
+      <input type="text" id="genieInput" placeholder="Ask Genie something..." autocomplete="off">
+      <button type="button" id="genieSendButton" aria-label="Send"><i class="ph-bold ph-paper-plane-right"></i></button>
+    </div>
+    <div class="genie-disclaimer">TicketGenie AI Assistant • Operations Help</div>
+  </div>
+
+  <script src="../js/script.js"></script>
+  <script>
+    function generateReport(btnElement) {
+      btnElement.classList.add('btn-loading');
+      setTimeout(() => { btnElement.classList.remove('btn-loading'); document.getElementById('aiModal').classList.add('active'); }, 1500);
+    }
+    function closeReport() { document.getElementById('aiModal').classList.remove('active'); }
+    window.onload = () => { updateData(); };
+  </script>
+  <script src="components.js"></script>
+</body>
+</html>

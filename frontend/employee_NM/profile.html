@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile & Credentials | TicketGenie</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+
+<div id="shared-sidebar"></div>
+
+<main class="main-content">
+    <div id="shared-topnav"></div>
+
+    <section class="section">
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+            <!-- Profile Customization Card -->
+            <div style="background: #ffffff; border: 1px solid #e1e6e2; border-left: 4px solid #d4a359; border-radius: 8px; padding: 24px; box-shadow: 0 4px 15px rgba(43, 27, 54, 0.03);">
+                <h3 style="font-size: 16px; color: #2b1b36; margin-bottom: 16px;"><i class="fa-solid fa-id-card" style="color: #d4a359; margin-right: 8px;"></i> User Profile Settings</h3>
+                
+                <form id="profileForm" style="display: flex; flex-direction: column; gap: 16px;">
+                    <div style="display: flex; gap: 16px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 12px; font-weight: 600; color: #402a4a; margin-bottom: 6px;">Full Name</label>
+                            <input type="text" id="profName" value="Nishita" style="width: 100%; padding: 10px 14px; border: 1px solid #dcd2e3; border-radius: 6px; font-size: 13px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 12px; font-weight: 600; color: #402a4a; margin-bottom: 6px;">Work Email (Entra ID)</label>
+                            <input type="email" id="profEmail" value="nishita@ticketgenie.com" style="width: 100%; padding: 10px 14px; border: 1px solid #e1e6e2; border-radius: 6px; font-size: 13px;">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 16px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 12px; font-weight: 600; color: #402a4a; margin-bottom: 6px;">Phone Number</label>
+                            <input type="text" id="profPhone" value="+1 (555) 019-2834" style="width: 100%; padding: 10px 14px; border: 1px solid #dcd2e3; border-radius: 6px; font-size: 13px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 12px; font-weight: 600; color: #402a4a; margin-bottom: 6px;">Department</label>
+                            <input type="text" id="profDept" value="HR & Operations" style="width: 100%; padding: 10px 14px; border: 1px solid #dcd2e3; border-radius: 6px; font-size: 13px;">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="saveProfileBtn" style="background: #6f4b82; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; align-self: flex-start;">Save Changes</button>
+                    <span id="profileStatus" style="font-size:12px; color:#16a34a; display:none;">✓ Profile saved successfully!</span>
+                </form>
+            </div>
+
+
+            <!-- Azure / Entra ID Credentials Card -->
+            <div style="background: #ffffff; border: 1px solid #e1e6e2; border-left: 4px solid #6f4b82; border-radius: 8px; padding: 24px; box-shadow: 0 4px 15px rgba(43, 27, 54, 0.03);">
+                <h3 style="font-size: 16px; color: #2b1b36; margin-bottom: 16px;"><i class="fa-solid fa-shield-halved" style="color: #6f4b82; margin-right: 8px;"></i> Azure Entra ID</h3>
+                <div style="display: flex; flex-direction: column; gap: 12px; font-size: 12px; color: #4a3b5c;">
+                    <div><strong>Tenant ID:</strong><br><span style="color: #7e8982; word-break: break-all;">7f8b9c10-33a1-4e92-91bf-fa22cd81a0ff</span></div>
+                    <div><strong>Object ID:</strong><br><span style="color: #7e8982; word-break: break-all;">334910ab-e21b-4cf9-8812-bcde91823701</span></div>
+                    <div><strong>Authentication:</strong><br><span style="color: #2e7d32; font-weight: 600;"><i class="fa-solid fa-circle-check"></i> SSO Connected (MFA Active)</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- Genie AI Floating Button & Drawer -->
+<button class="genie-button" id="genieButton" type="button">
+    <i class="fa-solid fa-wand-magic-sparkles"></i>
+    <span>Ask Genie</span>
+</button>
+
+<div class="genie-chat" id="genieChat">
+    <div class="genie-chat-header">
+        <div class="genie-header-info">
+            <div class="genie-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+            <div><strong>Genie AI</strong><span><span class="genie-status-dot"></span> Online</span></div>
+        </div>
+        <button class="genie-close" id="closeGenieButton" type="button"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="genie-messages" id="genieMessages">
+        <div class="genie-message">
+            <div class="genie-message-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+            <div class="genie-bubble">Need assistance managing your Entra ID credentials or profile settings?</div>
+        </div>
+    </div>
+    <div class="genie-input-area">
+        <input type="text" id="genieInput" placeholder="Ask a question..." autocomplete="off">
+        <button id="genieSendButton" type="button"><i class="fa-solid fa-arrow-up"></i></button>
+    </div>
+    <div class="genie-disclaimer">Genie may occasionally provide inaccurate information.</div>
+</div>
+
+<script src="../js/script.js"></script>
+<script src="components.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        const prof = await apiFetchUserProfile();
+        if (prof) {
+            if (prof.name) document.getElementById("profName").value = prof.name;
+            if (prof.email) document.getElementById("profEmail").value = prof.email;
+            if (prof.phone) document.getElementById("profPhone").value = prof.phone;
+            if (prof.department) document.getElementById("profDept").value = prof.department;
+        }
+    } catch (err) {
+        console.error("Failed to load profile:", err);
+    }
+
+    const form = document.getElementById("profileForm");
+    if (form) {
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const name = document.getElementById("profName").value.trim();
+            const email = document.getElementById("profEmail").value.trim();
+            const phone = document.getElementById("profPhone").value.trim();
+            const department = document.getElementById("profDept").value.trim();
+
+            const res = await apiUpdateUserProfile({ name, email, phone, department });
+            const status = document.getElementById("profileStatus");
+            if (status) {
+                status.style.display = "inline";
+                setTimeout(() => { status.style.display = "none"; }, 3000);
+            }
+        });
+    }
+});
+</script>
+</body>
+</html>
