@@ -17,6 +17,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Literal, Optional
 
+from opentelemetry import trace
 from pydantic import BaseModel, Field, model_validator
 
 from agents.category_agent import classify_category_with_ai
@@ -29,6 +30,7 @@ from agents.routing_agent import reconcile_routing_with_ai, validate_routing
 from services import ai_service
 
 logger = logging.getLogger(__name__)
+tracer = trace.get_tracer("ticketgenie.agents.orchestrator")
 
 Department = Literal[
     "HR Team",
@@ -121,6 +123,21 @@ def classify_ticket(
     Never raises — on failure, returns a fallback result flagged for
     human review.
     """
+    with tracer.start_as_current_span("orchestrator.classify_ticket") as span:
+        span.set_attribute("agent.name", "orchestrator")
+        span.set_attribute("service.method", "classify_ticket")
+        res = _classify_ticket_internal(title, description, context)
+        span.set_attribute("classification.department", res.department)
+        span.set_attribute("classification.category", res.category)
+        span.set_attribute("classification.priority", res.priority)
+        return res
+
+
+def _classify_ticket_internal(
+    title: str,
+    description: str,
+    context: Optional[dict[str, Any]] = None,
+) -> TicketClassification:
     try:
         if ai_service.use_mock_ai():
             raw_result = ai_service.get_ai_classification(title, description, context)
