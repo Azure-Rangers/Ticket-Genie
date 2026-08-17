@@ -5,9 +5,9 @@ console.log("[Script Log] TicketGenie main script.js loaded successfully!");
    ========================================================= */
 (function autoLoadModules() {
     const scriptElement = document.querySelector('script[src*="script.js"]');
-    const basePath = scriptElement ? scriptElement.src.replace("script.js", "") : "/js/";
+    const basePath = scriptElement ? scriptElement.src.split("script.js")[0] : "/js/";
 
-    if (!window.apiFetchAnnouncements) {
+    if (!window.apiFetchTickets && !window.apiFetchAnnouncements) {
         const apiScript = document.createElement("script");
         apiScript.src = basePath + "api.js";
         document.head.appendChild(apiScript);
