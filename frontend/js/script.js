@@ -1,7 +1,7 @@
-
+console.log("[Script Log] TicketGenie main script.js loaded successfully!");
 
 /* =========================================================
-   ROBUST DARK MODE & HAMBURGER SIDEBAR TOGGLES WITH LOGGING
+   GLOBAL DARK MODE & HAMBURGER SIDEBAR TOGGLES WITH LOGGING & EVENT DELEGATION
    ========================================================= */
 function initDarkMode() {
     const savedTheme = localStorage.getItem("theme");
@@ -15,31 +15,6 @@ function initDarkMode() {
     const darkBtns = document.querySelectorAll("#myCustomDarkToggle, #darkModeToggle, .dark-mode-toggle");
     console.log("[Theme Log] Found dark mode toggle button count:", darkBtns.length);
 
-    darkBtns.forEach((btn, index) => {
-        btn.addEventListener("click", (e) => {
-            if (e) e.preventDefault();
-            document.body.classList.toggle("dark-mode");
-            const activeDark = document.body.classList.contains("dark-mode");
-            console.log("[Theme Log] Dark mode button clicked (#" + index + "). Is dark mode active:", activeDark);
-            localStorage.setItem("theme", activeDark ? "dark" : "light");
-
-            const moonSvg = document.getElementById("customMoon");
-            const sunSvg = document.getElementById("customSun");
-            if (moonSvg && sunSvg) {
-                moonSvg.style.display = activeDark ? "none" : "inline-block";
-                sunSvg.style.display = activeDark ? "inline-block" : "none";
-            }
-
-            const moonIcon = document.getElementById("moonIcon");
-            const sunIcon = document.getElementById("sunIcon");
-            if (moonIcon && sunIcon) {
-                moonIcon.style.display = activeDark ? "none" : "inline-block";
-                sunIcon.style.display = activeDark ? "inline-block" : "none";
-            }
-        });
-    });
-
-    // Also sync icons on load
     const activeDark = document.body.classList.contains("dark-mode");
     const moonSvg = document.getElementById("customMoon");
     const sunSvg = document.getElementById("customSun");
@@ -52,21 +27,60 @@ function initDarkMode() {
 function initSidebarToggle() {
     const toggles = document.querySelectorAll("#sidebarToggle, #brandMenuToggle, .sidebar-toggle");
     console.log("[Sidebar Log] Initializing sidebar toggles. Found button count:", toggles.length);
+}
 
-    toggles.forEach((btn, index) => {
-        btn.addEventListener("click", (e) => {
-            if (e) e.stopPropagation();
-            console.log("[Sidebar Log] Hamburger button clicked (#" + index + "). Toggling sidebar collapse.");
-            document.body.classList.toggle("sidebar-collapsed");
-            document.body.classList.toggle("sidebar-closed");
-            
-            const sidebar = document.querySelector(".sidebar") || document.getElementById("shared-sidebar");
-            if (sidebar) {
-                sidebar.classList.toggle("collapsed");
-                console.log("[Sidebar Log] Toggled .collapsed class on sidebar element.");
-            }
-        });
+// Global Fail-Safe Event Delegation
+document.addEventListener("click", function(e) {
+    const darkBtn = e.target.closest("#myCustomDarkToggle, #darkModeToggle, .dark-mode-toggle");
+    if (darkBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        document.body.classList.toggle("dark-mode");
+        const activeDark = document.body.classList.contains("dark-mode");
+        console.log("[Theme Log] Dark mode button clicked via event delegation. Active dark mode:", activeDark);
+        localStorage.setItem("theme", activeDark ? "dark" : "light");
+
+        const moonSvg = document.getElementById("customMoon");
+        const sunSvg = document.getElementById("customSun");
+        if (moonSvg && sunSvg) {
+            moonSvg.style.display = activeDark ? "none" : "inline-block";
+            sunSvg.style.display = activeDark ? "inline-block" : "none";
+        }
+
+        const moonIcon = document.getElementById("moonIcon");
+        const sunIcon = document.getElementById("sunIcon");
+        if (moonIcon && sunIcon) {
+            moonIcon.style.display = activeDark ? "none" : "inline-block";
+            sunIcon.style.display = activeDark ? "inline-block" : "none";
+        }
+        return;
+    }
+
+    const sidebarBtn = e.target.closest("#sidebarToggle, #brandMenuToggle, .sidebar-toggle");
+    if (sidebarBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("[Sidebar Log] Hamburger sidebar button clicked via event delegation.");
+        document.body.classList.toggle("sidebar-collapsed");
+        document.body.classList.toggle("sidebar-closed");
+        
+        const sidebar = document.querySelector(".sidebar") || document.getElementById("shared-sidebar");
+        if (sidebar) {
+            sidebar.classList.toggle("collapsed");
+            console.log("[Sidebar Log] Toggled .collapsed class on sidebar element.");
+        }
+        return;
+    }
+});
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+        initDarkMode();
+        initSidebarToggle();
     });
+} else {
+    initDarkMode();
+    initSidebarToggle();
 }
 
 
