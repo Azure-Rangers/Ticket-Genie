@@ -103,7 +103,7 @@ if (!window.apiRunExecAction) {
 
             // Default mock token for local dev if MSAL idToken is empty
             if (!idToken) {
-                idToken = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.ZXlKdmFXUTZJbVpqTTAyTk5tVTUtT1RJNE1DMDBNR0F6TFRoa056TXRNdGhpWkRneE1tUmtOekZoSWl3aVpXMWhhV3c2SW1SbGRTNWhjRzFwYm1GMEFIUHJhV2QwZFc1c2IyRmtZUzVqYjIwaUxDSnVZVzFsSWpvaVFXUnRhVzRnVlhObGNpSXNJbkp2YkdVcE9pSlRkVEJsY2lCRmJXVnljMjlpSWl3aWFYRjBJanAxTnpFNE16TXlOREVzSW1WNGNDSTZNVGN4T0RNek1qUXFmUT0.mock";
+                idToken = "eyJhbGciOiAiUlMyNTYiLCAidHlwIjogIkpXVCJ9.eyJvaWQiOiAiZGMzYjU2ZTktOTI4MC00MGRjLThkNzMtOThiZmQ4MWZkZDZhIiwgImVtYWlsIjogImFkbWluLmRjM2JAdGlja2V0Z2VuaWUuY29tIiwgIm5hbWUiOiAiU3VwZXIgQWRtaW4iLCAicm9sZSI6ICJTdXBlciBBZG1pbiIsICJleHAiOiAyNTM0MDIzMDA3OTl9.mock";
             }
 
             options = options || {};
