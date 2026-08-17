@@ -410,294 +410,139 @@
 </div>
 
 <script>
-    // Toggle Profile Dropdown
-    const profileBtn = document.getElementById('profileMenuBtn');
-    const profileDropdown = document.getElementById('profileDropdown');
-
-    profileBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        profileDropdown.style.display = profileDropdown.style.display === 'block' ? 'none' : 'block';
-    });
-
-    window.addEventListener('click', () => {
-        if (profileDropdown) {
-            profileDropdown.style.display = 'none';
-        }
-    });
-
-    
-/* =========================================================
-   CUSTOM TOAST / NOTIFICATION BANNER SYSTEM
-========================================================= */
-function showNotification(message, type = "success", duration = 3500) {
-    let container = document.getElementById("toastNotificationContainer");
-    if (!container) {
-        container = document.createElement("div");
-        container.id = "toastNotificationContainer";
-        container.style.cssText = "position: fixed; top: 24px; right: 24px; z-index: 99999; display: flex; flex-direction: column; gap: 12px; max-width: 420px; pointer-events: none;";
-        document.body.appendChild(container);
-    }
-
-    const toast = document.createElement("div");
-    toast.className = `toast-banner toast-${type}`;
-    
-    let icon = '<i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 18px;"></i>';
-    let borderColor = '#10b981';
-    
-    if (type === 'error' || type === 'danger') {
-        icon = '<i class="fa-solid fa-circle-xmark" style="color: #ef4444; font-size: 18px;"></i>';
-        borderColor = '#ef4444';
-    } else if (type === 'warning') {
-        icon = '<i class="fa-solid fa-triangle-exclamation" style="color: #f59e0b; font-size: 18px;"></i>';
-        borderColor = '#f59e0b';
-    } else if (type === 'info') {
-        icon = '<i class="fa-solid fa-circle-info" style="color: #3b82f6; font-size: 18px;"></i>';
-        borderColor = '#3b82f6';
-    }
-
-    toast.style.cssText = `
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-left: 4px solid ${borderColor};
-        border-radius: 8px;
-        padding: 14px 18px;
-        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-family: inherit;
-        font-size: 13px;
-        font-weight: 500;
-        color: #0f172a;
-        pointer-events: auto;
-        opacity: 0;
-        transform: translateY(-16px) scale(0.96);
-        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    `;
-
-    toast.innerHTML = `
-        <div style="flex-shrink: 0; display: flex; align-items: center;">${icon}</div>
-        <div style="flex: 1; line-height: 1.4;">${message}</div>
-        <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 14px; padding: 2px 4px;">&times;</button>
-    `;
-
-    container.appendChild(toast);
-
-    requestAnimationFrame(() => {
-        toast.style.opacity = '1';
-        toast.style.transform = 'translateY(0) scale(1)';
-    });
-
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(-12px) scale(0.96)';
-        setTimeout(() => { toast.remove(); }, 250);
-    }, duration);
-}
-
-window.showNotification = showNotification;
-
-function switchPortalView(viewType) {
-        if (viewType === 'management') {
-            showNotification('Switched to Management View mode.', "info");
-        } else {
-            showNotification('Switched to Employee View mode.', "info");
-        }
-    }
-
-    
-    // Inline robust submit handlers for new-request form
-    async function submitStandardTicket(event) {
-        if (event) event.preventDefault();
-        
-        const subjectEl = document.getElementById("standardSubject");
-        const deptEl = document.getElementById("standardDepartment");
-        const descEl = document.getElementById("standardDescription");
-        
-        const subject = subjectEl ? subjectEl.value.trim() : "";
-        const department = deptEl ? deptEl.value : "IT & Technology";
-        const description = descEl ? descEl.value.trim() : "";
-        
-        if (!subject || !description) {
-            showNotification("Please fill in the Request Title / Subject and Description before submitting.", "warning");
-            return false;
-        }
-
-        const submitBtn = document.getElementById("submitStandardBtn");
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i> Submitting...';
-        }
-
-        let backendDept = null;
-        if (department && department !== "Auto") {
-            if (department.includes("HR")) backendDept = "HR Team";
-            else if (department.includes("Account")) backendDept = "Accounting Team";
-            else if (department.includes("Upper") || department.includes("Admin")) backendDept = "Upper Management";
-            else if (department.includes("Workplace")) backendDept = "Workplace Operations Team";
-            else backendDept = "IT Team";
-        }
-
-        const payload = {
-            title: subject,
-            description: description,
-            category: "IT Support",
-            priority: "Medium",
-            department: backendDept,
-            requester_id: "nm@company.com"
-        };
-
-        try {
-            if (typeof apiCreateTicket === "function") {
-                await apiCreateTicket(payload);
-            } else {
-                await fetch("/api/tickets", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                });
-            }
-        } catch (e) {
-            console.warn("API POST failed, using local storage fallback:", e);
-        }
-
-        try {
-            const STORAGE_KEY = "ticketGenieTickets";
-            const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-            const newTicket = {
-                id: "HD-" + Math.floor(1000 + Math.random() * 9000),
-                title: subject,
-                category: "IT Support",
-                department: backendDept,
-                priority: "Medium",
-                status: "Open",
-                description: description,
-                date: new Date().toISOString().split("T")[0],
-                createdAt: new Date().toISOString()
-            };
-            existing.unshift(newTicket);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
-        } catch (e) {
-            console.error("Local storage save error:", e);
-        }
-
-        showNotification("Support Request Submitted Successfully! Redirecting to My Requests...", "success");
-        window.location.href = "my-tickets.html";
-        return false;
-    }
-    window.submitStandardTicket = submitStandardTicket;
-
-    
-/* =========================================================
-   CUSTOM TOAST / NOTIFICATION BANNER SYSTEM
-========================================================= */
-function showNotification(message, type = "success", duration = 3500) {
-    let container = document.getElementById("toastNotificationContainer");
-    if (!container) {
-        container = document.createElement("div");
-        container.id = "toastNotificationContainer";
-        container.style.cssText = "position: fixed; top: 24px; right: 24px; z-index: 99999; display: flex; flex-direction: column; gap: 12px; max-width: 420px; pointer-events: none;";
-        document.body.appendChild(container);
-    }
-
-    const toast = document.createElement("div");
-    toast.className = `toast-banner toast-${type}`;
-    
-    let icon = '<i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 18px;"></i>';
-    let borderColor = '#10b981';
-    
-    if (type === 'error' || type === 'danger') {
-        icon = '<i class="fa-solid fa-circle-xmark" style="color: #ef4444; font-size: 18px;"></i>';
-        borderColor = '#ef4444';
-    } else if (type === 'warning') {
-        icon = '<i class="fa-solid fa-triangle-exclamation" style="color: #f59e0b; font-size: 18px;"></i>';
-        borderColor = '#f59e0b';
-    } else if (type === 'info') {
-        icon = '<i class="fa-solid fa-circle-info" style="color: #3b82f6; font-size: 18px;"></i>';
-        borderColor = '#3b82f6';
-    }
-
-    toast.style.cssText = `
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-left: 4px solid ${borderColor};
-        border-radius: 8px;
-        padding: 14px 18px;
-        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-family: inherit;
-        font-size: 13px;
-        font-weight: 500;
-        color: #0f172a;
-        pointer-events: auto;
-        opacity: 0;
-        transform: translateY(-16px) scale(0.96);
-        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    `;
-
-    toast.innerHTML = `
-        <div style="flex-shrink: 0; display: flex; align-items: center;">${icon}</div>
-        <div style="flex: 1; line-height: 1.4;">${message}</div>
-        <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 14px; padding: 2px 4px;">&times;</button>
-    `;
-
-    container.appendChild(toast);
-
-    requestAnimationFrame(() => {
-        toast.style.opacity = '1';
-        toast.style.transform = 'translateY(0) scale(1)';
-    });
-
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(-12px) scale(0.96)';
-        setTimeout(() => { toast.remove(); }, 250);
-    }, duration);
-}
-
-window.showNotification = showNotification;
-
 function switchTab(tabType) {
-        const standardContent = document.getElementById('standardTabContent');
-        const leaveContent = document.getElementById('leaveTabContent');
-        const anonymousContent = document.getElementById('anonymousTabContent');
-        
-        const standardBtn = document.getElementById('tabStandardBtn');
-        const leaveBtn = document.getElementById('tabLeaveBtn');
-        const anonymousBtn = document.getElementById('tabAnonymousBtn');
+    const standardContent = document.getElementById('standardTabContent');
+    const leaveContent = document.getElementById('leaveTabContent');
+    const anonymousContent = document.getElementById('anonymousTabContent');
+    
+    const standardBtn = document.getElementById('tabStandardBtn');
+    const leaveBtn = document.getElementById('tabLeaveBtn');
+    const anonymousBtn = document.getElementById('tabAnonymousBtn');
 
-        // Hide all containers
-        standardContent.style.display = 'none';
-        leaveContent.style.display = 'none';
-        anonymousContent.style.display = 'none';
+    if (standardContent) standardContent.style.display = 'none';
+    if (leaveContent) leaveContent.style.display = 'none';
+    if (anonymousContent) anonymousContent.style.display = 'none';
 
-        // Reset button styles (Inactive state: clean professional gray background)
-        [standardBtn, leaveBtn, anonymousBtn].forEach(btn => {
+    [standardBtn, leaveBtn, anonymousBtn].forEach(btn => {
+        if (btn) {
             btn.style.background = '#f1f5f9';
             btn.style.color = '#475569';
             btn.style.border = '1px solid #cbd5e1';
-        });
-
-        // Show active container & highlight button with its unique professional color
-        if (tabType === 'standard') {
-            standardContent.style.display = 'block';
-            standardBtn.style.background = '#3b82f6'; // Professional Blue
-            standardBtn.style.color = '#fff';
-            standardBtn.style.border = 'none';
-        } else if (tabType === 'leave') {
-            leaveContent.style.display = 'block';
-            leaveBtn.style.background = '#10b981'; // Professional Emerald Green
-            leaveBtn.style.color = '#fff';
-            leaveBtn.style.border = 'none';
-        } else if (tabType === 'anonymous') {
-            anonymousContent.style.display = 'block';
-            anonymousBtn.style.background = '#475569'; // Professional Charcoal Slate
-            anonymousBtn.style.color = '#fff';
-            anonymousBtn.style.border = 'none';
         }
+    });
+
+    if (tabType === 'standard') {
+        if (standardContent) standardContent.style.display = 'block';
+        if (standardBtn) { standardBtn.style.background = '#3b82f6'; standardBtn.style.color = '#fff'; standardBtn.style.border = 'none'; }
+    } else if (tabType === 'leave') {
+        if (leaveContent) leaveContent.style.display = 'block';
+        if (leaveBtn) { leaveBtn.style.background = '#10b981'; leaveBtn.style.color = '#fff'; leaveBtn.style.border = 'none'; }
+    } else if (tabType === 'anonymous') {
+        if (anonymousContent) anonymousContent.style.display = 'block';
+        if (anonymousBtn) { anonymousBtn.style.background = '#475569'; anonymousBtn.style.color = '#fff'; anonymousBtn.style.border = 'none'; }
     }
+}
+
+async function submitStandardTicket(event) {
+    if (event) event.preventDefault();
+    
+    const subjectEl = document.getElementById('standardSubject');
+    const deptEl = document.getElementById('standardDepartment');
+    const descEl = document.getElementById('standardDescription');
+    
+    const subject = subjectEl ? subjectEl.value.trim() : '';
+    const department = deptEl ? deptEl.value : 'Auto';
+    const description = descEl ? descEl.value.trim() : '';
+    
+    if (!subject || !description) {
+        if (typeof showNotification === 'function') {
+            showNotification('Please fill in the Request Title / Subject and Description before submitting.', 'warning');
+        } else {
+            alert('Please fill in the Request Title / Subject and Description before submitting.');
+        }
+        return false;
+    }
+
+    const submitBtn = document.getElementById('submitStandardBtn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i> Submitting...';
+    }
+
+    let backendDept = null;
+    if (department && department !== 'Auto') {
+        if (department.includes('HR')) backendDept = 'HR Team';
+        else if (department.includes('Account')) backendDept = 'Accounting Team';
+        else if (department.includes('Upper') || department.includes('Admin')) backendDept = 'Upper Management';
+        else if (department.includes('Workplace')) backendDept = 'Workplace Operations Team';
+        else backendDept = 'IT Team';
+    }
+
+    const payload = {
+        title: subject,
+        description: description,
+        category: 'IT Support',
+        priority: 'Medium',
+        department: backendDept,
+        requester_id: 'nm@company.com'
+    };
+
+    try {
+        if (typeof apiCreateTicket === 'function') {
+            await apiCreateTicket(payload);
+        } else {
+            await fetch('/api/tickets', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        }
+    } catch (e) {
+        console.warn('API POST fallback:', e);
+    }
+
+    try {
+        const STORAGE_KEY = 'ticketGenieTickets';
+        const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        const newTicket = {
+            id: 'HD-' + Math.floor(1000 + Math.random() * 9000),
+            title: subject,
+            category: 'IT Support',
+            department: backendDept || 'AI Auto-Detect',
+            priority: 'Medium',
+            status: 'Open',
+            description: description,
+            date: new Date().toISOString().split('T')[0],
+            createdAt: new Date().toISOString()
+        };
+        existing.unshift(newTicket);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+    } catch (e) {
+        console.error('Local storage error:', e);
+    }
+
+    if (typeof showNotification === 'function') {
+        showNotification('Support Request Submitted Successfully! Redirecting to My Requests...', 'success');
+    }
+    setTimeout(() => {
+        window.location.href = 'my-tickets.html';
+    }, 1200);
+    return false;
+}
+
+function switchPortalView(viewType) {
+    if (typeof showNotification === 'function') {
+        showNotification(viewType === 'management' ? 'Switched to Management View mode.' : 'Switched to Employee View mode.', 'info');
+    }
+}
+
+function handleSignOut(event) {
+    if (event) event.preventDefault();
+    if (confirm('Are you sure you want to sign out of TicketGenie Enterprise?')) {
+        localStorage.removeItem('portalUser');
+        window.location.href = 'index.html';
+    }
+}
 </script>
 <script src="components.js"></script>
 <script src="../js/script.js"></script>
