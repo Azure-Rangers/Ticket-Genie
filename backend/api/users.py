@@ -84,12 +84,31 @@ def handle_azure_login(req: AzureLoginRequest):
         record = session.query(DepartmentUserDB).filter(
             DepartmentUserDB.azure_object_id == verified_oid
         ).first()
-        if record and record.role.lower() in ["admin", "super admin", "operations admin"]:
-            is_admin = True
-            role = record.role
+        if record:
+            if record.role.lower() in ["admin", "super admin", "operations admin"]:
+                is_admin = True
+                role = record.role
+            # Automatically update user_email on mapping if missing
+            if req.email and not record.user_email:
+                record.user_email = req.email
+                session.commit()
         elif verified_oid == "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a":
             is_admin = True
             role = "Super Admin"
+
+    # Synchronize user_profiles table from JWT claims upon login
+    if req.email or req.name:
+        try:
+            from database.crud import update_user_profile
+            profile_id = f"usr-admin-{verified_oid[:8]}"
+            update_user_profile(
+                user_id=profile_id,
+                name=req.name or req.email.split("@")[0],
+                email=req.email,
+                department=record.department_name if record else "IT",
+            )
+        except Exception as err:
+            print(f"Notice: profile sync during login: {err}")
 
     print(f"👤 [Azure Auth API] User {verified_oid} authenticated as role: '{role}', is_admin: {is_admin}, jwt_verified: {jwt_verified}")
     return {

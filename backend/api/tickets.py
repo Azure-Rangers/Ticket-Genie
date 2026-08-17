@@ -174,7 +174,7 @@ def post_comment_to_ticket(
     from database.crud import add_ticket_comment
 
     sender_id = current_user.get("oid") or current_user.get("email") or req.sender_id or "user"
-    sender_role = current_user.get("role") or req.sender_role or "Employee"
+    sender_role = req.sender_role or current_user.get("role") or "Employee"
 
     return add_ticket_comment(
         ticket_id=ticket_id,

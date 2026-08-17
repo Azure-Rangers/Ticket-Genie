@@ -53,22 +53,76 @@ function mapDepartmentName(val) {
 }
 
 async function loadDashboardTickets() {
+    const recentContainer = document.getElementById("recentTicketsContainer");
     const tableBody = document.querySelector(".table-container table tbody");
-    if (!tableBody) return;
-    const fetchFn = window.apiFetchTickets || (async () => getTickets());
-    let tickets = await fetchFn();
+    if (!recentContainer && !tableBody) return;
+
+    let tickets = [];
+    try {
+        const fetchFn = window.apiFetchTickets || apiFetchTickets;
+        tickets = await fetchFn();
+    } catch (e) {
+        console.warn("apiFetchTickets notice in loadDashboardTickets:", e);
+    }
     if (!tickets) tickets = [];
 
-    tableBody.innerHTML = tickets.slice(0, 5).map(t => `
-        <tr onclick="window.location.href='ticket-detail.html?id=${encodeURIComponent(t.id)}'" style="cursor: pointer;">
-            <td><strong>#${escapeHTML(t.id)}</strong></td>
-            <td>${escapeHTML(t.title || "Untitled")}</td>
-            <td>${escapeHTML(t.department || t.category || "General")}</td>
-            <td><span class="status-pill status-${(t.status || "Open").toLowerCase().replaceAll(" ", "-")}">${escapeHTML(t.status || "Open")}</span></td>
-            <td><span class="priority-pill priority-${(t.priority || "Medium").toLowerCase()}">${escapeHTML(t.priority || "Medium")}</span></td>
-            <td>${escapeHTML(t.date || "Today")}</td>
-        </tr>
-    `).join("");
+    // Calculate metrics
+    let openCount = 0;
+    let inProgressCount = 0;
+    let resolvedCount = 0;
+
+    tickets.forEach(t => {
+        const status = (t.status || "").toLowerCase();
+        if (status.includes("in_progress") || status.includes("in progress")) {
+            inProgressCount++;
+        } else if (status.includes("resolved") || status.includes("closed")) {
+            resolvedCount++;
+        } else {
+            openCount++;
+        }
+    });
+
+    const elemOpen = document.getElementById("countOpen");
+    const elemInProgress = document.getElementById("countInProgress");
+    const elemResolved = document.getElementById("countResolved");
+    if (elemOpen) elemOpen.textContent = openCount;
+    if (elemInProgress) elemInProgress.textContent = inProgressCount;
+    if (elemResolved) elemResolved.textContent = resolvedCount;
+
+    if (recentContainer) {
+        if (tickets.length === 0) {
+            recentContainer.innerHTML = '<div style="padding: 24px; text-align: center; color: #64748b;">No recent support requests found.</div>';
+            return;
+        }
+        recentContainer.innerHTML = tickets.slice(0, 5).map(t => `
+            <div onclick="window.location.href='ticket-detail.html?id=${encodeURIComponent(t.id)}'" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <span style="font-weight: 700; color: #6f4b82; font-size: 13px;">#${escapeHTML(t.id)}</span>
+                    <div>
+                        <strong style="display: block; font-size: 14px; color: #1e293b; margin-bottom: 2px;">${escapeHTML(t.title || "Untitled")}</strong>
+                        <span style="font-size: 12px; color: #64748b;">${escapeHTML(t.department || t.category || "General")} • Submitted ${escapeHTML(t.date || "Today")}</span>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span class="badge badge-${(t.status || "Open").toLowerCase().replaceAll(" ", "-")}">${escapeHTML(t.status || "Open")}</span>
+                    <i class="fa-solid fa-chevron-right" style="font-size: 12px; color: #94a3b8;"></i>
+                </div>
+            </div>
+        `).join("");
+    }
+
+    if (tableBody) {
+        tableBody.innerHTML = tickets.slice(0, 5).map(t => `
+            <tr onclick="window.location.href='ticket-detail.html?id=${encodeURIComponent(t.id)}'" style="cursor: pointer;">
+                <td><strong>#${escapeHTML(t.id)}</strong></td>
+                <td>${escapeHTML(t.title || "Untitled")}</td>
+                <td>${escapeHTML(t.department || t.category || "General")}</td>
+                <td><span class="status-pill status-${(t.status || "Open").toLowerCase().replaceAll(" ", "-")}">${escapeHTML(t.status || "Open")}</span></td>
+                <td><span class="priority-pill priority-${(t.priority || "Medium").toLowerCase()}">${escapeHTML(t.priority || "Medium")}</span></td>
+                <td>${escapeHTML(t.date || "Today")}</td>
+            </tr>
+        `).join("");
+    }
 }
 
 async function initializeMyTickets() {
@@ -193,15 +247,26 @@ async function renderTicketCommentsThread(ticketId) {
         return;
     }
 
-    threadContainer.innerHTML = comments.map(c => `
-        <div style="background: ${c.sender_role === 'Employee' ? '#f0fdf4' : '#eef2ff'}; border-left: 4px solid ${c.sender_role === 'Employee' ? '#16a34a' : '#4f46e5'}; padding: 14px 18px; border-radius: 8px; margin-bottom: 8px;">
-            <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748b; margin-bottom: 6px;">
-                <strong>${escapeHTML(c.sender_role || "Support")}</strong>
-                <span>${escapeHTML(c.createdAt ? c.createdAt.substring(0, 16).replace("T", " ") : "Today")}</span>
+    const user = JSON.parse(localStorage.getItem("portalUser") || '{}');
+    const currentName = user.name || "Employee";
+
+    threadContainer.innerHTML = comments.map(c => {
+        const isEmp = (c.sender_role === 'Employee' || c.sender_role === 'User' || c.sender_id === user.objectId);
+        const displayName = c.sender_name || (isEmp ? currentName : (c.sender_role || "Support Agent"));
+        const displayLabel = `${escapeHTML(displayName)} (${escapeHTML(c.sender_role || 'Support')})`;
+        const badgeColor = isEmp ? '#16a34a' : '#4f46e5';
+        const bgColor = isEmp ? '#f0fdf4' : '#eef2ff';
+
+        return `
+            <div style="background: ${bgColor}; border-left: 4px solid ${badgeColor}; padding: 14px 18px; border-radius: 8px; margin-bottom: 8px;">
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748b; margin-bottom: 6px;">
+                    <strong style="color: ${badgeColor};">${displayLabel}</strong>
+                    <span>${escapeHTML(c.createdAt ? c.createdAt.substring(0, 16).replace("T", " ") : "Today")}</span>
+                </div>
+                <div style="font-size: 14px; color: #1e293b; line-height: 1.5;">${escapeHTML(c.message)}</div>
             </div>
-            <div style="font-size: 14px; color: #1e293b; line-height: 1.5;">${escapeHTML(c.message)}</div>
-        </div>
-    `).join("");
+        `;
+    }).join("");
 
     threadContainer.scrollTop = threadContainer.scrollHeight;
 }
@@ -371,7 +436,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (document.getElementById("myTicketsList")) {
         initializeMyTickets();
     }
-    if (document.querySelector(".table-container table tbody")) {
+    if (document.getElementById("recentTicketsContainer") || document.querySelector(".table-container table tbody")) {
         loadDashboardTickets();
     }
     if (document.getElementById("ticketDetailContainer")) {

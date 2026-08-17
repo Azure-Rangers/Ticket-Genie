@@ -140,7 +140,9 @@ function renderEmployeeNMTopNav() {
       if (profile && profile.name) {
         const nameElem = document.getElementById("topNavUserName");
         const avatarElem = document.getElementById("topNavAvatar");
+        const roleElem = document.getElementById("currentRoleDisplay");
         if (nameElem) nameElem.textContent = profile.name;
+        if (roleElem && profile.role) roleElem.textContent = profile.role;
         if (avatarElem) {
           const fetchedInitials = profile.avatar || profile.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
           avatarElem.textContent = fetchedInitials;
