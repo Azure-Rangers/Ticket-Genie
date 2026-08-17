@@ -130,7 +130,6 @@ function renderEmployeeNMTopNav() {
   `;
 }
 
-<<<<<<< HEAD
 window.toggleEmployeeDarkMode = function(e) {
     if (e) {
         if (e.__darkToggleHandled) return;
