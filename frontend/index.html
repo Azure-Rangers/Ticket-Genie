@@ -10,19 +10,14 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { height: 100vh; background-color: #f4f5f8; display: flex; justify-content: center; align-items: center; }
     
-    .login-wrapper { width: 100%; max-width: 540px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; overflow: hidden; }
+    .login-wrapper { width: 100%; max-width: 520px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; overflow: hidden; }
     
     .login-header { background-color: #2b1b38; padding: 32px 24px; text-align: center; color: white; }
     .login-header h1 { font-size: 1.5rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; }
     .login-header p { color: #a5b4fc; font-size: 0.9rem; }
     .bot-icon { background: rgba(255,255,255,0.1); color: #facc15; padding: 6px 8px; border-radius: 8px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
     
-    .portal-container { padding: 28px 32px 32px; display: flex; flex-direction: column; gap: 16px; }
-    
-    .role-switcher { display: flex; gap: 6px; background: #f1f5f9; padding: 4px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 4px; }
-    .role-pill { flex: 1; padding: 8px 12px; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; background: transparent; color: #64748b; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 6px; }
-    .role-pill:hover { color: #1e293b; background: rgba(255,255,255,0.5); }
-    .role-pill.active { background: #ffffff; color: #4f46e5; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .portal-container { padding: 32px; display: flex; flex-direction: column; gap: 16px; }
     
     .portal-btn { display: flex; align-items: center; gap: 16px; padding: 18px 20px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff; cursor: pointer; transition: all 0.2s ease; text-align: left; width: 100%; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
     .portal-btn:hover { border-color: #a5b4fc; background: #fefeff; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(79, 70, 229, 0.08); }
@@ -38,7 +33,7 @@
     
     .portal-btn:hover .caret { color: #4f46e5; transform: translateX(4px); transition: 0.2s; }
 
-    .azure-status { font-size: 0.78rem; color: #334155; background: #f8fafc; padding: 8px 14px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center; display: inline-flex; align-items: center; gap: 8px; justify-content: center; }
+    .azure-status { font-size: 0.78rem; color: #334155; background: #f8fafc; padding: 8px 14px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center; display: inline-flex; align-items: center; gap: 8px; justify-content: center; margin-bottom: 4px; }
     .azure-status code { font-family: monospace; font-weight: 600; color: #2563eb; background: #eff6ff; padding: 2px 6px; border-radius: 4px; }
   </style>
 </head>
@@ -47,30 +42,17 @@
   <div class="login-wrapper">
     <div class="login-header">
       <h1><span class="bot-icon"><i class="ph-fill ph-ticket"></i></span> TicketGenie</h1>
-      <p>Role-Based Portal Access Control</p>
+      <p>Select your workspace to continue</p>
     </div>
     
     <div class="portal-container">
-      <!-- Role Switcher Selector -->
-      <div class="role-switcher" id="rolePillSwitcher">
-        <button class="role-pill" data-role="Employee" onclick="selectSimulatedRole('Employee')">
-          <i class="ph-bold ph-user"></i> Employee
-        </button>
-        <button class="role-pill" data-role="Manager" onclick="selectSimulatedRole('Manager')">
-          <i class="ph-bold ph-shield-check"></i> Manager / Ticketer
-        </button>
-        <button class="role-pill" data-role="Super Admin" onclick="selectSimulatedRole('Super Admin')">
-          <i class="ph-bold ph-crown"></i> Super Admin
-        </button>
-      </div>
-
-      <!-- Azure AD Status Badge -->
+      <!-- Azure AD Status Badge (Automatically Updated by Azure AD authentication) -->
       <div id="azureStatusBadge" class="azure-status">
         <i class="ph-bold ph-lock-key" style="color:#64748b;"></i> Azure AD: <span>Authenticating Session...</span>
       </div>
 
-      <!-- Employee Portal Button -->
-      <button id="employeeBtn" class="portal-btn" style="display: flex;" onclick="login('Employee_NM')">
+      <!-- Employee Portal Button (Visible to all authenticated users) -->
+      <button id="employeeBtn" class="portal-btn" style="display: none;" onclick="login('Employee_NM')">
         <div class="portal-icon icon-employee"><i class="ph-duotone ph-user"></i></div>
         <div class="portal-text">
           <h3>Employee Portal (NM)</h3>
@@ -79,7 +61,7 @@
         <i class="ph-bold ph-caret-right caret"></i>
       </button>
 
-      <!-- Manager / Ticketer (Admin AV) Button -->
+      <!-- Ticketer / Admin (AV) Button (Visible ONLY to Manager / Admin / Ticketer) -->
       <button id="adminBtn" class="portal-btn" style="display: none;" onclick="login('Admin_AV')">
         <div class="portal-icon icon-admin"><i class="ph-duotone ph-shield-check"></i></div>
         <div class="portal-text">
@@ -89,7 +71,7 @@
         <i class="ph-bold ph-caret-right caret"></i>
       </button>
 
-      <!-- SuperAdmin Portal Button -->
+      <!-- SuperAdmin Governance Portal (SS) Button (Visible ONLY to Super Admin) -->
       <button id="superAdminBtn" class="portal-btn" style="display: none;" onclick="login('SuperAdmin_SS')">
         <div class="portal-icon icon-super"><i class="ph-duotone ph-crown"></i></div>
         <div class="portal-text">
@@ -102,99 +84,41 @@
   </div>
 
   <script src="js/script.js"></script>
-  <script src="js/azure-auth.js?v=9.0"></script>
+  <script src="js/azure-auth.js?v=10.0"></script>
   <script>
-    function selectSimulatedRole(targetRole) {
-      let user = window.AzureAuth ? window.AzureAuth.getAzureUser() : null;
-      if (!user) {
-        user = {
-          objectId: "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a",
-          email: targetRole === "Super Admin" ? "ss@company.com" : (targetRole === "Manager" ? "manager@ticketgenie.com" : "nm@company.com"),
-          name: targetRole === "Super Admin" ? "SuperAdmin SS" : (targetRole === "Manager" ? "Manager AV" : "Employee NM"),
-          role: targetRole,
-          isAdmin: targetRole !== "Employee",
-          idToken: ""
-        };
-      } else {
-        user = { ...user, role: targetRole, isAdmin: targetRole !== "Employee" };
-      }
-
-      localStorage.setItem("azureUser", JSON.stringify(user));
-      localStorage.setItem("portalUser", JSON.stringify({
-        email: user.email,
-        role: targetRole,
-        name: user.name,
-        objectId: user.objectId,
-        idToken: user.idToken || ""
-      }));
-
-      // Highlight active pill button
-      document.querySelectorAll(".role-pill").forEach(pill => {
-        const pillRole = pill.getAttribute("data-role");
-        if (pillRole.toLowerCase() === targetRole.toLowerCase() || (targetRole === "Manager" && pillRole.includes("Manager"))) {
-          pill.classList.add("active");
-        } else {
-          pill.classList.remove("active");
-        }
-      });
-
-      if (window.AzureAuth && typeof window.AzureAuth.checkAdminPortalVisibility === "function") {
-        window.AzureAuth.checkAdminPortalVisibility(user);
-      }
-    }
-
     function login(roleType) {
       const azureUser = window.AzureAuth ? window.AzureAuth.getAzureUser() : null;
       const objectId = azureUser ? azureUser.objectId : "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a";
+      const currentRole = azureUser ? azureUser.role : "Super Admin";
       
       if (roleType === 'Admin_AV') {
-        const role = azureUser ? azureUser.role : 'Manager';
-        console.log("%c🔑 [Azure Auth] Manager/Ticketer accessing Admin AV portal. Role:", "color: #4f46e5; font-weight: bold;", role);
         localStorage.setItem('portalUser', JSON.stringify({
-          email: azureUser ? azureUser.email : 'manager@ticketgenie.com',
-          role: role.includes("Manager") || role.includes("Ticketer") ? role : 'Manager',
-          name: azureUser ? azureUser.name : 'Manager AV',
+          email: azureUser ? azureUser.email : 'admin@ticketgenie.com',
+          role: currentRole,
+          name: azureUser ? azureUser.name : 'Admin AV',
           objectId: objectId
         }));
         window.location.href = 'admin_AV/admin_dashboard.html';
         
       } else if (roleType === 'Employee_NM') {
-        console.log("%c👤 [Azure Auth] Accessing Employee NM portal.", "color: #16a34a; font-weight: bold;");
         localStorage.setItem('portalUser', JSON.stringify({
           email: azureUser ? azureUser.email : 'nm@company.com',
-          role: azureUser ? azureUser.role : 'Employee',
+          role: currentRole,
           name: azureUser ? azureUser.name : 'Employee NM',
           objectId: objectId
         }));
         window.location.href = 'employee_NM/index.html'; 
         
       } else if (roleType === 'SuperAdmin_SS') {
-        console.log("%c👑 [Azure Auth] SuperAdmin accessing Management portal.", "color: #b45309; font-weight: bold;");
         localStorage.setItem('portalUser', JSON.stringify({
           email: azureUser ? azureUser.email : 'ss@company.com',
-          role: 'Super Admin',
+          role: currentRole,
           name: azureUser ? azureUser.name : 'SuperAdmin SS',
           objectId: objectId
         }));
         window.location.href = 'management/index.html';
       }
     }
-
-    document.addEventListener("DOMContentLoaded", function() {
-      const azureUser = window.AzureAuth ? window.AzureAuth.getAzureUser() : null;
-      const currentRole = azureUser ? azureUser.role : "Employee";
-
-      document.querySelectorAll(".role-pill").forEach(pill => {
-        const pillRole = pill.getAttribute("data-role");
-        if (currentRole.toLowerCase().includes("super") && pillRole === "Super Admin") {
-          pill.classList.add("active");
-        } else if ((currentRole.toLowerCase().includes("manager") || currentRole.toLowerCase().includes("admin") || currentRole.toLowerCase().includes("ticketer")) && !currentRole.toLowerCase().includes("super") && pillRole === "Manager") {
-          pill.classList.add("active");
-        } else if (currentRole.toLowerCase() === "employee" && pillRole === "Employee") {
-          pill.classList.add("active");
-        }
-      });
-    });
   </script>
 </body>
 </html>
