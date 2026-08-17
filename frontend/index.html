@@ -3,20 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TicketGenie - Select Portal</title>
+  <title>TicketGenie - Sign In</title>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { height: 100vh; background-color: #f4f5f8; display: flex; justify-content: center; align-items: center; }
+    body { min-height: 100vh; background: #f8f0fb; display: flex; justify-content: center; align-items: center; padding: 24px; }
     
-    .login-wrapper { width: 100%; max-width: 500px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; overflow: hidden; }
+    .login-wrapper { width: 100%; max-width: 480px; background: white; border-radius: 14px; box-shadow: 0 16px 35px rgba(43,27,56,0.1); border: 1px solid #e5e7eb; overflow: hidden; }
     
-    .login-header { background-color: #2b1b38; padding: 32px 24px; text-align: center; color: white; }
+    .login-header { background-color: #5b315d; padding: 30px 24px; color: white; }
     .login-header h1 { font-size: 1.5rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; }
-    .login-header p { color: #a5b4fc; font-size: 0.9rem; }
+    .login-header p { color: #c4b5fd; font-size: 0.85rem; margin-top: 4px; }
     .bot-icon { background: rgba(255,255,255,0.1); color: #facc15; padding: 6px 8px; border-radius: 8px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
     
-    .portal-container { padding: 32px; display: flex; flex-direction: column; gap: 16px; }
+    .login-form { padding: 30px; display: flex; flex-direction: column; gap: 18px; }
+    .field { display: flex; flex-direction: column; gap: 7px; }
+    .field label { color: #374151; font-size: 0.82rem; font-weight: 600; }
+    .field input { width: 100%; height: 44px; border: 1px solid #d1d5db; border-radius: 8px; padding: 0 13px; color: #111827; font-size: 0.9rem; outline: none; }
+    .field input:focus { border-color: #7a4d86; box-shadow: 0 0 0 3px rgba(122,77,134,0.14); }
+    .role-label { color: #374151; font-size: 0.82rem; font-weight: 600; }
+    .role-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+    .role-option { border: 1px solid #e5e7eb; border-radius: 9px; padding: 12px 8px; background: #fff; color: #4b5563; cursor: pointer; font-size: 0.76rem; font-weight: 600; text-align: center; transition: 0.2s; }
+    .role-option i { display: block; margin-bottom: 6px; font-size: 1.2rem; }
+    .role-option:hover, .role-option.selected { border-color: #b58aba; background: #f3e8f5; color: #5b315d; }
+    .department-field { display: none; }
+    .department-field.visible { display: flex; }
+    .department-select { width: 100%; height: 44px; border: 1px solid #d1d5db; border-radius: 8px; padding: 0 13px; color: #374151; background: #fff; font-size: 0.88rem; outline: none; }
+    .department-select:focus { border-color: #7a4d86; box-shadow: 0 0 0 3px rgba(122,77,134,0.14); }
+    .login-submit { height: 44px; border: 0; border-radius: 8px; background: #7a4d86; color: #fff; cursor: pointer; font-size: 0.9rem; font-weight: 700; }
+    .login-submit:hover { background: #633b6f; }
+    .login-error { display: none; padding: 10px 12px; border-radius: 7px; background: #fef2f2; color: #b91c1c; font-size: 0.8rem; }
+    .login-note { color: #6b7280; font-size: 0.75rem; line-height: 1.45; text-align: center; }
     
     .portal-btn { display: flex; align-items: center; gap: 16px; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff; cursor: pointer; transition: all 0.2s ease; text-align: left; width: 100%; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
     .portal-btn:hover { border-color: #a5b4fc; background: #fefeff; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(79, 70, 229, 0.08); }
@@ -38,57 +55,45 @@
   <div class="login-wrapper">
     <div class="login-header">
       <h1><span class="bot-icon"><i class="ph-fill ph-ticket"></i></span> TicketGenie</h1>
-      <p>Select your workspace to continue</p>
+      <p>Sign in to your support workspace</p>
     </div>
-    
-    <div class="portal-container">
-      <button class="portal-btn" onclick="login('Admin_AV')">
-        <div class="portal-icon icon-admin"><i class="ph-duotone ph-shield-check"></i></div>
-        <div class="portal-text">
-          <h3>Login as Admin (AV)</h3>
-          <p>Access the HR/IT HelpDesk & Operations Portal</p>
-        </div>
-        <i class="ph-bold ph-caret-right caret"></i>
-      </button>
-
-      <button class="portal-btn" onclick="login('Employee_NM')">
-        <div class="portal-icon icon-employee"><i class="ph-duotone ph-user"></i></div>
-        <div class="portal-text">
-          <h3>Login as Employee (NM)</h3>
-          <p>Submit tickets, read policies, and check statuses</p>
-        </div>
-        <i class="ph-bold ph-caret-right caret"></i>
-      </button>
-
-      <button class="portal-btn" onclick="login('SuperAdmin_SS')">
-        <div class="portal-icon icon-super"><i class="ph-duotone ph-crown"></i></div>
-        <div class="portal-text">
-          <h3>Login as SuperAdmin (SS)</h3>
-          <p>Full system access, analytics, and settings</p>
-        </div>
-        <i class="ph-bold ph-caret-right caret"></i>
-      </button>
-    </div>
+    <form class="login-form" id="loginForm">
+      <div class="field"><label for="loginIdentity">Username or email</label><input id="loginIdentity" name="identity" type="text" placeholder="Enter your username or email" autocomplete="username" required></div>
+      <div class="field"><label for="loginPassword">Password</label><input id="loginPassword" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required></div>
+      <div class="field"><span class="role-label">Sign in as</span><div class="role-grid" role="radiogroup" aria-label="Choose account type"><button class="role-option selected" type="button" data-role="admin" aria-pressed="true"><i class="ph-duotone ph-shield-check"></i>Admin</button><button class="role-option" type="button" data-role="employee" aria-pressed="false"><i class="ph-duotone ph-user"></i>Employee</button><button class="role-option" type="button" data-role="management" aria-pressed="false"><i class="ph-duotone ph-crown"></i>Upper Management</button></div></div>
+      <div class="field department-field visible" id="departmentField"><label for="adminDepartment">Admin department</label><select class="department-select" id="adminDepartment"><option value="IT">IT</option><option value="HR">HR</option><option value="Accounting">Accounting</option></select></div>
+      <div class="login-error" id="loginError" role="alert">Enter your username or email and password to continue.</div>
+      <button class="login-submit" type="submit">Sign in</button>
+      <p class="login-note">Use your TicketGenie workspace credentials. Access is routed according to the selected role.</p>
+    </form>
   </div>
 
   <script src="js/script.js"></script>
   <script>
-    function login(roleType) {
-      if (roleType === 'Admin_AV') {
-        localStorage.setItem('portalUser', JSON.stringify({ email: 'av@company.com', role: 'IT', name: 'Admin AV' }));
-        window.location.href = 'admin_AV/admin_dashboard.html';
-        
-      } else if (roleType === 'Employee_NM') {
-        localStorage.setItem('portalUser', JSON.stringify({ email: 'nm@company.com', role: 'Employee', name: 'Employee NM' }));
-        
-        // Route to the employee dashboard home page
-        window.location.href = 'employee_NM/index.html'; 
-        
-      } else if (roleType === 'SuperAdmin_SS') {
-        localStorage.setItem('portalUser', JSON.stringify({ email: 'ss@company.com', role: 'Super Admin', name: 'SuperAdmin SS' }));
-        window.location.href = 'management/index.html';
-      }
-    }
+    let selectedRole = 'admin';
+    const departmentField = document.getElementById('departmentField');
+    document.querySelectorAll('.role-option').forEach((button) => button.addEventListener('click', () => {
+      selectedRole = button.dataset.role;
+      departmentField.classList.toggle('visible', selectedRole === 'admin');
+      document.querySelectorAll('.role-option').forEach((option) => { const selected = option === button; option.classList.toggle('selected', selected); option.setAttribute('aria-pressed', String(selected)); });
+    }));
+    document.getElementById('loginForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const identity = document.getElementById('loginIdentity').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const error = document.getElementById('loginError');
+      if (!identity || !password) { error.style.display = 'block'; return; }
+      error.style.display = 'none';
+      const department = document.getElementById('adminDepartment').value;
+      const users = {
+        admin: { email: identity, role: department, department, name: identity.split('@')[0] || 'Admin' },
+        employee: { email: identity, role: 'Employee', name: identity.split('@')[0] || 'Employee' },
+        management: { email: identity, role: 'Management', name: identity.split('@')[0] || 'Management' }
+      };
+      localStorage.setItem('portalUser', JSON.stringify(users[selectedRole]));
+      const destinations = { employee: 'employee_NM/index.html', management: 'management/index.html', admin: 'admin_AV/admin_dashboard.html' };
+      window.location.href = destinations[selectedRole];
+    });
   </script>
 </body>
 </html>
