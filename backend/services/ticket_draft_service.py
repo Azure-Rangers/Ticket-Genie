@@ -119,13 +119,15 @@ def _fallback_title(description: str, *, max_words: int = 10) -> str:
 def _merge_description(
     existing: Optional[str], extracted: Optional[str]
 ) -> Optional[str]:
-    if not extracted:
-        return existing
-    if not existing:
-        return extracted
-    if extracted in existing:
-        return existing
-    return f"{existing} {extracted}".strip()
+    """
+    The model is shown the full conversation and the current draft every
+    turn and is instructed to return the complete, up-to-date summary in
+    `description` (not just this turn's new sentence) - so a fresh
+    non-empty extraction replaces the running draft's description rather
+    than being appended to it. Appending here is what previously produced
+    transcript-style, ever-growing descriptions.
+    """
+    return extracted if extracted else existing
 
 
 def _filter_missing_fields(gpt_missing: List[str], draft: TicketDraft) -> List[str]:

@@ -124,8 +124,23 @@ leave_management):
   the current flow (support vs leave), matched by meaning - e.g. a
   laptop problem is "IT & Technology", a request for medical leave is
   "Medical Leave". If nothing fits confidently, leave it null.
-- `description` should restate what the user told you in their own
-  words - do not add details they did not provide.
+- `description` is a concise, professional SUMMARY of the request as a
+  whole - not a transcript and not a per-turn restatement. Every turn,
+  re-synthesize the full up-to-date description from everything relevant
+  said across the WHOLE conversation so far (shown below), replacing any
+  previous description rather than adding a new sentence onto it. Aim
+  for roughly 3-4 sentences (shorter is fine, and preferred, if little
+  has been said) covering whichever of these are actually known: what
+  the issue/request is, relevant symptoms/details, the device/system/
+  context involved, when it started, business impact, troubleshooting
+  already tried, and important dates/constraints. Do not quote the
+  user's own phrasing verbatim, do not write "the user said...", and
+  never state the same fact twice. Never invent a detail that was not
+  actually stated - preserve every important fact already established,
+  do not drop one just to shorten the summary.
+- `title` stays short and descriptive - roughly 3-8 words identifying
+  the request (e.g. "VPN connection timeout on Mac") - never a full
+  sentence or a fragment of what the user typed.
 - missing_fields should list, in plain language, only what is still
   genuinely needed to complete the ticket (e.g. "a bit more detail
   about the issue", "which type of leave", "the start date"). Never
