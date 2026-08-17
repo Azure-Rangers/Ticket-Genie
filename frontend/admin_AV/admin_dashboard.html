@@ -258,35 +258,35 @@
         <div class="metric-card">
           <div class="metric-info">
             <div class="metric-title">Open Tickets</div>
-            <div class="metric-value">12</div>
-            <div class="metric-sub" style="color:#4f46e5;">4 need action</div>
+            <div class="metric-value" id="metricOpenTickets">--</div>
+            <div class="metric-sub" style="color:#4f46e5;">Live Queue</div>
           </div>
           <div class="icon-box icon-purple"><i class="ph-duotone ph-clipboard-text"></i></div>
         </div>
         
         <div class="metric-card">
           <div class="metric-info">
-            <div class="metric-title">Approvals</div>
-            <div class="metric-value">5</div>
-            <div class="metric-sub">Awaiting sign-off</div>
+            <div class="metric-title">Approvals / Pending</div>
+            <div class="metric-value" id="metricApprovals">--</div>
+            <div class="metric-sub">Awaiting Action</div>
           </div>
           <div class="icon-box icon-orange"><i class="ph-duotone ph-check-circle"></i></div>
         </div>
         
         <div class="metric-card">
           <div class="metric-info">
-            <div class="metric-title">SLA Alerts</div>
-            <div class="metric-value" style="color: #dc2626;">2</div>
-            <div class="metric-sub" style="color:#dc2626;">Approaching breach</div>
+            <div class="metric-title">High Priority</div>
+            <div class="metric-value" id="metricSlaAlerts" style="color: #dc2626;">--</div>
+            <div class="metric-sub" style="color:#dc2626;">Urgent SLA</div>
           </div>
           <div class="icon-box icon-red"><i class="ph-duotone ph-warning-circle"></i></div>
         </div>
         
         <div class="metric-card">
           <div class="metric-info">
-            <div class="metric-title">Resolved Today</div>
-            <div class="metric-value">24</div>
-            <div class="metric-sub" style="color:#16a34a;">14 by AI</div>
+            <div class="metric-title">Resolved</div>
+            <div class="metric-value" id="metricResolvedToday">--</div>
+            <div class="metric-sub" style="color:#16a34a;">Closed Tickets</div>
           </div>
           <div class="icon-box icon-green"><i class="ph-duotone ph-check-square-offset"></i></div>
         </div>
@@ -368,35 +368,8 @@
             </tr>
           </thead>
           <tbody id="ticketsTableBody">
-            <tr onclick="window.location.href='inbox.html#T-1049'">
-              <td class="ticket-id">T-1049</td>
-              <td class="ticket-subject">H1B Visa LCA Document Signature</td>
-              <td><span class="priority-badge priority-high">High</span></td>
-              <td class="ticket-time">Today, 9:00 AM</td>
-            </tr>
-            <tr onclick="window.location.href='inbox.html#T-1045'">
-              <td class="ticket-id">T-1045</td>
-              <td class="ticket-subject">Missing overtime pay on last check</td>
-              <td><span class="priority-badge priority-high">High</span></td>
-              <td class="ticket-time">Today, 10:30 AM</td>
-            </tr>
-            <tr onclick="window.location.href='inbox.html#T-1041'">
-              <td class="ticket-id">T-1041</td>
-              <td class="ticket-subject">Laptop refresh request for new hire</td>
-              <td><span class="priority-badge priority-medium">Medium</span></td>
-              <td class="ticket-time">Today, 11:15 AM</td>
-            </tr>
-            <tr onclick="window.location.href='inbox.html#T-1037'">
-              <td class="ticket-id">T-1037</td>
-              <td class="ticket-subject">OPT status update and documentation</td>
-              <td><span class="priority-badge priority-high">High</span></td>
-              <td class="ticket-time">Yesterday, 3:45 PM</td>
-            </tr>
-            <tr onclick="window.location.href='inbox.html#T-1032'">
-              <td class="ticket-id">T-1032</td>
-              <td class="ticket-subject">Annual compliance training completion</td>
-              <td><span class="priority-badge priority-low">Low</span></td>
-              <td class="ticket-time">Yesterday, 2:20 PM</td>
+            <tr>
+              <td colspan="4" style="padding: 20px; text-align: center; color: #6b7280;">Loading dashboard tickets...</td>
             </tr>
           </tbody>
         </table>
@@ -459,8 +432,59 @@
       document.getElementById('loginWarning').style.display = 'block'; 
     }
     
-    // Initialize Genie Chatbot
-    initializeGenie();
+    async function loadAdminDashboardDynamicData() {
+      try {
+        const fetchFn = window.apiFetchTickets || (async () => []);
+        const rawTickets = await fetchFn({ adminView: true });
+
+        if (!rawTickets || !Array.isArray(rawTickets)) {
+          throw new Error("Failed to load dashboard tickets payload from server.");
+        }
+
+        const openCount = rawTickets.filter(t => (t.status || 'Open').toLowerCase() === 'open').length;
+        const pendingCount = rawTickets.filter(t => (t.status || '').toLowerCase() === 'pending').length;
+        const highPriorityCount = rawTickets.filter(t => (t.priority || '').toLowerCase() === 'high').length;
+        const resolvedCount = rawTickets.filter(t => (t.status || '').toLowerCase() === 'resolved').length;
+
+        document.getElementById('metricOpenTickets').innerText = openCount;
+        document.getElementById('metricApprovals').innerText = pendingCount;
+        document.getElementById('metricSlaAlerts').innerText = highPriorityCount;
+        document.getElementById('metricResolvedToday').innerText = resolvedCount;
+
+        const tbody = document.getElementById('ticketsTableBody');
+        if (!tbody) return;
+
+        if (rawTickets.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" style="padding: 20px; text-align: center; color: #9ca3af;">No tickets found in database.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = rawTickets.slice(0, 5).map(t => {
+          const priority = t.priority || 'Medium';
+          const priorityClass = `priority-${priority.toLowerCase()}`;
+          const timeStr = t.created_at ? new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently';
+          return `
+            <tr onclick="window.location.href='inbox.html#${escapeHTML(t.id)}'">
+              <td class="ticket-id">${escapeHTML(t.id)}</td>
+              <td class="ticket-subject">${escapeHTML(t.title || t.subject || 'Untitled')}</td>
+              <td><span class="priority-badge ${priorityClass}">${escapeHTML(priority)}</span></td>
+              <td class="ticket-time">${escapeHTML(timeStr)}</td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error("loadAdminDashboardDynamicData error:", err);
+        const tbody = document.getElementById('ticketsTableBody');
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="4" style="padding: 20px; text-align: center; color: #dc2626; font-weight: 600;">⚠️ Error fetching live API data: ${escapeHTML(err.message)}</td></tr>`;
+        }
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      initializeGenie();
+      loadAdminDashboardDynamicData();
+    });
   </script>
 </body>
 </html>

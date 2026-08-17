@@ -237,16 +237,7 @@
               </thead>
               <tbody id="historyTableBody">
                 <tr>
-                  <td><strong>Q3 Compliance Training Deadline</strong></td>
-                  <td>All Employees</td>
-                  <td>Aug 10, 2026</td>
-                  <td><span class="status-tag">Active</span></td>
-                </tr>
-                <tr>
-                  <td><strong>Open Enrollment Period Started</strong></td>
-                  <td>All Employees</td>
-                  <td>Jul 01, 2026</td>
-                  <td><span class="status-tag" style="background:#f3f4f6; color:#4b5563;">Archived</span></td>
+                  <td colspan="4" style="padding: 16px; text-align: center; color: #6b7280;">Loading announcements from server...</td>
                 </tr>
               </tbody>
             </table>
@@ -296,7 +287,7 @@
         <div class="genie-messages" id="genieMessages">
           <div class="genie-message">
             <div class="genie-message-avatar"><i class="ph-fill ph-magic-wand"></i></div>
-            <div class="genie-bubble">Hi! I'm Genie. I can help you craft announcements, find information, or guide you through common tasks.</div>
+            <div class="genie-bubble">Hi! I'm Genie. I can help you draft announcements, communicate updates, or analyze queues.</div>
           </div>
           <div class="genie-suggestions">
             <button class="genie-suggestion" type="button">Draft announcement</button>
@@ -313,6 +304,7 @@
     </div>
   </main>
   <link rel="stylesheet" href="../css/style.css">
+  <script src="../js/api.js"></script>
   <script src="../js/script.js"></script>
   <script>
     function toggleSidebar() { document.getElementById('appSidebar').classList.toggle('collapsed'); }
@@ -333,6 +325,43 @@
       window.location.href = '../index.html';
     }
 
+    async function loadAnnouncementsHistory() {
+      try {
+        const fetchFn = window.apiFetchAnnouncements || (async () => []);
+        const announcements = await fetchFn();
+        
+        const tbody = document.getElementById('historyTableBody');
+        if (!tbody) return;
+
+        if (!announcements || !Array.isArray(announcements)) {
+          throw new Error("Failed to fetch announcements from API endpoint.");
+        }
+
+        if (announcements.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" style="padding: 16px; text-align: center; color: #9ca3af;">No announcements published yet.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = announcements.map(a => {
+          const dateStr = a.created_at ? new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent';
+          return `
+            <tr>
+              <td><strong>${escapeHTML(a.title || a.subject || 'Announcement')}</strong></td>
+              <td>${escapeHTML(a.audience || 'All Employees')}</td>
+              <td>${escapeHTML(dateStr)}</td>
+              <td><span class="status-tag">Active</span></td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error("loadAnnouncementsHistory error:", err);
+        const tbody = document.getElementById('historyTableBody');
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="4" style="padding: 16px; text-align: center; color: #dc2626; font-weight: 600;">⚠️ Error loading announcements: ${escapeHTML(err.message)}</td></tr>`;
+        }
+      }
+    }
+
     // --- Loading Wrapper ---
     function withLoading(btnElement, callback) {
       if (!btnElement) { callback(); return; }
@@ -340,7 +369,7 @@
       setTimeout(() => {
         btnElement.classList.remove('btn-loading');
         callback();
-      }, 1200); // 1.2s delay to simulate AI thinking
+      }, 1200);
     }
 
     // --- AI Memo Generator ---
@@ -363,7 +392,7 @@
     }
 
     // --- Publish Function ---
-    function publishMemo(btnElement) {
+    async function publishMemo(btnElement) {
       const subject = document.getElementById('memoSubject').value.trim();
       const body = document.getElementById('memoBody').value.trim();
       const audience = document.getElementById('targetAudience').value;
@@ -373,28 +402,24 @@
         return;
       }
 
-      withLoading(btnElement, () => {
-        // Prepend to history table
-        const tbody = document.getElementById('historyTableBody');
-        const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        
-        const newRow = `
-          <tr>
-            <td><strong>${subject}</strong></td>
-            <td>${audience}</td>
-            <td>${today}</td>
-            <td><span class="status-tag">Active</span></td>
-          </tr>
-        `;
-        tbody.insertAdjacentHTML('afterbegin', newRow);
+      const createFn = window.apiCreateAnnouncement || (async () => null);
+      const res = await createFn({ title: subject, content: body, audience });
 
-        // Clear form
-        document.getElementById('memoSubject').value = '';
-        document.getElementById('memoBody').value = '';
-        alert("Announcement Published Successfully!");
-      });
+      if (!res) {
+        alert("Error publishing announcement to database server!");
+        return;
+      }
+
+      document.getElementById('memoSubject').value = '';
+      document.getElementById('memoBody').value = '';
+      alert("Announcement Published Successfully to Database!");
+      loadAnnouncementsHistory();
     }
-    initializeGenie();
+
+    document.addEventListener("DOMContentLoaded", () => {
+      initializeGenie();
+      loadAnnouncementsHistory();
+    });
   </script>
 </body>
 </html>

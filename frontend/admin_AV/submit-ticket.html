@@ -217,6 +217,7 @@
   </div>
 
   <link rel="stylesheet" href="../css/style.css">
+  <script src="../js/api.js"></script>
   <script src="../js/script.js"></script>
   <script>
     function toggleSidebar() { document.getElementById('appSidebar').classList.toggle('collapsed'); }
@@ -230,11 +231,45 @@
       document.getElementById('reqName').value = `${user.name} (${user.role} Admin)`;
       if (user.role === 'HR' || user.role === 'Management') document.getElementById('adminNav').style.display = 'block';
     } else { window.location.href = '../index.html'; }
-    document.getElementById('ticketForm').addEventListener('submit', function(e) {
-      e.preventDefault(); document.getElementById('successOverlay').style.display = 'flex';
-      setTimeout(() => { window.location.href = 'inbox.html'; }, 1500);
+
+    document.getElementById('ticketForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const category = document.getElementById('category').value;
+      const title = document.getElementById('ticketTitle').value.trim();
+      const priority = document.getElementById('priority').value;
+      const description = document.getElementById('ticketDesc').value.trim();
+
+      if (!title || !description) {
+        alert("Please enter both a title and description for the request.");
+        return;
+      }
+
+      try {
+        const createFn = window.apiCreateTicket || (async () => null);
+        const newTicket = await createFn({
+          category,
+          title,
+          priority,
+          description,
+          department: category || "General"
+        });
+
+        if (!newTicket) {
+          throw new Error("Failed to create ticket on database server.");
+        }
+
+        document.getElementById('successOverlay').style.display = 'flex';
+        setTimeout(() => { window.location.href = 'inbox.html'; }, 1500);
+      } catch (err) {
+        console.error("Ticket submission error:", err);
+        alert(`⚠️ Ticket Creation Failed: ${err.message}`);
+      }
     });
-    initializeGenie();
+
+    document.addEventListener("DOMContentLoaded", () => {
+      initializeGenie();
+    });
   </script>
 </body>
 </html>

@@ -155,27 +155,62 @@
     </div>
   </main>
   <link rel="stylesheet" href="../css/style.css">
+  <script src="../js/api.js"></script>
   <script src="../js/script.js"></script>
   <script>
     let currentUser = {};
     function toggleSidebar() { document.getElementById('appSidebar').classList.toggle('collapsed'); }
-    const userDataString = localStorage.getItem('portalUser');
-    if (userDataString) {
-      currentUser = JSON.parse(userDataString);
-      document.getElementById('sidebarRole').innerText = `${currentUser.role} Portal`;
-      document.getElementById('navName').innerText = currentUser.name;
-      document.getElementById('navSubRole').innerText = `${currentUser.role} Admin`;
-      document.getElementById('navAvatar').innerText = currentUser.name.charAt(0).toUpperCase();
-      document.getElementById('editRole').value = currentUser.role;
-      if (currentUser.role === 'HR' || currentUser.role === 'Management') document.getElementById('adminNav').style.display = 'block';
-    } else { window.location.href = '../index.html'; }
-    function saveSettings() {
-      currentUser.role = document.getElementById('editRole').value;
-      localStorage.setItem('portalUser', JSON.stringify(currentUser));
-      window.location.reload(); 
+    
+    async function loadSettingsProfile() {
+      try {
+        const fetchProfileFn = window.apiFetchUserProfile || (async () => null);
+        const remoteProfile = await fetchProfileFn();
+
+        const userDataString = localStorage.getItem('portalUser');
+        if (userDataString) {
+          currentUser = JSON.parse(userDataString);
+        }
+        if (remoteProfile) {
+          currentUser = { ...currentUser, ...remoteProfile };
+        }
+
+        if (currentUser.name) {
+          document.getElementById('sidebarRole').innerText = `${currentUser.role || 'Admin'} Portal`;
+          document.getElementById('navName').innerText = currentUser.name;
+          document.getElementById('navSubRole').innerText = `${currentUser.role || 'Admin'} Admin`;
+          document.getElementById('navAvatar').innerText = currentUser.name.charAt(0).toUpperCase();
+          document.getElementById('editRole').value = currentUser.role || 'Operations Admin';
+          if (currentUser.role === 'HR' || currentUser.role === 'Management') document.getElementById('adminNav').style.display = 'block';
+        } else {
+          window.location.href = '../index.html';
+        }
+      } catch (err) {
+        console.error("loadSettingsProfile error:", err);
+        alert(`⚠️ Failed to load user profile settings: ${err.message}`);
+      }
     }
+
+    async function saveSettings() {
+      try {
+        currentUser.role = document.getElementById('editRole').value;
+        const updateProfileFn = window.apiUpdateUserProfile || (async () => null);
+        const res = await updateProfileFn(currentUser);
+        
+        localStorage.setItem('portalUser', JSON.stringify(currentUser));
+        alert("Settings successfully saved to database!");
+        window.location.reload(); 
+      } catch (err) {
+        console.error("saveSettings error:", err);
+        alert(`⚠️ Error saving settings: ${err.message}`);
+      }
+    }
+
     function logout() { localStorage.removeItem('portalUser'); window.location.href = '../index.html'; }
-    initializeGenie();
+
+    document.addEventListener("DOMContentLoaded", () => {
+      initializeGenie();
+      loadSettingsProfile();
+    });
   </script>
 </body>
 </html>

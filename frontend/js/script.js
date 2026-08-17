@@ -1004,25 +1004,19 @@ function handleGenieAction(action) {
 }
 
 /* Initialize Floating Genie Drawer globally if present on page */
-document.addEventListener("DOMContentLoaded", () => {
-    initDarkMode();
-    initSidebarToggle();
-    if (typeof initializeProfileDropdown === "function") initializeProfileDropdown();
-    initializeNewRequestForm();
-    initializeMyTickets();
-    applyPendingGenieDraft();
-
-    // Floating Genie Chat Drawer events
+function initializeGenie() {
     const genieBtn = document.getElementById("genieButton");
     const genieChat = document.getElementById("genieChat");
     const closeGenieBtn = document.getElementById("closeGenieButton");
     const genieSendBtn = document.getElementById("genieSendButton");
     const genieInput = document.getElementById("genieInput");
     const genieMessages = document.getElementById("genieMessages");
-    // "Need help writing your request?" button on new-request.html.
     const openGenieFromRequestBtn = document.getElementById("openGenieFromRequest");
 
     if (!genieBtn || !genieChat) return;
+
+    if (genieBtn.dataset.genieInitialized === "true") return;
+    genieBtn.dataset.genieInitialized = "true";
 
     const openGenie = () => genieChat.classList.add("open");
 
@@ -1035,8 +1029,10 @@ document.addEventListener("DOMContentLoaded", () => {
         openGenieFromRequestBtn.addEventListener("click", openGenie);
     }
 
-    let genieState = loadGenieState();
-    renderGenieHistory(genieMessages, genieState);
+    let genieState = typeof loadGenieState === "function" ? loadGenieState() : null;
+    if (genieMessages && genieState) {
+        renderGenieHistory(genieMessages, genieState);
+    }
 
     async function sendGenieMsg() {
         if (!genieInput) return;
@@ -1049,17 +1045,22 @@ document.addEventListener("DOMContentLoaded", () => {
         genieInput.disabled = true;
         genieMessages.scrollTop = genieMessages.scrollHeight;
 
-        const response = await apiChatbotMessage(msg, genieState);
-        advanceGenieState(genieState, msg, response);
+        const response = typeof apiChatbotMessage === "function" 
+            ? await apiChatbotMessage(msg, genieState)
+            : { message: "Genie assistant ready.", suggestions: [] };
+
+        if (genieState && typeof advanceGenieState === "function") {
+            advanceGenieState(genieState, msg, response);
+        }
 
         renderGenieBotMessage(genieMessages, response.message, response.suggestions);
         genieMessages.scrollTop = genieMessages.scrollHeight;
         genieInput.disabled = false;
         genieInput.focus();
 
-        if (response.ready_for_review) {
+        if (response.ready_for_review && typeof openReadyDraft === "function") {
             openReadyDraft(response);
-        } else {
+        } else if (typeof handleGenieAction === "function") {
             handleGenieAction(response.action);
         }
     }
@@ -1082,6 +1083,18 @@ document.addEventListener("DOMContentLoaded", () => {
             sendGenieMsg();
         });
     }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    initDarkMode();
+    initSidebarToggle();
+    if (typeof initializeProfileDropdown === "function") initializeProfileDropdown();
+    initializeNewRequestForm();
+    initializeMyTickets();
+    applyPendingGenieDraft();
+
+    // Floating Genie Chat Drawer events
+    initializeGenie();
 
     // Auto-initialize page loaders if elements exist
     if (document.getElementById("myTicketsList")) {
@@ -1118,5 +1131,6 @@ Object.assign(window, {
     submitStandardTicket,
     submitLeaveTicket,
     submitAnonymousTicket,
-    sendTicketReply
+    sendTicketReply,
+    initializeGenie
 });
