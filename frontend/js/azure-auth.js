@@ -22,22 +22,30 @@
                 idToken = "eyJhbGciOiAiUlMyNTYiLCAidHlwIjogIkpXVCJ9.eyJvaWQiOiAiZGMzYjU2ZTktOTI4MC00MGRjLThkNzMtOThiZmQ4MWZkZDZhIiwgImVtYWlsIjogImFkbWluLmRjM2JAdGlja2V0Z2VuaWUuY29tIiwgIm5hbWUiOiAiU3VwZXIgQWRtaW4iLCAicm9sZSI6ICJTdXBlciBBZG1pbiIsICJleHAiOiAyNTM0MDIzMDA3OTl9.mock";
             }
 
+            const bearerHeader = `Bearer ${idToken}`;
+
+            if (typeof resource === "object" && resource instanceof Request) {
+                if (!resource.headers.has("Authorization")) {
+                    resource.headers.set("Authorization", bearerHeader);
+                }
+            }
+
             options = options || {};
             let headers = options.headers || {};
 
             if (headers instanceof Headers) {
                 if (!headers.has("Authorization")) {
-                    headers.set("Authorization", `Bearer ${idToken}`);
+                    headers.set("Authorization", bearerHeader);
                 }
             } else if (Array.isArray(headers)) {
                 const hasAuth = headers.some(([k]) => k.toLowerCase() === "authorization");
                 if (!hasAuth) {
-                    headers.push(["Authorization", `Bearer ${idToken}`]);
+                    headers.push(["Authorization", bearerHeader]);
                 }
             } else {
                 headers = { ...headers };
                 if (!headers["Authorization"] && !headers["authorization"]) {
-                    headers["Authorization"] = `Bearer ${idToken}`;
+                    headers["Authorization"] = bearerHeader;
                 }
             }
             options.headers = headers;
@@ -176,7 +184,7 @@
         } else {
             return await handleAuthenticatedAccount({
                 idTokenClaims: { oid: DEFAULT_ADMIN_OID },
-                username: "admin.dc3b@ticketgenie.com",
+                username: "Admin1@vigneshquadrantoutlook.onmicrosoft.com",
                 name: "Admin User"
             });
         }

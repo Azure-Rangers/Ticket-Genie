@@ -483,8 +483,7 @@ async function submitEmployeeStandardTicket(event) {
         description: description,
         category: 'IT Support',
         priority: 'Medium',
-        department: backendDept,
-        requester_id: typeof getCurrentRequesterId === 'function' ? getCurrentRequesterId() : 'nm@company.com'
+        department: backendDept
     };
 
     try {
@@ -542,7 +541,8 @@ function handleSignOut(event) {
     }
 }
 </script>
-<script src="../js/api.js"></script>
+<script src="../js/api.js?v=20260816_10"></script>
+<script src="../js/script.js?v=20260816_11"></script>
 <script src="../js/azure-auth.js"></script>
 <script src="../js/theme.js"></script>
 <script src="components.js"></script>

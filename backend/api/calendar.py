@@ -32,7 +32,7 @@ def get_leave_events(current_user: dict = Depends(verify_azure_user)):
 
 
 @router.get("/export.ics")
-def export_calendar_ics():
+def export_calendar_ics(current_user: dict = Depends(verify_azure_user)):
     tickets = get_leave_tickets()
     ics_lines = [
         "BEGIN:VCALENDAR",

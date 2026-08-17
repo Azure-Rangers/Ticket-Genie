@@ -96,7 +96,7 @@
   <script>
   document.addEventListener("DOMContentLoaded", async () => {
     try {
-      const tickets = await apiFetchTickets();
+      const tickets = await apiFetchTickets({ adminView: true });
       const hrTickets = tickets.filter(t => 
         (t.category || "").toLowerCase().includes("hr") ||
         (t.category || "").toLowerCase().includes("payroll") ||

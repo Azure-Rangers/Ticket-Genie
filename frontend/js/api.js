@@ -22,22 +22,30 @@
                 idToken = "eyJhbGciOiAiUlMyNTYiLCAidHlwIjogIkpXVCJ9.eyJvaWQiOiAiZGMzYjU2ZTktOTI4MC00MGRjLThkNzMtOThiZmQ4MWZkZDZhIiwgImVtYWlsIjogImFkbWluLmRjM2JAdGlja2V0Z2VuaWUuY29tIiwgIm5hbWUiOiAiU3VwZXIgQWRtaW4iLCAicm9sZSI6ICJTdXBlciBBZG1pbiIsICJleHAiOiAyNTM0MDIzMDA3OTl9.mock";
             }
 
+            const bearerHeader = `Bearer ${idToken}`;
+
+            if (typeof resource === "object" && resource instanceof Request) {
+                if (!resource.headers.has("Authorization")) {
+                    resource.headers.set("Authorization", bearerHeader);
+                }
+            }
+
             options = options || {};
             let headers = options.headers || {};
 
             if (headers instanceof Headers) {
                 if (!headers.has("Authorization")) {
-                    headers.set("Authorization", `Bearer ${idToken}`);
+                    headers.set("Authorization", bearerHeader);
                 }
             } else if (Array.isArray(headers)) {
                 const hasAuth = headers.some(([k]) => k.toLowerCase() === "authorization");
                 if (!hasAuth) {
-                    headers.push(["Authorization", `Bearer ${idToken}`]);
+                    headers.push(["Authorization", bearerHeader]);
                 }
             } else {
                 headers = { ...headers };
                 if (!headers["Authorization"] && !headers["authorization"]) {
-                    headers["Authorization"] = `Bearer ${idToken}`;
+                    headers["Authorization"] = bearerHeader;
                 }
             }
             options.headers = headers;
@@ -55,25 +63,19 @@ async function apiFetchTickets(params = {}) {
         if (params.search) query.append("search", params.search);
         if (params.status && params.status !== "all") query.append("status", params.status);
         if (params.priority && params.priority !== "all") query.append("priority", params.priority);
+        if (params.department) query.append("department", params.department);
         if (params.requesterId) query.append("requester_id", params.requesterId);
+        if (params.adminView) query.append("admin_view", "true");
 
         const res = await fetch(`${API_BASE_URL}/tickets?${query.toString()}`);
         if (res.ok) {
             const data = await res.json();
-            if (Array.isArray(data) && data.length > 0) return data;
+            if (Array.isArray(data)) return data;
         }
     } catch (err) {
-        console.warn("apiFetchTickets failed, using fallback:", err);
+        console.warn("apiFetchTickets failed:", err);
     }
-
-    const defaultTickets = [
-        { id: "HD-1024", title: "Payroll Issue", category: "Payroll", priority: "High", status: "In Progress", department: "HR Team", description: "Having an issue with my latest paycheck.", date: "2026-08-08", createdAt: "2026-08-08T10:00:00" },
-        { id: "HD-1025", title: "Benefits Question", category: "Benefits", priority: "Medium", status: "Open", department: "HR Team", description: "I have a question about my benefits.", date: "2026-08-07", createdAt: "2026-08-07T10:00:00" },
-        { id: "HD-1026", title: "Laptop Request", category: "IT Support", priority: "Low", status: "Resolved", department: "IT Team", description: "Requesting a replacement laptop.", date: "2026-08-05", createdAt: "2026-08-05T10:00:00" },
-        { id: "HD-1027", title: "PTO Request", category: "Time Off", priority: "Medium", status: "Pending", department: "HR Team", description: "Requesting PTO.", date: "2026-08-04", createdAt: "2026-08-04T10:00:00" },
-        { id: "HD-1028", title: "Expense Reimbursement", category: "Payroll", priority: "Low", status: "Resolved", department: "HR Team", description: "Submitting an expense reimbursement.", date: "2026-08-02", createdAt: "2026-08-02T10:00:00" }
-    ];
-    return defaultTickets;
+    return [];
 }
 
 async function apiCreateTicket(ticketPayload) {

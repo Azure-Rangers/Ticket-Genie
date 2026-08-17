@@ -13,7 +13,8 @@ function getEmployeePages() {
     { href: "knowledge-base.html", title: "Knowledge Base" },
     { href: "announcements.html", title: "Announcements" },
     { href: "notifications.html", title: "Notifications" },
-    { href: "profile.html", title: "Profile & Credentials" }
+    { href: "profile.html", title: "Profile & Credentials" },
+    { href: "ticket-detail.html", title: "Ticket Details" }
   ];
 }
 
@@ -93,6 +94,10 @@ function renderEmployeeNMTopNav() {
   const currentFile = getEmployeeCurrentFilename();
   const pages = getEmployeePages();
   const activePage = pages.find(p => p.href === currentFile) || pages[0];
+  const user = JSON.parse(localStorage.getItem("portalUser") || '{}');
+  const displayName = user.name || "Employee";
+  const initials = user.avatar || (displayName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) || "EM");
+  const displayRole = user.role || "Employee";
 
   topNavContainer.innerHTML = `
     <header class="topbar">
@@ -120,14 +125,48 @@ function renderEmployeeNMTopNav() {
         </button>
         <div class="profile">
           <button class="profile-button" id="profileDropdownTrigger" aria-haspopup="menu" aria-expanded="false">
-            <div class="avatar">NM</div>
-            <div class="profile-info"><strong>Nishita</strong><span id="currentRoleDisplay">Employee</span></div>
+            <div class="avatar" id="topNavAvatar">${initials}</div>
+            <div class="profile-info"><strong id="topNavUserName">${displayName}</strong><span id="currentRoleDisplay">${displayRole}</span></div>
             <i class="fa-solid fa-chevron-down"></i>
           </button>
         </div>
       </div>
     </header>
   `;
+
+  // Asynchronously fetch profile from backend DB if available
+  if (typeof apiFetchUserProfile === "function") {
+    apiFetchUserProfile().then(profile => {
+      if (profile && profile.name) {
+        const nameElem = document.getElementById("topNavUserName");
+        const avatarElem = document.getElementById("topNavAvatar");
+        if (nameElem) nameElem.textContent = profile.name;
+        if (avatarElem) {
+          const fetchedInitials = profile.avatar || profile.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+          avatarElem.textContent = fetchedInitials;
+        }
+
+        // Dynamically update Welcome back banner on index.html
+        const welcomeHeader = document.getElementById("welcomeUserHeader");
+        if (welcomeHeader) {
+          const firstName = profile.name.split(' ')[0];
+          welcomeHeader.textContent = `Welcome back, ${firstName}`;
+        }
+
+        // Dynamically populate profile page fields on profile.html
+        const profileNameHeader = document.querySelector("#profileForm")?.closest("div")?.querySelector("h4");
+        if (profileNameHeader) profileNameHeader.textContent = profile.name;
+        const profileInputs = document.querySelectorAll("#profileForm input");
+        if (profileInputs.length >= 2) {
+          if (profileInputs[0]) profileInputs[0].value = profile.name;
+          if (profileInputs[1] && profile.email) profileInputs[1].value = profile.email;
+        }
+        if (profileInputs.length >= 3 && profile.department) {
+          profileInputs[2].value = profile.department;
+        }
+      }
+    }).catch(err => console.warn("Notice: could not load user profile from DB:", err));
+  }
 }
 
 window.toggleEmployeeDarkMode = function(e) {

@@ -174,6 +174,46 @@ class TestSuperAdminRoleManagement(unittest.TestCase):
         oids_after = [u["azure_object_id"] for u in users_after]
         self.assertNotIn(test_oid, oids_after)
 
+    def test_context_aware_and_department_rbac(self):
+        from backend.api.tickets import list_tickets
+        from unittest.mock import MagicMock
+
+        mock_db = MagicMock()
+        admin_user = {
+            "oid": "admin-oid-999",
+            "email": "it.admin@company.com",
+            "role": "IT Admin",
+            "department": "IT Team",
+        }
+
+        # 1. Employee view (admin_view=False): Admin sees ONLY their own tickets (effective_requester = admin-oid-999)
+        with patch("backend.api.tickets.get_all_tickets") as mock_get_tickets:
+            mock_get_tickets.return_value = [{"id": "HD-999", "requester_id": "admin-oid-999"}]
+            tickets = list_tickets(admin_view=False, db=mock_db, current_user=admin_user)
+            mock_get_tickets.assert_called_once_with(
+                status=None,
+                priority=None,
+                search=None,
+                requester_id="admin-oid-999",
+                department=None,
+                db=mock_db,
+            )
+            self.assertEqual(len(tickets), 1)
+
+        # 2. Admin view (admin_view=True): Department admin ONLY sees tickets in their department ("IT Team")
+        with patch("backend.api.tickets.get_all_tickets") as mock_get_tickets:
+            mock_get_tickets.return_value = [{"id": "HD-100", "department": "IT Team"}]
+            tickets = list_tickets(admin_view=True, db=mock_db, current_user=admin_user)
+            mock_get_tickets.assert_called_once_with(
+                status=None,
+                priority=None,
+                search=None,
+                requester_id=None,
+                department="IT Team",
+                db=mock_db,
+            )
+            self.assertEqual(len(tickets), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

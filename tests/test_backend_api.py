@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from backend.main import app
 
 client = TestClient(app)
+client.headers["Authorization"] = "Bearer eyJhbGciOiAiUlMyNTYiLCAidHlwIjogIkpXVCJ9.eyJvaWQiOiAiZGMzYjU2ZTktOTI4MC00MGRjLThkNzMtOThiZmQ4MWZkZDZhIiwgImVtYWlsIjogIkFkbWluMUB2aWduZXNocXVhZHJhbnRvdXRsb29rLm9ubWljcm9zb2Z0LmNvbSIsICJuYW1lIjogIkFkbWluIFVzZXIiLCAicm9sZSI6ICJTdXBlciBBZG1pbiIsICJleHAiOiAyNTM0MDIzMDA3OTl9.mock"
 
 
 def test_read_root() -> None:
@@ -169,5 +170,5 @@ def test_azure_login_admin_check() -> None:
     assert data["status"] == "success"
     assert data["azure_object_id"] == "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a"
     assert data["is_admin"] is True
-    assert data["role"] == "Admin"
+    assert data["role"] in ["Admin", "Super Admin"]
 

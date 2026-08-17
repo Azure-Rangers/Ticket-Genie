@@ -43,5 +43,6 @@ def handle_knowledge_search(
     q: str,
     current_user: dict = Depends(verify_azure_user),
 ):
-    ans = answer_question(q)
+    user_role = current_user.get("role") or "Employee"
+    ans = answer_question(q, role=user_role)
     return {"query": q, "answer": ans.answer, "verified": ans.verified}

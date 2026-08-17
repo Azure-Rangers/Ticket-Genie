@@ -69,7 +69,7 @@
     let allTickets = [];
 
     document.addEventListener("DOMContentLoaded", async () => {
-      allTickets = await apiFetchTickets();
+      allTickets = await apiFetchTickets({ adminView: true });
       renderTickets(allTickets);
     });
 
@@ -128,7 +128,7 @@
 
     async function changeStatus(ticketId, newStatus) {
       await apiUpdateTicket(ticketId, { status: newStatus });
-      allTickets = await apiFetchTickets();
+      allTickets = await apiFetchTickets({ adminView: true });
       renderTickets(allTickets);
     }
   </script>

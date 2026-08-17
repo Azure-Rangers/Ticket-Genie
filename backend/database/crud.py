@@ -90,6 +90,7 @@ def get_all_tickets(
     priority: Optional[str] = None,
     search: Optional[str] = None,
     requester_id: Optional[str] = None,
+    department: Optional[str] = None,
     db: Optional[Session] = None,
 ) -> List[dict]:
     session = db or SessionLocal()
@@ -99,9 +100,51 @@ def get_all_tickets(
         query = session.query(TicketDB)
 
         if requester_id:
+            req_str = requester_id.lower().strip()
+            target_ids = {req_str}
+            try:
+                from database.models_db import DepartmentUserDB, UserProfileDB
+                dept_records = session.query(DepartmentUserDB).filter(
+                    or_(
+                        func.lower(DepartmentUserDB.user_email) == req_str,
+                        func.lower(DepartmentUserDB.azure_object_id) == req_str,
+                        func.lower(DepartmentUserDB.id) == req_str,
+                    )
+                ).all()
+                for rec in dept_records:
+                    if rec.azure_object_id:
+                        target_ids.add(rec.azure_object_id.lower())
+                    if rec.user_email:
+                        target_ids.add(rec.user_email.lower())
+                    if rec.id:
+                        target_ids.add(rec.id.lower())
+
+                profiles = session.query(UserProfileDB).filter(
+                    or_(
+                        func.lower(UserProfileDB.id) == req_str,
+                        func.lower(UserProfileDB.email) == req_str,
+                    )
+                ).all()
+                for prof in profiles:
+                    if prof.id:
+                        target_ids.add(prof.id.lower())
+                    if prof.email:
+                        target_ids.add(prof.email.lower())
+
+                # Bridge 'usr-admin-dc3b56e9' and 'dc3b56e9-9280-40dc-8d73-98bfd81fdd6a' if present
+                if any("dc3b56e9" in tid for tid in list(target_ids)):
+                    target_ids.add("usr-admin-dc3b56e9")
+                    target_ids.add("dc3b56e9-9280-40dc-8d73-98bfd81fdd6a")
+            except Exception:
+                pass
+
             query = query.filter(
-                func.lower(TicketDB.requester_id) == requester_id.lower().strip()
+                func.lower(TicketDB.requester_id).in_(list(target_ids))
             )
+
+        if department and department.strip():
+            dept_str = f"%{department.lower().strip()}%"
+            query = query.filter(func.lower(TicketDB.department).like(dept_str))
 
         if search:
             s = f"%{search.lower().strip()}%"

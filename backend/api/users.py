@@ -2,10 +2,11 @@
 
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from database.crud import get_user_profile, update_user_profile
+from services.jwt_verifier import verify_azure_user
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -25,16 +26,23 @@ class AzureLoginRequest(BaseModel):
 
 
 @router.get("/profile")
-def handle_get_profile(user_id: Optional[str] = "usr-1"):
-    return get_user_profile(user_id=user_id or "usr-1")
+def handle_get_profile(
+    user_id: Optional[str] = None,
+    current_user: dict = Depends(verify_azure_user),
+):
+    target_user_id = user_id or "usr-1"
+    return get_user_profile(user_id=target_user_id)
 
 
 @router.put("/profile")
 def handle_update_profile(
-    req: UserProfileUpdateRequest, user_id: Optional[str] = "usr-1"
+    req: UserProfileUpdateRequest,
+    user_id: Optional[str] = None,
+    current_user: dict = Depends(verify_azure_user),
 ):
+    target_user_id = user_id or "usr-1"
     return update_user_profile(
-        user_id=user_id or "usr-1",
+        user_id=target_user_id,
         name=req.name,
         email=req.email,
         phone=req.phone,

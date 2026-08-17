@@ -8,7 +8,7 @@ async function loadAdminDashboard() {
     if (!tableBody) return;
     try {
         const fetchFn = window.apiFetchTickets || (async () => []);
-        const tickets = await fetchFn();
+        const tickets = await fetchFn({ adminView: true });
         if (tickets && tickets.length > 0) {
             tableBody.innerHTML = tickets.map(t => `
                 <tr>

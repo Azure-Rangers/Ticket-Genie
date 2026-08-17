@@ -62,10 +62,10 @@ VALUES
     ),
     (
         'admin.dc3b',
-        'admin.dc3b@ticketgenie.com',
+        'Admin1@vigneshquadrantoutlook.onmicrosoft.com',
         'REPLACE_WITH_REAL_HASH',
-        'Admin',
-        'User (dc3b56e9)',
+        'Greg',
+        'Davis',
         (SELECT role_id FROM dbo.Roles WHERE role_name = 'ADMIN'),
         'IT'
     );

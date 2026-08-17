@@ -164,7 +164,7 @@
 
     async function loadAdminTickets() {
       try {
-        const rawTickets = await apiFetchTickets();
+        const rawTickets = await apiFetchTickets({ adminView: true });
         tickets = rawTickets.map(t => ({
           id: t.id,
           status: t.status || "Open",

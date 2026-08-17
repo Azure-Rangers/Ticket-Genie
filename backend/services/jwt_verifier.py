@@ -131,14 +131,15 @@ def verify_azure_user(authorization: Optional[str] = Header(None)) -> Dict[str, 
     FastAPI Security Dependency:
     Extracts and verifies Bearer token from 'Authorization' header.
     Returns authenticated user claims (oid, email, name, role).
+    Strictly raises 401 Unauthorized if Authorization header is missing in production.
     """
     azure_client_id = os.getenv("AZURE_CLIENT_ID", "").strip()
 
-    # Development mode fallback if Azure is not configured
+    # Development mode fallback ONLY if Azure Client ID is not configured
     if not azure_client_id and not authorization:
         return {
             "oid": "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a",
-            "email": "dev.admin@ticketgenie.com",
+            "email": "Admin1@vigneshquadrantoutlook.onmicrosoft.com",
             "name": "Dev Admin",
             "role": "Super Admin",
             "is_dev": True,
@@ -161,28 +162,32 @@ def verify_azure_user(authorization: Optional[str] = Header(None)) -> Dict[str, 
     email = claims.get("preferred_username") or claims.get("upn") or claims.get("email") or "user@company.com"
     name = claims.get("name") or email
 
-    # Dynamically resolve user role from department_users database table by azure_object_id
-    role = "Employee"
+    role = claims.get("role") or (claims.get("roles")[0] if isinstance(claims.get("roles"), list) and claims.get("roles") else "Employee")
+    department = claims.get("department") or claims.get("dept")
     try:
         from database.connection import SessionLocal
         from database.models_db import DepartmentUserDB
+        from sqlalchemy import func, or_
         with SessionLocal() as session:
             record = session.query(DepartmentUserDB).filter(
-                DepartmentUserDB.azure_object_id == oid
+                or_(
+                    DepartmentUserDB.azure_object_id == oid,
+                    func.lower(DepartmentUserDB.user_email) == email.lower(),
+                )
             ).first()
-            if record and record.role:
-                role = record.role
-            elif claims.get("role"):
-                role = claims.get("role")
-            elif claims.get("roles") and isinstance(claims.get("roles"), list) and len(claims.get("roles")) > 0:
-                role = claims.get("roles")[0]
+            if record:
+                if record.role:
+                    role = record.role
+                if record.department_name:
+                    department = record.department_name
     except Exception as err:
-        logger.warning(f"Database role lookup notice: {err}")
+        logger.warning(f"Database role/department lookup notice: {err}")
 
     return {
         "oid": oid,
         "email": email,
         "name": name,
         "role": role,
+        "department": department,
         "claims": claims,
     }

@@ -23,6 +23,10 @@ def handle_create_ticket(
     db: Session = Depends(get_db),
     current_user: dict = Depends(verify_azure_user),
 ):
+    if not getattr(ticket, "is_anonymous", False):
+        user_identity = current_user.get("oid") or current_user.get("email")
+        if user_identity:
+            ticket.requester_id = user_identity
     return process_new_ticket(ticket, db=db)
 
 
@@ -31,15 +35,35 @@ def list_tickets(
     status: Optional[str] = None,
     priority: Optional[str] = None,
     search: Optional[str] = None,
+    department: Optional[str] = None,
     requester_id: Optional[str] = None,
+    admin_view: bool = False,
     db: Session = Depends(get_db),
     current_user: dict = Depends(verify_azure_user),
 ):
+    user_role = (current_user.get("role") or "").lower()
+    is_super = any(r in user_role for r in ["super", "operations", "upper management", "executive"]) or current_user.get("is_dev", False)
+    is_admin = is_super or ("admin" in user_role)
+
+    if admin_view:
+        if not is_admin:
+            raise HTTPException(status_code=403, detail="Admin privileges required for admin_view access.")
+        effective_requester = requester_id
+        if is_super:
+            effective_department = department
+        else:
+            effective_department = current_user.get("department") or department
+    else:
+        # Employee view: Every user (including admins) ONLY sees their own created tickets.
+        effective_requester = current_user.get("oid") or current_user.get("email")
+        effective_department = None
+
     tickets_list = get_all_tickets(
         status=status,
         priority=priority,
         search=search,
-        requester_id=requester_id,
+        requester_id=effective_requester,
+        department=effective_department,
         db=db,
     )
     return tickets_list
@@ -49,6 +73,7 @@ def list_tickets(
 def get_ticket(
     ticket_id: str,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_azure_user),
 ):
     ticket = get_ticket_by_id(ticket_id, db=db)
 
@@ -66,6 +91,7 @@ def handle_update_ticket(
     ticket_id: str,
     ticket_update: TicketUpdate,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_azure_user),
 ):
     updated = update_ticket(
         ticket_id,
@@ -88,7 +114,11 @@ def handle_update_ticket(
 
 
 @router.get("/{ticket_id}/export")
-def export_ticket_document(ticket_id: str, format: str = "pdf"):
+def export_ticket_document(
+    ticket_id: str,
+    format: str = "pdf",
+    current_user: dict = Depends(verify_azure_user),
+):
     from fastapi import Response
 
     from services.document_service import generate_ticket_docx, generate_ticket_pdf
@@ -119,12 +149,16 @@ def export_ticket_document(ticket_id: str, format: str = "pdf"):
 
 class CommentCreateRequest(BaseModel):
     message: str
-    sender_id: Optional[str] = "user"
-    sender_role: Optional[str] = "Employee"
+    sender_id: Optional[str] = None
+    sender_role: Optional[str] = None
 
 
 @router.get("/{ticket_id}/comments")
-def list_comments_for_ticket(ticket_id: str, db: Session = Depends(get_db)):
+def list_comments_for_ticket(
+    ticket_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_azure_user),
+):
     from database.crud import get_ticket_comments
 
     return get_ticket_comments(ticket_id, db=db)
@@ -132,14 +166,20 @@ def list_comments_for_ticket(ticket_id: str, db: Session = Depends(get_db)):
 
 @router.post("/{ticket_id}/comments", status_code=201)
 def post_comment_to_ticket(
-    ticket_id: str, req: CommentCreateRequest, db: Session = Depends(get_db)
+    ticket_id: str,
+    req: CommentCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_azure_user),
 ):
     from database.crud import add_ticket_comment
+
+    sender_id = current_user.get("oid") or current_user.get("email") or req.sender_id or "user"
+    sender_role = current_user.get("role") or req.sender_role or "Employee"
 
     return add_ticket_comment(
         ticket_id=ticket_id,
         message=req.message,
-        sender_id=req.sender_id or "user",
-        sender_role=req.sender_role or "Employee",
+        sender_id=sender_id,
+        sender_role=sender_role,
         db=db,
     )

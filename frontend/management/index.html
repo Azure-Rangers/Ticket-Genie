@@ -111,7 +111,7 @@
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
       try {
-        const tickets = await apiFetchTickets();
+        const tickets = await apiFetchTickets({ adminView: true });
         const tbody = document.getElementById("ticketTableBody");
         if (!tickets || tickets.length === 0) {
           tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No tickets found.</td></tr>`;

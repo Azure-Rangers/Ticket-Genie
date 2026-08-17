@@ -132,7 +132,7 @@
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
       try {
-        const tickets = await apiFetchTickets();
+        const tickets = await apiFetchTickets({ adminView: true });
         if (tickets && tickets.length > 0) {
           const open = tickets.filter(t => t.status === "Open").length;
           const inProg = tickets.filter(t => t.status === "In Progress" || t.status === "Pending").length;

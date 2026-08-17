@@ -3,20 +3,15 @@
    Dedicated handlers for Employee Requests, Tickets Grid, and Threads
    ========================================================= */
 
-const STORAGE_KEY = "ticketGenieTickets";
-let loadedMyTicketsMap = {};
+var STORAGE_KEY = window.STORAGE_KEY || "ticketGenieTickets";
+var loadedMyTicketsMap = window.loadedMyTicketsMap || {};
 
 function getTickets() {
     try {
         const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("employee_tickets");
         if (stored) return JSON.parse(stored);
     } catch (e) {}
-    return [
-        { id: "HD-1024", title: "Payroll Issue", category: "Payroll", priority: "High", status: "In Progress", department: "HR Team", description: "Having an issue with my latest paycheck.", date: "2026-08-08", createdAt: "2026-08-08T10:00:00" },
-        { id: "HD-1025", title: "Benefits Question", category: "Benefits", priority: "Medium", status: "Open", department: "HR Team", description: "I have a question about my benefits.", date: "2026-08-07", createdAt: "2026-08-07T10:00:00" },
-        { id: "HD-1026", title: "Laptop Request", category: "IT Support", priority: "Low", status: "Resolved", department: "IT Team", description: "Requesting a replacement laptop.", date: "2026-08-05", createdAt: "2026-08-05T10:00:00" },
-        { id: "HD-1027", title: "PTO Request", category: "Time Off", priority: "Medium", status: "Pending", department: "HR Team", description: "Requesting PTO.", date: "2026-08-04", createdAt: "2026-08-04T10:00:00" }
-    ];
+    return [];
 }
 
 function saveTickets(tickets) {
@@ -41,9 +36,9 @@ function generateTicketId() {
 function getCurrentRequesterId() {
     try {
         const user = JSON.parse(localStorage.getItem("portalUser") || "{}");
-        return user.email || user.id || "nm@company.com";
+        return user.email || user.id || null;
     } catch (e) {
-        return "nm@company.com";
+        return null;
     }
 }
 
@@ -61,8 +56,8 @@ async function loadDashboardTickets() {
     const tableBody = document.querySelector(".table-container table tbody");
     if (!tableBody) return;
     const fetchFn = window.apiFetchTickets || (async () => getTickets());
-    let tickets = await fetchFn({ requesterId: getCurrentRequesterId() });
-    if (!tickets || tickets.length === 0) tickets = getTickets();
+    let tickets = await fetchFn();
+    if (!tickets) tickets = [];
 
     tableBody.innerHTML = tickets.slice(0, 5).map(t => `
         <tr onclick="window.location.href='ticket-detail.html?id=${encodeURIComponent(t.id)}'" style="cursor: pointer;">
@@ -84,14 +79,12 @@ async function initializeMyTickets() {
     let tickets = [];
     try {
         const fetchFn = window.apiFetchTickets || apiFetchTickets;
-        tickets = await fetchFn({ requesterId: getCurrentRequesterId() });
+        tickets = await fetchFn();
     } catch (e) {
         console.warn("apiFetchTickets notice in initializeMyTickets:", e);
     }
 
-    if (!tickets || tickets.length === 0) {
-        tickets = getTickets();
-    }
+    if (!tickets) tickets = [];
 
     renderMyTickets(tickets);
 }
@@ -133,11 +126,11 @@ function renderMyTickets(tickets) {
 
 async function loadTicketDetailPage() {
     const urlParams = new URLSearchParams(window.location.search);
-    const ticketId = urlParams.get("id") || "HD-1024";
+    const ticketId = urlParams.get("id");
 
-    const fetchFn = window.apiFetchTickets || (async () => getTickets());
-    let tickets = await fetchFn({ requesterId: getCurrentRequesterId() });
-    let ticket = (tickets || []).find(t => String(t.id) === String(ticketId)) || getTickets()[0];
+    const fetchFn = window.apiFetchTickets || (async () => []);
+    let tickets = await fetchFn();
+    let ticket = (tickets || []).find(t => String(t.id) === String(ticketId)) || (tickets.length > 0 ? tickets[0] : null);
 
     const container = document.getElementById("ticketDetailContainer");
     if (!container) return;
@@ -241,8 +234,7 @@ async function submitStandardTicket(event) {
         description: descStr,
         category: rawDept !== "Auto" ? rawDept : "IT Support",
         priority: priorityEl ? priorityEl.value : "Medium",
-        department: mappedDept,
-        requester_id: getCurrentRequesterId()
+        department: mappedDept
     };
 
     try {
@@ -288,8 +280,7 @@ async function submitLeaveTicket(event) {
         department: "HR Team",
         category: "Time Off",
         priority: "Medium",
-        description: `Leave Type: ${leaveType}\nStart Date: ${startDate || 'N/A'}\nEnd Date: ${endDate || 'N/A'}\nCoverage Lead: ${handover || 'N/A'}\nNotes: ${notes || 'Detailed PTO submission'}`,
-        requester_id: getCurrentRequesterId()
+        description: `Leave Type: ${leaveType}\nStart Date: ${startDate || 'N/A'}\nEnd Date: ${endDate || 'N/A'}\nCoverage Lead: ${handover || 'N/A'}\nNotes: ${notes || 'Detailed PTO submission'}`
     };
 
     try {

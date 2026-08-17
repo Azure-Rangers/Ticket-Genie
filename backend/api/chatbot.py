@@ -12,4 +12,4 @@ def chatbot_message(
     request: ChatRequest,
     current_user: dict = Depends(verify_azure_user),
 ):
-    return handle_message(request)
+    return handle_message(request, current_user=current_user)

@@ -22,12 +22,10 @@ def seed_initial_data(db: Optional[Session] = None) -> None:
     with engine.connect() as conn:
         try:
             sql_content = SEED_SQL_FILE.read_text(encoding="utf-8")
-            statements = [
-                stmt.strip()
-                for stmt in sql_content.split(";")
-                if stmt.strip() and not stmt.strip().startswith("--")
-            ]
-            for stmt in statements:
+            raw_blocks = sql_content.split(";")
+            for block in raw_blocks:
+                lines = [line for line in block.splitlines() if not line.strip().startswith("--")]
+                stmt = "\n".join(lines).strip()
                 if stmt:
                     conn.execute(text(stmt))
             conn.commit()

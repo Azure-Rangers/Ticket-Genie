@@ -37,12 +37,7 @@ if (!window.apiFetchTickets) {
             const res = await fetch("/api/tickets");
             if (res.ok) return await res.json();
         } catch (e) {}
-        return [
-            { id: "HD-1024", title: "Payroll Issue", category: "Payroll", priority: "High", status: "In Progress", department: "HR Team", description: "Having an issue with my latest paycheck." },
-            { id: "HD-1025", title: "Benefits Question", category: "Benefits", priority: "Medium", status: "Open", department: "HR Team", description: "I have a question about my benefits." },
-            { id: "HD-1026", title: "Laptop Request", category: "IT Support", priority: "Low", status: "Resolved", department: "IT Team", description: "Requesting a replacement laptop." },
-            { id: "HD-1027", title: "PTO Request", category: "Time Off", priority: "Medium", status: "Pending", department: "HR Team", description: "Requesting PTO." }
-        ];
+        return [];
     };
 }
 
@@ -106,22 +101,30 @@ if (!window.apiRunExecAction) {
                 idToken = "eyJhbGciOiAiUlMyNTYiLCAidHlwIjogIkpXVCJ9.eyJvaWQiOiAiZGMzYjU2ZTktOTI4MC00MGRjLThkNzMtOThiZmQ4MWZkZDZhIiwgImVtYWlsIjogImFkbWluLmRjM2JAdGlja2V0Z2VuaWUuY29tIiwgIm5hbWUiOiAiU3VwZXIgQWRtaW4iLCAicm9sZSI6ICJTdXBlciBBZG1pbiIsICJleHAiOiAyNTM0MDIzMDA3OTl9.mock";
             }
 
+            const bearerHeader = `Bearer ${idToken}`;
+
+            if (typeof resource === "object" && resource instanceof Request) {
+                if (!resource.headers.has("Authorization")) {
+                    resource.headers.set("Authorization", bearerHeader);
+                }
+            }
+
             options = options || {};
             let headers = options.headers || {};
 
             if (headers instanceof Headers) {
                 if (!headers.has("Authorization")) {
-                    headers.set("Authorization", `Bearer ${idToken}`);
+                    headers.set("Authorization", bearerHeader);
                 }
             } else if (Array.isArray(headers)) {
                 const hasAuth = headers.some(([k]) => k.toLowerCase() === "authorization");
                 if (!hasAuth) {
-                    headers.push(["Authorization", `Bearer ${idToken}`]);
+                    headers.push(["Authorization", bearerHeader]);
                 }
             } else {
                 headers = { ...headers };
                 if (!headers["Authorization"] && !headers["authorization"]) {
-                    headers["Authorization"] = `Bearer ${idToken}`;
+                    headers["Authorization"] = bearerHeader;
                 }
             }
             options.headers = headers;
@@ -134,24 +137,18 @@ if (!window.apiRunExecAction) {
 /* =========================================================
    LOCAL STORAGE FALLBACK & IDENTIFIER HELPERS
    ========================================================= */
-const STORAGE_KEY = "ticketGenieTickets";
+var STORAGE_KEY = window.STORAGE_KEY || "ticketGenieTickets";
 
 function getTickets() {
     try {
         const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("employee_tickets");
         if (stored) {
             const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            if (Array.isArray(parsed)) return parsed;
         }
     } catch (e) {}
 
-    return [
-        { id: "HD-1024", title: "Payroll Issue", category: "Payroll", priority: "High", status: "In Progress", description: "Having an issue with my latest paycheck.", date: "2026-08-08", createdAt: "2026-08-08T10:00:00" },
-        { id: "HD-1025", title: "Benefits Question", category: "Benefits", priority: "Medium", status: "Open", description: "I have a question about my benefits.", date: "2026-08-07", createdAt: "2026-08-07T10:00:00" },
-        { id: "HD-1026", title: "Laptop Request", category: "IT Support", priority: "Low", status: "Resolved", description: "Requesting a replacement laptop.", date: "2026-08-05", createdAt: "2026-08-05T10:00:00" },
-        { id: "HD-1027", title: "PTO Request", category: "Time Off", priority: "Medium", status: "Pending", description: "Requesting PTO.", date: "2026-08-04", createdAt: "2026-08-04T10:00:00" },
-        { id: "HD-1028", title: "Expense Reimbursement", category: "Payroll", priority: "Low", status: "Resolved", description: "Submitting an expense reimbursement.", date: "2026-08-02", createdAt: "2026-08-02T10:00:00" }
-    ];
+    return [];
 }
 
 function saveTickets(tickets) {
@@ -176,9 +173,9 @@ function generateTicketId() {
 function getCurrentRequesterId() {
     try {
         const user = JSON.parse(localStorage.getItem("portalUser") || "{}");
-        return user.email || user.id || "nm@company.com";
+        return user.email || user.id || null;
     } catch (e) {
-        return "nm@company.com";
+        return null;
     }
 }
 
@@ -295,7 +292,6 @@ function initializeNewRequestForm() {
                 preferredDate: config.preferredDate ? (document.getElementById(config.preferredDate)?.value || null) : null,
                 is_anonymous: config.anonymous,
                 attachment: files.length ? files.map(file => file.name).join(", ") : null,
-                requester_id: getCurrentRequesterId(),
                 // Deterministic, fixed to this one static tab - never derived
                 // from chatbot/GPT output. Makes the backend skip normal AI
                 // classification for Leave Management (see
@@ -353,8 +349,8 @@ function handleSignOut(event) {
 /* =========================================================
    MODAL CHAT & TICKET CHAT UTILITIES
    ========================================================= */
-let currentOpenTicketId = null;
-let loadedMyTicketsMap = {};
+var currentOpenTicketId = window.currentOpenTicketId || null;
+var loadedMyTicketsMap = window.loadedMyTicketsMap || {};
 
 async function openTicketChatModal(ticketId, ticketObj = null) {
     const modal = document.getElementById("ticketModal");
@@ -488,14 +484,12 @@ async function initializeMyTickets() {
     let tickets = [];
     try {
         const fetchFn = window.apiFetchTickets || apiFetchTickets;
-        tickets = await fetchFn({ requesterId: getCurrentRequesterId() });
+        tickets = await fetchFn();
     } catch (e) {
         console.warn("apiFetchTickets notice in initializeMyTickets:", e);
     }
 
-    if (!tickets || tickets.length === 0) {
-        tickets = getTickets();
-    }
+    if (!tickets) tickets = [];
 
     renderMyTickets(tickets);
 }
@@ -545,8 +539,8 @@ async function loadDashboardTickets() {
     const tableBody = document.querySelector(".table-container table tbody");
     if (!tableBody) return;
     const fetchFn = window.apiFetchTickets || (async () => getTickets());
-    let tickets = await fetchFn({ requesterId: getCurrentRequesterId() });
-    if (!tickets || tickets.length === 0) tickets = getTickets();
+    let tickets = await fetchFn();
+    if (!tickets) tickets = [];
 
     tableBody.innerHTML = tickets.slice(0, 5).map(t => `
         <tr onclick="window.location.href='ticket-detail.html?id=${encodeURIComponent(t.id)}'" style="cursor: pointer;">
@@ -564,8 +558,8 @@ async function loadMyTicketsPage() {
     const tableBody = document.querySelector(".table-container table tbody");
     if (!tableBody) return;
     const fetchFn = window.apiFetchTickets || (async () => getTickets());
-    let tickets = await fetchFn({ requesterId: getCurrentRequesterId() });
-    if (!tickets || tickets.length === 0) tickets = getTickets();
+    let tickets = await fetchFn();
+    if (!tickets) tickets = [];
 
     tableBody.innerHTML = tickets.map(t => `
         <tr onclick="window.location.href='ticket-detail.html?id=${encodeURIComponent(t.id)}'" style="cursor: pointer;">
@@ -581,11 +575,11 @@ async function loadMyTicketsPage() {
 
 async function loadTicketDetailPage() {
     const urlParams = new URLSearchParams(window.location.search);
-    const ticketId = urlParams.get("id") || "HD-1024";
+    const ticketId = urlParams.get("id");
 
-    const fetchFn = window.apiFetchTickets || (async () => getTickets());
-    let tickets = await fetchFn({ requesterId: getCurrentRequesterId() });
-    let ticket = (tickets || []).find(t => String(t.id) === String(ticketId)) || getTickets()[0];
+    const fetchFn = window.apiFetchTickets || (async () => []);
+    let tickets = await fetchFn();
+    let ticket = (tickets || []).find(t => String(t.id) === String(ticketId)) || (tickets.length > 0 ? tickets[0] : null);
 
     const titleEl = document.getElementById("ticketDetailTitle");
     const idEl = document.getElementById("ticketDetailId");
@@ -637,8 +631,7 @@ async function submitStandardTicket(event) {
         department: deptEl ? deptEl.value : "IT & Technology",
         category: deptEl ? deptEl.value : "IT Support",
         priority: priorityEl ? priorityEl.value : "Medium",
-        description: descStr || "No description provided.",
-        requester_id: getCurrentRequesterId()
+        description: descStr || "No description provided."
     };
 
     try {
@@ -684,8 +677,7 @@ async function submitLeaveTicket(event) {
         department: "HR & Workplace Operations",
         category: "Time Off",
         priority: "Medium",
-        description: `Leave Type: ${leaveType}\nStart Date: ${startDate || 'N/A'}\nEnd Date: ${endDate || 'N/A'}\nCoverage Lead: ${handover || 'N/A'}\nNotes: ${notes || 'N/A'}`,
-        requester_id: getCurrentRequesterId()
+        description: `Leave Type: ${leaveType}\nStart Date: ${startDate || 'N/A'}\nEnd Date: ${endDate || 'N/A'}\nCoverage Lead: ${handover || 'N/A'}\nNotes: ${notes || 'N/A'}`
     };
 
     try {
@@ -1078,7 +1070,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (e.key === "Enter") sendGenieMsg();
         });
     }
-<<<<<<< HEAD
+
     // Both the static initial suggestions in the HTML and any rendered
     // from a chatbot response use this same class - wire them all via
     // delegation so clicking one sends it as the next message.
@@ -1089,7 +1081,7 @@ document.addEventListener("DOMContentLoaded", () => {
             genieInput.value = btn.textContent.trim();
             sendGenieMsg();
         });
-=======
+    }
 
     // Auto-initialize page loaders if elements exist
     if (document.getElementById("myTicketsList")) {
@@ -1097,7 +1089,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (document.querySelector(".table-container table tbody")) {
         loadDashboardTickets();
->>>>>>> 2b717ba (fix(frontend): auto-invoke initializeMyTickets on DOMContentLoaded and align 6-column grid rendering for my-tickets.html)
     }
 });
 
