@@ -111,7 +111,7 @@ function renderEmployeeNMTopNav() {
           <span class="shortcut">⌘ K</span>
         </div>
         <button class="icon-button" id="darkModeToggle" type="button" aria-label="Toggle Dark Mode">
-          <i class="fa-solid fa-moon" id="darkModeIcon"></i>
+          <i class="fa-solid fa-moon" id="moonIcon"></i><i class="fa-solid fa-sun" id="sunIcon" style="color: #f59e0b;"></i>
         </button>
         <button class="icon-button" type="button">
           <i class="fa-regular fa-bell"></i><span class="notification-dot"></span>
@@ -128,7 +128,41 @@ function renderEmployeeNMTopNav() {
   `;
 }
 
+
+function initEmployeeNMEventListeners() {
+  // Dark Mode Toggle
+  const isDark = localStorage.getItem('theme') === 'dark';
+  if (isDark) {
+    document.body.classList.add('dark-mode');
+  }
+
+  const darkModeBtns = document.querySelectorAll('#darkModeToggle');
+  darkModeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      const activeDark = document.body.classList.contains('dark-mode');
+      localStorage.setItem('theme', activeDark ? 'dark' : 'light');
+    });
+  });
+
+  // Hamburger / Sidebar Toggle
+  const sidebarToggles = document.querySelectorAll('#sidebarToggle, #brandMenuToggle, .sidebar-toggle');
+  sidebarToggles.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.body.classList.toggle('sidebar-closed');
+      document.body.classList.toggle('sidebar-collapsed');
+      const sidebar = document.querySelector('.sidebar') || document.getElementById('shared-sidebar');
+      if (sidebar) {
+        sidebar.classList.toggle('collapsed');
+      }
+    });
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   renderEmployeeNMSidebar();
   renderEmployeeNMTopNav();
+  initEmployeeNMEventListeners();
 });
+

@@ -1,5 +1,38 @@
 
 /* =========================================================
+   GLOBAL DARK MODE & SIDEBAR HAMBURGER TOGGLES
+========================================================= */
+function initDarkMode() {
+    const isDark = localStorage.getItem("theme") === "dark";
+    if (isDark) {
+        document.body.classList.add("dark-mode");
+    }
+
+    const darkModeBtns = document.querySelectorAll("#darkModeToggle, .dark-mode-toggle");
+    darkModeBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.body.classList.toggle("dark-mode");
+            const activeDark = document.body.classList.contains("dark-mode");
+            localStorage.setItem("theme", activeDark ? "dark" : "light");
+        });
+    });
+}
+
+function initSidebarToggle() {
+    const toggles = document.querySelectorAll("#sidebarToggle, #brandMenuToggle, .sidebar-toggle");
+    toggles.forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            document.body.classList.toggle("sidebar-closed");
+            document.body.classList.toggle("sidebar-collapsed");
+            const sidebar = document.querySelector(".sidebar");
+            if (sidebar) sidebar.classList.toggle("collapsed");
+        });
+    });
+}
+
+
+/* =========================================================
    CUSTOM TOAST / NOTIFICATION BANNER SYSTEM
 ========================================================= */
 function showNotification(message, type = "success", duration = 3500) {
@@ -1026,6 +1059,8 @@ async function loadDashboardTickets() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    initDarkMode();
+    initSidebarToggle();
     loadDashboardTickets();
     initializeMyTickets();
 });
