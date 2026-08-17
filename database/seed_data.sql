@@ -6,7 +6,7 @@
 INSERT OR REPLACE INTO department_users (id, department_name, azure_object_id, role, user_email, createdAt)
 VALUES (
     'uobj-admin-dc3b56e9',
-    'IT',
+    'Upper Executive Management',
     'dc3b56e9-9280-40dc-8d73-98bfd81fdd6a',
     'Super Admin',
     'Admin1@vigneshquadrantoutlook.onmicrosoft.com',
@@ -20,7 +20,7 @@ VALUES (
     'Greg Davis',
     'Admin1@vigneshquadrantoutlook.onmicrosoft.com',
     'Super Admin',
-    'IT',
+    'Upper Executive Management',
     '+1 (555) 019-9999',
     'GD'
 );

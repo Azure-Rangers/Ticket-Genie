@@ -105,7 +105,7 @@ def handle_azure_login(req: AzureLoginRequest):
                 user_id=profile_id,
                 name=req.name or req.email.split("@")[0],
                 email=req.email,
-                department=record.department_name if record else "IT",
+                department=record.department_name if record else "Upper Executive Management",
             )
         except Exception as err:
             print(f"Notice: profile sync during login: {err}")
