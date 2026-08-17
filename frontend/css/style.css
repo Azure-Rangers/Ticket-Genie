@@ -1,3 +1,30 @@
+
+/* =========================================================
+   SIDEBAR COLLAPSED / CLOSED RESPONSIVE STATES
+   ========================================================= */
+.sidebar {
+    transition: transform 0.3s ease, width 0.3s ease, opacity 0.3s ease, margin 0.3s ease;
+}
+
+body.sidebar-closed .sidebar,
+body.sidebar-collapsed .sidebar,
+.sidebar.collapsed {
+    transform: translateX(-100%);
+    width: 0 !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+body.sidebar-closed .main-content,
+body.sidebar-collapsed .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+}
+
 /* =========================================================
    TICKETGENIE - MAIN STYLESHEET
    ========================================================= */
