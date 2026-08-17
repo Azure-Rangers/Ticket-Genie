@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -8,8 +7,11 @@ def test_employee_request_page_uses_its_page_specific_submit_handler():
     page = (ROOT / "frontend/employee_NM/new-request.html").read_text(encoding="utf-8")
 
     assert "async function submitEmployeeStandardTicket(event)" in page
-    assert "onsubmit=\"event.preventDefault(); submitEmployeeStandardTicket(event); return false;\"" in page
-    assert "onclick=\"event.preventDefault();" not in page
+    assert (
+        'onsubmit="event.preventDefault(); submitEmployeeStandardTicket(event); return false;"'
+        in page
+    )
+    assert 'onclick="event.preventDefault();' not in page
 
 
 def test_shared_api_client_uses_backend_api_prefix():
@@ -37,7 +39,10 @@ def test_my_tickets_grid_has_aligned_columns_and_semantic_badges():
     script = (ROOT / "frontend/js/script.js").read_text(encoding="utf-8")
 
     for heading in ("Request", "Department", "Status", "Priority", "Created", "Action"):
-        assert f"<div>{heading}</div>" in page or f'<div style="text-align: right;">{heading}</div>' in page
+        assert (
+            f"<div>{heading}</div>" in page
+            or f'<div style="text-align: right;">{heading}</div>' in page
+        )
     assert "grid-template-columns: minmax(240px, 2.2fr)" in page
     assert "ticket-badge status-${stClass}" in script
     assert "ticket-badge priority-${prClass}" in script
