@@ -56,7 +56,6 @@
 })();
 
 (function () {
-    const DEFAULT_ADMIN_OID = "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a";
     let msalInstance = null;
 
     /**
@@ -121,8 +120,8 @@
 
         console.log("🔑 Azure Object ID:", objectId);
 
-        let isAdmin = (objectId === DEFAULT_ADMIN_OID);
-        let role = isAdmin ? "Super Admin" : "Employee";
+        let isAdmin = false;
+        let role = "Employee";
 
         // Query backend for role authorization based on Object ID & verify JWT signature
         try {
@@ -182,11 +181,7 @@
                 console.warn("⚠️ [Azure Auth] Azure AD redirect error:", err.message);
             }
         } else {
-            return await handleAuthenticatedAccount({
-                idTokenClaims: { oid: DEFAULT_ADMIN_OID },
-                username: "Admin1@vigneshquadrantoutlook.onmicrosoft.com",
-                name: "Admin User"
-            });
+            console.log("ℹ️ Azure Client ID not configured.");
         }
         return null;
     }
@@ -341,7 +336,6 @@
     }
 
     window.AzureAuth = {
-        DEFAULT_ADMIN_OID: DEFAULT_ADMIN_OID,
         getAzureUser: getAzureUser,
         loginWithAzure: loginWithAzure,
         autoLoginAzure: autoLoginAzure,

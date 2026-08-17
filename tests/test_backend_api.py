@@ -157,8 +157,24 @@ def test_update_ticket_not_found() -> None:
 
 
 def test_azure_login_admin_check() -> None:
+    from backend.database.connection import SessionLocal
+    from backend.database.models import DepartmentUserDB
+
+    test_oid = "test-admin-oid-1111-2222"
+    with SessionLocal() as db:
+        existing = db.query(DepartmentUserDB).filter_by(azure_object_id=test_oid).first()
+        if not existing:
+            db.add(DepartmentUserDB(
+                id="uobj-test-1111",
+                department_name="IT Team",
+                azure_object_id=test_oid,
+                role="Super Admin",
+                user_email="admin@company.com"
+            ))
+            db.commit()
+
     payload = {
-        "azure_object_id": "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a",
+        "azure_object_id": test_oid,
         "email": "admin@company.com",
         "name": "Admin User"
     }
@@ -168,7 +184,7 @@ def test_azure_login_admin_check() -> None:
 
     data = response.json()
     assert data["status"] == "success"
-    assert data["azure_object_id"] == "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a"
+    assert data["azure_object_id"] == test_oid
     assert data["is_admin"] is True
     assert data["role"] in ["Admin", "Super Admin"]
 

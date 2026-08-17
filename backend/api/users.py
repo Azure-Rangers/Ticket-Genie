@@ -92,9 +92,6 @@ def handle_azure_login(req: AzureLoginRequest):
             if req.email and not record.user_email:
                 record.user_email = req.email
                 session.commit()
-        elif verified_oid == "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a":
-            is_admin = True
-            role = "Super Admin"
 
     # Synchronize user_profiles table from JWT claims upon login
     if req.email or req.name:

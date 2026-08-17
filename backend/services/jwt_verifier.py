@@ -133,18 +133,6 @@ def verify_azure_user(authorization: Optional[str] = Header(None)) -> Dict[str, 
     Returns authenticated user claims (oid, email, name, role).
     Strictly raises 401 Unauthorized if Authorization header is missing in production.
     """
-    azure_client_id = os.getenv("AZURE_CLIENT_ID", "").strip()
-
-    # Development mode fallback ONLY if Azure Client ID is not configured
-    if not azure_client_id and not authorization:
-        return {
-            "oid": "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a",
-            "email": "Admin1@vigneshquadrantoutlook.onmicrosoft.com",
-            "name": "Dev Admin",
-            "role": "Super Admin",
-            "is_dev": True,
-        }
-
     if not authorization:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

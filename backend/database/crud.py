@@ -131,10 +131,6 @@ def get_all_tickets(
                     if prof.email:
                         target_ids.add(prof.email.lower())
 
-                # Bridge 'usr-admin-dc3b56e9' and 'dc3b56e9-9280-40dc-8d73-98bfd81fdd6a' if present
-                if any("dc3b56e9" in tid for tid in list(target_ids)):
-                    target_ids.add("usr-admin-dc3b56e9")
-                    target_ids.add("dc3b56e9-9280-40dc-8d73-98bfd81fdd6a")
             except Exception:
                 pass
 

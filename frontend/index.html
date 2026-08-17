@@ -89,7 +89,7 @@
   <script>
     function login(roleType) {
       const azureUser = window.AzureAuth ? window.AzureAuth.getAzureUser() : null;
-      const objectId = azureUser ? azureUser.objectId : "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a";
+      const objectId = azureUser ? azureUser.objectId : "";
       const currentRole = azureUser ? azureUser.role : "Super Admin";
       
       if (roleType === 'Admin_AV') {
