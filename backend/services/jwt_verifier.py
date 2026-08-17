@@ -151,11 +151,17 @@ def verify_azure_user(authorization: Optional[str] = Header(None)) -> Dict[str, 
         )
 
     claims = verify_azure_jwt(authorization)
-    oid = claims.get("oid") or claims.get("sub") or claims.get("homeAccountId") or "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a"
+    oid = claims.get("oid") or claims.get("sub") or claims.get("homeAccountId")
+    if not oid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid JWT claims: missing object ID (oid).",
+        )
+
     email = claims.get("preferred_username") or claims.get("upn") or claims.get("email") or "user@company.com"
     name = claims.get("name") or email
 
-    # Resolve database role for this user OID
+    # Dynamically resolve user role from department_users database table by azure_object_id
     role = "Employee"
     try:
         from database.connection import SessionLocal
@@ -166,8 +172,10 @@ def verify_azure_user(authorization: Optional[str] = Header(None)) -> Dict[str, 
             ).first()
             if record and record.role:
                 role = record.role
-            elif oid == "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a":
-                role = "Super Admin"
+            elif claims.get("role"):
+                role = claims.get("role")
+            elif claims.get("roles") and isinstance(claims.get("roles"), list) and len(claims.get("roles")) > 0:
+                role = claims.get("roles")[0]
     except Exception as err:
         logger.warning(f"Database role lookup notice: {err}")
 

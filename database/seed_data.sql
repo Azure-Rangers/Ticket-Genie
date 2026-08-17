@@ -3,7 +3,7 @@
 -- ==========================================================
 
 -- Seed Initial Admin in Department Users
-INSERT OR IGNORE INTO department_users (id, department_name, azure_object_id, role, user_email, createdAt)
+INSERT OR REPLACE INTO department_users (id, department_name, azure_object_id, role, user_email, createdAt)
 VALUES (
     'uobj-admin-dc3b56e9',
     'IT',
