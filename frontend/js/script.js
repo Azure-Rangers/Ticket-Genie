@@ -623,23 +623,141 @@ async function loadTicketDetailPage() {
 
 async function submitStandardTicket(event) {
     if (event) event.preventDefault();
-    const titleEl = document.getElementById("ticketTitle");
-    const deptEl = document.getElementById("ticketDepartment");
+
+    const titleEl = document.getElementById("standardSubject") || document.getElementById("ticketTitle");
+    const deptEl = document.getElementById("standardDepartment") || document.getElementById("ticketDepartment");
     const priorityEl = document.getElementById("ticketPriority");
-    const descEl = document.getElementById("ticketDescription");
+    const descEl = document.getElementById("standardDescription") || document.getElementById("ticketDescription");
+
+    const titleStr = titleEl ? titleEl.value.trim() : "";
+    const descStr = descEl ? descEl.value.trim() : "";
 
     const payload = {
-        title: titleEl ? titleEl.value.trim() : "New Support Request",
-        department: deptEl ? deptEl.value : "IT Support",
+        title: titleStr || "New Support Request",
+        department: deptEl ? deptEl.value : "IT & Technology",
+        category: deptEl ? deptEl.value : "IT Support",
         priority: priorityEl ? priorityEl.value : "Medium",
-        description: descEl ? descEl.value.trim() : "",
+        description: descStr || "No description provided.",
         requester_id: getCurrentRequesterId()
     };
 
-    const createFn = window.apiCreateTicket || apiCreateTicket;
-    const result = await createFn(payload);
-    showNotification("Ticket submitted successfully!", "success");
-    setTimeout(() => { window.location.href = "my-tickets.html"; }, 1000);
+    try {
+        const createFn = window.apiCreateTicket || apiCreateTicket;
+        const result = await createFn(payload);
+
+        const existing = getTickets();
+        const newTicket = result || {
+            id: generateTicketId(),
+            title: payload.title,
+            department: payload.department,
+            category: payload.category,
+            priority: payload.priority,
+            description: payload.description,
+            status: "Open",
+            date: new Date().toISOString().split("T")[0],
+            createdAt: new Date().toISOString()
+        };
+        existing.unshift(newTicket);
+        saveTickets(existing);
+
+        showNotification("Ticket submitted successfully!", "success");
+        showSuccessMessage(newTicket);
+
+        setTimeout(() => { window.location.href = "my-tickets.html"; }, 1200);
+    } catch (err) {
+        console.error("submitStandardTicket failed:", err);
+        showNotification("Failed to submit ticket. Please try again.", "error");
+    }
+}
+
+async function submitLeaveTicket(event) {
+    if (event) event.preventDefault();
+    const leaveForm = document.querySelector("#leaveTabContent form");
+    const leaveType = leaveForm ? leaveForm.querySelector("select")?.value : "Paid Time Off (PTO)";
+    const handover = leaveForm ? leaveForm.querySelectorAll("input[type='text']")[0]?.value : "";
+    const startDate = leaveForm ? leaveForm.querySelectorAll("input[type='date']")[0]?.value : "";
+    const endDate = leaveForm ? leaveForm.querySelectorAll("input[type='date']")[1]?.value : "";
+    const notes = leaveForm ? leaveForm.querySelector("textarea")?.value : "";
+
+    const payload = {
+        title: `Leave Request: ${leaveType}`,
+        department: "HR & Workplace Operations",
+        category: "Time Off",
+        priority: "Medium",
+        description: `Leave Type: ${leaveType}\nStart Date: ${startDate || 'N/A'}\nEnd Date: ${endDate || 'N/A'}\nCoverage Lead: ${handover || 'N/A'}\nNotes: ${notes || 'N/A'}`,
+        requester_id: getCurrentRequesterId()
+    };
+
+    try {
+        const createFn = window.apiCreateTicket || apiCreateTicket;
+        const result = await createFn(payload);
+
+        const existing = getTickets();
+        const newTicket = result || {
+            id: generateTicketId(),
+            title: payload.title,
+            department: payload.department,
+            category: payload.category,
+            priority: payload.priority,
+            description: payload.description,
+            status: "Open",
+            date: new Date().toISOString().split("T")[0],
+            createdAt: new Date().toISOString()
+        };
+        existing.unshift(newTicket);
+        saveTickets(existing);
+
+        showNotification("Leave request submitted successfully!", "success");
+        showSuccessMessage(newTicket);
+        setTimeout(() => { window.location.href = "my-tickets.html"; }, 1200);
+    } catch (err) {
+        console.error("submitLeaveTicket failed:", err);
+        showNotification("Failed to submit leave request.", "error");
+    }
+}
+
+async function submitAnonymousTicket(event) {
+    if (event) event.preventDefault();
+    const anonForm = document.querySelector("#anonymousTabContent form");
+    const category = anonForm ? anonForm.querySelector("select")?.value : "Confidential";
+    const msg = anonForm ? anonForm.querySelector("textarea")?.value : "";
+
+    const payload = {
+        title: `Confidential Report: ${category}`,
+        department: "Upper Management/Administration",
+        category: category,
+        priority: "High",
+        description: msg || "Confidential feedback.",
+        is_anonymous: true,
+        requester_id: "anonymous@ticketgenie.com"
+    };
+
+    try {
+        const createFn = window.apiCreateTicket || apiCreateTicket;
+        const result = await createFn(payload);
+
+        const existing = getTickets();
+        const newTicket = result || {
+            id: generateTicketId(),
+            title: payload.title,
+            department: payload.department,
+            category: payload.category,
+            priority: payload.priority,
+            description: payload.description,
+            status: "Open",
+            date: new Date().toISOString().split("T")[0],
+            createdAt: new Date().toISOString()
+        };
+        existing.unshift(newTicket);
+        saveTickets(existing);
+
+        showNotification("Anonymous report submitted confidentially!", "success");
+        showSuccessMessage(newTicket);
+        setTimeout(() => { window.location.href = "my-tickets.html"; }, 1200);
+    } catch (err) {
+        console.error("submitAnonymousTicket failed:", err);
+        showNotification("Failed to submit confidential report.", "error");
+    }
 }
 
 async function sendTicketReply(ticketId) {
@@ -1007,5 +1125,7 @@ Object.assign(window, {
     loadMyTicketsPage,
     loadTicketDetailPage,
     submitStandardTicket,
+    submitLeaveTicket,
+    submitAnonymousTicket,
     sendTicketReply
 });
