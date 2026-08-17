@@ -63,9 +63,10 @@ class TestJWTVerifierAndSecurity(unittest.TestCase):
 
     def test_verify_azure_user_dev_fallback(self):
         with patch.dict("os.environ", {"AZURE_CLIENT_ID": ""}):
-            user_context = verify_azure_user(authorization=None)
-            self.assertEqual(user_context["role"], "Super Admin")
-            self.assertTrue(user_context.get("is_dev", False))
+            from fastapi import HTTPException
+            with self.assertRaises(HTTPException) as ctx:
+                verify_azure_user(authorization=None)
+            self.assertEqual(ctx.exception.status_code, 401)
 
     def test_verify_azure_user_missing_header_in_prod(self):
         with patch.dict("os.environ", {"AZURE_CLIENT_ID": "mock-client-id"}):

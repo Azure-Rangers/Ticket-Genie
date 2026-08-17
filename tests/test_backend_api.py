@@ -157,8 +157,8 @@ def test_update_ticket_not_found() -> None:
 
 
 def test_azure_login_admin_check() -> None:
-    from backend.database.connection import SessionLocal
-    from backend.database.models import DepartmentUserDB
+    from database.connection import SessionLocal
+    from database.models_db import DepartmentUserDB
 
     test_oid = "test-admin-oid-1111-2222"
     with SessionLocal() as db:
@@ -169,7 +169,8 @@ def test_azure_login_admin_check() -> None:
                 department_name="IT Team",
                 azure_object_id=test_oid,
                 role="Super Admin",
-                user_email="admin@company.com"
+                user_email="admin@company.com",
+                createdAt="2026-08-16T12:00:00"
             ))
             db.commit()
 
