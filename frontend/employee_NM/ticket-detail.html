@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticket Thread | TicketGenie</title>
+  <link rel="stylesheet" href="../css/employee-style.css">
+  <link rel="stylesheet" href="employee.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body>
+
+  <div id="shared-sidebar"></div>
+
+  <main class="main-content">
+    <div id="shared-topnav"></div>
+
+    <div class="page-padding" style="padding: 24px 32px;">
+      <div style="margin-bottom: 20px;">
+        <a href="my-tickets.html" class="action-btn" style="padding: 8px 16px; background: white; border: 1px solid #dfe5e1; border-radius: 8px; font-size: 0.85rem; text-decoration: none; color: #334155; display: inline-flex; align-items: center; gap: 8px; font-weight: 600;">
+          <i class="fa-solid fa-arrow-left"></i> Back to My Tickets
+        </a>
+      </div>
+
+      <div id="ticketDetailContainer">
+        <div style="padding: 40px; text-align: center; color: #6b7280;">Loading ticket conversation thread...</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Genie AI Floating Button & Drawer -->
+  <button class="genie-button" id="genieButton" type="button">
+    <i class="fa-solid fa-wand-magic-sparkles"></i>
+    <span>Ask Genie</span>
+  </button>
+
+  <div class="genie-chat" id="genieChat">
+    <div class="genie-chat-header">
+      <div class="genie-header-info">
+        <div class="genie-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <div><strong>Genie AI</strong><span><span class="genie-status-dot"></span> Online</span></div>
+      </div>
+      <button class="genie-close" id="closeGenieButton" type="button"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="genie-messages" id="genieMessages">
+      <div class="genie-message">
+        <div class="genie-message-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <div class="genie-bubble">Hi! I'm Genie, your AI support assistant. How can I help you today?</div>
+      </div>
+    </div>
+    <div class="genie-input-area">
+      <input type="text" id="genieInput" placeholder="Ask a question..." autocomplete="off">
+      <button id="genieSendButton" type="button"><i class="fa-solid fa-arrow-up"></i></button>
+    </div>
+    <div class="genie-disclaimer">Genie may occasionally provide inaccurate information.</div>
+  </div>
+
+  <script src="components.js?v=20260816_10"></script>
+  <script src="../js/employee-script.js?v=20260816_10"></script>
+  <script>
+function switchPortalView(viewType) {
+    if (typeof showNotification === 'function') {
+        showNotification(viewType === 'management' ? 'Switched to Management View mode.' : 'Switched to Employee View mode.', 'info');
+    }
+}
+
+function handleSignOut(event) {
+    if (event) event.preventDefault();
+    if (confirm('Are you sure you want to sign out of TicketGenie Enterprise?')) {
+        localStorage.removeItem('portalUser');
+        window.location.href = 'index.html';
+    }
+}
+</script>
+</body>
+</html>

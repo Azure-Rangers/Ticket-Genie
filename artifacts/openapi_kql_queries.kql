@@ -79,6 +79,48 @@ requests
 | render timechart
 
 
+// Route: GET /api/tickets/{ticket_id}/export (tickets)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/tickets/{ticket_id}/export"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: GET /api/tickets/{ticket_id}/comments (tickets)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/tickets/{ticket_id}/comments"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: POST /api/tickets/{ticket_id}/comments (tickets)
+
+requests
+| where timestamp > ago(1h) and name == "POST /api/tickets/{ticket_id}/comments"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
 // Route: POST /api/genie/chat (genie)
 
 requests
@@ -93,8 +135,48 @@ requests
 | render timechart
 
 
-<<<<<<< HEAD
-=======
+// Route: POST /api/genie/react (genie)
+
+requests
+| where timestamp > ago(1h) and name == "POST /api/genie/react"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: POST /api/genie/exec-agent (genie)
+
+requests
+| where timestamp > ago(1h) and name == "POST /api/genie/exec-agent"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: GET /api/genie/exec-briefing (genie)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/genie/exec-briefing"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
 // Route: POST /api/chatbot/message (chatbot)
 
 requests
@@ -109,7 +191,328 @@ requests
 | render timechart
 
 
->>>>>>> d910f7bbeed9a89311a3cf7edbd0accb1f5a898d
+// Route: GET /api/admin/departments (admin)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/admin/departments"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: POST /api/admin/departments (admin)
+
+requests
+| where timestamp > ago(1h) and name == "POST /api/admin/departments"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: GET /api/admin/departments/users (admin)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/admin/departments/users"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: POST /api/admin/departments/users (admin)
+
+requests
+| where timestamp > ago(1h) and name == "POST /api/admin/departments/users"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: DELETE /api/admin/departments/users (admin)
+
+requests
+| where timestamp > ago(1h) and name == "DELETE /api/admin/departments/users"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: GET /api/admin/leave-queue (admin)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/admin/leave-queue"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: POST /api/admin/sql-query (admin)
+
+requests
+| where timestamp > ago(1h) and name == "POST /api/admin/sql-query"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: GET /api/analytics/trends (analytics)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/analytics/trends"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: GET /api/calendar/leave-events (calendar)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/calendar/leave-events"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: GET /api/calendar/export.ics (calendar)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/calendar/export.ics"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: POST /api/knowledge/ingest (knowledge)
+
+requests
+| where timestamp > ago(1h) and name == "POST /api/knowledge/ingest"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: GET /api/knowledge/search (knowledge)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/knowledge/search"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: GET /api/announcements (announcements)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/announcements"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: POST /api/announcements (announcements)
+
+requests
+| where timestamp > ago(1h) and name == "POST /api/announcements"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: DELETE /api/announcements/{anc_id} (announcements)
+
+requests
+| where timestamp > ago(1h) and name == "DELETE /api/announcements/{anc_id}"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: GET /api/notifications (notifications)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/notifications"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: POST /api/notifications (notifications)
+
+requests
+| where timestamp > ago(1h) and name == "POST /api/notifications"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: PUT /api/notifications/{notif_id}/read (notifications)
+
+requests
+| where timestamp > ago(1h) and name == "PUT /api/notifications/{notif_id}/read"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: GET /api/onboarding (onboarding)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/onboarding"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: POST /api/onboarding (onboarding)
+
+requests
+| where timestamp > ago(1h) and name == "POST /api/onboarding"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: PUT /api/onboarding/{rec_id} (onboarding)
+
+requests
+| where timestamp > ago(1h) and name == "PUT /api/onboarding/{rec_id}"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: GET /api/users/profile (users)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/users/profile"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: PUT /api/users/profile (users)
+
+requests
+| where timestamp > ago(1h) and name == "PUT /api/users/profile"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
 // Route: GET / (default)
 
 requests
@@ -138,9 +541,36 @@ requests
 | render timechart
 
 
+// Route: GET /api/config (default)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/config"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
 // 3. High Latency (>1000ms) Request Trace Correlation
 
 requests
 | where timestamp > ago(24h) and duration > 1000
 | project timestamp, name, resultCode, duration, url, customDimensions
 | order by duration desc
+
+
+// 4. LLM Token Consumption & Estimated Cost (OpenTelemetry Metrics)
+
+customMetrics
+| where timestamp > ago(24h) and name startswith "llm_"
+| summarize
+    PromptTokens = sumif(value, name == "llm_prompt_tokens"),
+    CompletionTokens = sumif(value, name == "llm_completion_tokens"),
+    TotalTokens = sumif(value, name == "llm_total_tokens"),
+    EstimatedCostUSD = sumif(value, name == "llm_estimated_cost_usd")
+  by bin(timestamp, 1h), tostring(customDimensions.agent)
+| order by timestamp desc

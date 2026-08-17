@@ -36,11 +36,7 @@ stages:
           - checkout: self
 
           - task: AzureCLI@2
-<<<<<<< HEAD
-            displayName: Build, Archive, and Push FastAPI backend image to ACR
-=======
             displayName: Build and Push FastAPI backend and Nginx frontend images to ACR
->>>>>>> d910f7bbeed9a89311a3cf7edbd0accb1f5a898d
             inputs:
               azureSubscription: $(azureServiceConnection)
               scriptType: bash
@@ -48,17 +44,6 @@ stages:
               inlineScript: |
                 set -euo pipefail
 
-<<<<<<< HEAD
-                mkdir -p "$(Build.ArtifactStagingDirectory)/container-artifacts"
-
-                # 1. Build backend image locally and export container archive
-                docker build --target backend -t "$(backendImageRepository):$(imageTag)" -t "$(backendImageRepository):latest" -f Dockerfile .
-                docker save "$(backendImageRepository):$(imageTag)" -o "$(Build.ArtifactStagingDirectory)/container-artifacts/backend-container.tar"
-
-                # 2. Build and push to Azure Container Registry
-                az acr build \
-                  --registry "$(acrName)" \
-=======
                 # Log in to Azure Container Registry
                 az acr login --name "$(acrName)"
 
@@ -68,7 +53,6 @@ stages:
                 # 1. Build and Push Backend Image with remote registry buildcache
                 docker buildx build \
                   --push \
->>>>>>> d910f7bbeed9a89311a3cf7edbd0accb1f5a898d
                   --target backend \
                   --cache-to type=registry,ref="$(acrLoginServer)/$(backendImageRepository):buildcache",mode=max \
                   --cache-from type=registry,ref="$(acrLoginServer)/$(backendImageRepository):buildcache" \
@@ -76,41 +60,15 @@ stages:
                   -t "$(acrLoginServer)/$(backendImageRepository):latest" \
                   -f Dockerfile .
 
-<<<<<<< HEAD
-          - task: AzureCLI@2
-            displayName: Build, Archive, and Push Nginx frontend image to ACR
-            inputs:
-              azureSubscription: $(azureServiceConnection)
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                set -euo pipefail
-
-                # 1. Build frontend image locally and export container archive
-                docker build --target frontend -t "$(frontendImageRepository):$(imageTag)" -t "$(frontendImageRepository):latest" -f Dockerfile .
-                docker save "$(frontendImageRepository):$(imageTag)" -o "$(Build.ArtifactStagingDirectory)/container-artifacts/frontend-container.tar"
-
-                # 2. Build and push to Azure Container Registry
-                az acr build \
-                  --registry "$(acrName)" \
-=======
                 # 2. Build and Push Frontend Image with remote registry buildcache
                 docker buildx build \
                   --push \
->>>>>>> d910f7bbeed9a89311a3cf7edbd0accb1f5a898d
                   --target frontend \
                   --cache-to type=registry,ref="$(acrLoginServer)/$(frontendImageRepository):buildcache",mode=max \
                   --cache-from type=registry,ref="$(acrLoginServer)/$(frontendImageRepository):buildcache" \
                   -t "$(acrLoginServer)/$(frontendImageRepository):$(imageTag)" \
                   -t "$(acrLoginServer)/$(frontendImageRepository):latest" \
                   -f Dockerfile .
-
-          - task: PublishPipelineArtifact@1
-            displayName: Publish Container Image Archives to DevOps
-            inputs:
-              targetPath: '$(Build.ArtifactStagingDirectory)/container-artifacts'
-              artifact: 'container-artifacts'
-              publishLocation: 'pipeline'
 
   - stage: UpdateWebApp
     displayName: Update Web App Containers
@@ -163,8 +121,89 @@ stages:
                       az webapp config appsettings set \
                         --resource-group "$(resourceGroupName)" \
                         --name "$(frontendWebAppName)" \
-                        --settings WEBSITES_PORT=80 BACKEND_API_URL="https://$(backendWebAppName).azurewebsites.net"
+                        --settings WEBSITES_PORT=80 BACKEND_URL="https://$(backendWebAppName).azurewebsites.net" BACKEND_API_URL="https://$(backendWebAppName).azurewebsites.net"
 
                       az webapp restart \
                         --resource-group "$(resourceGroupName)" \
                         --name "$(frontendWebAppName)"
+
+  - stage: VerifyDeployment
+    displayName: Verify Container Health & Startup Logs
+    dependsOn: UpdateWebApp
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: HealthCheck
+        displayName: Poll container health endpoints and capture logs on failure
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: none
+
+          - task: AzureCLI@2
+            displayName: Verify backend and frontend health probes
+            inputs:
+              azureSubscription: $(azureServiceConnection)
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+
+                echo "=== 1. Checking Backend Health Probe (FastAPI) ==="
+                BACKEND_HEALTHY=false
+                for i in {1..12}; do
+                  STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://$(backendWebAppName).azurewebsites.net/health" || true)
+                  if [ "$STATUS" = "200" ]; then
+                    echo "Backend container is up and healthy! (HTTP 200)"
+                    BACKEND_HEALTHY=true
+                    break
+                  fi
+                  echo "Attempt $i/12: Backend returned HTTP $STATUS. Retrying in 10s..."
+                  sleep 10
+                done
+
+                if [ "$BACKEND_HEALTHY" = "false" ]; then
+                  echo "ERROR: Backend container failed health check! Downloading backend startup logs..."
+                  az webapp log download \
+                    --resource-group "$(resourceGroupName)" \
+                    --name "$(backendWebAppName)" \
+                    --log-file /tmp/backend_logs.zip || true
+
+                  if [ -f /tmp/backend_logs.zip ]; then
+                    mkdir -p /tmp/backend_logs
+                    unzip -o /tmp/backend_logs.zip -d /tmp/backend_logs/ || true
+                    echo "=== BACKEND STARTUP FAILURE LOGS ==="
+                    cat /tmp/backend_logs/LogFiles/StartupLogs/*_failure.log 2>/dev/null || cat /tmp/backend_logs/LogFiles/*_docker.log | tail -n 100 || true
+                  fi
+                  exit 1
+                fi
+
+                echo "=== 2. Checking Frontend Health Probe (Nginx) ==="
+                FRONTEND_HEALTHY=false
+                for i in {1..18}; do
+                  STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://$(frontendWebAppName).azurewebsites.net/healthz" || true)
+                  if [ "$STATUS" = "200" ]; then
+                    echo "Frontend container is up and healthy! (HTTP 200)"
+                    FRONTEND_HEALTHY=true
+                    break
+                  fi
+                  echo "Attempt $i/18: Frontend returned HTTP $STATUS. Retrying in 10s..."
+                  sleep 10
+                done
+
+                if [ "$FRONTEND_HEALTHY" = "false" ]; then
+                  echo "ERROR: Frontend container failed health check! Downloading frontend startup logs..."
+                  az webapp log download \
+                    --resource-group "$(resourceGroupName)" \
+                    --name "$(frontendWebAppName)" \
+                    --log-file /tmp/frontend_logs.zip || true
+
+                  if [ -f /tmp/frontend_logs.zip ]; then
+                    mkdir -p /tmp/frontend_logs
+                    unzip -o /tmp/frontend_logs.zip -d /tmp/frontend_logs/ || true
+                    echo "=== FRONTEND STARTUP FAILURE LOGS ==="
+                    cat /tmp/frontend_logs/LogFiles/StartupLogs/*_failure.log 2>/dev/null || cat /tmp/frontend_logs/LogFiles/*_docker.log | tail -n 100 || true
+                  fi
+                  exit 1
+                fi
+
+                echo "All containers verified healthy and operational!"

@@ -68,6 +68,7 @@
     </form>
   </div>
 
+  <script src="js/script.js"></script>
   <script>
     let selectedRole = 'admin';
     const departmentField = document.getElementById('departmentField');
@@ -90,7 +91,8 @@
         management: { email: identity, role: 'Management', name: identity.split('@')[0] || 'Management' }
       };
       localStorage.setItem('portalUser', JSON.stringify(users[selectedRole]));
-      window.location.href = selectedRole === 'employee' ? 'employee_NM/my-tickets.html' : 'admin_AV/admin_dashboard.html';
+      const destinations = { employee: 'employee_NM/index.html', management: 'management/index.html', admin: 'admin_AV/admin_dashboard.html' };
+      window.location.href = destinations[selectedRole];
     });
   </script>
 </body>

@@ -21,8 +21,8 @@ IS_AZURE_CONFIGURED = bool(DATABASE_URL or (DB_SERVER and DB_PASSWORD))
 
 def _get_sqlalchemy_url() -> str:
     if DATABASE_URL:
-        # If DATABASE_URL is already an mssql or pyodbc string
-        if DATABASE_URL.startswith("mssql"):
+        # Use complete SQLAlchemy URLs directly (SQLite, MSSQL, PostgreSQL, etc.).
+        if "://" in DATABASE_URL:
             return DATABASE_URL
         # If raw ADO.NET / ODBC style string: "Server=tcp:...;Database=...;..."
         params = urllib.parse.quote_plus(DATABASE_URL)
@@ -69,9 +69,53 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def init_db_schema():
-    """Create database tables if they do not exist."""
+    """Create database tables if they do not exist and ensure missing columns are added."""
     try:
         Base.metadata.create_all(bind=engine)
+        # Handle SQLite column additions gracefully if table pre-existed
+        if engine.dialect.name == "sqlite":
+            with engine.connect() as conn:
+                existing_cols = [
+                    r[1]
+                    for r in conn.execute(text("PRAGMA table_info(tickets)")).fetchall()
+                ]
+                if "queue" not in existing_cols:
+                    conn.execute(
+                        text(
+                            "ALTER TABLE tickets ADD COLUMN queue VARCHAR(100) DEFAULT 'IT - Service Desk'"
+                        )
+                    )
+                if "parent_ticket_id" not in existing_cols:
+                    conn.execute(
+                        text(
+                            "ALTER TABLE tickets ADD COLUMN parent_ticket_id VARCHAR(50)"
+                        )
+                    )
+                if "auto_resolved" not in existing_cols:
+                    conn.execute(
+                        text(
+                            "ALTER TABLE tickets ADD COLUMN auto_resolved BOOLEAN DEFAULT 0"
+                        )
+                    )
+                if "requester_id" not in existing_cols:
+                    conn.execute(
+                        text("ALTER TABLE tickets ADD COLUMN requester_id VARCHAR(150)")
+                    )
+                additions = {
+                    "classification_status": "VARCHAR(50) DEFAULT 'Classified'",
+                    "classification_confidence": "VARCHAR(20)",
+                    "classification_reason": "TEXT",
+                    "needs_human_review": "BOOLEAN DEFAULT 0",
+                    "model_deployment": "VARCHAR(100)",
+                }
+                for column_name, column_type in additions.items():
+                    if column_name not in existing_cols:
+                        conn.execute(
+                            text(
+                                f"ALTER TABLE tickets ADD COLUMN {column_name} {column_type}"
+                            )
+                        )
+                conn.commit()
     except Exception as e:
         print(f"⚠️ Error creating database schema: {e}")
 
