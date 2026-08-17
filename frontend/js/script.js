@@ -769,32 +769,32 @@ function initializeFileUploads() {
 function initializeDarkMode() {
     const toggleBtn = document.getElementById('darkModeToggle');
     const darkIcon = document.getElementById('darkModeIcon');
-    
+
+    // Supports both Font Awesome (employee portal) and Phosphor (admin portal) icon sets
+    function setDarkIcon(isDark) {
+        if (!darkIcon) return;
+        if (darkIcon.classList.contains('fa-moon') || darkIcon.classList.contains('fa-sun')) {
+            darkIcon.classList.toggle('fa-moon', !isDark);
+            darkIcon.classList.toggle('fa-sun', isDark);
+        } else if (darkIcon.classList.contains('ph-moon') || darkIcon.classList.contains('ph-sun')) {
+            darkIcon.classList.toggle('ph-moon', !isDark);
+            darkIcon.classList.toggle('ph-sun', isDark);
+        }
+        toggleBtn.classList.toggle('theme-glow', isDark);
+    }
+
     const savedTheme = localStorage.getItem('ticketGenieTheme');
     if (savedTheme === 'dark') {
         document.body.classList.add('dark-mode');
-        if (darkIcon) {
-            darkIcon.classList.remove('fa-moon');
-            darkIcon.classList.add('fa-sun');
-        }
+        setDarkIcon(true);
     }
 
     if (toggleBtn) {
         toggleBtn.addEventListener('click', () => {
             document.body.classList.toggle('dark-mode');
             const isDark = document.body.classList.contains('dark-mode');
-            
             localStorage.setItem('ticketGenieTheme', isDark ? 'dark' : 'light');
-            
-            if (darkIcon) {
-                if (isDark) {
-                    darkIcon.classList.remove('fa-moon');
-                    darkIcon.classList.add('fa-sun');
-                } else {
-                    darkIcon.classList.remove('fa-sun');
-                    darkIcon.classList.add('fa-moon');
-                }
-            }
+            setDarkIcon(isDark);
         });
     }
 }

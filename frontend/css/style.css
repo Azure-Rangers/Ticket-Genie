@@ -604,6 +604,169 @@ body.dark-mode .summary-tag {
 }
 
 /* =========================================================
+   DARK MODE TOGGLE ICON GLOW
+   ========================================================= */
+#darkModeToggle i {
+    transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+#darkModeToggle.theme-glow i {
+    color: #facc15;
+    text-shadow: 0 0 8px rgba(250, 204, 21, 0.9), 0 0 18px rgba(250, 204, 21, 0.55);
+}
+
+/* =========================================================
+   ADMIN PORTAL DARK MODE OVERRIDES
+   (Admin pages build their own layout in per-page <style> blocks;
+   these rules re-theme the shared structural patterns in dark mode.)
+   ========================================================= */
+body.dark-mode .top-nav,
+body.dark-mode .cal-toolbar,
+body.dark-mode .month-grid-head,
+body.dark-mode .time-grid-head {
+    background: #18121f !important;
+    border-color: #2b1b36 !important;
+}
+
+body.dark-mode .page-padding h1,
+body.dark-mode .page-padding h2,
+body.dark-mode .page-padding h3,
+body.dark-mode .page-padding h4,
+body.dark-mode .page-padding h5 {
+    color: #f6f1f8 !important;
+}
+
+body.dark-mode .page-padding p,
+body.dark-mode .eyebrow-text {
+    color: #bfaec9 !important;
+}
+
+body.dark-mode [class*="-card"]:not(.search-panel),
+body.dark-mode [class*="-panel"]:not(.search-panel):not(.ai-panel) {
+    background: #23192b !important;
+    border-color: #3b2847 !important;
+    color: #e4d8e8 !important;
+}
+
+body.dark-mode .ai-panel {
+    background: linear-gradient(to bottom, #23192b, #2b2118) !important;
+    border-color: #5c4a1f !important;
+}
+
+body.dark-mode table { color: #e4d8e8; }
+body.dark-mode th {
+    background: #1d1424 !important;
+    color: #a795b3 !important;
+    border-color: #3b2847 !important;
+}
+body.dark-mode td {
+    border-color: #2b1b36 !important;
+    color: #e4d8e8 !important;
+}
+body.dark-mode tbody tr:hover { background: #2b1f35 !important; }
+
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+    background: #1d1424 !important;
+    color: #e4d8e8 !important;
+    border-color: #3b2847 !important;
+}
+body.dark-mode input::placeholder,
+body.dark-mode textarea::placeholder {
+    color: #8c7699 !important;
+}
+
+body.dark-mode .btn-outline,
+body.dark-mode .btn-export,
+body.dark-mode .cal-nav-btn,
+body.dark-mode .cal-today-btn,
+body.dark-mode .btn-panel,
+body.dark-mode .btn-hamburger,
+body.dark-mode .view-toggle-group {
+    background: #1d1424 !important;
+    border-color: #3b2847 !important;
+    color: #e4d8e8 !important;
+}
+body.dark-mode .view-toggle-btn { color: #bfaec9 !important; }
+body.dark-mode .view-toggle-btn.active {
+    background: #3b2847 !important;
+    color: #f6f1f8 !important;
+}
+
+body.dark-mode .nav-icon-btn { color: #bfaec9; }
+body.dark-mode .nav-icon-btn:hover { background: #2b1f35 !important; color: #facc15 !important; }
+
+body.dark-mode .user-profile { border-left-color: #2b1b36 !important; }
+body.dark-mode .avatar { background: #3b2847 !important; color: #d2a8f8 !important; }
+body.dark-mode #navName { color: #f6f1f8 !important; }
+body.dark-mode #navSubRole { color: #bfaec9 !important; }
+
+/* Calendar-specific dark mode */
+body.dark-mode .month-cell { border-color: #2b1b36 !important; }
+body.dark-mode .month-cell.other-month { background: #170f1e !important; }
+body.dark-mode .month-cell.today { background: #2b1f35 !important; }
+body.dark-mode .cell-date { color: #e4d8e8 !important; }
+body.dark-mode .time-slot,
+body.dark-mode .time-day-col { border-color: #2b1b36 !important; }
+body.dark-mode .time-label { color: #8c7699 !important; }
+body.dark-mode .event-popover { background: #23192b !important; border-color: #3b2847 !important; }
+body.dark-mode .popover-row { color: #bfaec9 !important; }
+body.dark-mode .filter-item,
+body.dark-mode .legend-item,
+body.dark-mode .cal-period-label {
+    color: #e4d8e8 !important;
+}
+
+/* Team Inbox-specific dark mode */
+body.dark-mode .inbox-container { background: #18121f !important; }
+body.dark-mode .ticket-list-pane,
+body.dark-mode .detail-header,
+body.dark-mode .reply-box {
+    background: #23192b !important;
+    border-color: #3b2847 !important;
+}
+body.dark-mode .pane-header,
+body.dark-mode .msg-header,
+body.dark-mode .ticket-item,
+body.dark-mode .ticket-info-bar {
+    border-color: #3b2847 !important;
+}
+body.dark-mode .pane-header h2,
+body.dark-mode .detail-top-row h1,
+body.dark-mode .ticket-title,
+body.dark-mode .info-item strong,
+body.dark-mode .msg-author,
+body.dark-mode .ai-field-text,
+body.dark-mode .reply-label {
+    color: #f6f1f8 !important;
+}
+body.dark-mode .filter-tab.inactive,
+body.dark-mode .ticket-meta,
+body.dark-mode .info-item span,
+body.dark-mode .msg-time,
+body.dark-mode .msg-content,
+body.dark-mode .ai-field-label,
+body.dark-mode .action-panel-title,
+body.dark-mode .empty-state {
+    color: #bfaec9 !important;
+}
+body.dark-mode .filter-tab.inactive:hover { background: #2b1f35 !important; }
+body.dark-mode .ticket-item:hover { background: #2b1f35 !important; }
+body.dark-mode .ticket-item.active { background: #2d2038 !important; }
+body.dark-mode .msg-system {
+    background: #1d1424 !important;
+    border-color: #3b2847 !important;
+    color: #bfaec9 !important;
+}
+body.dark-mode .btn-secondary {
+    background: #1d1424 !important;
+    border-color: #3b2847 !important;
+    color: #e4d8e8 !important;
+}
+body.dark-mode .btn-secondary:hover { background: #2b1f35 !important; }
+
+/* =========================================================
    RESPONSIVE
    ========================================================= */
 @media (max-width: 1100px) { .help-categories { grid-template-columns: repeat(2, 1fr); } .request-layout { grid-template-columns: 1fr; } }
@@ -986,7 +1149,6 @@ small,
 .category-card p {
     font-size: 13px !important;
     line-height: 1.5 !important;
-<<<<<<< HEAD
 }
 
 .admin-page .menu-icon {
@@ -995,6 +1157,4 @@ small,
 
 .employee-page .menu-icon {
     color: #a5b4fc;
-=======
->>>>>>> d910f7bbeed9a89311a3cf7edbd0accb1f5a898d
 }

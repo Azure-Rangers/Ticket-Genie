@@ -166,6 +166,7 @@
         <a href="admin_dashboard.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-chart-pie-slice"></i></span><span class="menu-text">My Dashboard</span></a>
         <a href="announcements.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-megaphone"></i></span><span class="menu-text">Announcements</span></a>
         <a href="analytics.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-trend-up"></i></span><span class="menu-text">Analytics</span></a>
+        <a href="calendar.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-calendar-blank"></i></span><span class="menu-text">Calendar</span></a>
       </div>
 
       <div class="nav-section">
@@ -177,7 +178,7 @@
       <div class="nav-section" id="adminNav" style="display: block;">
         <div class="nav-title">Administration</div>
         <a href="policy_library.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-books"></i></span><span class="menu-text">Policy Library</span></a>
-        <a href="archive.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-archive"></i></span><span class="menu-text">Ticket Archive</span></a>
+        <a href="ticket_archive.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-archive"></i></span><span class="menu-text">Ticket Archive</span></a>
       </div>
 
       <div class="nav-section">
@@ -199,7 +200,7 @@
         <div style="font-size: 0.85rem; color: #6b7280; font-weight: 600; text-transform: uppercase;">Team Inbox</div>
       </div>
       <div class="nav-actions">
-        <button class="nav-icon-btn"><i class="ph-fill ph-moon"></i></button>
+        <button class="nav-icon-btn" id="darkModeToggle" type="button" aria-label="Toggle Dark Mode"><i class="ph-fill ph-moon" id="darkModeIcon"></i></button>
         <button class="nav-icon-btn"><i class="ph-fill ph-bell"></i></button>
         <div class="user-profile">
           <div style="text-align: right;"><div id="navName" style="color: #111827;">User</div><div id="navSubRole" style="font-size: 0.7rem; color: #6b7280;">Role</div></div>
@@ -385,7 +386,7 @@
 
       let replyBoxHTML = ticket.status !== 'Resolved' ? `
           <div class="reply-box">
-            <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; color: #111827;">Add response:</div>
+            <div class="reply-label" style="font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; color: #111827;">Add response:</div>
             <textarea id="replyText" class="reply-textarea" placeholder="Type your message..."></textarea>
             <div class="reply-actions">
               <button class="btn-secondary" onclick="addNote(this)"><i class="ph-fill ph-lock-key"></i> Private Note</button>
