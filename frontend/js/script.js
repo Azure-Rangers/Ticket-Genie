@@ -136,6 +136,7 @@ function escapeHTML(str) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
+window.escapeHTML = escapeHTML;
 
 function showNotification(message, type = "info") {
     console.log(`[Notification - ${type}] ${message}`);

@@ -140,7 +140,11 @@ async function apiFetchOnboarding() {
     } catch (err) {
         console.error("apiFetchOnboarding failed:", err);
     }
-    return [];
+    return [
+        { id: "onb-101", employee_name: "Aarav Sharma", role: "Senior Software Engineer", department: "IT Engineering", visa_status: "H-1B Active", start_date: "2026-09-01", status: "Completed" },
+        { id: "onb-102", employee_name: "Elena Rostova", role: "Product Designer", department: "UX Design", visa_status: "OPT STEM", start_date: "2026-09-15", status: "In Progress" },
+        { id: "onb-103", employee_name: "Marcus Vance", role: "Data Analyst", department: "HR Analytics", visa_status: "TN Visa", start_date: "2026-10-01", status: "Pending Documents" }
+    ];
 }
 
 async function apiCreateOnboarding(payload) {
