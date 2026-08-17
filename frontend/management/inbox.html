@@ -69,8 +69,24 @@
   <script>
     let allTickets = [];
 
+    function isUpperManagementTicket(t) {
+      const dept = (t.department || "").toLowerCase();
+      const cat = (t.category || "").toLowerCase();
+      return dept.includes("upper") || 
+             dept.includes("management") || 
+             dept.includes("executive") || 
+             dept.includes("administration") ||
+             cat.includes("confidential") || 
+             cat.includes("executive") || 
+             cat.includes("leave") || 
+             cat.includes("time off") || 
+             cat.includes("pto") ||
+             t.is_anonymous === true;
+    }
+
     document.addEventListener("DOMContentLoaded", async () => {
-      allTickets = await apiFetchTickets({ adminView: true });
+      const rawTickets = await apiFetchTickets({ adminView: true });
+      allTickets = (rawTickets || []).filter(isUpperManagementTicket);
       renderTickets(allTickets);
     });
 

@@ -116,7 +116,7 @@
       document.getElementById("hrTotal").textContent = hrTickets.length;
 
       const tbody = document.getElementById("hrTableBody");
-      const displayList = hrTickets.length > 0 ? hrTickets : tickets;
+      const displayList = hrTickets;
       if (!displayList || displayList.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No HR tickets found.</td></tr>`;
         return;

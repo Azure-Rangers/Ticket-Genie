@@ -112,7 +112,7 @@
       document.getElementById("itHardware").textContent = hw;
 
       const tbody = document.getElementById("itTableBody");
-      const displayList = itTickets.length > 0 ? itTickets : tickets;
+      const displayList = itTickets;
       if (!displayList || displayList.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No IT tickets found.</td></tr>`;
         return;

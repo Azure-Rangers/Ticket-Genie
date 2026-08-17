@@ -238,9 +238,9 @@ function showSuccessMessage(ticket) {
    ========================================================= */
 function initializeNewRequestForm() {
     const formConfigs = {
-        newTicketForm: { title: "ticketSubject", category: "ticketCategory", description: "ticketDescription", preferredDate: "preferredDate", file: "fileUpload", anonymous: false },
-        anonTicketForm: { title: "anonTicketSubject", category: "anonTicketCategory", description: "anonTicketDescription", file: "anonFileUpload", anonymous: true },
-        leaveTicketForm: { title: "leaveType", category: "leaveType", description: "leaveDescription", preferredDate: "leaveEndDate", file: "leaveFileUpload", anonymous: false, leave: true, departmentOverride: "Upper Management" }
+        standardTicketForm: { title: "standardSubject", category: "standardDepartment", description: "standardDescription", preferredDate: "preferredDate", file: "fileUpload", anonymous: false },
+        anonymousTicketForm: { title: "anonymousCategory", category: "anonymousCategory", description: "anonymousDescription", file: "anonymousFileUpload", anonymous: true },
+        leaveTicketForm: { title: "leaveTypeSelect", category: "leaveTypeSelect", description: "leaveDescription", preferredDate: "leaveEndDate", file: "leaveFileUpload", anonymous: false, leave: true, departmentOverride: "Upper Management" }
     };
 
     Object.entries(formConfigs).forEach(([formId, config]) => {
@@ -301,7 +301,10 @@ function initializeNewRequestForm() {
             });
 
             showSuccessMessage(newTicket);
-            setTimeout(() => { window.location.href = "my-tickets.html"; }, 1500);
+            setTimeout(() => {
+                const target = window.location.pathname.includes("/management/") || window.location.pathname.includes("/admin_AV/") ? "inbox.html" : "my-tickets.html";
+                window.location.href = target;
+            }, 1500);
         } catch (err) {
             showFormError(err.message || "Unable to submit the request. Please try again.");
             if (submitBtn) {
@@ -623,18 +626,32 @@ async function submitStandardTicket(event) {
     const priorityEl = document.getElementById("ticketPriority");
     const descEl = document.getElementById("standardDescription") || document.getElementById("ticketDescription");
 
-    const titleStr = titleEl ? titleEl.value.trim() : "";
-    const descStr = descEl ? descEl.value.trim() : "";
-
-    const payload = {
-        title: titleStr || "New Support Request",
-        department: deptEl ? deptEl.value : "IT & Technology",
-        category: deptEl ? deptEl.value : "IT Support",
-        priority: priorityEl ? priorityEl.value : "Medium",
-        description: descStr || "No description provided."
-    };
+    if (isSubmittingScriptTicket) return;
+    isSubmittingScriptTicket = true;
 
     try {
+        const stdForm = document.querySelector("#standardTabContent form");
+        const title = stdForm ? stdForm.querySelector("input[type='text']")?.value : "Standard Ticket";
+        const rawDept = stdForm ? stdForm.querySelector("select")?.value : "Auto";
+        const desc = stdForm ? stdForm.querySelector("textarea")?.value : "";
+
+        let mappedDept = null;
+        if (rawDept && rawDept !== "Auto") {
+            if (rawDept.includes("HR")) mappedDept = "HR Team";
+            else if (rawDept.includes("Account")) mappedDept = "Accounting Team";
+            else if (rawDept.includes("Upper") || rawDept.includes("Admin")) mappedDept = "Upper Management";
+            else if (rawDept.includes("Workplace")) mappedDept = "Workplace Operations Team";
+            else mappedDept = "IT Team";
+        }
+
+        const payload = {
+            title: title || "Standard Request",
+            description: desc || "No description provided",
+            category: rawDept !== "Auto" ? rawDept : "IT Support",
+            priority: "Medium",
+            department: mappedDept
+        };
+
         const createFn = window.apiCreateTicket || apiCreateTicket;
         const result = await createFn(payload);
 
@@ -642,7 +659,7 @@ async function submitStandardTicket(event) {
         const newTicket = result || {
             id: generateTicketId(),
             title: payload.title,
-            department: payload.department,
+            department: mappedDept || "IT Team",
             category: payload.category,
             priority: payload.priority,
             description: payload.description,
@@ -656,8 +673,12 @@ async function submitStandardTicket(event) {
         showNotification("Ticket submitted successfully!", "success");
         showSuccessMessage(newTicket);
 
-        setTimeout(() => { window.location.href = "my-tickets.html"; }, 1200);
+        setTimeout(() => {
+            const target = window.location.pathname.includes("/management/") || window.location.pathname.includes("/admin_AV/") ? "inbox.html" : "my-tickets.html";
+            window.location.href = target;
+        }, 1200);
     } catch (err) {
+        isSubmittingScriptTicket = false;
         console.error("submitStandardTicket failed:", err);
         showNotification("Failed to submit ticket. Please try again.", "error");
     }
@@ -665,6 +686,9 @@ async function submitStandardTicket(event) {
 
 async function submitLeaveTicket(event) {
     if (event) event.preventDefault();
+    if (isSubmittingScriptTicket) return;
+    isSubmittingScriptTicket = true;
+
     const leaveForm = document.querySelector("#leaveTabContent form");
     const leaveType = leaveForm ? leaveForm.querySelector("select")?.value : "Paid Time Off (PTO)";
     const handover = leaveForm ? leaveForm.querySelectorAll("input[type='text']")[0]?.value : "";
@@ -701,8 +725,12 @@ async function submitLeaveTicket(event) {
 
         showNotification("Leave request submitted successfully!", "success");
         showSuccessMessage(newTicket);
-        setTimeout(() => { window.location.href = "my-tickets.html"; }, 1200);
+        setTimeout(() => {
+            const target = window.location.pathname.includes("/management/") || window.location.pathname.includes("/admin_AV/") ? "inbox.html" : "my-tickets.html";
+            window.location.href = target;
+        }, 1200);
     } catch (err) {
+        isSubmittingScriptTicket = false;
         console.error("submitLeaveTicket failed:", err);
         showNotification("Failed to submit leave request.", "error");
     }
@@ -710,6 +738,9 @@ async function submitLeaveTicket(event) {
 
 async function submitAnonymousTicket(event) {
     if (event) event.preventDefault();
+    if (isSubmittingScriptTicket) return;
+    isSubmittingScriptTicket = true;
+
     const anonForm = document.querySelector("#anonymousTabContent form");
     const category = anonForm ? anonForm.querySelector("select")?.value : "Confidential";
     const msg = anonForm ? anonForm.querySelector("textarea")?.value : "";
@@ -745,8 +776,12 @@ async function submitAnonymousTicket(event) {
 
         showNotification("Anonymous report submitted confidentially!", "success");
         showSuccessMessage(newTicket);
-        setTimeout(() => { window.location.href = "my-tickets.html"; }, 1200);
+        setTimeout(() => {
+            const target = window.location.pathname.includes("/management/") || window.location.pathname.includes("/admin_AV/") ? "inbox.html" : "my-tickets.html";
+            window.location.href = target;
+        }, 1200);
     } catch (err) {
+        isSubmittingScriptTicket = false;
         console.error("submitAnonymousTicket failed:", err);
         showNotification("Failed to submit confidential report.", "error");
     }
@@ -909,22 +944,11 @@ function renderGenieHistory(container, state) {
    REQUEST FORM PREFILL (from a ready_for_review chatbot draft)
    Only ever fills field values and switches tabs - never submits.
    ========================================================= */
-const GENIE_REQUEST_TYPE_TABS = {
-    standard: "standardRequestTab",
-    anonymous: "anonymousRequestTab",
-    leave_management: "leaveRequestTab",
+const GENIE_REQUEST_TYPE_TAB_NAMES = {
+    standard: "standard",
+    leave_management: "leave",
+    anonymous: "anonymous"
 };
-
-function switchRequestTab(tabTarget) {
-    const btn = document.querySelector(`.tab-btn[data-target="${tabTarget}"]`);
-    const content = document.getElementById(tabTarget);
-    if (!btn || !content) return false;
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-    btn.classList.add("active");
-    content.classList.add("active");
-    return true;
-}
 
 function setFieldValue(id, value) {
     if (!value) return;
@@ -934,32 +958,24 @@ function setFieldValue(id, value) {
 
 function prefillRequestForm(requestType, draft) {
     if (!draft) return;
-    const tabTarget = GENIE_REQUEST_TYPE_TABS[requestType];
-    if (!tabTarget || !switchRequestTab(tabTarget)) return;
+    const tabName = GENIE_REQUEST_TYPE_TAB_NAMES[requestType];
+    if (tabName && typeof window.switchTab === "function") {
+        window.switchTab(tabName);
+    }
 
     if (requestType === "standard") {
-        setFieldValue("ticketSubject", draft.title);
-        setFieldValue("ticketCategory", draft.category);
-        setFieldValue("ticketDescription", draft.description);
-        setFieldValue("preferredDate", draft.preferredDate);
+        setFieldValue("standardSubject", draft.title);
+        setFieldValue("standardDepartment", draft.category);
+        setFieldValue("standardDescription", draft.description);
     } else if (requestType === "anonymous") {
-        setFieldValue("anonTicketSubject", draft.title);
-        setFieldValue("anonTicketCategory", draft.category);
-        setFieldValue("anonTicketDescription", draft.description);
+        setFieldValue("anonymousDescription", draft.description);
     } else if (requestType === "leave_management") {
-        setFieldValue("leaveType", draft.category);
+        setFieldValue("leaveTypeSelect", draft.category);
         setFieldValue("leaveDescription", draft.description);
-        // KNOWN BACKEND LIMITATION: the chatbot draft only carries a single
-        // preferredDate (models.chatbot.TicketDraft), while this form has
-        // separate start/end date fields. We treat preferredDate as the
-        // start date (the existing chatbot<->form compatibility choice)
-        // and deliberately leave leaveEndDate for the user to confirm
-        // rather than fabricating it - the full range the user typed is
-        // still visible in the prefilled description for review.
         setFieldValue("leaveStartDate", draft.preferredDate);
     }
 
-    const card = document.querySelector(".request-form-card");
+    const card = document.querySelector(".request-form-card") || document.querySelector(".form-container");
     if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -975,13 +991,25 @@ function applyPendingGenieDraft() {
     }
 }
 
+function resolvePortalTarget(target) {
+    if (!target) return target;
+    const isManagement = window.location.pathname.includes("/management/");
+    const isAdminAV = window.location.pathname.includes("/admin_AV/");
+
+    if (isManagement || isAdminAV) {
+        if (target === "my-tickets.html") return "inbox.html";
+        if (target === "new-request.html") return "submit-ticket.html";
+    }
+    return target;
+}
+
 /* When a draft is ready_for_review, hand it to the correct existing form.
    If we're already on the New Request page, prefill in place; otherwise
    stash it and navigate there (the page reload picks it up via
    applyPendingGenieDraft()). Never auto-submits. */
 function openReadyDraft(response) {
     if (!response.request_type || !response.ticket_draft) return;
-    const onNewRequestPage = !!document.getElementById("newTicketForm");
+    const onNewRequestPage = !!document.getElementById("standardTicketForm");
     if (onNewRequestPage) {
         prefillRequestForm(response.request_type, response.ticket_draft);
         return;
@@ -990,7 +1018,8 @@ function openReadyDraft(response) {
         GENIE_PENDING_DRAFT_KEY,
         JSON.stringify({ request_type: response.request_type, draft: response.ticket_draft })
     );
-    setTimeout(() => { window.location.href = "new-request.html"; }, 900);
+    const targetUrl = resolvePortalTarget("new-request.html");
+    setTimeout(() => { window.location.href = targetUrl; }, 900);
 }
 
 /* Deterministic (not GPT-driven) route handling for navigation-style
@@ -1000,7 +1029,8 @@ function openReadyDraft(response) {
 function handleGenieAction(action) {
     if (!action || !action.target) return;
     if (action.type !== "navigate" && action.type !== "lookup_ticket") return;
-    setTimeout(() => { window.location.href = action.target; }, 900);
+    const targetUrl = resolvePortalTarget(action.target);
+    setTimeout(() => { window.location.href = targetUrl; }, 900);
 }
 
 /* Initialize Floating Genie Drawer globally if present on page */
