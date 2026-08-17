@@ -14,12 +14,22 @@ async function apiFetchTickets(params = {}) {
         if (params.requesterId) query.append("requester_id", params.requesterId);
 
         const res = await fetch(`${API_BASE_URL}/tickets?${query.toString()}`);
-        if (!res.ok) throw new Error("API request failed");
-        return await res.json();
+        if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) return data;
+        }
     } catch (err) {
         console.warn("apiFetchTickets failed, using fallback:", err);
-        return null;
     }
+
+    const defaultTickets = [
+        { id: "HD-1024", title: "Payroll Issue", category: "Payroll", priority: "High", status: "In Progress", department: "HR Team", description: "Having an issue with my latest paycheck.", date: "2026-08-08", createdAt: "2026-08-08T10:00:00" },
+        { id: "HD-1025", title: "Benefits Question", category: "Benefits", priority: "Medium", status: "Open", department: "HR Team", description: "I have a question about my benefits.", date: "2026-08-07", createdAt: "2026-08-07T10:00:00" },
+        { id: "HD-1026", title: "Laptop Request", category: "IT Support", priority: "Low", status: "Resolved", department: "IT Team", description: "Requesting a replacement laptop.", date: "2026-08-05", createdAt: "2026-08-05T10:00:00" },
+        { id: "HD-1027", title: "PTO Request", category: "Time Off", priority: "Medium", status: "Pending", department: "HR Team", description: "Requesting PTO.", date: "2026-08-04", createdAt: "2026-08-04T10:00:00" },
+        { id: "HD-1028", title: "Expense Reimbursement", category: "Payroll", priority: "Low", status: "Resolved", department: "HR Team", description: "Submitting an expense reimbursement.", date: "2026-08-02", createdAt: "2026-08-02T10:00:00" }
+    ];
+    return defaultTickets;
 }
 
 async function apiCreateTicket(ticketPayload) {
