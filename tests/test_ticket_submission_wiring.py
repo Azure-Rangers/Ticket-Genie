@@ -22,21 +22,24 @@ def test_shared_api_client_uses_backend_api_prefix():
 
 
 def test_employee_ticket_pages_load_api_client_before_main_script():
+    # Employee pages load frontend/js/employee-script.js as their main
+    # script (not frontend/js/script.js, which now serves other portals) -
+    # api.js must still load first so employee-script.js's window.apiX
+    # fallbacks resolve.
     for relative_path in (
         "frontend/employee_NM/index.html",
         "frontend/employee_NM/my-tickets.html",
         "frontend/employee_NM/new-request.html",
     ):
         page = (ROOT / relative_path).read_text(encoding="utf-8")
-        assert "../js/api.js?v=20260816_10" in page
-        assert page.index("../js/api.js?v=20260816_10") < page.index(
-            "../js/script.js?v=20260816_11"
-        )
+        assert "js/api.js" in page
+        assert "js/employee-script.js" in page
+        assert page.index("js/api.js") < page.index("js/employee-script.js")
 
 
 def test_my_tickets_grid_has_aligned_columns_and_semantic_badges():
     page = (ROOT / "frontend/employee_NM/my-tickets.html").read_text(encoding="utf-8")
-    script = (ROOT / "frontend/js/script.js").read_text(encoding="utf-8")
+    script = (ROOT / "frontend/js/employee-script.js").read_text(encoding="utf-8")
 
     for heading in ("Request", "Department", "Status", "Priority", "Created", "Action"):
         assert (

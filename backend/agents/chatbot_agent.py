@@ -34,6 +34,13 @@ class ExtractedTicketFields(BaseModel):
     description: Optional[str] = None
     category: Optional[str] = None
     preferred_date: Optional[str] = None
+    # Leave Management only: extract start/end separately when the user
+    # gives a range, so the backend can track and ask about each one
+    # independently rather than losing the end date. Leave null for
+    # non-leave flows and whenever the user hasn't actually stated that
+    # side of the range.
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
     ticket_id: Optional[str] = None
 
 
@@ -116,10 +123,29 @@ leave_management):
   relative reference ("before Friday", "next Monday", "tomorrow"),
   resolve it relative to today's date, which is provided below. If you
   cannot confidently resolve a date, leave preferred_date null instead
-  of guessing. For leave_management, if the user gives a date range
-  (e.g. "August 20 to August 28"), preferred_date is the START date -
-  still restate the full range (both dates) in `description` so nothing
-  is lost, but never invent a second date field.
+  of guessing. For leave_management, leave preferred_date null and use
+  start_date/end_date instead (see below).
+- For leave_management specifically, extract `start_date` and `end_date`
+  SEPARATELY (both ISO YYYY-MM-DD, resolved relative to today's date
+  below):
+  - If the user gives a full range (e.g. "August 20 to August 28"),
+    extract both.
+  - If they've only given a start ("starting August 25", "from next
+    Monday"), set start_date and leave end_date null - do not invent an
+    end date.
+  - If they've only given an end/return date, set end_date and leave
+    start_date null.
+  - Never leave one side blank just because you can infer a plausible
+    guess - only fill in what the user actually stated. The backend will
+    ask for whichever side is still missing; missing_fields should name
+    only that side (e.g. "the leave end date", not "a date") and never
+    repeat a side that's already in the current draft (shown below).
+  - If the dates you're about to extract would put the end date before
+    the start date, that's an invalid range - do not extract either one
+    as if it were valid; instead explain the conflict in `message` and
+    ask the user to confirm the correct dates.
+  - Still restate the full range in plain words in `description` so
+    nothing is lost, in addition to the structured fields.
 - `category` must be chosen from the allowed list provided below for
   the current flow (support vs leave), matched by meaning - e.g. a
   laptop problem is "IT & Technology", a request for medical leave is

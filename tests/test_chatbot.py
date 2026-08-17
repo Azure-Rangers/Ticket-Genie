@@ -369,6 +369,9 @@ def test_ticket_draft_matches_ticket_create_schema():
         request_type=RequestType.STANDARD,
     )
     response, _ = ask("Cannot connect to VPN.", decision=decision)
+    # startDate/endDate are chatbot-only additions (Leave Management date
+    # range - see models.chatbot.TicketDraft) with no TicketCreate
+    # equivalent; every other field still mirrors TicketCreate exactly.
     assert set(response.ticket_draft.model_dump().keys()) == {
         "title",
         "category",
@@ -376,6 +379,8 @@ def test_ticket_draft_matches_ticket_create_schema():
         "department",
         "description",
         "preferredDate",
+        "startDate",
+        "endDate",
         "is_anonymous",
         "attachment",
     }
@@ -405,6 +410,8 @@ def test_drafting_never_creates_a_real_ticket():
 
 # 14 & 15. Leave intent routes to Standard Request draft, extracted semantically
 def test_leave_intent_without_literal_leave_keyword_routes_to_draft():
+    # Leave Management reads start_date/end_date (not preferred_date) -
+    # see tests/test_leave_date_range.py for the full start/end contract.
     decision = ChatbotDecision(
         intent=ChatIntent.LEAVE_MANAGEMENT,
         action=ChatActionType.SHOW_TICKET_DRAFT,
@@ -412,7 +419,7 @@ def test_leave_intent_without_literal_leave_keyword_routes_to_draft():
         ticket_fields=ExtractedTicketFields(
             description="Out for a few weeks recovering from surgery, starting Monday.",
             category="Medical Leave",
-            preferred_date="2026-08-17",
+            start_date="2026-08-17",
         ),
         missing_fields=[],
     )
@@ -423,6 +430,7 @@ def test_leave_intent_without_literal_leave_keyword_routes_to_draft():
     )
     assert response.intent == "leave_management"
     assert response.ticket_draft.category == "Medical Leave"
+    assert response.ticket_draft.startDate == "2026-08-17"
     assert response.ticket_draft.preferredDate == "2026-08-17"
 
 

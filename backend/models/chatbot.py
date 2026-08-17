@@ -57,6 +57,13 @@ class TicketDraft(BaseModel):
     department: Optional[str] = None
     description: Optional[str] = None
     preferredDate: Optional[str] = None
+    # Leave Management only: the actual start/end of the requested range.
+    # preferredDate is kept in sync as an alias for startDate (existing
+    # ticket-submission compatibility - see ticket_draft_service.py) but
+    # startDate/endDate are the source of truth for whether a leave draft
+    # is actually complete.
+    startDate: Optional[str] = None
+    endDate: Optional[str] = None
     is_anonymous: bool = False
     attachment: Optional[str] = None
 

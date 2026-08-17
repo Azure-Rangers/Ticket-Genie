@@ -70,6 +70,21 @@ _MISSING_TITLE_MARKERS = ("title", "subject")
 _MISSING_DESCRIPTION_MARKERS = ("description", "detail", "reason", "what happened")
 _MISSING_CATEGORY_MARKERS = ("categ", "leave type", "type of leave")
 _MISSING_DATE_MARKERS = ("date",)
+_MISSING_START_DATE_MARKERS = (
+    "start date",
+    "starting date",
+    "when your leave starts",
+    "when it starts",
+    "begin date",
+)
+_MISSING_END_DATE_MARKERS = (
+    "end date",
+    "ending date",
+    "return date",
+    "when you return",
+    "when your leave ends",
+    "when it ends",
+)
 
 
 def validate_category(value: Optional[str], allowed: List[str]) -> Optional[str]:
@@ -130,12 +145,21 @@ def _merge_description(
     return extracted if extracted else existing
 
 
-def _filter_missing_fields(gpt_missing: List[str], draft: TicketDraft) -> List[str]:
+def _filter_missing_fields(
+    gpt_missing: List[str], draft: TicketDraft, *, intent: ChatIntent
+) -> List[str]:
     """
     Hard backstop: never re-ask for something the draft already has, even
     if the model's own missing_fields list forgot to drop it.
+
+    Leave Management needs BOTH startDate and endDate, tracked
+    separately - a generic "date" mention from the model is only dropped
+    once both sides are known; a mention that specifically names "start"
+    or "end" is dropped as soon as that specific side is known. Standard/
+    Anonymous only ever have the single optional preferredDate, unchanged.
     """
 
+    is_leave = intent == ChatIntent.LEAVE_MANAGEMENT
     kept = []
     for field in gpt_missing:
         lowered = field.lower()
@@ -149,7 +173,22 @@ def _filter_missing_fields(gpt_missing: List[str], draft: TicketDraft) -> List[s
             marker in lowered for marker in _MISSING_CATEGORY_MARKERS
         ):
             continue
-        if draft.preferredDate and any(
+        if is_leave:
+            if draft.startDate and any(
+                marker in lowered for marker in _MISSING_START_DATE_MARKERS
+            ):
+                continue
+            if draft.endDate and any(
+                marker in lowered for marker in _MISSING_END_DATE_MARKERS
+            ):
+                continue
+            if (
+                draft.startDate
+                and draft.endDate
+                and any(marker in lowered for marker in _MISSING_DATE_MARKERS)
+            ):
+                continue
+        elif draft.preferredDate and any(
             marker in lowered for marker in _MISSING_DATE_MARKERS
         ):
             continue
@@ -173,16 +212,50 @@ def merge_extracted_fields(
 
     extracted = extracted or ExtractedTicketFields()
     draft = existing_draft.model_copy() if existing_draft else TicketDraft()
+    is_leave = intent == ChatIntent.LEAVE_MANAGEMENT
 
     draft.description = _merge_description(draft.description, extracted.description)
 
     if not draft.category:
-        is_leave = intent == ChatIntent.LEAVE_MANAGEMENT
         allowed = LEAVE_TYPES if is_leave else STANDARD_CATEGORIES
         draft.category = validate_category(extracted.category, allowed)
 
-    if not draft.preferredDate:
-        draft.preferredDate = validate_iso_date(extracted.preferred_date)
+    invalid_range = False
+    if is_leave:
+        # Backward compatibility only: an older persisted draft (from
+        # before startDate/endDate existed) may carry just preferredDate -
+        # treat it as the start date going forward rather than losing it.
+        # New responses always use startDate/endDate directly.
+        if not draft.startDate and draft.preferredDate:
+            draft.startDate = draft.preferredDate
+
+        new_start = validate_iso_date(extracted.start_date)
+        new_end = validate_iso_date(extracted.end_date)
+
+        # What the range would be if this turn's new value(s) were
+        # applied on top of what's already known.
+        tentative_start = draft.startDate or new_start
+        tentative_end = draft.endDate or new_end
+
+        if tentative_start and tentative_end and tentative_end < tentative_start:
+            # Never silently accept, flip, or guess-correct a reversed
+            # range - drop this turn's new value(s) so a later correction
+            # can still take effect, and flag it for the missing-fields
+            # section below to ask the user to fix it explicitly.
+            invalid_range = True
+        else:
+            if not draft.startDate and new_start:
+                draft.startDate = new_start
+            if not draft.endDate and new_end:
+                draft.endDate = new_end
+
+        # Keep preferredDate in sync as an alias for startDate, since
+        # submission (frontend + TicketCreate) still only has one date.
+        if draft.startDate:
+            draft.preferredDate = draft.startDate
+    else:
+        if not draft.preferredDate:
+            draft.preferredDate = validate_iso_date(extracted.preferred_date)
 
     if not draft.title:
         if extracted.title:
@@ -193,11 +266,11 @@ def merge_extracted_fields(
     if request_type == RequestType.ANONYMOUS:
         draft.is_anonymous = True
 
-    if intent == ChatIntent.LEAVE_MANAGEMENT:
+    if is_leave:
         # Deterministic, never GPT-controlled - see LEAVE_DEPARTMENT.
         draft.department = LEAVE_DEPARTMENT
 
-    missing = _filter_missing_fields(gpt_missing_fields, draft)
+    missing = _filter_missing_fields(gpt_missing_fields, draft, intent=intent)
 
     if not draft.description and not any(
         m in field.lower() for field in missing for m in _MISSING_DESCRIPTION_MARKERS
@@ -207,8 +280,26 @@ def merge_extracted_fields(
     if not draft.category and not any(
         m in field.lower() for field in missing for m in _MISSING_CATEGORY_MARKERS
     ):
-        label = "leave type" if intent == ChatIntent.LEAVE_MANAGEMENT else "category"
+        label = "leave type" if is_leave else "category"
         missing.append(label)
+
+    if is_leave:
+        if invalid_range and not any(
+            "range" in field.lower() or "corrected" in field.lower()
+            for field in missing
+        ):
+            missing.append(
+                "a corrected leave date range (the end date must be on or "
+                "after the start date)"
+            )
+        if not draft.startDate and not any(
+            m in field.lower() for field in missing for m in _MISSING_START_DATE_MARKERS
+        ):
+            missing.append("the leave start date")
+        if not draft.endDate and not any(
+            m in field.lower() for field in missing for m in _MISSING_END_DATE_MARKERS
+        ):
+            missing.append("the leave end date")
 
     return draft, missing
 
