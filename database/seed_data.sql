@@ -14,7 +14,7 @@ VALUES (
 );
 
 -- Seed Initial Admin in User Profiles
-INSERT OR IGNORE INTO user_profiles (id, name, email, role, department, phone, avatar)
+INSERT OR REPLACE INTO user_profiles (id, name, email, role, department, phone, avatar)
 VALUES (
     'usr-admin-dc3b56e9',
     'Greg Davis',

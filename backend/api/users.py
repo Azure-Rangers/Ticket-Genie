@@ -30,8 +30,14 @@ def handle_get_profile(
     user_id: Optional[str] = None,
     current_user: dict = Depends(verify_azure_user),
 ):
-    target_user_id = user_id or "usr-1"
-    return get_user_profile(user_id=target_user_id)
+    from fastapi import HTTPException
+    user_oid = current_user.get("oid")
+    user_email = current_user.get("email")
+    
+    profile = get_user_profile(user_id=user_id, azure_oid=user_oid, email=user_email)
+    if not profile:
+        raise HTTPException(status_code=404, detail="User profile not found in database")
+    return profile
 
 
 @router.put("/profile")

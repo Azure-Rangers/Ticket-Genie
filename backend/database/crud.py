@@ -851,42 +851,51 @@ def update_onboarding_status(
 # ---------------------------------------------------------------------------
 
 
-def get_user_profile(user_id: str = "usr-1", db: Optional[Session] = None) -> dict:
+def get_user_profile(
+    user_id: Optional[str] = None,
+    azure_oid: Optional[str] = None,
+    email: Optional[str] = None,
+    db: Optional[Session] = None
+) -> Optional[dict]:
     session = db or SessionLocal()
     should_close = db is None
 
     try:
         from database.models_db import UserProfileDB
+        from sqlalchemy import func
 
-        user = session.query(UserProfileDB).filter(UserProfileDB.id == user_id).first()
-        if not user:
-            user = UserProfileDB(
-                id=user_id,
-                name="Nishita",
-                email="nishita@ticketgenie.com",
-                role="Employee",
-                department="HR & Operations",
-                phone="+1 (555) 019-2834",
-                avatar="NM",
-            )
-            session.add(user)
-            session.commit()
-            session.refresh(user)
+        query = session.query(UserProfileDB)
 
-        return user.to_dict()
+        if user_id:
+            user = query.filter(UserProfileDB.id == user_id).first()
+            if user:
+                return user.to_dict()
+
+        if azure_oid:
+            short_oid = azure_oid[:8]
+            user = query.filter(UserProfileDB.id.like(f"%{short_oid}%")).first()
+            if user:
+                return user.to_dict()
+
+        if email:
+            user = query.filter(func.lower(UserProfileDB.email) == email.lower()).first()
+            if user:
+                return user.to_dict()
+
+        return None
     finally:
         if should_close:
             session.close()
 
 
 def update_user_profile(
-    user_id: str = "usr-1",
+    user_id: Optional[str] = None,
     name: Optional[str] = None,
     email: Optional[str] = None,
     phone: Optional[str] = None,
     department: Optional[str] = None,
     db: Optional[Session] = None,
-) -> dict:
+) -> Optional[dict]:
     session = db or SessionLocal()
     should_close = db is None
 
@@ -895,10 +904,12 @@ def update_user_profile(
 
         user = session.query(UserProfileDB).filter(UserProfileDB.id == user_id).first()
         if not user:
+            if not name or not email:
+                return None
             user = UserProfileDB(
                 id=user_id,
-                name=name or "Nishita",
-                email=email or "nishita@ticketgenie.com",
+                name=name,
+                email=email,
             )
             session.add(user)
 

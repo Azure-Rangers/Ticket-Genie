@@ -233,8 +233,14 @@ async function apiUpdateOnboardingStatus(recId, status) {
 
 async function apiFetchUserProfile() {
     try {
+        console.log(`[API Request] Executing fetch: ${API_BASE_URL}/users/profile`);
         const res = await fetch(`${API_BASE_URL}/users/profile`);
-        if (res.ok) return await res.json();
+        console.log(`[API Response] Status: ${res.status} ${res.statusText}`);
+        if (res.ok) {
+            const data = await res.json();
+            console.log("[API Data] Profile payload:", data);
+            return data;
+        }
     } catch (err) {
         console.error("apiFetchUserProfile failed:", err);
     }

@@ -251,6 +251,40 @@ function initComponents() {
         moonSvg.style.display = activeDark ? "none" : "inline-block";
         sunSvg.style.display = activeDark ? "inline-block" : "none";
     }
+
+    // Trigger backend profile fetch after DOM & scripts have loaded
+    if (typeof apiFetchUserProfile === "function") {
+        console.log("%c[Profile Sync] Initiating GET /api/users/profile fetch from DB...", "color: #3b82f6; font-weight: bold;");
+        apiFetchUserProfile().then(profile => {
+            console.log("%c[Profile Sync] Successfully received user profile from DB:", "color: #10b981; font-weight: bold;", profile);
+            if (profile && profile.name) {
+                const nameElem = document.getElementById("topNavUserName");
+                const avatarElem = document.getElementById("topNavAvatar");
+                if (nameElem) nameElem.textContent = profile.name;
+                if (avatarElem) {
+                    const fetchedInitials = profile.avatar || profile.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+                    avatarElem.textContent = fetchedInitials;
+                }
+                const welcomeHeader = document.getElementById("welcomeUserHeader");
+                if (welcomeHeader) {
+                    const firstName = profile.name.split(' ')[0];
+                    welcomeHeader.textContent = `Welcome back, ${firstName}`;
+                }
+                const profileNameHeader = document.querySelector("#profileForm")?.closest("div")?.querySelector("h4");
+                if (profileNameHeader) profileNameHeader.textContent = profile.name;
+                const profileInputs = document.querySelectorAll("#profileForm input");
+                if (profileInputs.length >= 2) {
+                    if (profileInputs[0]) profileInputs[0].value = profile.name;
+                    if (profileInputs[1] && profile.email) profileInputs[1].value = profile.email;
+                }
+                if (profileInputs.length >= 3 && profile.department) {
+                    profileInputs[2].value = profile.department;
+                }
+            }
+        }).catch(err => console.error("❌ [Profile Sync Error] Failed to load user profile from DB:", err));
+    } else {
+        console.warn("⚠️ [Profile Sync Warning] apiFetchUserProfile function is NOT available on this page scope.");
+    }
 }
 
 if (document.readyState === "loading") {
