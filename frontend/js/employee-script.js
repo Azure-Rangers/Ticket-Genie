@@ -237,7 +237,6 @@ function initSidebarToggle() {
 
 function handleSignOut(event) {
     if (event) event.preventDefault();
-    localStorage.removeItem("portalUser");
     window.location.href = "../index.html";
 }
 

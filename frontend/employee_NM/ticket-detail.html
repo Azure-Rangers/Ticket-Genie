@@ -102,10 +102,7 @@ function switchPortalView(viewType) {
 
 function handleSignOut(event) {
     if (event) event.preventDefault();
-    if (confirm('Are you sure you want to sign out of TicketGenie Enterprise?')) {
-        localStorage.removeItem('portalUser');
-        window.location.href = 'index.html';
-    }
+    window.location.href = '../index.html';
 }
 </script>
 </body>

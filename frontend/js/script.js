@@ -96,38 +96,35 @@ if (!window.apiRunExecAction) {
                 }
             } catch (e) { }
 
-            // Default mock token for local dev if MSAL idToken is empty
-            if (!idToken) {
-                idToken = "eyJhbGciOiAiUlMyNTYiLCAidHlwIjogIkpXVCJ9.eyJvaWQiOiAiZGMzYjU2ZTktOTI4MC00MGRjLThkNzMtOThiZmQ4MWZkZDZhIiwgImVtYWlsIjogImFkbWluLmRjM2JAdGlja2V0Z2VuaWUuY29tIiwgIm5hbWUiOiAiU3VwZXIgQWRtaW4iLCAicm9sZSI6ICJTdXBlciBBZG1pbiIsICJleHAiOiAyNTM0MDIzMDA3OTl9.mock";
+            if (idToken) {
+                const bearerHeader = `Bearer ${idToken}`;
+
+                if (typeof resource === "object" && resource instanceof Request) {
+                    if (!resource.headers.has("Authorization")) {
+                        resource.headers.set("Authorization", bearerHeader);
+                    }
+                }
+
+                options = options || {};
+                let headers = options.headers || {};
+
+                if (headers instanceof Headers) {
+                    if (!headers.has("Authorization")) {
+                        headers.set("Authorization", bearerHeader);
+                    }
+                } else if (Array.isArray(headers)) {
+                    const hasAuth = headers.some(([k]) => k.toLowerCase() === "authorization");
+                    if (!hasAuth) {
+                        headers.push(["Authorization", bearerHeader]);
+                    }
+                } else {
+                    headers = { ...headers };
+                    if (!headers["Authorization"] && !headers["authorization"]) {
+                        headers["Authorization"] = bearerHeader;
+                    }
+                }
+                options.headers = headers;
             }
-
-            const bearerHeader = `Bearer ${idToken}`;
-
-            if (typeof resource === "object" && resource instanceof Request) {
-                if (!resource.headers.has("Authorization")) {
-                    resource.headers.set("Authorization", bearerHeader);
-                }
-            }
-
-            options = options || {};
-            let headers = options.headers || {};
-
-            if (headers instanceof Headers) {
-                if (!headers.has("Authorization")) {
-                    headers.set("Authorization", bearerHeader);
-                }
-            } else if (Array.isArray(headers)) {
-                const hasAuth = headers.some(([k]) => k.toLowerCase() === "authorization");
-                if (!hasAuth) {
-                    headers.push(["Authorization", bearerHeader]);
-                }
-            } else {
-                headers = { ...headers };
-                if (!headers["Authorization"] && !headers["authorization"]) {
-                    headers["Authorization"] = bearerHeader;
-                }
-            }
-            options.headers = headers;
         }
 
         return originalFetch.call(this, resource, options);
@@ -345,7 +342,6 @@ function initSidebarToggle() {
 
 function handleSignOut(event) {
     if (event) event.preventDefault();
-    localStorage.removeItem("portalUser");
     window.location.href = "../index.html";
 }
 

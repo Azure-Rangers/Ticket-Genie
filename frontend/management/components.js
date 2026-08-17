@@ -102,7 +102,7 @@ function renderManagementTopNav() {
   const currentFile = getManagementCurrentFilename();
   const pages = getManagementPages();
   const activePage = pages.find(p => p.href === currentFile) || pages[0];
-  const user = JSON.parse(localStorage.getItem("portalUser") || '{"name":"SuperAdmin SS","role":"Super Admin"}');
+  const user = JSON.parse(localStorage.getItem("portalUser") || '{}');
 
   topNavContainer.innerHTML = `
     <header class="topbar">
