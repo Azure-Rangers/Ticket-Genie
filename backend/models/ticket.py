@@ -21,6 +21,23 @@ class TicketCreate(BaseModel):
     is_anonymous: bool = False
     attachment: Optional[str] = None
     requester_id: Optional[str] = None
+    # Deterministic routing bypass for the small set of request types that
+    # must NEVER go through AI classification (currently: Leave Management,
+    # which always routes to "Upper Management" - see
+    # services/ticket_draft_service.LEAVE_DEPARTMENT and
+    # services/ticket_service.process_new_ticket). Distinct from
+    # `department` above, which classify_ticket() always overwrites - this
+    # field is the only thing that can make a submission skip
+    # classification entirely. Never set from free-text/GPT output.
+    department_override: Optional[
+        Literal[
+            "HR Team",
+            "Accounting Team",
+            "Workplace Operations Team",
+            "IT Team",
+            "Upper Management",
+        ]
+    ] = None
 
 
 class TicketUpdate(BaseModel):

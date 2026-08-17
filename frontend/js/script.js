@@ -128,6 +128,88 @@ function showSuccessMessage(ticket) {
 }
 
 /* =========================================================
+   NEW REQUEST FORM
+   ========================================================= */
+function initializeNewRequestForm() {
+    const formConfigs = {
+        newTicketForm: { title: "ticketSubject", category: "ticketCategory", description: "ticketDescription", preferredDate: "preferredDate", file: "fileUpload", anonymous: false },
+        anonTicketForm: { title: "anonTicketSubject", category: "anonTicketCategory", description: "anonTicketDescription", file: "anonFileUpload", anonymous: true },
+        leaveTicketForm: { title: "leaveType", category: "leaveType", description: "leaveDescription", preferredDate: "leaveEndDate", file: "leaveFileUpload", anonymous: false, leave: true, departmentOverride: "Upper Management" }
+    };
+
+    Object.entries(formConfigs).forEach(([formId, config]) => {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        form.addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const titleElement = document.getElementById(config.title);
+        const categoryElement = document.getElementById(config.category);
+        const descriptionElement = document.getElementById(config.description);
+        const submitBtn = event.target.querySelector('.submit-request-button');
+        const originalSubmitContent = submitBtn?.innerHTML;
+
+        const title = titleElement ? titleElement.value.trim() : "New Request";
+        const category = categoryElement ? categoryElement.value : "General";
+        const description = descriptionElement ? descriptionElement.value.trim() : "";
+
+        if (!title || !category || !description) {
+            showFormError("Please fill out all required fields.");
+            return;
+        }
+        if (title.length < 3 || description.length < 10) {
+            showFormError("The subject must be at least 3 characters and the description at least 10 characters.");
+            return;
+        }
+
+        const oldError = document.querySelector(".form-error-message");
+        if (oldError) oldError.style.display = "none";
+
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
+            submitBtn.classList.add('loading');
+        }
+
+        try {
+            let finalDescription = description;
+            if (config.leave) {
+                const startDate = document.getElementById("leaveStartDate")?.value || "";
+                const endDate = document.getElementById("leaveEndDate")?.value || "";
+                finalDescription = `Leave dates: ${startDate} to ${endDate}. ${description}`;
+            }
+            const files = Array.from(document.getElementById(config.file)?.files || []);
+            const newTicket = await apiCreateTicket({
+                title,
+                category,
+                description: finalDescription,
+                preferredDate: config.preferredDate ? (document.getElementById(config.preferredDate)?.value || null) : null,
+                is_anonymous: config.anonymous,
+                attachment: files.length ? files.map(file => file.name).join(", ") : null,
+                requester_id: getCurrentRequesterId(),
+                // Deterministic, fixed to this one static tab - never derived
+                // from chatbot/GPT output. Makes the backend skip normal AI
+                // classification for Leave Management (see
+                // services/ticket_service.py's department_override handling)
+                // so it always routes to Upper Management.
+                ...(config.departmentOverride ? { department_override: config.departmentOverride } : {})
+            });
+
+            showSuccessMessage(newTicket);
+            setTimeout(() => { window.location.href = "my-tickets.html"; }, 1500);
+        } catch (err) {
+            showFormError(err.message || "Unable to submit the request. Please try again.");
+            if (submitBtn) {
+                submitBtn.innerHTML = originalSubmitContent;
+                submitBtn.classList.remove('loading');
+            }
+        }
+        });
+    });
+}
+
+
+/* =========================================================
    GLOBAL DARK MODE & HAMBURGER SIDEBAR TOGGLES
    ========================================================= */
 function initDarkMode() {
@@ -441,9 +523,250 @@ async function sendTicketReply(ticketId) {
 /* =========================================================
    GLOBAL INITIALIZER LISTENERS
    ========================================================= */
+
+/* NOTE: apiRunReAct, apiRunExecAction, getExportUrl, apiGetComments,
+   apiPostComment, apiUpdateTicket, apiFetchAnnouncements,
+   apiCreateAnnouncement, apiDeleteAnnouncement, apiFetchNotifications,
+   apiMarkNotificationRead, apiFetchOnboarding, apiCreateOnboarding,
+   apiUpdateOnboardingStatus, apiFetchUserProfile, and apiUpdateUserProfile
+   now live in frontend/js/api.js (dev's shared REST API client module,
+   loaded via autoLoadDependencies() above) rather than being duplicated
+   here - callers already use the window.apiX || apiX pattern elsewhere
+   in this file expecting that. */
+
+/* =========================================================
+   GENIE CHATBOT (real backend integration)
+   Talks to the actual chatbot endpoint (POST /api/chatbot/message,
+   backend/api/chatbot.py) using the real ChatRequest/ChatResponse
+   contract (backend/models/chatbot.py) - not a local/static responder.
+   ========================================================= */
+const GENIE_STATE_KEY = "genieChatState";
+const GENIE_PENDING_DRAFT_KEY = "geniePendingDraft";
+const GENIE_DRAFTING_INTENTS = ["create_ticket", "support_issue", "leave_management"];
+
+function loadGenieState() {
+    try {
+        const raw = sessionStorage.getItem(GENIE_STATE_KEY);
+        if (!raw) return { history: [], draft: null, active_intent: null, active_request_type: null };
+        const parsed = JSON.parse(raw);
+        return {
+            history: Array.isArray(parsed.history) ? parsed.history : [],
+            draft: parsed.draft || null,
+            active_intent: parsed.active_intent || null,
+            active_request_type: parsed.active_request_type || null,
+        };
+    } catch (err) {
+        return { history: [], draft: null, active_intent: null, active_request_type: null };
+    }
+}
+
+function saveGenieState(state) {
+    sessionStorage.setItem(GENIE_STATE_KEY, JSON.stringify(state));
+}
+
+function getCurrentUserRole() {
+    try {
+        const user = JSON.parse(localStorage.getItem("portalUser") || "{}");
+        return user.role || "Employee";
+    } catch (err) {
+        return "Employee";
+    }
+}
+
+async function apiChatbotMessage(message, state) {
+    const payload = {
+        message,
+        role: getCurrentUserRole(),
+        history: state.history,
+        draft: state.draft,
+        active_intent: state.active_intent,
+        active_request_type: state.active_request_type,
+    };
+    try {
+        // Hardcoded rather than using the shared API_BASE_URL from api.js
+        // (which currently defaults to "/api/v1", not the real "/api"
+        // prefix the backend and nginx actually use - see this merge's
+        // final report) so the chatbot never silently breaks regardless
+        // of that mismatch.
+        const res = await fetch("/api/chatbot/message", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) return await res.json();
+    } catch (err) {
+        console.error("Failed to reach the chatbot service:", err);
+    }
+    return {
+        message: "I'm having trouble reaching the assistant service right now. Please try again in a moment.",
+        intent: "general",
+        suggestions: []
+    };
+}
+
+/* Fold a completed turn into the persisted conversation state. A
+   ticket-drafting flow stays "active" (so the next message is treated as
+   a continuation) only while it's still collecting fields - once the
+   draft is ready_for_review it's handed off to the actual form and the
+   chat is free to start a new topic. */
+function advanceGenieState(state, userMessage, response) {
+    state.history.push({ role: "user", message: userMessage });
+    state.history.push({ role: "assistant", message: response.message || "" });
+
+    const stillDrafting = GENIE_DRAFTING_INTENTS.includes(response.intent) && !response.ready_for_review;
+    state.active_intent = stillDrafting ? response.intent : null;
+    state.active_request_type = stillDrafting ? (response.request_type || null) : null;
+    state.draft = stillDrafting ? (response.ticket_draft || null) : null;
+
+    saveGenieState(state);
+}
+
+function renderGenieUserMessage(container, text) {
+    const userDiv = document.createElement("div");
+    userDiv.className = "genie-message user-message";
+    userDiv.style.display = "flex";
+    userDiv.style.justifyContent = "flex-end";
+    userDiv.style.marginBottom = "12px";
+    userDiv.innerHTML = `<div class="genie-bubble" style="background:#4f46e5; color:white; border-radius:12px; padding:10px 14px;">${escapeHTML(text)}</div>`;
+    container.appendChild(userDiv);
+}
+
+function renderGenieBotMessage(container, text, suggestions) {
+    const botDiv = document.createElement("div");
+    botDiv.className = "genie-message";
+    botDiv.style.marginBottom = "12px";
+    const suggestionsHtml = (suggestions && suggestions.length)
+        ? `<div class="genie-suggestions">${suggestions.map(s => `<button class="genie-suggestion" type="button">${escapeHTML(s)}</button>`).join("")}</div>`
+        : "";
+    botDiv.innerHTML = `
+        <div class="genie-message-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <div class="genie-bubble">${escapeHTML(text)}</div>
+        ${suggestionsHtml}
+    `;
+    container.appendChild(botDiv);
+}
+
+/* Redraw the drawer from persisted history so a conversation survives
+   navigating to a different page (e.g. when a draft becomes ready and we
+   move to new-request.html to prefill the right form). */
+function renderGenieHistory(container, state) {
+    if (!container || !state.history.length) return;
+    container.innerHTML = "";
+    state.history.forEach(turn => {
+        if (turn.role === "user") {
+            renderGenieUserMessage(container, turn.message);
+        } else {
+            renderGenieBotMessage(container, turn.message, null);
+        }
+    });
+}
+
+/* =========================================================
+   REQUEST FORM PREFILL (from a ready_for_review chatbot draft)
+   Only ever fills field values and switches tabs - never submits.
+   ========================================================= */
+const GENIE_REQUEST_TYPE_TABS = {
+    standard: "standardRequestTab",
+    anonymous: "anonymousRequestTab",
+    leave_management: "leaveRequestTab",
+};
+
+function switchRequestTab(tabTarget) {
+    const btn = document.querySelector(`.tab-btn[data-target="${tabTarget}"]`);
+    const content = document.getElementById(tabTarget);
+    if (!btn || !content) return false;
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+    btn.classList.add("active");
+    content.classList.add("active");
+    return true;
+}
+
+function setFieldValue(id, value) {
+    if (!value) return;
+    const el = document.getElementById(id);
+    if (el) el.value = value;
+}
+
+function prefillRequestForm(requestType, draft) {
+    if (!draft) return;
+    const tabTarget = GENIE_REQUEST_TYPE_TABS[requestType];
+    if (!tabTarget || !switchRequestTab(tabTarget)) return;
+
+    if (requestType === "standard") {
+        setFieldValue("ticketSubject", draft.title);
+        setFieldValue("ticketCategory", draft.category);
+        setFieldValue("ticketDescription", draft.description);
+        setFieldValue("preferredDate", draft.preferredDate);
+    } else if (requestType === "anonymous") {
+        setFieldValue("anonTicketSubject", draft.title);
+        setFieldValue("anonTicketCategory", draft.category);
+        setFieldValue("anonTicketDescription", draft.description);
+    } else if (requestType === "leave_management") {
+        setFieldValue("leaveType", draft.category);
+        setFieldValue("leaveDescription", draft.description);
+        // KNOWN BACKEND LIMITATION: the chatbot draft only carries a single
+        // preferredDate (models.chatbot.TicketDraft), while this form has
+        // separate start/end date fields. We treat preferredDate as the
+        // start date (the existing chatbot<->form compatibility choice)
+        // and deliberately leave leaveEndDate for the user to confirm
+        // rather than fabricating it - the full range the user typed is
+        // still visible in the prefilled description for review.
+        setFieldValue("leaveStartDate", draft.preferredDate);
+    }
+
+    const card = document.querySelector(".request-form-card");
+    if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function applyPendingGenieDraft() {
+    const raw = sessionStorage.getItem(GENIE_PENDING_DRAFT_KEY);
+    if (!raw) return;
+    sessionStorage.removeItem(GENIE_PENDING_DRAFT_KEY);
+    try {
+        const pending = JSON.parse(raw);
+        prefillRequestForm(pending.request_type, pending.draft);
+    } catch (err) {
+        // Malformed/stale pending draft - nothing to prefill.
+    }
+}
+
+/* When a draft is ready_for_review, hand it to the correct existing form.
+   If we're already on the New Request page, prefill in place; otherwise
+   stash it and navigate there (the page reload picks it up via
+   applyPendingGenieDraft()). Never auto-submits. */
+function openReadyDraft(response) {
+    if (!response.request_type || !response.ticket_draft) return;
+    const onNewRequestPage = !!document.getElementById("newTicketForm");
+    if (onNewRequestPage) {
+        prefillRequestForm(response.request_type, response.ticket_draft);
+        return;
+    }
+    sessionStorage.setItem(
+        GENIE_PENDING_DRAFT_KEY,
+        JSON.stringify({ request_type: response.request_type, draft: response.ticket_draft })
+    );
+    setTimeout(() => { window.location.href = "new-request.html"; }, 900);
+}
+
+/* Deterministic (not GPT-driven) route handling for navigation-style
+   replies (intent=navigation, or a fallback action like "browse the
+   Knowledge Base" / "view My Tickets"). Ticket-status/knowledge/general
+   replies never open a request form. */
+function handleGenieAction(action) {
+    if (!action || !action.target) return;
+    if (action.type !== "navigate" && action.type !== "lookup_ticket") return;
+    setTimeout(() => { window.location.href = action.target; }, 900);
+}
+
+/* Initialize Floating Genie Drawer globally if present on page */
 document.addEventListener("DOMContentLoaded", () => {
     initDarkMode();
     initSidebarToggle();
+    if (typeof initializeProfileDropdown === "function") initializeProfileDropdown();
+    initializeNewRequestForm();
+    initializeMyTickets();
+    applyPendingGenieDraft();
 
     // Floating Genie Chat Drawer events
     const genieBtn = document.getElementById("genieButton");
@@ -451,13 +774,25 @@ document.addEventListener("DOMContentLoaded", () => {
     const closeGenieBtn = document.getElementById("closeGenieButton");
     const genieSendBtn = document.getElementById("genieSendButton");
     const genieInput = document.getElementById("genieInput");
+    const genieMessages = document.getElementById("genieMessages");
+    // "Need help writing your request?" button on new-request.html.
+    const openGenieFromRequestBtn = document.getElementById("openGenieFromRequest");
 
-    if (genieBtn && genieChat) {
-        genieBtn.addEventListener("click", () => { genieChat.classList.toggle("open"); });
+    if (!genieBtn || !genieChat) return;
+
+    const openGenie = () => genieChat.classList.add("open");
+
+    genieBtn.addEventListener("click", () => genieChat.classList.toggle("open"));
+
+    if (closeGenieBtn) {
+        closeGenieBtn.addEventListener("click", () => genieChat.classList.remove("open"));
     }
-    if (closeGenieBtn && genieChat) {
-        closeGenieBtn.addEventListener("click", () => { genieChat.classList.remove("open"); });
+    if (openGenieFromRequestBtn) {
+        openGenieFromRequestBtn.addEventListener("click", openGenie);
     }
+
+    let genieState = loadGenieState();
+    renderGenieHistory(genieMessages, genieState);
 
     async function sendGenieMsg() {
         if (!genieInput) return;
@@ -465,33 +800,41 @@ document.addEventListener("DOMContentLoaded", () => {
         const msg = genieInput.value.trim();
         if (!msg || !genieMessages) return;
 
-        const userDiv = document.createElement("div");
-        userDiv.className = "genie-message user-message";
-        userDiv.style.cssText = "display:flex; justify-content:flex-end; margin-bottom:12px;";
-        userDiv.innerHTML = `<div class="genie-bubble" style="background:#4f46e5; color:white; border-radius:12px; padding:10px 14px;">${escapeHTML(msg)}</div>`;
-        genieMessages.appendChild(userDiv);
-
+        renderGenieUserMessage(genieMessages, msg);
         genieInput.value = "";
+        genieInput.disabled = true;
         genieMessages.scrollTop = genieMessages.scrollHeight;
 
-        const chatFn = window.apiGenieChat || apiGenieChat;
-        const res = await chatFn(msg);
+        const response = await apiChatbotMessage(msg, genieState);
+        advanceGenieState(genieState, msg, response);
 
-        const botDiv = document.createElement("div");
-        botDiv.className = "genie-message";
-        botDiv.style.marginBottom = "12px";
-        botDiv.innerHTML = `
-            <div class="genie-message-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-            <div class="genie-bubble">${escapeHTML(res.reply)}</div>
-        `;
-        genieMessages.appendChild(botDiv);
+        renderGenieBotMessage(genieMessages, response.message, response.suggestions);
         genieMessages.scrollTop = genieMessages.scrollHeight;
+        genieInput.disabled = false;
+        genieInput.focus();
+
+        if (response.ready_for_review) {
+            openReadyDraft(response);
+        } else {
+            handleGenieAction(response.action);
+        }
     }
 
     if (genieSendBtn) genieSendBtn.addEventListener("click", sendGenieMsg);
     if (genieInput) {
         genieInput.addEventListener("keypress", (e) => {
             if (e.key === "Enter") sendGenieMsg();
+        });
+    }
+    // Both the static initial suggestions in the HTML and any rendered
+    // from a chatbot response use this same class - wire them all via
+    // delegation so clicking one sends it as the next message.
+    if (genieMessages) {
+        genieMessages.addEventListener("click", (e) => {
+            const btn = e.target.closest(".genie-suggestion");
+            if (!btn || !genieInput) return;
+            genieInput.value = btn.textContent.trim();
+            sendGenieMsg();
         });
     }
 });
