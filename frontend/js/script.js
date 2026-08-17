@@ -483,9 +483,20 @@ async function submitModalComment() {
 async function initializeMyTickets() {
     const list = document.getElementById("myTicketsList");
     if (!list) return;
-    list.innerHTML = '<div class="table-row"><div>Loading tickets...</div></div>';
-    const fetchFn = window.apiFetchTickets || (async () => getTickets());
-    const tickets = await fetchFn({ requesterId: getCurrentRequesterId() });
+    list.innerHTML = '<div style="padding: 24px; text-align: center; color: #64748b;">Loading tickets...</div>';
+    
+    let tickets = [];
+    try {
+        const fetchFn = window.apiFetchTickets || apiFetchTickets;
+        tickets = await fetchFn({ requesterId: getCurrentRequesterId() });
+    } catch (e) {
+        console.warn("apiFetchTickets notice in initializeMyTickets:", e);
+    }
+
+    if (!tickets || tickets.length === 0) {
+        tickets = getTickets();
+    }
+
     renderMyTickets(tickets);
 }
 
@@ -493,7 +504,7 @@ function renderMyTickets(tickets) {
     const list = document.getElementById("myTicketsList");
     if (!list) return;
     if (!tickets || tickets.length === 0) {
-        list.innerHTML = '<div class="table-row"><div>No tickets found.</div></div>';
+        list.innerHTML = '<div style="padding: 24px; text-align: center; color: #64748b;">No support requests found.</div>';
         return;
     }
     loadedMyTicketsMap = {};
@@ -501,8 +512,11 @@ function renderMyTickets(tickets) {
         loadedMyTicketsMap[t.id] = t;
         const stClass = (t.status || "Open").toLowerCase().replaceAll(" ", "-");
         const prClass = (t.priority || "Medium").toLowerCase();
+        const dateStr = t.date || (t.createdAt ? t.createdAt.split("T")[0] : "Today");
+        const deptStr = t.department || t.category || "IT Support";
+
         return `
-            <div class="table-row" onclick="openTicketChatModal('${escapeHTML(t.id)}')">
+            <div class="table-row" onclick="window.location.href='ticket-detail.html?id=${encodeURIComponent(t.id)}'">
                 <div class="ticket-request-cell">
                     <strong>${escapeHTML(t.title || "Untitled request")}</strong>
                     <span>#${escapeHTML(t.id)}</span>
@@ -512,8 +526,11 @@ function renderMyTickets(tickets) {
                 <div><span class="ticket-badge priority-${prClass}">${escapeHTML(t.priority || "Medium")}</span></div>
                 <div class="ticket-date">${escapeHTML(t.date || (t.createdAt ? t.createdAt.substring(0, 10) : "Today"))}</div>
                 <div style="text-align: right;">
-                    <button class="ticket-action" type="button" onclick="event.stopPropagation(); openTicketChatModal('${escapeHTML(t.id)}')" aria-label="Open conversation for ticket ${escapeHTML(t.id)}">
+                    <button class="ticket-action" type="button" onclick="event.stopPropagation(); window.location.href='ticket-detail.html?id=${encodeURIComponent(t.id)}'" aria-label="Open conversation for ticket ${escapeHTML(t.id)}">
                         <i class="fa-regular fa-comment-dots"></i> Chat
+                    </button>
+                </div>
+            </div>
                     </button>
                 </div>
             </div>
@@ -943,6 +960,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (e.key === "Enter") sendGenieMsg();
         });
     }
+<<<<<<< HEAD
     // Both the static initial suggestions in the HTML and any rendered
     // from a chatbot response use this same class - wire them all via
     // delegation so clicking one sends it as the next message.
@@ -953,6 +971,15 @@ document.addEventListener("DOMContentLoaded", () => {
             genieInput.value = btn.textContent.trim();
             sendGenieMsg();
         });
+=======
+
+    // Auto-initialize page loaders if elements exist
+    if (document.getElementById("myTicketsList")) {
+        initializeMyTickets();
+    }
+    if (document.querySelector(".table-container table tbody")) {
+        loadDashboardTickets();
+>>>>>>> 2b717ba (fix(frontend): auto-invoke initializeMyTickets on DOMContentLoaded and align 6-column grid rendering for my-tickets.html)
     }
 });
 
