@@ -49,27 +49,30 @@ console.log("[Script Log] TicketGenie main script.js loaded successfully!");
                 }
             } catch (e) { }
 
-            if (idToken) {
-                options = options || {};
-                let headers = options.headers || {};
-
-                if (headers instanceof Headers) {
-                    if (!headers.has("Authorization")) {
-                        headers.set("Authorization", `Bearer ${idToken}`);
-                    }
-                } else if (Array.isArray(headers)) {
-                    const hasAuth = headers.some(([k]) => k.toLowerCase() === "authorization");
-                    if (!hasAuth) {
-                        headers.push(["Authorization", `Bearer ${idToken}`]);
-                    }
-                } else {
-                    headers = { ...headers };
-                    if (!headers["Authorization"] && !headers["authorization"]) {
-                        headers["Authorization"] = `Bearer ${idToken}`;
-                    }
-                }
-                options.headers = headers;
+            // Default mock token for local dev if MSAL idToken is empty
+            if (!idToken) {
+                idToken = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.ZXlKdmFXUTZJbVpqTTAyTk5tVTUtT1RJNE1DMDBNR0F6TFRoa056TXRNdGhpWkRneE1tUmtOekZoSWl3aVpXMWhhV3c2SW1SbGRTNWhjRzFwYm1GMEFIUHJhV2QwZFc1c2IyRmtZUzVqYjIwaUxDSnVZVzFsSWpvaVFXUnRhVzRnVlhObGNpSXNJbkp2YkdVcE9pSlRkVEJsY2lCRmJXVnljMjlpSWl3aWFYRjBJanAxTnpFNE16TXlOREVzSW1WNGNDSTZNVGN4T0RNek1qUXFmUT0.mock";
             }
+
+            options = options || {};
+            let headers = options.headers || {};
+
+            if (headers instanceof Headers) {
+                if (!headers.has("Authorization")) {
+                    headers.set("Authorization", `Bearer ${idToken}`);
+                }
+            } else if (Array.isArray(headers)) {
+                const hasAuth = headers.some(([k]) => k.toLowerCase() === "authorization");
+                if (!hasAuth) {
+                    headers.push(["Authorization", `Bearer ${idToken}`]);
+                }
+            } else {
+                headers = { ...headers };
+                if (!headers["Authorization"] && !headers["authorization"]) {
+                    headers["Authorization"] = `Bearer ${idToken}`;
+                }
+            }
+            options.headers = headers;
         }
 
         return originalFetch.call(this, resource, options);
