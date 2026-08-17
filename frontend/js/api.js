@@ -3,7 +3,7 @@
    Shared API bindings for Admin, Management, and Employee Portals
    ========================================================= */
 
-const API_BASE_URL = window.API_BASE_URL || "/api/v1";
+const API_BASE_URL = window.API_BASE_URL || "/api";
 
 async function apiFetchTickets(params = {}) {
     try {
@@ -23,17 +23,22 @@ async function apiFetchTickets(params = {}) {
 }
 
 async function apiCreateTicket(ticketPayload) {
-    try {
-        const res = await fetch(`${API_BASE_URL}/tickets`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(ticketPayload)
-        });
-        if (res.ok) return await res.json();
-    } catch (err) {
-        console.error("apiCreateTicket failed:", err);
+    const res = await fetch(`${API_BASE_URL}/tickets`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(ticketPayload)
+    });
+
+    if (!res.ok) {
+        let detail = `Ticket creation failed (HTTP ${res.status})`;
+        try {
+            const body = await res.json();
+            if (body.detail) detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
+        } catch (e) {}
+        throw new Error(detail);
     }
-    return null;
+
+    return await res.json();
 }
 
 async function apiUpdateTicket(ticketId, ticketUpdate) {

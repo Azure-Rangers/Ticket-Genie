@@ -38,6 +38,152 @@
             flex-shrink: 0;
             width: 100%;
         }
+
+        /* My Requests data grid */
+        .tickets-table-container {
+            overflow-x: auto;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+        }
+        .tickets-table-header,
+        #myTicketsList .table-row {
+            display: grid;
+            grid-template-columns: minmax(240px, 2.2fr) minmax(150px, 1.25fr) 120px 110px 120px 92px;
+            gap: 20px;
+            align-items: center;
+            min-width: 970px;
+            box-sizing: border-box;
+        }
+        .tickets-table-header {
+            padding: 14px 22px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+        #myTicketsList .table-row {
+            min-height: 78px;
+            padding: 15px 22px;
+            border-bottom: 1px solid #edf2f7;
+            color: #334155;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background-color 0.16s ease, box-shadow 0.16s ease;
+        }
+        #myTicketsList .table-row:last-child { border-bottom: 0; }
+        #myTicketsList .table-row:hover {
+            background: #fbf9fc;
+            box-shadow: inset 3px 0 0 #7c4d91;
+        }
+        .ticket-request-cell { min-width: 0; }
+        .ticket-request-cell strong {
+            display: block;
+            overflow: hidden;
+            color: #1e293b;
+            font-size: 13px;
+            font-weight: 650;
+            line-height: 1.35;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .ticket-request-cell span {
+            display: block;
+            margin-top: 4px;
+            color: #94a3b8;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .ticket-department {
+            overflow: hidden;
+            color: #475569;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .ticket-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: fit-content;
+            min-width: 64px;
+            padding: 5px 10px;
+            border: 1px solid transparent;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1;
+            white-space: nowrap;
+        }
+        .status-open { color: #2563eb; background: #eff6ff; border-color: #bfdbfe; }
+        .status-in-progress, .status-pending { color: #a16207; background: #fefce8; border-color: #fde68a; }
+        .status-resolved, .status-closed { color: #15803d; background: #f0fdf4; border-color: #bbf7d0; }
+        .status-cancelled, .status-canceled { color: #64748b; background: #f8fafc; border-color: #cbd5e1; }
+        .priority-low { color: #047857; background: #ecfdf5; border-color: #a7f3d0; }
+        .priority-medium { color: #a16207; background: #fffbeb; border-color: #fde68a; }
+        .priority-high { color: #991b1b; background: #fff1f2; border-color: #fecdd3; }
+        .priority-critical { color: #7f1d1d; background: #fee2e2; border-color: #fca5a5; }
+        .ticket-date { color: #64748b; font-variant-numeric: tabular-nums; }
+        .ticket-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: fit-content;
+            padding: 7px 11px;
+            color: #69417c;
+            background: #f7f1fa;
+            border: 1px solid #e3d4ea;
+            border-radius: 7px;
+            font: inherit;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .ticket-action:hover { color: #ffffff; background: #6f4b82; border-color: #6f4b82; }
+        body.dark-mode .tickets-table-container { background: #201727; border-color: #493650; }
+        body.dark-mode .tickets-table-header { background: #291e30; border-color: #493650; color: #bdaec4; }
+        body.dark-mode #myTicketsList .table-row { border-color: #3c2c43; color: #d8cedd; }
+        body.dark-mode #myTicketsList .table-row:hover { background: #2b2032; }
+        body.dark-mode .ticket-request-cell strong { color: #f5f0f7; }
+        body.dark-mode .ticket-department, body.dark-mode .ticket-date { color: #c4b8ca; }
+        body.dark-mode .ticket-badge { box-shadow: none; }
+        body.dark-mode .status-open {
+            color: #93c5fd !important; background: rgba(37, 99, 235, 0.16); border-color: rgba(96, 165, 250, 0.42);
+        }
+        body.dark-mode .status-in-progress,
+        body.dark-mode .status-pending {
+            color: #fde68a !important; background: rgba(161, 98, 7, 0.20); border-color: rgba(245, 158, 11, 0.42);
+        }
+        body.dark-mode .status-resolved,
+        body.dark-mode .status-closed {
+            color: #86efac !important; background: rgba(21, 128, 61, 0.18); border-color: rgba(74, 222, 128, 0.38);
+        }
+        body.dark-mode .status-cancelled,
+        body.dark-mode .status-canceled {
+            color: #cbd5e1 !important; background: rgba(100, 116, 139, 0.18); border-color: rgba(148, 163, 184, 0.36);
+        }
+        body.dark-mode .priority-low {
+            color: #6ee7b7 !important; background: rgba(4, 120, 87, 0.18); border-color: rgba(52, 211, 153, 0.38);
+        }
+        body.dark-mode .priority-medium {
+            color: #fcd34d !important; background: rgba(161, 98, 7, 0.22); border-color: rgba(245, 158, 11, 0.46);
+        }
+        body.dark-mode .priority-high {
+            color: #fca5a5 !important; background: rgba(153, 27, 27, 0.28); border-color: rgba(248, 113, 113, 0.52);
+        }
+        body.dark-mode .priority-critical {
+            color: #fecaca !important; background: rgba(127, 29, 29, 0.52); border-color: #ef4444;
+        }
+        body.dark-mode .ticket-action {
+            color: #e9d5ff !important; background: rgba(126, 34, 206, 0.14); border-color: rgba(192, 132, 252, 0.38);
+        }
+        body.dark-mode .ticket-action:hover {
+            color: #ffffff !important; background: #7e4b94; border-color: #a878bb;
+        }
     </style>
 </head>
 <body>
@@ -161,15 +307,15 @@
         </div>
 
         <!-- Enterprise Ticket Data Grid Container -->
-        <div class="tickets-table-container" style="border: 1px solid #e1e6e2; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden;">
+        <div class="tickets-table-container">
             
             <!-- Table Header -->
-            <div class="tickets-table-header" style="display: grid; grid-template-columns: 2.2fr 1.6fr 1fr 1fr 1fr 110px; gap: 16px; align-items: center; padding: 12px 20px; border-bottom: 1px solid #e1e6e2; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+            <div class="tickets-table-header">
                 <div>Request</div>
                 <div>Department</div>
+                <div>Status</div>
                 <div>Priority</div>
                 <div>Created</div>
-                <div>Date</div>
                 <div style="text-align: right;">Action</div>
             </div>
 
@@ -239,6 +385,7 @@ function handleSignOut(event) {
 }
 </script>
 <script src="components.js?v=20260816_9"></script>
-<script src="../js/script.js?v=20260816_9"></script>
+<script src="../js/api.js?v=20260816_10"></script>
+<script src="../js/script.js?v=20260816_11"></script>
 </body>
 </html>

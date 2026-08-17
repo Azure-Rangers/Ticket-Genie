@@ -394,11 +394,19 @@ function renderMyTickets(tickets) {
         const prClass = (t.priority || "Medium").toLowerCase();
         return `
             <div class="table-row" onclick="openTicketChatModal('${escapeHTML(t.id)}')">
-                <div><strong>#${escapeHTML(t.id)}</strong></div>
-                <div>${escapeHTML(t.title || "Untitled")}</div>
-                <div><span class="badge status-${stClass}">${escapeHTML(t.status || "Open")}</span></div>
-                <div><span class="badge priority-${prClass}">${escapeHTML(t.priority || "Medium")}</span></div>
-                <div>${escapeHTML(t.date || "Today")}</div>
+                <div class="ticket-request-cell">
+                    <strong>${escapeHTML(t.title || "Untitled request")}</strong>
+                    <span>#${escapeHTML(t.id)}</span>
+                </div>
+                <div class="ticket-department">${escapeHTML(t.department || t.category || "General Support")}</div>
+                <div><span class="ticket-badge status-${stClass}">${escapeHTML(t.status || "Open")}</span></div>
+                <div><span class="ticket-badge priority-${prClass}">${escapeHTML(t.priority || "Medium")}</span></div>
+                <div class="ticket-date">${escapeHTML(t.date || (t.createdAt ? t.createdAt.substring(0, 10) : "Today"))}</div>
+                <div style="text-align: right;">
+                    <button class="ticket-action" type="button" onclick="event.stopPropagation(); openTicketChatModal('${escapeHTML(t.id)}')" aria-label="Open conversation for ticket ${escapeHTML(t.id)}">
+                        <i class="fa-regular fa-comment-dots"></i> Chat
+                    </button>
+                </div>
             </div>
         `;
     }).join("");
@@ -584,7 +592,7 @@ async function apiChatbotMessage(message, state) {
     };
     try {
         // Hardcoded rather than using the shared API_BASE_URL from api.js
-        // (which currently defaults to "/api/v1", not the real "/api"
+        // (the shared REST client uses the backend's real "/api" prefix,
         // prefix the backend and nginx actually use - see this merge's
         // final report) so the chatbot never silently breaks regardless
         // of that mismatch.
