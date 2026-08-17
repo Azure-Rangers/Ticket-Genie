@@ -8,7 +8,7 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { display: flex; min-height: 100vh; background: #f8fafc; color: #1f2937; }
-    .sidebar { width: 260px; background: #2b1b38; color: #d1d5db; display: flex; flex-direction: column; flex-shrink: 0; justify-content: space-between; min-height: 100vh; transition: width 0.3s ease; white-space: nowrap; overflow: hidden; }
+    .sidebar { width: 260px; background: #2b1b38; color: #d1d5db; display: flex; flex-direction: column; flex-shrink: 0; justify-content: space-between; min-height: 100vh; transition: width 0.3s ease; white-space: nowrap; overflow-y: auto; overflow-x: hidden; }
     .sidebar-top { flex: 1; }
     .sidebar-header { padding: 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
     .bot-icon { background: rgba(255,255,255,0.1); color: #facc15; padding: 8px; border-radius: 8px; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -94,7 +94,7 @@
 <body>
   <aside class="sidebar" id="appSidebar">
     <div class="sidebar-top">
-      <div class="sidebar-header"><div class="bot-icon"><i class="ph-fill ph-magic-wand"></i></div><div class="sidebar-brand-text"><h2>TicketGenie</h2><span id="sidebarRole">Unified Portal</span></div></div>
+      <div class="sidebar-header"><div class="bot-icon"><i class="ph-fill ph-ticket"></i></div><div class="sidebar-brand-text"><h2>TicketGenie</h2><span id="sidebarRole">Unified Portal</span></div></div>
       <div class="nav-section"><div class="nav-title">Workspace</div><a href="admin_dashboard.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-chart-pie-slice"></i></span><span class="menu-text">My Dashboard</span></a><a href="announcements.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-megaphone"></i></span><span class="menu-text">Announcements</span></a><a href="analytics.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-trend-up"></i></span><span class="menu-text">Analytics</span></a><a href="calendar.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-calendar-blank"></i></span><span class="menu-text">Calendar</span></a></div>
       <div class="nav-section"><div class="nav-title">Ticketing System</div><a href="submit-ticket.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-plus-circle"></i></span><span class="menu-text">Submit Request</span></a><a href="inbox.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-tray"></i></span><span class="menu-text">Team Inbox</span></a></div>
       <div class="nav-section"><div class="nav-title">Administration</div><a href="policy_library.html" class="nav-link"><span class="menu-icon"><i class="ph-duotone ph-books"></i></span><span class="menu-text">Policy Library</span></a><a href="ticket_archive.html" class="nav-link active"><span class="menu-icon"><i class="ph-duotone ph-archive"></i></span><span class="menu-text">Ticket Archive</span></a></div>

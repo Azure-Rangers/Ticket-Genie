@@ -144,7 +144,7 @@
   <aside class="sidebar" id="appSidebar">
     <div class="sidebar-top">
       <div class="sidebar-header">
-        <div class="bot-icon"><i class="ph-fill ph-magic-wand"></i></div>
+        <div class="bot-icon"><i class="ph-fill ph-ticket"></i></div>
         <div class="sidebar-brand-text">
           <h2>TicketGenie</h2>
           <span id="sidebarRole">IT Portal</span>
@@ -244,7 +244,7 @@
       <div id="loginWarning">⚠️ You are not logged in! Please start at index.html.</div>
       
       <div class="eyebrow-text">Operations Overview</div>
-      <h1 class="page-title" id="welcomeMessage">IT Dashboard</h1>
+      <h1 class="page-title" id="welcomeMessage">Welcome back</h1>
 
       <div class="section-header">
         <div>
@@ -443,7 +443,7 @@
     const userDataString = localStorage.getItem('portalUser');
     if (userDataString) {
       const user = JSON.parse(userDataString);
-      document.getElementById('welcomeMessage').innerText = `${user.role} Dashboard`;
+      document.getElementById('welcomeMessage').innerText = `Welcome back, ${user.name}`;
       document.getElementById('sidebarRole').innerText = `${user.role} Portal`;
       document.getElementById('navName').innerText = user.name;
       document.getElementById('navSubRole').innerText = `${user.role} Admin`;
