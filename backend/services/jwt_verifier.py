@@ -140,7 +140,7 @@ def verify_azure_user(authorization: Optional[str] = Header(None)) -> Dict[str, 
             "oid": "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a",
             "email": "dev.admin@ticketgenie.com",
             "name": "Dev Admin",
-            "role": "Admin",
+            "role": "Super Admin",
             "is_dev": True,
         }
 
@@ -167,7 +167,7 @@ def verify_azure_user(authorization: Optional[str] = Header(None)) -> Dict[str, 
             if record and record.role:
                 role = record.role
             elif oid == "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a":
-                role = "Admin"
+                role = "Super Admin"
     except Exception as err:
         logger.warning(f"Database role lookup notice: {err}")
 

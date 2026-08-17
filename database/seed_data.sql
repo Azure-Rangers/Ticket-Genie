@@ -8,7 +8,7 @@ VALUES (
     'uobj-admin-dc3b56e9',
     'IT',
     'dc3b56e9-9280-40dc-8d73-98bfd81fdd6a',
-    'Admin',
+    'Super Admin',
     'admin.dc3b@ticketgenie.com',
     '2026-08-16T12:00:00'
 );
@@ -19,7 +19,7 @@ VALUES (
     'usr-admin-dc3b56e9',
     'Admin User',
     'admin.dc3b@ticketgenie.com',
-    'Admin',
+    'Super Admin',
     'IT',
     '+1 (555) 019-9999',
     'AV'

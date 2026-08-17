@@ -70,7 +70,7 @@
         console.log("🔑 Azure Object ID:", objectId);
 
         let isAdmin = (objectId === DEFAULT_ADMIN_OID);
-        let role = isAdmin ? "Admin" : "Employee";
+        let role = isAdmin ? "Super Admin" : "Employee";
 
         // Query backend for role authorization based on Object ID & verify JWT signature
         try {

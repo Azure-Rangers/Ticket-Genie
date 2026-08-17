@@ -75,7 +75,7 @@ def handle_azure_login(req: AzureLoginRequest):
             role = record.role
         elif verified_oid == "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a":
             is_admin = True
-            role = "Admin"
+            role = "Super Admin"
 
     print(f"👤 [Azure Auth API] User {verified_oid} authenticated as role: '{role}', is_admin: {is_admin}, jwt_verified: {jwt_verified}")
     return {
