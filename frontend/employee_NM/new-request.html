@@ -239,11 +239,11 @@
                         <strong>Note:</strong> This ticket will cycle through upper management for approval beforehand.
                     </div>
 
-                    <form style="display: flex; flex-direction: column; gap: 24px;">
+                    <form id="leaveTicketForm" onsubmit="event.preventDefault(); submitEmployeeLeaveTicket(event); return false;" style="display: flex; flex-direction: column; gap: 24px;">
                         <div style="display: flex; gap: 20px;">
                             <div style="flex: 1;">
                                 <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">Leave Type</label>
-                                <select style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
+                                <select id="leaveTypeSelect" required style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
                                     <option>Paid Time Off (PTO)</option>
                                     <option>Sick Leave</option>
                                     <option>Parental Leave</option>
@@ -253,24 +253,24 @@
                             </div>
                             <div style="flex: 1;">
                                 <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">Coverage / Handover Lead</label>
-                                <input type="text" placeholder="Colleague covering your duties" style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
+                                <input id="leaveHandoverLead" type="text" placeholder="Colleague covering your duties" style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
                             </div>
                         </div>
 
                         <div style="display: flex; gap: 20px;">
                             <div style="flex: 1;">
                                 <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">Start Date</label>
-                                <input type="date" style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
+                                <input id="leaveStartDate" type="date" required style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
                             </div>
                             <div style="flex: 1;">
                                 <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">End Date</label>
-                                <input type="date" style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
+                                <input id="leaveEndDate" type="date" required style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
                             </div>
                         </div>
 
                         <div>
                             <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">Reason / Handover Notes</label>
-                            <textarea rows="5" placeholder="Enter details for HR review..." style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; box-sizing: border-box;"></textarea>
+                            <textarea id="leaveDescription" rows="5" required placeholder="Enter details for HR review..." style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; box-sizing: border-box;"></textarea>
                         </div>
 
                         <!-- Attach Documents Box -->
@@ -280,11 +280,11 @@
                                 <i class="fa-solid fa-cloud-arrow-up" style="font-size: 24px; color: #64748b; margin-bottom: 8px; display: block;"></i>
                                 <span style="font-size: 13px; color: #334155; font-weight: 500; display: block; margin-bottom: 4px;">Drag and drop files here, or <span style="color: #10b981; text-decoration: underline;">browse</span></span>
                                 <span style="font-size: 11px; color: #94a3b8; display: block;">Supports PDF, PNG, JPG, DOCX (Max 25MB)</span>
-                                <input type="file" multiple style="display: none;">
+                                <input id="leaveFileUpload" type="file" multiple style="display: none;">
                             </div>
                         </div>
 
-                        <button type="button" style="background: #10b981; color: #fff; border: none; padding: 14px 28px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; align-self: flex-start;">
+                        <button id="submitLeaveBtn" type="submit" style="background: #10b981; color: #fff; border: none; padding: 14px 28px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; align-self: flex-start;">
                             <i class="fa-solid fa-calendar-check" style="margin-right: 6px;"></i> Submit Leave Request
                         </button>
                     </form>
@@ -301,10 +301,10 @@
                         <strong>When to use this request:</strong> Use this form for secure workplace feedback, ethics or compliance reporting, or sensitive suggestions where you require total anonymity from department management views.
                     </div>
 
-                    <form style="display: flex; flex-direction: column; gap: 24px;">
+                    <form id="anonymousTicketForm" onsubmit="event.preventDefault(); submitEmployeeAnonymousTicket(event); return false;" style="display: flex; flex-direction: column; gap: 24px;">
                         <div>
                             <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">Category / Concern Area</label>
-                            <select style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
+                            <select id="anonymousCategory" style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
                                 <option>Workplace Feedback & Improvements</option>
                                 <option>Compliance & Ethics Reporting</option>
                                 <option>Anonymous Suggestion</option>
@@ -314,7 +314,7 @@
 
                         <div>
                             <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">Confidential Message</label>
-                            <textarea rows="7" placeholder="Provide detailed information securely and anonymously..." style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; box-sizing: border-box;"></textarea>
+                            <textarea id="anonymousDescription" rows="7" required placeholder="Provide detailed information securely and anonymously..." style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; box-sizing: border-box;"></textarea>
                         </div>
 
                         <!-- Attach Documents Box -->
@@ -324,11 +324,11 @@
                                 <i class="fa-solid fa-cloud-arrow-up" style="font-size: 24px; color: #64748b; margin-bottom: 8px; display: block;"></i>
                                 <span style="font-size: 13px; color: #334155; font-weight: 500; display: block; margin-bottom: 4px;">Drag and drop files here, or <span style="color: #475569; text-decoration: underline;">browse</span></span>
                                 <span style="font-size: 11px; color: #94a3b8; display: block;">Metadata is scrubbed for total confidentiality (Max 25MB)</span>
-                                <input type="file" multiple style="display: none;">
+                                <input id="anonymousFileUpload" type="file" multiple style="display: none;">
                             </div>
                         </div>
 
-                        <button type="button" style="background: #475569; color: #fff; border: none; padding: 14px 28px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; align-self: flex-start;">
+                        <button id="submitAnonymousBtn" type="submit" style="background: #475569; color: #fff; border: none; padding: 14px 28px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; align-self: flex-start;">
                             <i class="fa-solid fa-user-secret" style="margin-right: 6px;"></i> Submit Anonymously
                         </button>
                     </form>
@@ -523,6 +523,183 @@ async function submitEmployeeStandardTicket(event) {
         if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane" style="margin-right:6px;"></i> Submit Request';
+        }
+    }
+    return false;
+}
+
+async function submitEmployeeLeaveTicket(event) {
+    if (event) event.preventDefault();
+
+    const typeEl = document.getElementById('leaveTypeSelect');
+    const startEl = document.getElementById('leaveStartDate');
+    const endEl = document.getElementById('leaveEndDate');
+    const reasonEl = document.getElementById('leaveDescription');
+    const fileEl = document.getElementById('leaveFileUpload');
+
+    const leaveType = typeEl ? typeEl.value.trim() : '';
+    const startDate = startEl ? startEl.value : '';
+    const endDate = endEl ? endEl.value : '';
+    const reason = reasonEl ? reasonEl.value.trim() : '';
+
+    if (!leaveType || !startDate || !endDate || !reason) {
+        const msg = 'Please select a leave type and fill in the start date, end date, and reason before submitting.';
+        if (typeof showNotification === 'function') showNotification(msg, 'warning');
+        else alert(msg);
+        return false;
+    }
+
+    const submitBtn = document.getElementById('submitLeaveBtn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i> Submitting...';
+    }
+
+    // Backend TicketCreate still only has one preferredDate field - the
+    // start date is used there, and both dates are also kept visible in
+    // the description so nothing the user entered is lost. Neither date
+    // is fabricated: both come directly from what the user typed.
+    const description = `Leave dates: ${startDate} to ${endDate}. ${reason}`;
+    const files = fileEl ? Array.from(fileEl.files || []) : [];
+
+    const payload = {
+        title: `${leaveType} Request`,
+        description: description,
+        category: leaveType,
+        priority: 'Medium',
+        preferredDate: startDate,
+        is_anonymous: false,
+        attachment: files.length ? files.map(f => f.name).join(', ') : null,
+        requester_id: typeof getCurrentRequesterId === 'function' ? getCurrentRequesterId() : 'nm@company.com',
+        // Hard business rule: Leave Management always routes to Upper
+        // Management, deterministically, skipping normal AI department
+        // classification (see services/ticket_service.py's
+        // department_override handling).
+        department_override: 'Upper Management'
+    };
+
+    try {
+        let createdTicket;
+        if (typeof apiCreateTicket === 'function') {
+            createdTicket = await apiCreateTicket(payload);
+        } else {
+            const response = await fetch('/api/tickets', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) {
+                throw new Error(`Leave request submission failed (HTTP ${response.status})`);
+            }
+            createdTicket = await response.json();
+        }
+        if (!createdTicket || !createdTicket.id) {
+            throw new Error('The server did not return a created leave request.');
+        }
+
+        if (typeof showNotification === 'function') {
+            showNotification(`Leave request ${createdTicket.id} submitted successfully! Redirecting...`, 'success');
+        }
+        setTimeout(() => {
+            window.location.href = 'my-tickets.html';
+        }, 1200);
+    } catch (e) {
+        console.error('Leave request submission failed:', e);
+        if (typeof showNotification === 'function') {
+            showNotification(e.message || 'Unable to submit the leave request. Please try again.', 'error');
+        } else {
+            alert(e.message || 'Unable to submit the leave request. Please try again.');
+        }
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fa-solid fa-calendar-check" style="margin-right:6px;"></i> Submit Leave Request';
+        }
+    }
+    return false;
+}
+
+async function submitEmployeeAnonymousTicket(event) {
+    if (event) event.preventDefault();
+
+    const categoryEl = document.getElementById('anonymousCategory');
+    const descEl = document.getElementById('anonymousDescription');
+    const fileEl = document.getElementById('anonymousFileUpload');
+
+    const concernArea = categoryEl ? categoryEl.value.trim() : '';
+    const description = descEl ? descEl.value.trim() : '';
+
+    if (!description) {
+        const msg = 'Please provide a confidential message before submitting.';
+        if (typeof showNotification === 'function') showNotification(msg, 'warning');
+        else alert(msg);
+        return false;
+    }
+
+    const submitBtn = document.getElementById('submitAnonymousBtn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i> Submitting...';
+    }
+
+    // This form has no subject field - derive a short title from the
+    // message itself (first several words), the same way the backend's
+    // own fallback-title logic would. Never invents new content.
+    const words = description.split(/\s+/).filter(Boolean);
+    const derivedTitle = (words.slice(0, 10).join(' ') || 'Confidential Report').slice(0, 200);
+    const files = fileEl ? Array.from(fileEl.files || []) : [];
+
+    const payload = {
+        title: derivedTitle,
+        description: description,
+        category: concernArea || 'Other',
+        priority: 'Medium',
+        is_anonymous: true,
+        attachment: files.length ? files.map(f => f.name).join(', ') : null,
+        // Identity is never embedded in description/category above -
+        // requester_id is still sent only so the submitter can find their
+        // own anonymous ticket under My Tickets (existing backend
+        // behavior; the ticket record itself does not expose it to other
+        // viewers based on is_anonymous).
+        requester_id: typeof getCurrentRequesterId === 'function' ? getCurrentRequesterId() : 'nm@company.com'
+    };
+
+    try {
+        let createdTicket;
+        if (typeof apiCreateTicket === 'function') {
+            createdTicket = await apiCreateTicket(payload);
+        } else {
+            const response = await fetch('/api/tickets', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) {
+                throw new Error(`Anonymous submission failed (HTTP ${response.status})`);
+            }
+            createdTicket = await response.json();
+        }
+        if (!createdTicket || !createdTicket.id) {
+            throw new Error('The server did not return a created ticket.');
+        }
+
+        if (typeof showNotification === 'function') {
+            showNotification(`Anonymous request ${createdTicket.id} submitted successfully! Redirecting...`, 'success');
+        }
+        setTimeout(() => {
+            window.location.href = 'my-tickets.html';
+        }, 1200);
+    } catch (e) {
+        console.error('Anonymous submission failed:', e);
+        if (typeof showNotification === 'function') {
+            showNotification(e.message || 'Unable to submit anonymously. Please try again.', 'error');
+        } else {
+            alert(e.message || 'Unable to submit anonymously. Please try again.');
+        }
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fa-solid fa-user-secret" style="margin-right:6px;"></i> Submit Anonymously';
         }
     }
     return false;

@@ -127,86 +127,15 @@ function showSuccessMessage(ticket) {
     setTimeout(() => { success.classList.remove("show"); }, 3000);
 }
 
-/* =========================================================
-   NEW REQUEST FORM
-   ========================================================= */
-function initializeNewRequestForm() {
-    const formConfigs = {
-        newTicketForm: { title: "ticketSubject", category: "ticketCategory", description: "ticketDescription", preferredDate: "preferredDate", file: "fileUpload", anonymous: false },
-        anonTicketForm: { title: "anonTicketSubject", category: "anonTicketCategory", description: "anonTicketDescription", file: "anonFileUpload", anonymous: true },
-        leaveTicketForm: { title: "leaveType", category: "leaveType", description: "leaveDescription", preferredDate: "leaveEndDate", file: "leaveFileUpload", anonymous: false, leave: true, departmentOverride: "Upper Management" }
-    };
-
-    Object.entries(formConfigs).forEach(([formId, config]) => {
-        const form = document.getElementById(formId);
-        if (!form) return;
-
-        form.addEventListener("submit", async function(event) {
-        event.preventDefault();
-
-        const titleElement = document.getElementById(config.title);
-        const categoryElement = document.getElementById(config.category);
-        const descriptionElement = document.getElementById(config.description);
-        const submitBtn = event.target.querySelector('.submit-request-button');
-        const originalSubmitContent = submitBtn?.innerHTML;
-
-        const title = titleElement ? titleElement.value.trim() : "New Request";
-        const category = categoryElement ? categoryElement.value : "General";
-        const description = descriptionElement ? descriptionElement.value.trim() : "";
-
-        if (!title || !category || !description) {
-            showFormError("Please fill out all required fields.");
-            return;
-        }
-        if (title.length < 3 || description.length < 10) {
-            showFormError("The subject must be at least 3 characters and the description at least 10 characters.");
-            return;
-        }
-
-        const oldError = document.querySelector(".form-error-message");
-        if (oldError) oldError.style.display = "none";
-
-        if (submitBtn) {
-            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
-            submitBtn.classList.add('loading');
-        }
-
-        try {
-            let finalDescription = description;
-            if (config.leave) {
-                const startDate = document.getElementById("leaveStartDate")?.value || "";
-                const endDate = document.getElementById("leaveEndDate")?.value || "";
-                finalDescription = `Leave dates: ${startDate} to ${endDate}. ${description}`;
-            }
-            const files = Array.from(document.getElementById(config.file)?.files || []);
-            const newTicket = await apiCreateTicket({
-                title,
-                category,
-                description: finalDescription,
-                preferredDate: config.preferredDate ? (document.getElementById(config.preferredDate)?.value || null) : null,
-                is_anonymous: config.anonymous,
-                attachment: files.length ? files.map(file => file.name).join(", ") : null,
-                requester_id: getCurrentRequesterId(),
-                // Deterministic, fixed to this one static tab - never derived
-                // from chatbot/GPT output. Makes the backend skip normal AI
-                // classification for Leave Management (see
-                // services/ticket_service.py's department_override handling)
-                // so it always routes to Upper Management.
-                ...(config.departmentOverride ? { department_override: config.departmentOverride } : {})
-            });
-
-            showSuccessMessage(newTicket);
-            setTimeout(() => { window.location.href = "my-tickets.html"; }, 1500);
-        } catch (err) {
-            showFormError(err.message || "Unable to submit the request. Please try again.");
-            if (submitBtn) {
-                submitBtn.innerHTML = originalSubmitContent;
-                submitBtn.classList.remove('loading');
-            }
-        }
-        });
-    });
-}
+/* NOTE: the New Request page (frontend/employee_NM/new-request.html) now
+   wires its own three submit handlers inline
+   (submitEmployeeStandardTicket, submitEmployeeLeaveTicket,
+   submitEmployeeAnonymousTicket) directly against its current form IDs
+   (standardTicketForm, leaveTicketForm, anonymousTicketForm). The old
+   initializeNewRequestForm() here targeted a prior UI revision's field
+   IDs that no longer exist on the page, so it's been removed rather
+   than left as dead code - see prefillRequestForm() below for how the
+   chatbot now talks to the current forms. */
 
 
 /* =========================================================
@@ -591,11 +520,9 @@ async function apiChatbotMessage(message, state) {
         active_request_type: state.active_request_type,
     };
     try {
-        // Hardcoded rather than using the shared API_BASE_URL from api.js
-        // (the shared REST client uses the backend's real "/api" prefix,
-        // prefix the backend and nginx actually use - see this merge's
-        // final report) so the chatbot never silently breaks regardless
-        // of that mismatch.
+        // Literal path rather than the shared API_BASE_URL from api.js -
+        // both currently resolve to the same "/api" prefix, but the
+        // chatbot doesn't depend on api.js having loaded/resolved first.
         const res = await fetch("/api/chatbot/message", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -672,23 +599,38 @@ function renderGenieHistory(container, state) {
 /* =========================================================
    REQUEST FORM PREFILL (from a ready_for_review chatbot draft)
    Only ever fills field values and switches tabs - never submits.
+   Targets the CURRENT new-request.html DOM (standardTicketForm /
+   leaveTicketForm / anonymousTicketForm and their field IDs) and reuses
+   that page's own switchTab("standard"|"leave"|"anonymous") rather than
+   a second, competing tab-switch mechanism.
    ========================================================= */
-const GENIE_REQUEST_TYPE_TABS = {
-    standard: "standardRequestTab",
-    anonymous: "anonymousRequestTab",
-    leave_management: "leaveRequestTab",
+const GENIE_REQUEST_TYPE_TAB_NAMES = {
+    standard: "standard",
+    anonymous: "anonymous",
+    leave_management: "leave",
 };
 
-function switchRequestTab(tabTarget) {
-    const btn = document.querySelector(`.tab-btn[data-target="${tabTarget}"]`);
-    const content = document.getElementById(tabTarget);
-    if (!btn || !content) return false;
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-    btn.classList.add("active");
-    content.classList.add("active");
-    return true;
-}
+// The chatbot's category vocabulary (backend STANDARD_CATEGORIES) uses
+// slightly different wording than the current Standard form's Department
+// dropdown options - map the ones with a real equivalent; anything else
+// (including "Other") is left at the dropdown's own "Auto (AI
+// Classification)" default rather than guessing a wrong department.
+const STANDARD_DEPARTMENT_SELECT_MAP = {
+    "IT & Technology": "IT & Technology",
+    "HR & Workforce Operations": "HR & Workplace Operations",
+    "Account Management": "Account Management",
+    "Upper Executive Management": "Upper Management/Administration",
+};
+
+// Same idea for the Leave form's Leave Type dropdown, whose option
+// wording has partially diverged from the backend's LEAVE_TYPES list.
+const LEAVE_TYPE_SELECT_MAP = {
+    "Paid Time Off (PTO)": "Paid Time Off (PTO)",
+    "Medical Leave": "Sick Leave",
+    "Parental Leave": "Parental Leave",
+    "Bereavement": "Bereavement Leave",
+    "Unpaid Leave": "Unpaid Leave",
+};
 
 function setFieldValue(id, value) {
     if (!value) return;
@@ -698,20 +640,24 @@ function setFieldValue(id, value) {
 
 function prefillRequestForm(requestType, draft) {
     if (!draft) return;
-    const tabTarget = GENIE_REQUEST_TYPE_TABS[requestType];
-    if (!tabTarget || !switchRequestTab(tabTarget)) return;
+    const tabName = GENIE_REQUEST_TYPE_TAB_NAMES[requestType];
+    if (!tabName || typeof window.switchTab !== "function") return;
+    window.switchTab(tabName);
 
     if (requestType === "standard") {
-        setFieldValue("ticketSubject", draft.title);
-        setFieldValue("ticketCategory", draft.category);
-        setFieldValue("ticketDescription", draft.description);
-        setFieldValue("preferredDate", draft.preferredDate);
+        setFieldValue("standardSubject", draft.title);
+        setFieldValue("standardDescription", draft.description);
+        setFieldValue("standardDepartment", STANDARD_DEPARTMENT_SELECT_MAP[draft.category] || null);
+        // The current Standard form has no date field to prefill into.
     } else if (requestType === "anonymous") {
-        setFieldValue("anonTicketSubject", draft.title);
-        setFieldValue("anonTicketCategory", draft.category);
-        setFieldValue("anonTicketDescription", draft.description);
+        // No subject field in the current Anonymous UI. Its Category /
+        // Concern Area options (workplace feedback, compliance/ethics,
+        // etc.) are a different vocabulary from the chatbot's ticket
+        // categories with no safe equivalent, so that dropdown is left
+        // for the user to choose rather than guessed.
+        setFieldValue("anonymousDescription", draft.description);
     } else if (requestType === "leave_management") {
-        setFieldValue("leaveType", draft.category);
+        setFieldValue("leaveTypeSelect", LEAVE_TYPE_SELECT_MAP[draft.category] || null);
         setFieldValue("leaveDescription", draft.description);
         // KNOWN BACKEND LIMITATION: the chatbot draft only carries a single
         // preferredDate (models.chatbot.TicketDraft), while this form has
@@ -723,8 +669,11 @@ function prefillRequestForm(requestType, draft) {
         setFieldValue("leaveStartDate", draft.preferredDate);
     }
 
-    const card = document.querySelector(".request-form-card");
-    if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+    const tabContentId =
+        requestType === "standard" ? "standardTabContent" :
+        requestType === "anonymous" ? "anonymousTabContent" : "leaveTabContent";
+    const tabContent = document.getElementById(tabContentId);
+    if (tabContent) tabContent.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function applyPendingGenieDraft() {
@@ -745,7 +694,7 @@ function applyPendingGenieDraft() {
    applyPendingGenieDraft()). Never auto-submits. */
 function openReadyDraft(response) {
     if (!response.request_type || !response.ticket_draft) return;
-    const onNewRequestPage = !!document.getElementById("newTicketForm");
+    const onNewRequestPage = !!document.getElementById("standardTicketForm");
     if (onNewRequestPage) {
         prefillRequestForm(response.request_type, response.ticket_draft);
         return;
@@ -772,7 +721,6 @@ document.addEventListener("DOMContentLoaded", () => {
     initDarkMode();
     initSidebarToggle();
     if (typeof initializeProfileDropdown === "function") initializeProfileDropdown();
-    initializeNewRequestForm();
     initializeMyTickets();
     applyPendingGenieDraft();
 
