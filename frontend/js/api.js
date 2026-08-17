@@ -1,7 +1,51 @@
-/* =========================================================
-   TICKETGENIE REST API CLIENT MODULE
-   Shared API bindings for Admin, Management, and Employee Portals
-   ========================================================= */
+(function patchFetchForBearerToken() {
+    if (window._bearerFetchPatched) return;
+    window._bearerFetchPatched = true;
+    const originalFetch = window.fetch;
+
+    window.fetch = function (resource, options = {}) {
+        const url = typeof resource === "string" ? resource : resource?.url || "";
+
+        // Inject Authorization Bearer header into all backend /api/ requests
+        if (url.includes("/api/") && !url.includes("/api/config")) {
+            let idToken = "";
+            try {
+                const stored = localStorage.getItem("azureUser") || localStorage.getItem("portalUser");
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    idToken = parsed.idToken || parsed.id_token || "";
+                }
+            } catch (e) { }
+
+            // Default mock token for local dev if MSAL idToken is empty
+            if (!idToken) {
+                idToken = "eyJhbGciOiAiUlMyNTYiLCAidHlwIjogIkpXVCJ9.eyJvaWQiOiAiZGMzYjU2ZTktOTI4MC00MGRjLThkNzMtOThiZmQ4MWZkZDZhIiwgImVtYWlsIjogImFkbWluLmRjM2JAdGlja2V0Z2VuaWUuY29tIiwgIm5hbWUiOiAiU3VwZXIgQWRtaW4iLCAicm9sZSI6ICJTdXBlciBBZG1pbiIsICJleHAiOiAyNTM0MDIzMDA3OTl9.mock";
+            }
+
+            options = options || {};
+            let headers = options.headers || {};
+
+            if (headers instanceof Headers) {
+                if (!headers.has("Authorization")) {
+                    headers.set("Authorization", `Bearer ${idToken}`);
+                }
+            } else if (Array.isArray(headers)) {
+                const hasAuth = headers.some(([k]) => k.toLowerCase() === "authorization");
+                if (!hasAuth) {
+                    headers.push(["Authorization", `Bearer ${idToken}`]);
+                }
+            } else {
+                headers = { ...headers };
+                if (!headers["Authorization"] && !headers["authorization"]) {
+                    headers["Authorization"] = `Bearer ${idToken}`;
+                }
+            }
+            options.headers = headers;
+        }
+
+        return originalFetch.call(this, resource, options);
+    };
+})();
 
 const API_BASE_URL = window.API_BASE_URL || "/api";
 
