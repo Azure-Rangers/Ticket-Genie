@@ -17,6 +17,7 @@ from agents import chatbot_agent, knowledge_agent
 from agents.chatbot_agent import ChatbotDecision, NavigationTarget
 from agents.orchestrator import classify_ticket as default_classify_ticket
 from database.crud import get_ticket_by_id as default_get_ticket_by_id
+from database.crud import list_departments
 from models.chatbot import (
     ChatAction,
     ChatIntent,
@@ -24,14 +25,15 @@ from models.chatbot import (
     ChatResponse,
     RequestType,
 )
-from services import ticket_draft_service
+from models.ticket import TICKET_DEPARTMENTS, TICKET_PRIORITIES
+from services import management_action_service, ticket_draft_service
 from services.ai_service import ai_service as default_ai_service
 from services.knowledge_service import (
     KnowledgeRetriever,
     SearchUnavailableError,
     default_knowledge_retriever,
 )
-from services.role_service import get_allowed_scopes
+from services.role_service import EMPLOYEE_ASSIGNMENT_ROLES, get_allowed_scopes
 from services.ticket_draft_service import merge_extracted_fields, validate_ticket_id
 
 PREDEFINED_SUGGESTIONS = [
@@ -93,6 +95,12 @@ _TICKET_DRAFT_INTENTS = (
     ChatIntent.CREATE_TICKET,
     ChatIntent.SUPPORT_ISSUE,
     ChatIntent.LEAVE_MANAGEMENT,
+)
+
+_MANAGEMENT_ACTION_INTENTS = (
+    ChatIntent.REASSIGN_TICKET,
+    ChatIntent.CHANGE_PRIORITY,
+    ChatIntent.CREATE_PORTAL_EMPLOYEE,
 )
 
 _KNOWLEDGE_BASE_ACTION = ChatAction(
@@ -377,6 +385,13 @@ def handle_message(
             known_intent=request.active_intent,
             standard_categories=ticket_draft_service.STANDARD_CATEGORIES,
             leave_types=ticket_draft_service.LEAVE_TYPES,
+            ticket_departments=list(TICKET_DEPARTMENTS),
+            ticket_priorities=list(TICKET_PRIORITIES),
+            employee_departments=[d["name"] for d in list_departments()],
+            employee_roles=list(EMPLOYEE_ASSIGNMENT_ROLES),
+            pending_action_context=management_action_service.format_pending_context(
+                request.pending_action
+            ),
             ai_service=ai_service,
         )
     except Exception:
@@ -393,8 +408,17 @@ def handle_message(
         return _gpt_unavailable_response()
 
     # A continuation always keeps the flow's intent - the model doesn't get
-    # to silently change it mid-draft.
-    intent = request.active_intent or decision.intent
+    # to silently change it mid-draft. A pending management action (echoed
+    # back by the client) takes the same precedence as active_intent, so a
+    # bare follow-up like "the VPN one" or "HD-1024" continues that flow
+    # instead of being reclassified from scratch.
+    pending_intent = request.pending_action.action_type if request.pending_action else None
+    intent = request.active_intent or pending_intent or decision.intent
+
+    if intent in _MANAGEMENT_ACTION_INTENTS:
+        return management_action_service.handle_turn(
+            request, decision, intent, current_user=current_user
+        )
 
     if intent == ChatIntent.LEAVE_MANAGEMENT:
         # Hard business rule: leave requests always go through the

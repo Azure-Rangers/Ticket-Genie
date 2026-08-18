@@ -11,8 +11,9 @@ import logging
 from typing import Any, Dict, List
 
 from database.crud import get_all_tickets, update_ticket
-from models.ticket import TicketUpdate
+from models.ticket import TICKET_DEPARTMENTS, TICKET_PRIORITIES, TicketUpdate
 from services.knowledge_service import answer_question
+from services.role_service import is_ticket_mutation_authorized
 from services.sql_context_service import execute_sql_query
 
 logger = logging.getLogger(__name__)
@@ -25,10 +26,22 @@ def sql_query_tool(query: str, role: str = "Super Admin", user_id: str = "user")
 
 
 def update_ticket_tool(ticket_id: str, field: str, value: str) -> str:
-    """Update a specific field (department, priority, status, queue) on a ticket."""
+    """Update a specific field (department, priority, status, queue) on a ticket.
+
+    Authorization is enforced by the caller (execute_tool) before this is
+    invoked. This function still deterministically validates department/
+    priority values against the canonical ticket vocabulary (models.ticket)
+    so GPT can never write an invented value even if it somehow bypasses
+    the ReAct prompt's few-shot examples.
+    """
     valid_fields = {"department", "priority", "status", "queue", "category", "title"}
     if field not in valid_fields:
         return f"Error: Cannot update field '{field}'. Allowed fields: {valid_fields}"
+
+    if field == "department" and value not in TICKET_DEPARTMENTS:
+        return f"Error: '{value}' is not a valid department. Allowed: {', '.join(TICKET_DEPARTMENTS)}"
+    if field == "priority" and value not in TICKET_PRIORITIES:
+        return f"Error: '{value}' is not a valid priority. Allowed: {', '.join(TICKET_PRIORITIES)}"
 
     update_payload = TicketUpdate(**{field: value})
     res = update_ticket(ticket_id, update_payload)
@@ -118,6 +131,12 @@ def execute_tool(
         return sql_query_tool(query, role=role, user_id=user_id)
 
     elif tool_name == "update_ticket_tool":
+        if not is_ticket_mutation_authorized(role):
+            return (
+                f"Error: Forbidden. Role '{role}' is not authorized to update tickets. "
+                "Ticket mutations require Admin, Operations Admin, Department Admin, "
+                "Upper Executive Lead, or Super Admin."
+            )
         ticket_id = arguments.get("ticket_id", "")
         field = arguments.get("field", "")
         value = arguments.get("value", "")

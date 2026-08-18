@@ -13,6 +13,13 @@ class ChatIntent(str, Enum):
     TICKET_STATUS = "ticket_status"
     SUPPORT_ISSUE = "support_issue"
     GENERAL = "general"
+    # Management-only write actions (see services/management_action_service.py).
+    # GPT may propose these for any user; services.chatbot_service always
+    # re-checks the verified role deterministically before acting on them -
+    # never trust the classification alone as an authorization signal.
+    REASSIGN_TICKET = "reassign_ticket"
+    CHANGE_PRIORITY = "change_priority"
+    CREATE_PORTAL_EMPLOYEE = "create_portal_employee"
 
 
 class RequestType(str, Enum):
@@ -61,6 +68,51 @@ class TicketDraft(BaseModel):
     attachment: Optional[str] = None
 
 
+class TicketCandidate(BaseModel):
+    """Minimum info shown when Genie must ask the user which ticket they mean."""
+
+    id: str
+    title: str
+    department: str
+    priority: str
+    status: str
+
+
+class PendingManagementAction(BaseModel):
+    """
+    Structured, client-echoed state for an in-progress management write
+    action (reassign_ticket / change_priority / create_portal_employee).
+    Mirrors how `draft`/`active_intent` already carry ticket-drafting state
+    across turns - the backend stays stateless, the frontend just echoes
+    back whatever the previous ChatResponse.pending_action was.
+
+    `awaiting` names exactly what the next user turn is expected to resolve,
+    so services.management_action_service never has to re-guess intent
+    from free text alone: "ticket_selection" | "ticket_confirmation" |
+    "target_department" | "target_priority" | "employee_field:<name>" |
+    "employee_confirmation".
+    """
+
+    action_type: ChatIntent
+    awaiting: Optional[str] = None
+
+    # Ticket mutation fields (reassign_ticket / change_priority)
+    ticket_id: Optional[str] = None
+    ticket_title: Optional[str] = None
+    current_department: Optional[str] = None
+    current_priority: Optional[str] = None
+    target_department: Optional[str] = None
+    target_priority: Optional[str] = None
+    candidate_tickets: List[TicketCandidate] = Field(default_factory=list)
+
+    # Employee creation fields (create_portal_employee)
+    employee_name: Optional[str] = None
+    employee_email: Optional[str] = None
+    employee_object_id: Optional[str] = None
+    employee_role: Optional[str] = None
+    employee_department: Optional[str] = None
+
+
 class ChatRequest(BaseModel):
     message: str
     role: Optional[str] = "Employee"
@@ -77,6 +129,10 @@ class ChatRequest(BaseModel):
     # turn doesn't have to re-derive (or risk flip-flopping) which of the
     # three forms this draft belongs to.
     active_request_type: Optional[RequestType] = None
+    # Echo of the previous ChatResponse.pending_action, carrying an
+    # in-progress management write action across turns (see
+    # PendingManagementAction). Employee-portal requests never set this.
+    pending_action: Optional[PendingManagementAction] = None
 
 
 class ChatResponse(BaseModel):
@@ -93,3 +149,11 @@ class ChatResponse(BaseModel):
     # Never implies auto-submit - the user still must click the existing
     # submit button on that form.
     ready_for_review: bool = False
+    # Set (and must be echoed back verbatim as ChatRequest.pending_action)
+    # whenever a management write action is still awaiting information or
+    # confirmation. Cleared once the action executes or is cancelled.
+    pending_action: Optional[PendingManagementAction] = None
+    # Populated only when pending_action.awaiting == "ticket_selection", so
+    # the frontend can render the exact candidates the user is choosing
+    # between (id + title + priority + status, never a raw SQL/DB dump).
+    ticket_candidates: List[TicketCandidate] = Field(default_factory=list)

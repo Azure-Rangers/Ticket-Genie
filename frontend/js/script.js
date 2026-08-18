@@ -876,6 +876,19 @@ function setFieldValue(id, value) {
     if (el) el.value = value;
 }
 
+/* Only sets a <select>'s value when it exactly matches one of its real
+   <option> values - management/admin department & category dropdowns use
+   a different vocabulary than the ticket classifier's, so a draft value
+   that doesn't safely map just leaves the form's existing default/Auto
+   option in place rather than guessing. */
+function setOptionIfExists(id, value) {
+    if (!value) return;
+    const el = document.getElementById(id);
+    if (!el || !el.options) return;
+    const hasOption = Array.from(el.options).some(opt => opt.value === value);
+    if (hasOption) el.value = value;
+}
+
 function prefillRequestForm(requestType, draft) {
     if (!draft) return;
     const tabName = GENIE_REQUEST_TYPE_TAB_NAMES[requestType];
@@ -899,24 +912,78 @@ function prefillRequestForm(requestType, draft) {
     if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+/* frontend/management/submit-ticket.html's single #createTicketForm - no
+   tabs, no preferredDate field. targetDepartment's options ("IT
+   Operations", "HR & Workforce", ...) don't overlap the ticket
+   classifier's department vocabulary, so it's only set on an exact
+   match (see setOptionIfExists) and otherwise left on its default. */
+function prefillManagementForm(draft) {
+    if (!draft) return;
+    setFieldValue("ticketTitle", draft.title);
+    setFieldValue("ticketDescription", draft.description);
+    setOptionIfExists("priorityLevel", draft.priority);
+    setOptionIfExists("targetDepartment", draft.department || draft.category);
+
+    const card = document.querySelector(".form-card");
+    if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/* frontend/admin_AV/submit-ticket.html's #ticketForm - same shape as the
+   management form (single form, no tabs/preferredDate), different ids. */
+function prefillAdminForm(draft) {
+    if (!draft) return;
+    setFieldValue("ticketTitle", draft.title);
+    setFieldValue("ticketDesc", draft.description);
+    setOptionIfExists("priority", draft.priority);
+    setOptionIfExists("category", draft.department || draft.category);
+
+    const card = document.querySelector(".form-card");
+    if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/* Portal-aware prefill dispatch - deterministic on which create-ticket
+   form actually exists in the current page's DOM, never on role/URL
+   guesswork alone. Returns true if a known form was found and prefilled. */
+function prefillDraftIntoForm(requestType, draft) {
+    if (document.getElementById("createTicketForm")) {
+        prefillManagementForm(draft);
+        return true;
+    }
+    if (document.getElementById("ticketForm")) {
+        prefillAdminForm(draft);
+        return true;
+    }
+    if (document.getElementById("standardTicketForm")) {
+        prefillRequestForm(requestType, draft);
+        return true;
+    }
+    return false;
+}
+
 function applyPendingGenieDraft() {
     const raw = sessionStorage.getItem(GENIE_PENDING_DRAFT_KEY);
     if (!raw) return;
     sessionStorage.removeItem(GENIE_PENDING_DRAFT_KEY);
     try {
         const pending = JSON.parse(raw);
-        prefillRequestForm(pending.request_type, pending.draft);
+        prefillDraftIntoForm(pending.request_type, pending.draft);
     } catch (err) {
         // Malformed/stale pending draft - nothing to prefill.
     }
 }
 
+function getPortalContext() {
+    const path = window.location.pathname;
+    if (path.includes("/management/")) return "management";
+    if (path.includes("/admin_AV/")) return "admin";
+    return "employee";
+}
+
 function resolvePortalTarget(target) {
     if (!target) return target;
-    const isManagement = window.location.pathname.includes("/management/");
-    const isAdminAV = window.location.pathname.includes("/admin_AV/");
+    const portal = getPortalContext();
 
-    if (isManagement || isAdminAV) {
+    if (portal === "management" || portal === "admin") {
         if (target === "my-tickets.html") return "inbox.html";
         if (target === "new-request.html") return "submit-ticket.html";
     }
@@ -929,9 +996,7 @@ function resolvePortalTarget(target) {
    applyPendingGenieDraft()). Never auto-submits. */
 function openReadyDraft(response) {
     if (!response.request_type || !response.ticket_draft) return;
-    const onNewRequestPage = !!document.getElementById("standardTicketForm");
-    if (onNewRequestPage) {
-        prefillRequestForm(response.request_type, response.ticket_draft);
+    if (prefillDraftIntoForm(response.request_type, response.ticket_draft)) {
         return;
     }
     sessionStorage.setItem(

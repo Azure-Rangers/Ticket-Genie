@@ -18,6 +18,11 @@ class ChatActionType(str, Enum):
     ASK_FOLLOWUP = "ask_followup"
     SHOW_TICKET_DRAFT = "show_ticket_draft"
     CHECK_TICKET_STATUS = "check_ticket_status"
+    # Single action for all three management write intents (reassign_ticket /
+    # change_priority / create_portal_employee) - services.management_action_service
+    # owns the deterministic ask/confirm/execute state machine from here,
+    # this action just says "route to that service".
+    MANAGEMENT_ACTION = "management_action"
 
 
 class NavigationTarget(str, Enum):
@@ -37,6 +42,25 @@ class ExtractedTicketFields(BaseModel):
     ticket_id: Optional[str] = None
 
 
+class ManagementActionFields(BaseModel):
+    """
+    Semantic extraction only for the 3 management write intents - GPT's job
+    ends here. services.management_action_service independently validates
+    every value against the canonical vocabulary, resolves ticket ambiguity
+    deterministically, and re-checks authorization before ever writing
+    anything; nothing here is trusted as-is.
+    """
+
+    ticket_id: Optional[str] = None
+    target_department: Optional[str] = None
+    target_priority: Optional[str] = None
+    employee_name: Optional[str] = None
+    employee_email: Optional[str] = None
+    employee_object_id: Optional[str] = None
+    employee_role: Optional[str] = None
+    employee_department: Optional[str] = None
+
+
 class ChatbotDecision(BaseModel):
     intent: ChatIntent
     action: ChatActionType
@@ -44,6 +68,7 @@ class ChatbotDecision(BaseModel):
     navigation_target: Optional[NavigationTarget] = None
     knowledge_query: Optional[str] = None
     ticket_fields: Optional[ExtractedTicketFields] = None
+    management_fields: Optional[ManagementActionFields] = None
     missing_fields: List[str] = Field(default_factory=list)
     request_type: Optional[RequestType] = None
     anonymity_requested: bool = Field(
@@ -91,14 +116,54 @@ INTENTS (choose exactly one):
   request intent (e.g. "what is the PTO accrual policy").
 - ticket_status: the user is asking about the status of a ticket they
   already submitted, whether or not they give a ticket number.
+- reassign_ticket: the user wants to change which department an EXISTING
+  ticket belongs to (e.g. "move HD-1032 to IT", "this belongs to
+  Accounting", "reassign that request to HR"). Only for an existing
+  ticket, never a new request.
+- change_priority: the user wants to change the priority of an EXISTING
+  ticket (e.g. "make HD-1050 low priority", "this shouldn't be
+  Critical, move it to High").
+- create_portal_employee: the user wants to add/create/assign a new
+  person to the portal (e.g. "add a new employee", "assign Priya Shah
+  to the portal", "create a portal user for..."). Do not confuse with
+  create_ticket/support_issue - this is about portal user accounts, not
+  a support request.
 - general: greetings, small talk, or anything that doesn't fit above.
+  This includes reassign_ticket/change_priority/create_portal_employee
+  messages from a user who turns out not to be authorized - still
+  classify the intent honestly here; the backend independently verifies
+  the caller's authenticated role and denies unauthorized attempts on
+  its own, so you never need to guess at permissions.
 
 ACTIONS: respond, navigate, search_knowledge, start_ticket_draft,
-ask_followup, show_ticket_draft, check_ticket_status.
+ask_followup, show_ticket_draft, check_ticket_status, management_action.
 Pick the action that matches the intent (e.g. knowledge ->
 search_knowledge, ticket_status -> check_ticket_status, a leave/support
 request that is missing required info -> ask_followup, a complete one ->
-show_ticket_draft or start_ticket_draft).
+show_ticket_draft or start_ticket_draft, reassign_ticket/change_priority/
+create_portal_employee -> management_action).
+
+MANAGEMENT ACTION FIELD EXTRACTION (reassign_ticket / change_priority /
+create_portal_employee only - populate `management_fields`, leave
+`ticket_fields` null for these three intents):
+- ticket_id: only if the user gave an explicit ticket number (e.g.
+  "HD-1032"). Never guess or invent one - leave null if not given, the
+  backend will ask the user to choose from their real tickets.
+- target_department: only set this to one of the allowed departments
+  listed below (Ticket departments), matched by meaning (e.g. "IT" ->
+  the IT department option). If the user's wording doesn't clearly map
+  to exactly one allowed department, leave it null - never invent a
+  department name that isn't in the list.
+- target_priority: only set this to one of the allowed priorities
+  listed below (Ticket priorities), matched by meaning (e.g. "urgent"
+  might mean High or Critical - if genuinely ambiguous, leave null).
+- employee_name, employee_email, employee_object_id, employee_role,
+  employee_department: only for create_portal_employee, only facts the
+  user actually stated. employee_role and employee_department must be
+  matched to one of the allowed lists below (Employee roles / Employee
+  departments) by meaning, or left null if unclear - never invent a
+  role or department that isn't in the list. Never invent an email or
+  object id.
 
 NAVIGATION RULES:
 - Only choose from these exact navigation targets: dashboard,
@@ -209,6 +274,11 @@ def decide(
     known_intent: Optional[ChatIntent] = None,
     standard_categories: List[str],
     leave_types: List[str],
+    ticket_departments: List[str] = None,
+    ticket_priorities: List[str] = None,
+    employee_departments: List[str] = None,
+    employee_roles: List[str] = None,
+    pending_action_context: Optional[str] = None,
     ai_service=default_ai_service,
 ) -> ChatbotDecision:
     history = history or []
@@ -230,12 +300,21 @@ Today's date: {today}
 
 Allowed support-ticket categories: {", ".join(standard_categories)}
 Allowed leave types: {", ".join(leave_types)}
+Ticket departments (for reassign_ticket): {", ".join(ticket_departments or [])}
+Ticket priorities (for change_priority): {", ".join(ticket_priorities or [])}
+Employee departments (for create_portal_employee): {", ".join(employee_departments or [])}
+Employee roles (for create_portal_employee): {", ".join(employee_roles or [])}
 
 Conversation so far:
 {_format_history(history)}
 
 Current ticket draft (already-known fields - do not re-ask for these):
 {_format_draft(existing_draft)}
+
+Current management action in progress (already-known fields - do not
+re-ask for these; only relevant for reassign_ticket / change_priority /
+create_portal_employee):
+{pending_action_context or "(none)"}
 
 Latest user message:
 {message}

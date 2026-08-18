@@ -2305,7 +2305,10 @@
           "leave_management",
           "ticket_status",
           "support_issue",
-          "general"
+          "general",
+          "reassign_ticket",
+          "change_priority",
+          "create_portal_employee"
         ],
         "title": "ChatIntent"
       },
@@ -2369,6 +2372,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/RequestType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pending_action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PendingManagementAction"
               },
               {
                 "type": "null"
@@ -2450,6 +2463,23 @@
             "type": "boolean",
             "title": "Ready For Review",
             "default": false
+          },
+          "pending_action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PendingManagementAction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ticket_candidates": {
+            "items": {
+              "$ref": "#/components/schemas/TicketCandidate"
+            },
+            "type": "array",
+            "title": "Ticket Candidates"
           }
         },
         "type": "object",
@@ -2850,6 +2880,158 @@
         ],
         "title": "OnboardingUpdateRequest"
       },
+      "PendingManagementAction": {
+        "properties": {
+          "action_type": {
+            "$ref": "#/components/schemas/ChatIntent"
+          },
+          "awaiting": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Awaiting"
+          },
+          "ticket_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ticket Id"
+          },
+          "ticket_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ticket Title"
+          },
+          "current_department": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Department"
+          },
+          "current_priority": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Priority"
+          },
+          "target_department": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Department"
+          },
+          "target_priority": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Priority"
+          },
+          "candidate_tickets": {
+            "items": {
+              "$ref": "#/components/schemas/TicketCandidate"
+            },
+            "type": "array",
+            "title": "Candidate Tickets"
+          },
+          "employee_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Name"
+          },
+          "employee_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Email"
+          },
+          "employee_object_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Object Id"
+          },
+          "employee_role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Role"
+          },
+          "employee_department": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Department"
+          }
+        },
+        "type": "object",
+        "required": [
+          "action_type"
+        ],
+        "title": "PendingManagementAction",
+        "description": "Structured, client-echoed state for an in-progress management write\naction (reassign_ticket / change_priority / create_portal_employee).\nMirrors how `draft`/`active_intent` already carry ticket-drafting state\nacross turns - the backend stays stateless, the frontend just echoes\nback whatever the previous ChatResponse.pending_action was.\n\n`awaiting` names exactly what the next user turn is expected to resolve,\nso services.management_action_service never has to re-guess intent\nfrom free text alone: \"ticket_selection\" | \"ticket_confirmation\" |\n\"target_department\" | \"target_priority\" | \"employee_field:<name>\" |\n\"employee_confirmation\"."
+      },
       "ReActAgentRequest": {
         "properties": {
           "message": {
@@ -2929,6 +3111,40 @@
           "query"
         ],
         "title": "SQLQueryRequest"
+      },
+      "TicketCandidate": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "department": {
+            "type": "string",
+            "title": "Department"
+          },
+          "priority": {
+            "type": "string",
+            "title": "Priority"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "department",
+          "priority",
+          "status"
+        ],
+        "title": "TicketCandidate",
+        "description": "Minimum info shown when Genie must ask the user which ticket they mean."
       },
       "TicketCreate": {
         "properties": {
