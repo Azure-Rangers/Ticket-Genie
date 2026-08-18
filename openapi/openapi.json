@@ -13,6 +13,24 @@
         ],
         "summary": "Handle Create Ticket",
         "operationId": "handle_create_ticket_api_tickets_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -102,6 +120,22 @@
             }
           },
           {
+            "name": "department",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Department"
+            }
+          },
+          {
             "name": "requester_id",
             "in": "query",
             "required": false,
@@ -115,6 +149,32 @@
                 }
               ],
               "title": "Requester Id"
+            }
+          },
+          {
+            "name": "admin_view",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Admin View"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -162,6 +222,22 @@
               "type": "string",
               "title": "Ticket Id"
             }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
           }
         ],
         "responses": {
@@ -201,6 +277,22 @@
             "schema": {
               "type": "string",
               "title": "Ticket Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -264,6 +356,79 @@
               "default": "pdf",
               "title": "Format"
             }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tickets/{ticket_id}/suggested-response": {
+      "post": {
+        "tags": [
+          "tickets"
+        ],
+        "summary": "Suggest Response For Ticket",
+        "description": "Draft an AI response for an authorized human support agent to review.",
+        "operationId": "suggest_response_for_ticket_api_tickets__ticket_id__suggested_response_post",
+        "parameters": [
+          {
+            "name": "ticket_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ticket Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
           }
         ],
         "responses": {
@@ -304,6 +469,22 @@
               "type": "string",
               "title": "Ticket Id"
             }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
           }
         ],
         "responses": {
@@ -341,6 +522,22 @@
             "schema": {
               "type": "string",
               "title": "Ticket Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -383,15 +580,33 @@
         ],
         "summary": "Genie Chat",
         "operationId": "genie_chat_api_genie_chat_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/GenieChatRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -424,15 +639,33 @@
         ],
         "summary": "Run React Chat",
         "operationId": "run_react_chat_api_genie_react_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ReActAgentRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -463,15 +696,33 @@
         ],
         "summary": "Handle Exec Agent Command",
         "operationId": "handle_exec_agent_command_api_genie_exec_agent_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ExecutiveActionRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -502,12 +753,40 @@
         ],
         "summary": "Handle Exec Briefing",
         "operationId": "handle_exec_briefing_api_genie_exec_briefing_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -521,15 +800,33 @@
         ],
         "summary": "Chatbot Message",
         "operationId": "chatbot_message_api_chatbot_message_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ChatRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -562,12 +859,40 @@
         ],
         "summary": "Get Departments",
         "operationId": "get_departments_api_admin_departments_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -579,15 +904,33 @@
         ],
         "summary": "Handle Create Department",
         "operationId": "handle_create_department_api_admin_departments_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/DepartmentCreateRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -634,6 +977,22 @@
               ],
               "title": "Department Name"
             }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
           }
         ],
         "responses": {
@@ -661,8 +1020,26 @@
         "tags": [
           "admin"
         ],
-        "summary": "Handle Add Department User",
-        "operationId": "handle_add_department_user_api_admin_departments_users_post",
+        "summary": "Assign Department User",
+        "operationId": "assign_department_user_api_admin_departments_users_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -718,6 +1095,22 @@
               "type": "string",
               "title": "Azure Object Id"
             }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
           }
         ],
         "responses": {
@@ -749,6 +1142,24 @@
         ],
         "summary": "Get Admin Leave Queue",
         "operationId": "get_admin_leave_queue_api_admin_leave_queue_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -757,27 +1168,46 @@
                 "schema": {}
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
         }
       }
     },
-    "/api/admin/sql-query": {
+    "/api/admin/trigger-daily-digest": {
       "post": {
         "tags": [
           "admin"
         ],
-        "summary": "Handle Sql Query",
-        "operationId": "handle_sql_query_api_admin_sql_query_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SQLQueryRequest"
-              }
+        "summary": "Handle Trigger Daily Digest",
+        "description": "Trigger daily summary email digest on demand for IT Admins.",
+        "operationId": "handle_trigger_daily_digest_api_admin_trigger_daily_digest_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
-          },
-          "required": true
-        },
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -807,12 +1237,40 @@
         ],
         "summary": "Get Analytics Trends",
         "operationId": "get_analytics_trends_api_analytics_trends_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -826,12 +1284,40 @@
         ],
         "summary": "Get Leave Events",
         "operationId": "get_leave_events_api_calendar_leave_events_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -845,12 +1331,40 @@
         ],
         "summary": "Export Calendar Ics",
         "operationId": "export_calendar_ics_api_calendar_export_ics_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -864,15 +1378,33 @@
         ],
         "summary": "Handle Knowledge Ingest",
         "operationId": "handle_knowledge_ingest_api_knowledge_ingest_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/KnowledgeIngestRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -912,6 +1444,22 @@
               "type": "string",
               "title": "Q"
             }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
           }
         ],
         "responses": {
@@ -943,12 +1491,40 @@
         ],
         "summary": "List Announcements",
         "operationId": "list_announcements_api_announcements_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -960,15 +1536,33 @@
         ],
         "summary": "Handle Create Announcement",
         "operationId": "handle_create_announcement_api_announcements_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AnnouncementCreateRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -1007,6 +1601,22 @@
             "schema": {
               "type": "string",
               "title": "Anc Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -1053,8 +1663,23 @@
                   "type": "null"
                 }
               ],
-              "default": "user",
               "title": "User Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -1085,6 +1710,24 @@
         ],
         "summary": "Handle Create Notification",
         "operationId": "handle_create_notification_api_notifications_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1133,6 +1776,70 @@
               "type": "string",
               "title": "Notif Id"
             }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/outbox": {
+      "get": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "List Email Outbox",
+        "description": "Retrieve sent email outbox audit trail.",
+        "operationId": "list_email_outbox_api_notifications_outbox_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
           }
         ],
         "responses": {
@@ -1164,12 +1871,40 @@
         ],
         "summary": "List Onboarding Records",
         "operationId": "list_onboarding_records_api_onboarding_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -1181,15 +1916,33 @@
         ],
         "summary": "Handle Create Onboarding",
         "operationId": "handle_create_onboarding_api_onboarding_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/OnboardingCreateRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -1213,21 +1966,37 @@
         }
       }
     },
-    "/api/onboarding/{rec_id}": {
+    "/api/onboarding/{record_id}": {
       "put": {
         "tags": [
           "onboarding"
         ],
         "summary": "Handle Update Onboarding",
-        "operationId": "handle_update_onboarding_api_onboarding__rec_id__put",
+        "operationId": "handle_update_onboarding_api_onboarding__record_id__put",
         "parameters": [
           {
-            "name": "rec_id",
+            "name": "record_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Rec Id"
+              "title": "Record Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -1284,8 +2053,23 @@
                   "type": "null"
                 }
               ],
-              "default": "usr-1",
               "title": "User Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -1330,8 +2114,23 @@
                   "type": "null"
                 }
               ],
-              "default": "usr-1",
               "title": "User Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -1344,6 +2143,45 @@
               }
             }
           }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/azure-login": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Handle Azure Login",
+        "operationId": "handle_azure_login_api_users_azure_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AzureLoginRequest"
+              }
+            }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -1459,6 +2297,52 @@
           "content"
         ],
         "title": "AnnouncementCreateRequest"
+      },
+      "AzureLoginRequest": {
+        "properties": {
+          "azure_object_id": {
+            "type": "string",
+            "title": "Azure Object Id"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "id_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "azure_object_id"
+        ],
+        "title": "AzureLoginRequest"
       },
       "ChatAction": {
         "properties": {
@@ -1576,6 +2460,16 @@
                 "type": "null"
               }
             ]
+          },
+          "active_request_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RequestType"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -1597,6 +2491,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ChatAction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "request_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RequestType"
               },
               {
                 "type": "null"
@@ -1637,6 +2541,11 @@
               }
             ],
             "title": "Knowledge Verified"
+          },
+          "ready_for_review": {
+            "type": "boolean",
+            "title": "Ready For Review",
+            "default": false
           }
         },
         "type": "object",
@@ -1679,8 +2588,7 @@
                 "type": "null"
               }
             ],
-            "title": "Sender Id",
-            "default": "user"
+            "title": "Sender Id"
           },
           "sender_role": {
             "anyOf": [
@@ -1691,8 +2599,7 @@
                 "type": "null"
               }
             ],
-            "title": "Sender Role",
-            "default": "Employee"
+            "title": "Sender Role"
           }
         },
         "type": "object",
@@ -1733,12 +2640,48 @@
       "DepartmentUserRequest": {
         "properties": {
           "department_name": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Department Name"
           },
+          "department": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department"
+          },
           "azure_object_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Azure Object Id"
+          },
+          "object_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Id"
           },
           "role": {
             "anyOf": [
@@ -1751,6 +2694,28 @@
             ],
             "title": "Role",
             "default": "Member"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
           },
           "user_email": {
             "anyOf": [
@@ -1765,10 +2730,6 @@
           }
         },
         "type": "object",
-        "required": [
-          "department_name",
-          "azure_object_id"
-        ],
         "title": "DepartmentUserRequest"
       },
       "ExecutiveActionRequest": {
@@ -1786,8 +2747,7 @@
                 "type": "null"
               }
             ],
-            "title": "User Id",
-            "default": "exec_user"
+            "title": "User Id"
           }
         },
         "type": "object",
@@ -2001,8 +2961,7 @@
                 "type": "null"
               }
             ],
-            "title": "Role",
-            "default": "Super Admin"
+            "title": "Role"
           },
           "user_id": {
             "anyOf": [
@@ -2013,8 +2972,7 @@
                 "type": "null"
               }
             ],
-            "title": "User Id",
-            "default": "user"
+            "title": "User Id"
           }
         },
         "type": "object",
@@ -2023,42 +2981,15 @@
         ],
         "title": "ReActAgentRequest"
       },
-      "SQLQueryRequest": {
-        "properties": {
-          "query": {
-            "type": "string",
-            "title": "Query"
-          },
-          "role": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Role",
-            "default": "Super Admin"
-          },
-          "user_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "User Id",
-            "default": "admin"
-          }
-        },
-        "type": "object",
-        "required": [
-          "query"
+      "RequestType": {
+        "type": "string",
+        "enum": [
+          "standard",
+          "anonymous",
+          "leave_management"
         ],
-        "title": "SQLQueryRequest"
+        "title": "RequestType",
+        "description": "Which of the three existing New Request tabs a ticket_draft is meant\nfor: standardRequestTab, anonymousRequestTab, or leaveRequestTab (see\nfrontend/employee_NM/new-request.html). This is separate from\nChatIntent - intent says \"the user wants to submit a request\";\nrequest_type says which existing form that request belongs in."
       },
       "TicketCreate": {
         "properties": {
@@ -2152,6 +3083,24 @@
               }
             ],
             "title": "Requester Id"
+          },
+          "department_override": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "HR Team",
+                  "Accounting Team",
+                  "Workplace Operations Team",
+                  "IT Team",
+                  "Upper Management"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Override"
           }
         },
         "type": "object",

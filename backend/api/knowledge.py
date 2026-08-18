@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
+from services.jwt_verifier import verify_azure_user
 from services.knowledge_service import answer_question
 
 router = APIRouter(prefix="/knowledge", tags=["knowledge"])
@@ -20,7 +21,10 @@ class KnowledgeIngestRequest(BaseModel):
 
 
 @router.post("/ingest", status_code=201)
-def handle_knowledge_ingest(req: KnowledgeIngestRequest):
+def handle_knowledge_ingest(
+    req: KnowledgeIngestRequest,
+    current_user: dict = Depends(verify_azure_user),
+):
     # Ingest into memory/knowledge store
     return {
         "success": True,
@@ -35,6 +39,10 @@ def handle_knowledge_ingest(req: KnowledgeIngestRequest):
 
 
 @router.get("/search")
-def handle_knowledge_search(q: str):
-    ans = answer_question(q)
+def handle_knowledge_search(
+    q: str,
+    current_user: dict = Depends(verify_azure_user),
+):
+    user_role = current_user.get("role") or "Employee"
+    ans = answer_question(q, role=user_role)
     return {"query": q, "answer": ans.answer, "verified": ans.verified}

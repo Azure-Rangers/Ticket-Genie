@@ -47,7 +47,6 @@
         }
 
         if (!connectionString) {
-          console.log("[Telemetry] No App Insights connection string found. Client telemetry disabled.");
           return;
         }
 

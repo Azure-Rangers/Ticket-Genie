@@ -15,8 +15,15 @@ from typing import List, Optional
 
 from agents import chatbot_agent, knowledge_agent
 from agents.chatbot_agent import ChatbotDecision, NavigationTarget
+from agents.orchestrator import classify_ticket as default_classify_ticket
 from database.crud import get_ticket_by_id as default_get_ticket_by_id
-from models.chatbot import ChatAction, ChatIntent, ChatRequest, ChatResponse
+from models.chatbot import (
+    ChatAction,
+    ChatIntent,
+    ChatRequest,
+    ChatResponse,
+    RequestType,
+)
 from services import ticket_draft_service
 from services.ai_service import ai_service as default_ai_service
 from services.knowledge_service import (
@@ -48,6 +55,23 @@ COULD_NOT_VERIFY_MESSAGE = (
     "authorized to access. You can browse the Knowledge Base for related "
     "articles, or I can help you open a support request."
 )
+
+
+def _gpt_unavailable_response() -> ChatResponse:
+    """
+    Safe fallback for any GPT/Azure OpenAI failure (including a decision
+    that never raised but also never materialized). Never fabricates an
+    intent, request_type, ticket_draft, navigation action, or RAG content
+    - just a fixed message and the general intent so the frontend never
+    opens a form or navigates on a failed turn.
+    """
+
+    return ChatResponse(
+        message=GPT_UNAVAILABLE_MESSAGE,
+        intent=ChatIntent.GENERAL,
+        suggestions=PREDEFINED_SUGGESTIONS,
+    )
+
 
 _MANAGEMENT_HOME = "pages/management-portal.html"
 
@@ -176,22 +200,71 @@ def _handle_ticket_status(decision: ChatbotDecision, *, ticket_lookup) -> ChatRe
     )
 
 
-def _handle_ticket_drafting(
+def _resolve_request_type(
     request: ChatRequest, decision: ChatbotDecision, intent: ChatIntent
+) -> RequestType:
+    """
+    Deterministic: leave is always forced to the Leave Management form,
+    regardless of what the model proposed. Otherwise prefer a
+    continuation's already-chosen form - this can be `anonymous` from an
+    earlier explicit UI/user choice, and is always honored as-is. For a
+    fresh decision, the model's `anonymous` claim is only accepted when
+    it also marked `anonymity_requested` - i.e. the user's own words
+    explicitly asked for anonymity, not just a sensitive-sounding topic;
+    otherwise (including when GPT incorrectly proposes anonymous with no
+    such evidence) it's deterministically downgraded to standard.
+    Standard is the default for every ordinary support/workplace
+    request - we never ask the user to pick between Standard and
+    Anonymous.
+    """
+
+    if intent == ChatIntent.LEAVE_MANAGEMENT:
+        return RequestType.LEAVE_MANAGEMENT
+    if request.active_request_type in (RequestType.STANDARD, RequestType.ANONYMOUS):
+        return request.active_request_type
+    if decision.request_type == RequestType.ANONYMOUS and decision.anonymity_requested:
+        return RequestType.ANONYMOUS
+    return RequestType.STANDARD
+
+
+def _handle_ticket_drafting(
+    request: ChatRequest,
+    decision: ChatbotDecision,
+    intent: ChatIntent,
+    *,
+    classify_ticket=default_classify_ticket,
 ) -> ChatResponse:
+    request_type = _resolve_request_type(request, decision, intent)
+
     draft, missing = merge_extracted_fields(
         decision.ticket_fields,
         existing_draft=request.draft,
         gpt_missing_fields=decision.missing_fields,
         intent=intent,
+        request_type=request_type,
     )
+
+    if (
+        not missing
+        and request_type != RequestType.LEAVE_MANAGEMENT
+        and draft.category == "Other"
+    ):
+        reclassified = ticket_draft_service.reclassify_other_category(
+            draft.title or "",
+            draft.description or "",
+            classify_ticket=classify_ticket,
+        )
+        if reclassified:
+            draft.category = reclassified
 
     if missing:
         return ChatResponse(
             message=decision.message or _missing_fields_prompt(missing),
             intent=intent,
+            request_type=request_type,
             ticket_draft=draft,
             missing_fields=missing,
+            ready_for_review=False,
         )
 
     return ChatResponse(
@@ -201,8 +274,10 @@ def _handle_ticket_drafting(
             "anything that's not quite right, and submit it when you're ready."
         ),
         intent=intent,
+        request_type=request_type,
         ticket_draft=draft,
         missing_fields=[],
+        ready_for_review=True,
     )
 
 
@@ -274,11 +349,15 @@ def _handle_knowledge(
 def handle_message(
     request: ChatRequest,
     *,
+    current_user: Optional[dict] = None,
     ai_service=default_ai_service,
     retriever: KnowledgeRetriever = None,
     ticket_lookup=default_get_ticket_by_id,
+    classify_ticket=default_classify_ticket,
 ) -> ChatResponse:
     retriever = retriever or default_knowledge_retriever
+    if current_user and current_user.get("role"):
+        request.role = current_user.get("role")
     message = request.message.strip()
 
     if not message:
@@ -301,11 +380,17 @@ def handle_message(
             ai_service=ai_service,
         )
     except Exception:
-        return ChatResponse(
-            message=GPT_UNAVAILABLE_MESSAGE,
-            intent=ChatIntent.GENERAL,
-            suggestions=PREDEFINED_SUGGESTIONS,
-        )
+        return _gpt_unavailable_response()
+
+    if decision is None:
+        # Defense in depth: ai_service.generate() is contractually
+        # supposed to always raise AIServiceError rather than return None
+        # on failure (see its docstring), so the `except` above should
+        # already catch every upstream/connection failure. This guards
+        # against ever dereferencing a None decision if that contract is
+        # violated by a future change, instead of crashing with a 500 -
+        # never fabricate an intent/request_type/ticket_draft here.
+        return _gpt_unavailable_response()
 
     # A continuation always keeps the flow's intent - the model doesn't get
     # to silently change it mid-draft.
@@ -313,9 +398,11 @@ def handle_message(
 
     if intent == ChatIntent.LEAVE_MANAGEMENT:
         # Hard business rule: leave requests always go through the
-        # Standard Request ticket-drafting flow, regardless of the
+        # Leave Management ticket-drafting flow, regardless of the
         # action the model proposed.
-        return _handle_ticket_drafting(request, decision, intent)
+        return _handle_ticket_drafting(
+            request, decision, intent, classify_ticket=classify_ticket
+        )
 
     if intent == ChatIntent.TICKET_STATUS:
         return _handle_ticket_status(decision, ticket_lookup=ticket_lookup)
@@ -324,7 +411,9 @@ def handle_message(
         return _handle_navigation(decision, request.role)
 
     if intent in (ChatIntent.CREATE_TICKET, ChatIntent.SUPPORT_ISSUE):
-        return _handle_ticket_drafting(request, decision, intent)
+        return _handle_ticket_drafting(
+            request, decision, intent, classify_ticket=classify_ticket
+        )
 
     if intent == ChatIntent.KNOWLEDGE:
         return _handle_knowledge(

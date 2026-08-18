@@ -59,5 +59,14 @@ VALUES
         'Williams',
         (SELECT role_id FROM dbo.Roles WHERE role_name = 'ADMIN'),
         NULL
+    ),
+    (
+        'admin.dc3b',
+        'Admin1@vigneshquadrantoutlook.onmicrosoft.com',
+        'REPLACE_WITH_REAL_HASH',
+        'Greg',
+        'Davis',
+        (SELECT role_id FROM dbo.Roles WHERE role_name = 'ADMIN'),
+        'IT'
     );
 GO

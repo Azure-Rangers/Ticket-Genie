@@ -93,6 +93,20 @@ requests
 | render timechart
 
 
+// Route: POST /api/tickets/{ticket_id}/suggested-response (tickets)
+
+requests
+| where timestamp > ago(1h) and name == "POST /api/tickets/{ticket_id}/suggested-response"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
 // Route: GET /api/tickets/{ticket_id}/comments (tickets)
 
 requests
@@ -275,10 +289,10 @@ requests
 | render timechart
 
 
-// Route: POST /api/admin/sql-query (admin)
+// Route: POST /api/admin/trigger-daily-digest (admin)
 
 requests
-| where timestamp > ago(1h) and name == "POST /api/admin/sql-query"
+| where timestamp > ago(1h) and name == "POST /api/admin/trigger-daily-digest"
 | summarize
     RequestVolume = count(),
     AvgDurationMs = avg(duration),
@@ -443,6 +457,20 @@ requests
 | render timechart
 
 
+// Route: GET /api/notifications/outbox (notifications)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/notifications/outbox"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
 // Route: GET /api/onboarding (onboarding)
 
 requests
@@ -471,10 +499,10 @@ requests
 | render timechart
 
 
-// Route: PUT /api/onboarding/{rec_id} (onboarding)
+// Route: PUT /api/onboarding/{record_id} (onboarding)
 
 requests
-| where timestamp > ago(1h) and name == "PUT /api/onboarding/{rec_id}"
+| where timestamp > ago(1h) and name == "PUT /api/onboarding/{record_id}"
 | summarize
     RequestVolume = count(),
     AvgDurationMs = avg(duration),
@@ -503,6 +531,20 @@ requests
 
 requests
 | where timestamp > ago(1h) and name == "PUT /api/users/profile"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: POST /api/users/azure-login (users)
+
+requests
+| where timestamp > ago(1h) and name == "POST /api/users/azure-login"
 | summarize
     RequestVolume = count(),
     AvgDurationMs = avg(duration),

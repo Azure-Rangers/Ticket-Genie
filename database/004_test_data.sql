@@ -93,5 +93,20 @@ VALUES
         'A network outage is affecting multiple employees on the third floor.',
         'Escalate immediately to the network support team and begin outage diagnostics.',
         0.9900
+    ),
+    (
+        'TG-2026-000006',
+        (SELECT user_id FROM dbo.Users WHERE username = 'admin.dc3b'),
+        (SELECT user_id FROM dbo.Users WHERE username = 'it.agent'),
+        'IT',
+        'VPN',
+        'VPN Connection Issue for Admin User',
+        'Unable to connect to internal VPN network from remote office.',
+        'OPEN',
+        'P2',
+        0,
+        'Admin user reported a VPN connection issue from remote office.',
+        'Verify VPN certificate and reset remote access profile.',
+        0.9500
     );
 GO

@@ -1,175 +1,213 @@
-"""Document Export Generation Service (PDF / DOCX) for TicketGenie.
-
-Generates official Leave Pass Certificates (PDF) and Ticket Audit Reports (PDF/DOCX).
-"""
+"""Ticket document generation with persisted conversation history."""
 
 from __future__ import annotations
 
 import io
-import logging
+from html import escape
+from typing import Optional
 
-from database.crud import get_ticket_by_id
-
-logger = logging.getLogger(__name__)
+from database.crud import get_ticket_by_id, get_ticket_comments
 
 
-def generate_ticket_pdf(ticket_id: str) -> bytes:
-    """Generate an official PDF document for a ticket (e.g. Leave Approval Pass or Audit Summary)."""
-    ticket = get_ticket_by_id(ticket_id)
-    if not ticket:
-        ticket = {
+def _export_data(
+    ticket_id: str,
+    *,
+    ticket: Optional[dict] = None,
+    comments: Optional[list[dict]] = None,
+) -> tuple[dict, list[dict]]:
+    resolved_ticket = ticket or get_ticket_by_id(ticket_id)
+    if not resolved_ticket:
+        # Preserve the service's legacy direct-call behavior used by automation and
+        # offline report generation. The authenticated API validates existence and
+        # authorization before calling this service with a concrete ticket.
+        resolved_ticket = {
             "id": ticket_id,
-            "title": "Support Request",
-            "department": "Upper Executive Management",
-            "category": "Paid Time Off (PTO)",
-            "status": "Approved",
-            "description": "Official Leave Request approved by Upper Management.",
-            "date": "2026-08-15",
-            "createdAt": "2026-08-15T09:00:00",
+            "title": "Ticket Summary",
+            "department": "Support",
+            "category": "General",
+            "priority": "Medium",
+            "status": "Open",
+            "description": "No description provided.",
         }
+    return resolved_ticket, comments if comments is not None else get_ticket_comments(
+        ticket_id
+    )
+
+
+def generate_ticket_pdf(
+    ticket_id: str,
+    *,
+    ticket: Optional[dict] = None,
+    comments: Optional[list[dict]] = None,
+) -> bytes:
+    """Generate a PDF report containing ticket metadata and conversation."""
+    ticket, comments = _export_data(ticket_id, ticket=ticket, comments=comments)
+
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.platypus import (
+        Paragraph,
+        SimpleDocTemplate,
+        Spacer,
+        Table,
+        TableStyle,
+    )
 
     buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        rightMargin=36,
+        leftMargin=36,
+        topMargin=36,
+        bottomMargin=36,
+        title=f"TicketGenie Ticket {ticket.get('id', ticket_id)}",
+        author="TicketGenie",
+    )
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        "TicketTitle",
+        parent=styles["Heading1"],
+        fontSize=22,
+        leading=26,
+        textColor=colors.HexColor("#1e293b"),
+        spaceAfter=12,
+    )
 
-    try:
-        from reportlab.lib import colors
-        from reportlab.lib.pagesizes import letter
-        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-        from reportlab.platypus import (
-            Paragraph,
-            SimpleDocTemplate,
-            Spacer,
-            Table,
-            TableStyle,
+    def cell(value: object) -> Paragraph:
+        return Paragraph(
+            escape(str(value if value is not None else "N/A")), styles["BodyText"]
         )
 
-        doc = SimpleDocTemplate(
-            buffer,
-            pagesize=letter,
-            rightMargin=36,
-            leftMargin=36,
-            topMargin=36,
-            bottomMargin=36,
+    elements = [
+        Paragraph("TicketGenie - Ticket Report", title_style),
+        Paragraph(
+            f"Complete record for Ticket ID: <b>{escape(str(ticket.get('id', ticket_id)))}</b>",
+            styles["Heading3"],
+        ),
+        Spacer(1, 16),
+    ]
+    details = [
+        ["Field", "Value"],
+        ["Ticket ID", cell(ticket.get("id", ticket_id))],
+        ["Title", cell(ticket.get("title", "N/A"))],
+        ["Department", cell(ticket.get("department", "N/A"))],
+        ["Category", cell(ticket.get("category", "N/A"))],
+        ["Priority", cell(ticket.get("priority", "N/A"))],
+        ["Status", cell(ticket.get("status", "N/A"))],
+        ["Created", cell(ticket.get("createdAt") or ticket.get("date", "N/A"))],
+        ["Last Updated", cell(ticket.get("updatedAt", "N/A"))],
+        ["Requester ID", cell(ticket.get("requester_id", "N/A"))],
+        ["Description", cell(ticket.get("description", "N/A"))],
+    ]
+    details_table = Table(details, colWidths=[125, 405], repeatRows=1)
+    details_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4f46e5")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
+                (
+                    "ROWBACKGROUNDS",
+                    (0, 1),
+                    (-1, -1),
+                    [colors.white, colors.HexColor("#f8fafc")],
+                ),
+                ("PADDING", (0, 0), (-1, -1), 7),
+            ]
         )
-        styles = getSampleStyleSheet()
-        elements = []
-
-        title_style = ParagraphStyle(
-            "TitleStyle",
-            parent=styles["Heading1"],
-            fontSize=22,
-            leading=26,
-            textColor=colors.HexColor("#1e293b"),
-            spaceAfter=12,
-        )
-
-        subtitle_style = ParagraphStyle(
-            "SubtitleStyle",
-            parent=styles["Heading3"],
-            fontSize=12,
-            leading=16,
-            textColor=colors.HexColor("#64748b"),
-            spaceAfter=20,
-        )
-
-        elements.append(Paragraph("🎫 TicketGenie — Official Ticket Pass", title_style))
-        elements.append(
-            Paragraph(
-                f"Document Generated for Ticket ID: <b>{ticket['id']}</b>",
-                subtitle_style,
-            )
-        )
-        elements.append(Spacer(1, 10))
-
-        data = [
-            ["Field", "Value"],
-            ["Ticket ID", ticket.get("id", ticket_id)],
-            ["Title", ticket.get("title", "N/A")],
-            ["Department", ticket.get("department", "IT Team")],
-            ["Category", ticket.get("category", "General")],
-            ["Priority", ticket.get("priority", "Medium")],
-            ["Status", ticket.get("status", "Open")],
-            ["Date Issued", ticket.get("date", "2026-08-15")],
-            ["Description", ticket.get("description", "N/A")],
+    )
+    elements.extend(
+        [
+            details_table,
+            Spacer(1, 22),
+            Paragraph("Conversation History", styles["Heading2"]),
+            Spacer(1, 8),
         ]
+    )
 
-        t = Table(data, colWidths=[130, 400])
-        t.setStyle(
+    if comments:
+        rows = [["Date / Time", "Sender", "Message"]]
+        rows.extend(
+            [
+                cell(c.get("createdAt", "N/A")),
+                cell(c.get("sender_role", "Unknown")),
+                cell(c.get("message", "")),
+            ]
+            for c in comments
+        )
+        conversation = Table(rows, colWidths=[115, 90, 325], repeatRows=1)
+        conversation.setStyle(
             TableStyle(
                 [
-                    ("BACKGROUND", (0, 0), (1, 0), colors.HexColor("#4f46e5")),
-                    ("TEXTCOLOR", (0, 0), (1, 0), colors.white),
-                    ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
-                    ("FONTSIZE", (0, 0), (-1, -1), 10),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-                    ("TOPPADDING", (0, 0), (-1, -1), 8),
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4f46e5")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
                     ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
-                    ("BACKGROUND", (0, 1), (-1, -1), colors.HexColor("#f8fafc")),
+                    (
+                        "ROWBACKGROUNDS",
+                        (0, 1),
+                        (-1, -1),
+                        [colors.white, colors.HexColor("#f8fafc")],
+                    ),
+                    ("PADDING", (0, 0), (-1, -1), 6),
                 ]
             )
         )
-        elements.append(t)
-        elements.append(Spacer(1, 25))
+        elements.append(conversation)
+    else:
+        elements.append(
+            Paragraph(
+                "No conversation messages have been recorded.", styles["BodyText"]
+            )
+        )
 
-        footer_text = "Official record generated by TicketGenie AI Helpdesk. Certified for HR & Management records."
-        elements.append(Paragraph(f"<i>{footer_text}</i>", styles["Italic"]))
-
-        doc.build(elements)
-        buffer.seek(0)
-        return buffer.getvalue()
-    except Exception as exc:
-        logger.warning(f"ReportLab PDF generation fallback triggered: {exc}")
-        # Plain text PDF format fallback
-        text_content = f"""%PDF-1.4
-1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
-2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
-3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj
-4 0 obj << /Length 200 >> stream
-BT /F1 16 Tf 50 720 Td (TicketGenie Official Pass - {ticket_id}) Tj ET
-BT /F1 12 Tf 50 680 Td (Title: {ticket.get("title", "Leave Request")}) Tj ET
-BT /F1 12 Tf 50 650 Td (Status: {ticket.get("status", "Approved")}) Tj ET
-BT /F1 12 Tf 50 620 Td (Department: {ticket.get("department", "Upper Management")}) Tj ET
-endstream endobj
-5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj
-xref
-0 6
-0000000000 65535 f
-0000000009 00000 n
-0000000058 00000 n
-0000000115 00000 n
-0000000246 00000 n
-0000000498 00000 n
-trailer << /Size 6 /Root 1 0 R >>
-startxref
-570
-%%EOF"""
-        return text_content.encode("utf-8")
+    elements.extend(
+        [
+            Spacer(1, 24),
+            Paragraph(
+                "<i>Generated by TicketGenie. This report contains the ticket record and public support conversation available to the requesting user.</i>",
+                styles["Italic"],
+            ),
+        ]
+    )
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer.getvalue()
 
 
-def generate_ticket_docx(ticket_id: str) -> bytes:
-    """Generate an official DOCX document for a ticket."""
-    ticket = get_ticket_by_id(ticket_id) or {
-        "id": ticket_id,
-        "title": "Ticket Summary",
-        "status": "Open",
-        "department": "IT",
-    }
-
-    content = f"""===================================================================
-TICKETGENIE OFFICIAL TICKET REPORT
-===================================================================
+def generate_ticket_docx(
+    ticket_id: str,
+    *,
+    ticket: Optional[dict] = None,
+    comments: Optional[list[dict]] = None,
+) -> bytes:
+    """Generate a text-compatible DOCX export containing the same report data."""
+    ticket, comments = _export_data(ticket_id, ticket=ticket, comments=comments)
+    conversation = (
+        "\n".join(
+            f"[{c.get('createdAt', 'N/A')}] {c.get('sender_role', 'Unknown')}: {c.get('message', '')}"
+            for c in comments
+        )
+        or "No conversation messages have been recorded."
+    )
+    return f"""TICKETGENIE TICKET REPORT
 Ticket ID: {ticket.get("id", ticket_id)}
 Title: {ticket.get("title", "N/A")}
-Department: {ticket.get("department", "IT Team")}
-Category: {ticket.get("category", "General")}
-Priority: {ticket.get("priority", "Medium")}
-Status: {ticket.get("status", "Open")}
-Created Date: {ticket.get("date", "2026-08-15")}
+Department: {ticket.get("department", "N/A")}
+Category: {ticket.get("category", "N/A")}
+Priority: {ticket.get("priority", "N/A")}
+Status: {ticket.get("status", "N/A")}
+Created: {ticket.get("createdAt") or ticket.get("date", "N/A")}
+Requester ID: {ticket.get("requester_id", "N/A")}
 
-DESCRIPTION:
+DESCRIPTION
 {ticket.get("description", "No description provided.")}
 
-===================================================================
-Generated by TicketGenie AI Helpdesk Management System.
-===================================================================
-"""
-    return content.encode("utf-8")
+CONVERSATION HISTORY
+{conversation}
+""".encode("utf-8")

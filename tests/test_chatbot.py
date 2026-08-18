@@ -19,11 +19,14 @@ from agents.chatbot_agent import (
 )
 from agents.knowledge_agent import GroundedAnswer
 from backend.main import app
-from models.chatbot import ChatIntent, ChatRequest, TicketDraft
+from models.chatbot import ChatIntent, ChatRequest, RequestType, TicketDraft
 from services import chatbot_service
 from services.knowledge_service import KnowledgeDocument, SearchUnavailableError
 
 client = TestClient(app)
+client.headers["Authorization"] = (
+    "Bearer eyJhbGciOiAiUlMyNTYiLCAidHlwIjogIkpXVCJ9.eyJvaWQiOiAiZGMzYjU2ZTktOTI4MC00MGRjLThkNzMtOThiZmQ4MWZkZDZhIiwgImVtYWlsIjogIkFkbWluMUB2aWduZXNocXVhZHJhbnRvdXRsb29rLm9ubWljcm9zb2Z0LmNvbSIsICJuYW1lIjogIkFkbWluIFVzZXIiLCAicm9sZSI6ICJTdXBlciBBZG1pbiIsICJleHAiOiAyNTM0MDIzMDA3OTl9.mock"
+)
 
 
 class FakeAIService:
@@ -304,6 +307,7 @@ def test_support_issue_starts_ticket_drafting_with_extracted_fields():
             preferred_date="2026-08-21",
         ),
         missing_fields=[],
+        request_type=RequestType.STANDARD,
     )
     response, _ = ask(
         "My laptop crashes whenever I open Teams and I need it fixed before Friday.",
@@ -324,6 +328,7 @@ def test_missing_ticket_fields_produce_follow_up():
         message="Could you tell me more about what's going on?",
         ticket_fields=ExtractedTicketFields(description="My laptop is broken."),
         missing_fields=["more detail about what happened"],
+        request_type=RequestType.STANDARD,
     )
     response, _ = ask("My laptop is broken.", decision=decision)
     assert response.missing_fields
@@ -346,6 +351,7 @@ def test_existing_field_is_not_asked_for_again_even_if_model_forgets():
         "It happens every morning.",
         decision=decision,
         active_intent=ChatIntent.SUPPORT_ISSUE,
+        active_request_type=RequestType.STANDARD,
         draft=existing,
     )
     assert not any("categ" in field.lower() for field in response.missing_fields)
@@ -363,6 +369,7 @@ def test_ticket_draft_matches_ticket_create_schema():
             category="IT & Technology",
         ),
         missing_fields=[],
+        request_type=RequestType.STANDARD,
     )
     response, _ = ask("Cannot connect to VPN.", decision=decision)
     assert set(response.ticket_draft.model_dump().keys()) == {
@@ -392,6 +399,7 @@ def test_drafting_never_creates_a_real_ticket():
             category="IT & Technology",
         ),
         missing_fields=[],
+        request_type=RequestType.STANDARD,
     )
     ask("Cannot connect to VPN.", decision=decision)
     after = client.get("/api/tickets").json()

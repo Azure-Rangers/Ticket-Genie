@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from opentelemetry import trace
@@ -37,6 +37,46 @@ def create_ticket(ticket: TicketCreate, db: Optional[Session] = None) -> dict:
         return _create_ticket_internal(ticket, db=db)
 
 
+def _resolve_user_email(user_id: Optional[str], session: Session) -> Optional[str]:
+    if not user_id or user_id.lower() in ("all", "user"):
+        return None
+    if "@" in user_id:
+        return user_id.strip()
+    try:
+        from database.models_db import DepartmentUserDB, UserProfileDB
+
+        uid_lower = user_id.lower().strip()
+        prof = (
+            session.query(UserProfileDB)
+            .filter(
+                or_(
+                    func.lower(UserProfileDB.id) == uid_lower,
+                    func.lower(UserProfileDB.email) == uid_lower,
+                )
+            )
+            .first()
+        )
+        if prof and prof.email:
+            return prof.email
+
+        dept_u = (
+            session.query(DepartmentUserDB)
+            .filter(
+                or_(
+                    func.lower(DepartmentUserDB.azure_object_id) == uid_lower,
+                    func.lower(DepartmentUserDB.user_email) == uid_lower,
+                    func.lower(DepartmentUserDB.id) == uid_lower,
+                )
+            )
+            .first()
+        )
+        if dept_u and dept_u.user_email:
+            return dept_u.user_email
+    except Exception:
+        pass
+    return f"{user_id}@company.com"
+
+
 def _create_ticket_internal(ticket: TicketCreate, db: Optional[Session] = None) -> dict:
     session = db or SessionLocal()
     should_close = db is None
@@ -45,6 +85,26 @@ def _create_ticket_internal(ticket: TicketCreate, db: Optional[Session] = None) 
         now = datetime.now()
         now_str = now.isoformat()
         date_str = now.strftime("%Y-%m-%d")
+
+        # Duplicate submission check within 5 seconds
+        if ticket.title and ticket.description:
+            cutoff = now - timedelta(seconds=5)
+            recent_tickets = (
+                session.query(TicketDB)
+                .filter(
+                    TicketDB.title == ticket.title,
+                    TicketDB.description == ticket.description,
+                )
+                .all()
+            )
+            for rec in recent_tickets:
+                if rec.createdAt:
+                    try:
+                        rec_time = datetime.fromisoformat(rec.createdAt)
+                        if rec_time >= cutoff:
+                            return rec.to_dict()
+                    except Exception:
+                        pass
 
         new_id = _generate_next_id(session)
 
@@ -79,7 +139,28 @@ def _create_ticket_internal(ticket: TicketCreate, db: Optional[Session] = None) 
         session.add(db_ticket)
         session.commit()
         session.refresh(db_ticket)
-        return db_ticket.to_dict()
+        result_dict = db_ticket.to_dict()
+
+        # Trigger in-app notification & confirmation email
+        try:
+            target_user = db_ticket.requester_id or "all"
+            create_notification(
+                title=f"Ticket Submitted - #{db_ticket.id}",
+                message=f"Your ticket '{db_ticket.title}' was submitted successfully.",
+                user_id=target_user,
+                db=session,
+            )
+            recipient_email = _resolve_user_email(db_ticket.requester_id, session)
+            if recipient_email:
+                from services.email_service import send_ticket_created_email
+
+                send_ticket_created_email(result_dict, recipient_email)
+        except Exception as _notif_err:
+            tracer.get_tracer("ticketgenie").start_span(
+                "create_ticket_notification_error"
+            )
+
+        return result_dict
     finally:
         if should_close:
             session.close()
@@ -90,6 +171,7 @@ def get_all_tickets(
     priority: Optional[str] = None,
     search: Optional[str] = None,
     requester_id: Optional[str] = None,
+    department: Optional[str] = None,
     db: Optional[Session] = None,
 ) -> List[dict]:
     session = db or SessionLocal()
@@ -99,9 +181,56 @@ def get_all_tickets(
         query = session.query(TicketDB)
 
         if requester_id:
+            req_str = requester_id.lower().strip()
+            target_ids = {req_str}
+            try:
+                from database.models_db import DepartmentUserDB, UserProfileDB
+
+                dept_records = (
+                    session.query(DepartmentUserDB)
+                    .filter(
+                        or_(
+                            func.lower(DepartmentUserDB.user_email) == req_str,
+                            func.lower(DepartmentUserDB.azure_object_id) == req_str,
+                            func.lower(DepartmentUserDB.id) == req_str,
+                        )
+                    )
+                    .all()
+                )
+                for rec in dept_records:
+                    if rec.azure_object_id:
+                        target_ids.add(rec.azure_object_id.lower())
+                    if rec.user_email:
+                        target_ids.add(rec.user_email.lower())
+                    if rec.id:
+                        target_ids.add(rec.id.lower())
+
+                profiles = (
+                    session.query(UserProfileDB)
+                    .filter(
+                        or_(
+                            func.lower(UserProfileDB.id) == req_str,
+                            func.lower(UserProfileDB.email) == req_str,
+                        )
+                    )
+                    .all()
+                )
+                for prof in profiles:
+                    if prof.id:
+                        target_ids.add(prof.id.lower())
+                    if prof.email:
+                        target_ids.add(prof.email.lower())
+
+            except Exception:
+                pass
+
             query = query.filter(
-                func.lower(TicketDB.requester_id) == requester_id.lower().strip()
+                func.lower(TicketDB.requester_id).in_(list(target_ids))
             )
+
+        if department and department.strip():
+            dept_str = f"%{department.lower().strip()}%"
+            query = query.filter(func.lower(TicketDB.department).like(dept_str))
 
         if search:
             s = f"%{search.lower().strip()}%"
@@ -158,6 +287,7 @@ def update_ticket(
         if ticket is None:
             return None
 
+        old_status = ticket.status
         update_data = ticket_update.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             if value is not None and hasattr(ticket, field):
@@ -166,7 +296,30 @@ def update_ticket(
         ticket.updatedAt = datetime.now().isoformat()
         session.commit()
         session.refresh(ticket)
-        return ticket.to_dict()
+        result_dict = ticket.to_dict()
+        new_status = ticket.status
+
+        # Trigger in-app notification & email if status changed
+        if old_status and new_status and old_status.lower() != new_status.lower():
+            try:
+                target_user = ticket.requester_id or "all"
+                create_notification(
+                    title=f"Ticket #{ticket.id} Status Updated",
+                    message=f"Your ticket '{ticket.title}' status changed from '{old_status}' to '{new_status}'.",
+                    user_id=target_user,
+                    db=session,
+                )
+                recipient_email = _resolve_user_email(ticket.requester_id, session)
+                if recipient_email:
+                    from services.email_service import send_ticket_status_updated_email
+
+                    send_ticket_status_updated_email(
+                        result_dict, old_status, new_status, recipient_email
+                    )
+            except Exception:
+                pass
+
+        return result_dict
     finally:
         if should_close:
             session.close()
@@ -207,7 +360,46 @@ def add_ticket_comment(
         session.add(db_comment)
         session.commit()
         session.refresh(db_comment)
-        return db_comment.to_dict()
+        comment_dict = db_comment.to_dict()
+
+        # Trigger notification & email
+        try:
+            ticket_obj = (
+                session.query(TicketDB)
+                .filter(func.lower(TicketDB.id) == ticket_id.lower())
+                .first()
+            )
+            if ticket_obj:
+                ticket_dict = ticket_obj.to_dict()
+                req_id = ticket_obj.requester_id
+
+                if (
+                    sender_id
+                    and req_id
+                    and sender_id.lower().strip() == req_id.lower().strip()
+                ):
+                    target_user = "all"
+                    target_email = _resolve_user_email(req_id, session)
+                else:
+                    target_user = req_id or "all"
+                    target_email = _resolve_user_email(req_id, session)
+
+                short_msg = message[:90] + "..." if len(message) > 90 else message
+                create_notification(
+                    title=f"New Comment on #{ticket_id}",
+                    message=f'{sender_role} replied: "{short_msg}"',
+                    user_id=target_user,
+                    db=session,
+                )
+
+                if target_email:
+                    from services.email_service import send_ticket_comment_email
+
+                    send_ticket_comment_email(ticket_dict, comment_dict, target_email)
+        except Exception:
+            pass
+
+        return comment_dict
     finally:
         if should_close:
             session.close()
@@ -576,11 +768,17 @@ def get_notifications(
     try:
         from database.models_db import NotificationDB
 
+        target_ids = {user_id.lower().strip(), "all", "user"}
+        try:
+            resolved_email = _resolve_user_email(user_id, session)
+            if resolved_email:
+                target_ids.add(resolved_email.lower().strip())
+        except Exception:
+            pass
+
         records = (
             session.query(NotificationDB)
-            .filter(
-                or_(NotificationDB.user_id == user_id, NotificationDB.user_id == "all")
-            )
+            .filter(func.lower(NotificationDB.user_id).in_(list(target_ids)))
             .order_by(NotificationDB.createdAt.desc())
             .all()
         )
@@ -808,42 +1006,54 @@ def update_onboarding_status(
 # ---------------------------------------------------------------------------
 
 
-def get_user_profile(user_id: str = "usr-1", db: Optional[Session] = None) -> dict:
+def get_user_profile(
+    user_id: Optional[str] = None,
+    azure_oid: Optional[str] = None,
+    email: Optional[str] = None,
+    db: Optional[Session] = None,
+) -> Optional[dict]:
     session = db or SessionLocal()
     should_close = db is None
 
     try:
+        from sqlalchemy import func
+
         from database.models_db import UserProfileDB
 
-        user = session.query(UserProfileDB).filter(UserProfileDB.id == user_id).first()
-        if not user:
-            user = UserProfileDB(
-                id=user_id,
-                name="Nishita",
-                email="nishita@ticketgenie.com",
-                role="Employee",
-                department="HR & Operations",
-                phone="+1 (555) 019-2834",
-                avatar="NM",
-            )
-            session.add(user)
-            session.commit()
-            session.refresh(user)
+        query = session.query(UserProfileDB)
 
-        return user.to_dict()
+        if user_id:
+            user = query.filter(UserProfileDB.id == user_id).first()
+            if user:
+                return user.to_dict()
+
+        if azure_oid:
+            short_oid = azure_oid[:8]
+            user = query.filter(UserProfileDB.id.like(f"%{short_oid}%")).first()
+            if user:
+                return user.to_dict()
+
+        if email:
+            user = query.filter(
+                func.lower(UserProfileDB.email) == email.lower()
+            ).first()
+            if user:
+                return user.to_dict()
+
+        return None
     finally:
         if should_close:
             session.close()
 
 
 def update_user_profile(
-    user_id: str = "usr-1",
+    user_id: Optional[str] = None,
     name: Optional[str] = None,
     email: Optional[str] = None,
     phone: Optional[str] = None,
     department: Optional[str] = None,
     db: Optional[Session] = None,
-) -> dict:
+) -> Optional[dict]:
     session = db or SessionLocal()
     should_close = db is None
 
@@ -854,8 +1064,8 @@ def update_user_profile(
         if not user:
             user = UserProfileDB(
                 id=user_id,
-                name=name or "Nishita",
-                email=email or "nishita@ticketgenie.com",
+                name=name or "User",
+                email=email or f"{user_id}@example.com",
             )
             session.add(user)
 

@@ -25,7 +25,7 @@
     .btn-submit:hover { background-color: #533760; }
   </style>
 </head>
-<body>
+<body class="employee-page management-page">
 
   <div id="shared-sidebar"></div>
 
@@ -76,7 +76,59 @@
     </div>
   </main>
 
+  <script src="../js/api.js"></script>
+  <script src="../js/azure-auth.js"></script>
+  <script src="../js/theme.js"></script>
   <script src="../js/script.js"></script>
   <script src="components.js"></script>
+  <script src="management.js"></script>
+  <script>
+    let isSubmittingManagementTicket = false;
+    const mgmtForm = document.getElementById('createTicketForm');
+    if (mgmtForm) {
+      mgmtForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        if (isSubmittingManagementTicket) return;
+
+        const title = document.getElementById('ticketTitle')?.value.trim();
+        const department = document.getElementById('targetDepartment')?.value;
+        const priority = document.getElementById('priorityLevel')?.value;
+        const description = document.getElementById('ticketDescription')?.value.trim();
+
+        if (!title || !description) {
+          if (typeof showNotification === 'function') {
+            showNotification('Please fill in the title and description.', 'error');
+          } else alert('Please fill in the title and description.');
+          return;
+        }
+
+        const submitBtn = mgmtForm.querySelector('button[type="submit"]');
+        isSubmittingManagementTicket = true;
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Logging Request...';
+        }
+
+        try {
+          const createFn = window.apiCreateTicket || apiCreateTicket;
+          const created = await createFn({ title, department, category: department || 'General', priority, description });
+          if (typeof showNotification === 'function') {
+            showNotification(`Ticket #${created?.id || ''} created successfully! Redirecting...`, 'success');
+          }
+          setTimeout(() => { window.location.href = 'inbox.html'; }, 1200);
+        } catch (err) {
+          isSubmittingManagementTicket = false;
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Log Request';
+          }
+          console.error("Management ticket creation error:", err);
+          if (typeof showNotification === 'function') {
+            showNotification(err.message || 'Failed to submit ticket.', 'error');
+          } else alert(err.message || 'Failed to submit ticket.');
+        }
+      });
+    }
+  </script>
 </body>
 </html>

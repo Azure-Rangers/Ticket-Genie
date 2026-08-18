@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from models.chatbot import ChatIntent, ChatTurn, TicketDraft
+from models.chatbot import ChatIntent, ChatTurn, RequestType, TicketDraft
 from services.ai_service import ai_service as default_ai_service
 
 
@@ -45,6 +45,17 @@ class ChatbotDecision(BaseModel):
     knowledge_query: Optional[str] = None
     ticket_fields: Optional[ExtractedTicketFields] = None
     missing_fields: List[str] = Field(default_factory=list)
+    request_type: Optional[RequestType] = None
+    anonymity_requested: bool = Field(
+        default=False,
+        description=(
+            "True only if the user's own words explicitly asked to remain "
+            "anonymous or not have their name/identity attached. Must be "
+            "true whenever request_type=anonymous is chosen - the backend "
+            "deterministically downgrades an anonymous request_type back "
+            "to standard when this is false."
+        ),
+    )
 
 
 CHATBOT_DECISION_PROMPT = """
@@ -105,13 +116,31 @@ leave_management):
   relative reference ("before Friday", "next Monday", "tomorrow"),
   resolve it relative to today's date, which is provided below. If you
   cannot confidently resolve a date, leave preferred_date null instead
-  of guessing.
+  of guessing. For leave_management, if the user gives a date range
+  (e.g. "August 20 to August 28"), preferred_date is the START date -
+  still restate the full range (both dates) in `description` so nothing
+  is lost, but never invent a second date field.
 - `category` must be chosen from the allowed list provided below for
   the current flow (support vs leave), matched by meaning - e.g. a
   laptop problem is "IT & Technology", a request for medical leave is
   "Medical Leave". If nothing fits confidently, leave it null.
-- `description` should restate what the user told you in their own
-  words - do not add details they did not provide.
+- `description` is a concise, professional SUMMARY of the request as a
+  whole - not a transcript and not a per-turn restatement. Every turn,
+  re-synthesize the full up-to-date description from everything relevant
+  said across the WHOLE conversation so far (shown below), replacing any
+  previous description rather than adding a new sentence onto it. Aim
+  for roughly 3-4 sentences (shorter is fine, and preferred, if little
+  has been said) covering whichever of these are actually known: what
+  the issue/request is, relevant symptoms/details, the device/system/
+  context involved, when it started, business impact, troubleshooting
+  already tried, and important dates/constraints. Do not quote the
+  user's own phrasing verbatim, do not write "the user said...", and
+  never state the same fact twice. Never invent a detail that was not
+  actually stated - preserve every important fact already established,
+  do not drop one just to shorten the summary.
+- `title` stays short and descriptive - roughly 3-8 words identifying
+  the request (e.g. "VPN connection timeout on Mac") - never a full
+  sentence or a fragment of what the user typed.
 - missing_fields should list, in plain language, only what is still
   genuinely needed to complete the ticket (e.g. "a bit more detail
   about the issue", "which type of leave", "the start date"). Never
@@ -121,6 +150,34 @@ leave_management):
 TICKET STATUS:
 - If the user gives a ticket number (e.g. "HD-1024", "ticket 1024"),
   put it in ticket_fields.ticket_id exactly as given.
+
+REQUEST TYPE (only meaningful for create_ticket / support_issue /
+leave_management - leave it null for every other intent):
+The product has exactly three request forms - decide which existing one
+this belongs in:
+- leave_management: whenever intent is leave_management. This is fixed by
+  a hard business rule downstream regardless of what you put here, but
+  set it anyway for clarity.
+- standard: the DEFAULT for every ordinary support/workplace
+  request/issue (e.g. "my VPN isn't working", "I need two monitors", "I
+  need help with a reimbursement"). Most requests are standard - when in
+  doubt, choose standard.
+- anonymous: choose this ONLY when the user's own words explicitly ask
+  for anonymity - they say they don't want their name/identity attached,
+  ask to stay anonymous, or explicitly say they want the Anonymous
+  Request option. When (and only when) you choose anonymous, also set
+  anonymity_requested=true. Never choose anonymous just because a topic
+  is sensitive, personal, or uncomfortable (e.g. harassment, conflict,
+  a health issue) - the user has to actually ask for anonymity in their
+  own words. If they haven't, choose standard even for a sensitive
+  topic.
+For create_ticket or support_issue, never leave request_type null and
+never ask the user to pick between Standard and Anonymous - default to
+standard whenever anonymity wasn't explicitly requested.
+
+For sensitive workplace issues (e.g. harassment, conflict, safety), stay
+neutral and factual in `description` and do not editorialize - and never
+assume the user wants anonymity unless they say so.
 
 Never fabricate company policy, ticket data, or URLs. Keep `message`
 short, professional, and appropriate for the chosen action (e.g. for

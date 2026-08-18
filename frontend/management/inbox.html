@@ -24,7 +24,7 @@
     .action-btn:hover { background: #f8f4fa; border-color: #d2c6d6; }
   </style>
 </head>
-<body>
+<body class="employee-page management-page">
 
   <div id="shared-sidebar"></div>
 
@@ -60,13 +60,33 @@
     </div>
   </main>
 
+  <script src="../js/api.js"></script>
+  <script src="../js/azure-auth.js"></script>
+  <script src="../js/theme.js"></script>
   <script src="../js/script.js"></script>
   <script src="components.js"></script>
+  <script src="management.js"></script>
   <script>
     let allTickets = [];
 
+    function isUpperManagementTicket(t) {
+      const dept = (t.department || "").toLowerCase();
+      const cat = (t.category || "").toLowerCase();
+      return dept.includes("upper") || 
+             dept.includes("management") || 
+             dept.includes("executive") || 
+             dept.includes("administration") ||
+             cat.includes("confidential") || 
+             cat.includes("executive") || 
+             cat.includes("leave") || 
+             cat.includes("time off") || 
+             cat.includes("pto") ||
+             t.is_anonymous === true;
+    }
+
     document.addEventListener("DOMContentLoaded", async () => {
-      allTickets = await apiFetchTickets();
+      const rawTickets = await apiFetchTickets({ adminView: true });
+      allTickets = (rawTickets || []).filter(isUpperManagementTicket);
       renderTickets(allTickets);
     });
 
@@ -125,7 +145,7 @@
 
     async function changeStatus(ticketId, newStatus) {
       await apiUpdateTicket(ticketId, { status: newStatus });
-      allTickets = await apiFetchTickets();
+      allTickets = await apiFetchTickets({ adminView: true });
       renderTickets(allTickets);
     }
   </script>

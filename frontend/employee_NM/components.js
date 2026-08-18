@@ -1,6 +1,7 @@
+console.log("%c[TicketGenie Components.js] Script file loaded!", "color: #3b82f6; font-weight: bold; font-size: 14px;");
+
 /* =========================================================
    EMPLOYEE NM PORTAL - UNIFIED SHARED COMPONENTS
-   Matches exact CSS classes in frontend/css/style.css
    ========================================================= */
 
 function getEmployeePages() {
@@ -12,7 +13,8 @@ function getEmployeePages() {
     { href: "knowledge-base.html", title: "Knowledge Base" },
     { href: "announcements.html", title: "Announcements" },
     { href: "notifications.html", title: "Notifications" },
-    { href: "profile.html", title: "Profile & Credentials" }
+    { href: "profile.html", title: "Profile & Credentials" },
+    { href: "ticket-detail.html", title: "Ticket Details" }
   ];
 }
 
@@ -92,6 +94,10 @@ function renderEmployeeNMTopNav() {
   const currentFile = getEmployeeCurrentFilename();
   const pages = getEmployeePages();
   const activePage = pages.find(p => p.href === currentFile) || pages[0];
+  const user = JSON.parse(localStorage.getItem("portalUser") || '{}');
+  const displayName = user.name || "Employee";
+  const initials = user.avatar || (displayName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) || "EM");
+  const displayRole = user.role || "Employee";
 
   topNavContainer.innerHTML = `
     <header class="topbar">
@@ -110,25 +116,181 @@ function renderEmployeeNMTopNav() {
           <input type="text" placeholder="Search..." id="globalSearch">
           <span class="shortcut">⌘ K</span>
         </div>
-        <button class="icon-button" id="darkModeToggle" type="button" aria-label="Toggle Dark Mode">
-          <i class="fa-solid fa-moon" id="darkModeIcon"></i>
+        <button class="icon-button" id="myCustomDarkToggle" type="button" aria-label="Toggle Dark Mode">
+          <i class="fa-solid fa-moon" id="moonIcon"></i>
+          <i class="fa-solid fa-sun" id="sunIcon" style="color: #f59e0b; display: none;"></i>
         </button>
         <button class="icon-button" type="button">
           <i class="fa-regular fa-bell"></i><span class="notification-dot"></span>
         </button>
         <div class="profile">
           <button class="profile-button" id="profileDropdownTrigger" aria-haspopup="menu" aria-expanded="false">
-            <div class="avatar">NM</div>
-            <div class="profile-info"><strong>Nishita</strong><span id="currentRoleDisplay">Employee</span></div>
+            <div class="avatar" id="topNavAvatar">${initials}</div>
+            <div class="profile-info"><strong id="topNavUserName">${displayName}</strong><span id="currentRoleDisplay">${displayRole}</span></div>
             <i class="fa-solid fa-chevron-down"></i>
           </button>
         </div>
       </div>
     </header>
   `;
+
+  // Asynchronously fetch profile from backend DB if available
+  if (typeof apiFetchUserProfile === "function") {
+    apiFetchUserProfile().then(profile => {
+      if (profile && profile.name) {
+        const nameElem = document.getElementById("topNavUserName");
+        const avatarElem = document.getElementById("topNavAvatar");
+        const roleElem = document.getElementById("currentRoleDisplay");
+        if (nameElem) nameElem.textContent = profile.name;
+        if (roleElem && profile.role) roleElem.textContent = profile.role;
+        if (avatarElem) {
+          const fetchedInitials = profile.avatar || profile.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+          avatarElem.textContent = fetchedInitials;
+        }
+
+        // Dynamically update Welcome back banner on index.html
+        const welcomeHeader = document.getElementById("welcomeUserHeader");
+        if (welcomeHeader) {
+          const firstName = profile.name.split(' ')[0];
+          welcomeHeader.textContent = `Welcome back, ${firstName}`;
+        }
+
+        // Dynamically populate profile page fields on profile.html
+        const profileNameHeader = document.querySelector("#profileForm")?.closest("div")?.querySelector("h4");
+        if (profileNameHeader) profileNameHeader.textContent = profile.name;
+        const profileInputs = document.querySelectorAll("#profileForm input");
+        if (profileInputs.length >= 2) {
+          if (profileInputs[0]) profileInputs[0].value = profile.name;
+          if (profileInputs[1] && profile.email) profileInputs[1].value = profile.email;
+        }
+        if (profileInputs.length >= 3 && profile.department) {
+          profileInputs[2].value = profile.department;
+        }
+      }
+    }).catch(err => console.warn("Notice: could not load user profile from DB:", err));
+  }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  renderEmployeeNMSidebar();
-  renderEmployeeNMTopNav();
+window.toggleEmployeeDarkMode = function(e) {
+    if (e) {
+        if (e.__darkToggleHandled) return;
+        e.__darkToggleHandled = true;
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    }
+    document.body.classList.toggle("dark-mode");
+    const activeDark = document.body.classList.contains("dark-mode");
+    console.log("%c[Dark Mode Clicked] Active dark mode: " + activeDark, "color: #9333ea; font-weight: bold; font-size: 14px;");
+    localStorage.setItem("theme", activeDark ? "dark" : "light");
+
+    const moonSvg = document.getElementById("customMoon");
+    const sunSvg = document.getElementById("customSun");
+    if (moonSvg && sunSvg) {
+        moonSvg.style.display = activeDark ? "none" : "inline-block";
+        sunSvg.style.display = activeDark ? "inline-block" : "none";
+    }
+
+    const moonIcon = document.getElementById("moonIcon");
+    const sunIcon = document.getElementById("sunIcon");
+    if (moonIcon && sunIcon) {
+        moonIcon.style.display = activeDark ? "none" : "inline-block";
+        sunIcon.style.display = activeDark ? "inline-block" : "none";
+    }
+};
+
+window.toggleEmployeeSidebar = function(e) {
+    if (e) {
+        if (e.__sidebarToggleHandled) return;
+        e.__sidebarToggleHandled = true;
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    }
+    console.log("%c[Hamburger Clicked] Toggling sidebar collapse.", "color: #3b82f6; font-weight: bold; font-size: 14px;");
+    document.body.classList.toggle("sidebar-collapsed");
+    document.body.classList.toggle("sidebar-closed");
+    
+    const sidebar = document.querySelector(".sidebar") || document.getElementById("shared-sidebar");
+    if (sidebar) {
+        sidebar.classList.toggle("collapsed");
+        console.log("[Sidebar Log] Toggled .collapsed on sidebar element.");
+    }
+};
+
+// Global Event Delegation for Dark Mode and Hamburger Sidebar Toggle
+document.addEventListener("click", function(e) {
+    const darkBtn = e.target.closest("#myCustomDarkToggle, #darkModeToggle, .dark-mode-toggle");
+    if (darkBtn) {
+        window.toggleEmployeeDarkMode(e);
+        return;
+    }
+
+    const sidebarBtn = e.target.closest("#sidebarToggle, #brandMenuToggle, .sidebar-toggle");
+    if (sidebarBtn) {
+        window.toggleEmployeeSidebar(e);
+        return;
+    }
 });
+
+// Run initializers
+function initComponents() {
+    if (window.AzureAuth && typeof window.AzureAuth.enforcePageAccessControl === "function") {
+        if (!window.AzureAuth.enforcePageAccessControl()) return;
+    }
+    renderEmployeeNMSidebar();
+    renderEmployeeNMTopNav();
+    
+    // Check saved theme on load
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "dark") {
+        document.body.classList.add("dark-mode");
+    }
+    const activeDark = document.body.classList.contains("dark-mode");
+    console.log("%c[Initial Theme] Dark mode active: " + activeDark, "color: #10b981; font-weight: bold;");
+
+    const moonSvg = document.getElementById("customMoon");
+    const sunSvg = document.getElementById("customSun");
+    if (moonSvg && sunSvg) {
+        moonSvg.style.display = activeDark ? "none" : "inline-block";
+        sunSvg.style.display = activeDark ? "inline-block" : "none";
+    }
+
+    // Trigger backend profile fetch after DOM & scripts have loaded
+    if (typeof apiFetchUserProfile === "function") {
+        console.log("%c[Profile Sync] Initiating GET /api/users/profile fetch from DB...", "color: #3b82f6; font-weight: bold;");
+        apiFetchUserProfile().then(profile => {
+            console.log("%c[Profile Sync] Successfully received user profile from DB:", "color: #10b981; font-weight: bold;", profile);
+            if (profile && profile.name) {
+                const nameElem = document.getElementById("topNavUserName");
+                const avatarElem = document.getElementById("topNavAvatar");
+                if (nameElem) nameElem.textContent = profile.name;
+                if (avatarElem) {
+                    const fetchedInitials = profile.avatar || profile.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+                    avatarElem.textContent = fetchedInitials;
+                }
+                const welcomeHeader = document.getElementById("welcomeUserHeader");
+                if (welcomeHeader) {
+                    const firstName = profile.name.split(' ')[0];
+                    welcomeHeader.textContent = `Welcome back, ${firstName}`;
+                }
+                const profileNameHeader = document.querySelector("#profileForm")?.closest("div")?.querySelector("h4");
+                if (profileNameHeader) profileNameHeader.textContent = profile.name;
+                const profileInputs = document.querySelectorAll("#profileForm input");
+                if (profileInputs.length >= 2) {
+                    if (profileInputs[0]) profileInputs[0].value = profile.name;
+                    if (profileInputs[1] && profile.email) profileInputs[1].value = profile.email;
+                }
+                if (profileInputs.length >= 3 && profile.department) {
+                    profileInputs[2].value = profile.department;
+                }
+            }
+        }).catch(err => console.error("❌ [Profile Sync Error] Failed to load user profile from DB:", err));
+    } else {
+        console.warn("⚠️ [Profile Sync Warning] apiFetchUserProfile function is NOT available on this page scope.");
+    }
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initComponents);
+} else {
+    initComponents();
+}
