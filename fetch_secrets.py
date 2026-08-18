@@ -109,6 +109,35 @@ def discover_azure_ad_config() -> dict[str, str]:
     return discovered
 
 
+def apply_secret_aliases(secrets: dict[str, str]) -> dict[str, str]:
+    """Map common key aliases (e.g. SMTP/Gmail, OpenAI) to ensure compatibility across all modules."""
+    aliased = dict(secrets)
+
+    # 1. SMTP & Gmail Aliases
+    if "SMTP_USER" in aliased and "GOOGLE_EMAIL" not in aliased:
+        aliased["GOOGLE_EMAIL"] = aliased["SMTP_USER"]
+    elif "GOOGLE_EMAIL" in aliased and "SMTP_USER" not in aliased:
+        aliased["SMTP_USER"] = aliased["GOOGLE_EMAIL"]
+
+    if "SMTP_PASSWORD" in aliased and "GOOGLE_APP_PASSWORD" not in aliased:
+        aliased["GOOGLE_APP_PASSWORD"] = aliased["SMTP_PASSWORD"]
+    elif "GOOGLE_APP_PASSWORD" in aliased and "SMTP_PASSWORD" not in aliased:
+        aliased["SMTP_PASSWORD"] = aliased["GOOGLE_APP_PASSWORD"]
+
+    # 2. OpenAI Endpoint & Key Aliases
+    if "GROUP1OPENAIENDPOINT" in aliased and "AZURE_OPENAI_ENDPOINT" not in aliased:
+        aliased["AZURE_OPENAI_ENDPOINT"] = aliased["GROUP1OPENAIENDPOINT"]
+    elif "AZURE_OPENAI_ENDPOINT" in aliased and "GROUP1OPENAIENDPOINT" not in aliased:
+        aliased["GROUP1OPENAIENDPOINT"] = aliased["AZURE_OPENAI_ENDPOINT"]
+
+    if "GROUP1OPENAIAPIKEY" in aliased and "AZURE_OPENAI_API_KEY" not in aliased:
+        aliased["AZURE_OPENAI_API_KEY"] = aliased["GROUP1OPENAIAPIKEY"]
+    elif "AZURE_OPENAI_API_KEY" in aliased and "GROUP1OPENAIAPIKEY" not in aliased:
+        aliased["GROUP1OPENAIAPIKEY"] = aliased["AZURE_OPENAI_API_KEY"]
+
+    return aliased
+
+
 def save_env_file(env_path: Path, secrets: dict[str, str]) -> None:
     """Save secret key-value pairs to the local .env file."""
     # Load existing env vars to preserve non-secret local configs
@@ -118,7 +147,9 @@ def save_env_file(env_path: Path, secrets: dict[str, str]) -> None:
     ad_config = discover_azure_ad_config()
     existing_env.update(ad_config)
 
-    existing_env.update(secrets)
+    # Apply secret aliases (e.g. SMTP <-> Google Email, OpenAI aliases)
+    updated_secrets = apply_secret_aliases(secrets)
+    existing_env.update(updated_secrets)
 
     lines = [
         "# ==========================================\n",
