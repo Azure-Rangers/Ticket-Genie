@@ -4,16 +4,21 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 API_JS = (ROOT / "frontend" / "js" / "api.js").read_text(encoding="utf-8")
-EMPLOYEE_JS = (
-    ROOT / "frontend" / "employee_NM" / "employee.js"
-).read_text(encoding="utf-8")
-DETAIL_HTML = (
-    ROOT / "frontend" / "employee_NM" / "ticket-detail.html"
-).read_text(encoding="utf-8")
+EMPLOYEE_JS = (ROOT / "frontend" / "employee_NM" / "employee.js").read_text(
+    encoding="utf-8"
+)
+DETAIL_HTML = (ROOT / "frontend" / "employee_NM" / "ticket-detail.html").read_text(
+    encoding="utf-8"
+)
 
 
 def test_ticket_detail_loads_required_modules():
-    for script in ("../js/api.js", "../js/azure-auth.js", "../js/theme.js", "employee.js"):
+    for script in (
+        "../js/api.js",
+        "../js/azure-auth.js",
+        "../js/theme.js",
+        "employee.js",
+    ):
         assert f'src="{script}?v=' in DETAIL_HTML
 
 
@@ -26,8 +31,9 @@ def test_ticket_detail_uses_direct_ticket_api_lookup():
     assert "async function apiFetchTicket(ticketId)" in API_JS
     assert "window.apiFetchTicket" in EMPLOYEE_JS
     detail_loader = EMPLOYEE_JS[
-        EMPLOYEE_JS.index("async function loadTicketDetailPage") :
-        EMPLOYEE_JS.index("async function renderTicketCommentsThread")
+        EMPLOYEE_JS.index("async function loadTicketDetailPage") : EMPLOYEE_JS.index(
+            "async function renderTicketCommentsThread"
+        )
     ]
     assert "apiFetchTickets" not in detail_loader
     assert "tickets[0]" not in detail_loader

@@ -27,7 +27,9 @@ def _is_admin_user(current_user: dict) -> bool:
 
 def _admin_can_access_ticket(current_user: dict, ticket: dict) -> bool:
     role = (current_user.get("role") or "").lower()
-    if any(marker in role for marker in ("super", "operations", "management", "executive")):
+    if any(
+        marker in role for marker in ("super", "operations", "management", "executive")
+    ):
         return True
     user_department = (current_user.get("department") or "").lower().strip()
     ticket_department = (ticket.get("department") or "").lower().strip()
@@ -232,11 +234,14 @@ def suggest_response_for_ticket(
         for comment in get_ticket_comments(ticket_id, db=db)
         if comment.get("sender_role") != "Private"
     ]
-    history = "\n".join(
-        f"[{comment.get('createdAt', 'N/A')}] "
-        f"{comment.get('sender_role', 'Unknown')}: {comment.get('message', '')}"
-        for comment in public_comments
-    ) or "No prior public conversation."
+    history = (
+        "\n".join(
+            f"[{comment.get('createdAt', 'N/A')}] "
+            f"{comment.get('sender_role', 'Unknown')}: {comment.get('message', '')}"
+            for comment in public_comments
+        )
+        or "No prior public conversation."
+    )
 
     try:
         return draft_response(
@@ -298,7 +303,9 @@ def post_comment_to_ticket(
 
     if req.sender_role == "Private":
         if not is_admin:
-            raise HTTPException(status_code=403, detail="Private notes require admin access")
+            raise HTTPException(
+                status_code=403, detail="Private notes require admin access"
+            )
         sender_role = "Private"
     elif is_admin:
         department = (current_user.get("department") or "").lower()

@@ -61,7 +61,9 @@ def test_hr_suggestion_endpoint_excludes_private_notes():
     with (
         patch("api.tickets.get_ticket_by_id", return_value=ticket),
         patch("database.crud.get_ticket_comments", return_value=comments),
-        patch("agents.response_agent.draft_response", return_value=expected) as generate,
+        patch(
+            "agents.response_agent.draft_response", return_value=expected
+        ) as generate,
     ):
         result = suggest_response_for_ticket(
             "HD-1",
@@ -91,8 +93,12 @@ def test_hr_ui_fills_draft_but_never_auto_sends():
     assert "/suggested-response" in API_JS
     assert "Suggest reply" in INBOX
     assert "async function suggestReply" in INBOX
-    suggest_region = INBOX[INBOX.index("async function suggestReply") : INBOX.index("async function sendReply")]
+    suggest_region = INBOX[
+        INBOX.index("async function suggestReply") : INBOX.index(
+            "async function sendReply"
+        )
+    ]
     assert "textarea.value = suggestion.message" in suggest_region
     assert "sendReply(" not in suggest_region
     assert "AI-generated draft" in suggest_region
-    assert '../js/api.js?v=20260818_4' in INBOX
+    assert "../js/api.js?v=20260818_4" in INBOX

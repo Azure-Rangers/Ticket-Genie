@@ -10,8 +10,9 @@ ADMIN_DIR = ROOT / "frontend" / "admin_AV"
 
 def test_ticket_fetch_waits_for_authentication_restoration():
     ticket_fetch = API_JS[
-        API_JS.index("async function apiFetchTickets") :
-        API_JS.index("async function apiFetchTicket(ticketId)")
+        API_JS.index("async function apiFetchTickets") : API_JS.index(
+            "async function apiFetchTicket(ticketId)"
+        )
     ]
     assert "window.AzureAuth?.ready" in ticket_fetch
     assert "await window.AzureAuth.ready" in ticket_fetch
@@ -52,10 +53,10 @@ def test_frontend_does_not_supply_an_hr_identity_or_department_override():
 def test_primary_admin_ticket_pages_load_matching_auth_and_api_versions():
     dashboard = (ADMIN_DIR / "admin_dashboard.html").read_text(encoding="utf-8")
     inbox = (ADMIN_DIR / "inbox.html").read_text(encoding="utf-8")
-    assert '../js/api.js?v=20260818_2' in dashboard
-    assert '../js/azure-auth.js?v=20260818_2' in dashboard
-    assert '../js/api.js?v=20260818_4' in inbox
-    assert '../js/azure-auth.js?v=20260818_2' in inbox
+    assert "../js/api.js?v=20260818_2" in dashboard
+    assert "../js/azure-auth.js?v=20260818_2" in dashboard
+    assert "../js/api.js?v=20260818_4" in inbox
+    assert "../js/azure-auth.js?v=20260818_2" in inbox
 
 
 def test_hr_inbox_loads_persisted_comment_threads():
