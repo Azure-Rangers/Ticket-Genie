@@ -37,6 +37,46 @@ def create_ticket(ticket: TicketCreate, db: Optional[Session] = None) -> dict:
         return _create_ticket_internal(ticket, db=db)
 
 
+def _resolve_user_email(user_id: Optional[str], session: Session) -> Optional[str]:
+    if not user_id or user_id.lower() in ("all", "user"):
+        return None
+    if "@" in user_id:
+        return user_id.strip()
+    try:
+        from database.models_db import DepartmentUserDB, UserProfileDB
+
+        uid_lower = user_id.lower().strip()
+        prof = (
+            session.query(UserProfileDB)
+            .filter(
+                or_(
+                    func.lower(UserProfileDB.id) == uid_lower,
+                    func.lower(UserProfileDB.email) == uid_lower,
+                )
+            )
+            .first()
+        )
+        if prof and prof.email:
+            return prof.email
+
+        dept_u = (
+            session.query(DepartmentUserDB)
+            .filter(
+                or_(
+                    func.lower(DepartmentUserDB.azure_object_id) == uid_lower,
+                    func.lower(DepartmentUserDB.user_email) == uid_lower,
+                    func.lower(DepartmentUserDB.id) == uid_lower,
+                )
+            )
+            .first()
+        )
+        if dept_u and dept_u.user_email:
+            return dept_u.user_email
+    except Exception:
+        pass
+    return f"{user_id}@company.com"
+
+
 def _create_ticket_internal(ticket: TicketCreate, db: Optional[Session] = None) -> dict:
     session = db or SessionLocal()
     should_close = db is None
@@ -99,7 +139,26 @@ def _create_ticket_internal(ticket: TicketCreate, db: Optional[Session] = None) 
         session.add(db_ticket)
         session.commit()
         session.refresh(db_ticket)
-        return db_ticket.to_dict()
+        result_dict = db_ticket.to_dict()
+
+        # Trigger in-app notification & confirmation email
+        try:
+            target_user = db_ticket.requester_id or "all"
+            create_notification(
+                title=f"Ticket Submitted - #{db_ticket.id}",
+                message=f"Your ticket '{db_ticket.title}' was submitted successfully.",
+                user_id=target_user,
+                db=session,
+            )
+            recipient_email = _resolve_user_email(db_ticket.requester_id, session)
+            if recipient_email:
+                from services.email_service import send_ticket_created_email
+
+                send_ticket_created_email(result_dict, recipient_email)
+        except Exception as notif_err:
+            tracer.get_tracer("ticketgenie").start_span("create_ticket_notification_error")
+
+        return result_dict
     finally:
         if should_close:
             session.close()
@@ -226,6 +285,7 @@ def update_ticket(
         if ticket is None:
             return None
 
+        old_status = ticket.status
         update_data = ticket_update.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             if value is not None and hasattr(ticket, field):
@@ -234,7 +294,30 @@ def update_ticket(
         ticket.updatedAt = datetime.now().isoformat()
         session.commit()
         session.refresh(ticket)
-        return ticket.to_dict()
+        result_dict = ticket.to_dict()
+        new_status = ticket.status
+
+        # Trigger in-app notification & email if status changed
+        if old_status and new_status and old_status.lower() != new_status.lower():
+            try:
+                target_user = ticket.requester_id or "all"
+                create_notification(
+                    title=f"Ticket #{ticket.id} Status Updated",
+                    message=f"Your ticket '{ticket.title}' status changed from '{old_status}' to '{new_status}'.",
+                    user_id=target_user,
+                    db=session,
+                )
+                recipient_email = _resolve_user_email(ticket.requester_id, session)
+                if recipient_email:
+                    from services.email_service import send_ticket_status_updated_email
+
+                    send_ticket_status_updated_email(
+                        result_dict, old_status, new_status, recipient_email
+                    )
+            except Exception:
+                pass
+
+        return result_dict
     finally:
         if should_close:
             session.close()
@@ -275,7 +358,50 @@ def add_ticket_comment(
         session.add(db_comment)
         session.commit()
         session.refresh(db_comment)
-        return db_comment.to_dict()
+        comment_dict = db_comment.to_dict()
+
+        # Trigger notification & email
+        try:
+            ticket_obj = (
+                session.query(TicketDB)
+                .filter(func.lower(TicketDB.id) == ticket_id.lower())
+                .first()
+            )
+            if ticket_obj:
+                ticket_dict = ticket_obj.to_dict()
+                req_id = ticket_obj.requester_id
+
+                if (
+                    sender_id
+                    and req_id
+                    and sender_id.lower().strip() == req_id.lower().strip()
+                ):
+                    target_user = "all"
+                    target_email = _resolve_user_email(req_id, session)
+                else:
+                    target_user = req_id or "all"
+                    target_email = _resolve_user_email(req_id, session)
+
+                short_msg = (
+                    message[:90] + "..." if len(message) > 90 else message
+                )
+                create_notification(
+                    title=f"New Comment on #{ticket_id}",
+                    message=f'{sender_role} replied: "{short_msg}"',
+                    user_id=target_user,
+                    db=session,
+                )
+
+                if target_email:
+                    from services.email_service import send_ticket_comment_email
+
+                    send_ticket_comment_email(
+                        ticket_dict, comment_dict, target_email
+                    )
+        except Exception:
+            pass
+
+        return comment_dict
     finally:
         if should_close:
             session.close()
@@ -644,11 +770,17 @@ def get_notifications(
     try:
         from database.models_db import NotificationDB
 
+        target_ids = {user_id.lower().strip(), "all", "user"}
+        try:
+            resolved_email = _resolve_user_email(user_id, session)
+            if resolved_email:
+                target_ids.add(resolved_email.lower().strip())
+        except Exception:
+            pass
+
         records = (
             session.query(NotificationDB)
-            .filter(
-                or_(NotificationDB.user_id == user_id, NotificationDB.user_id == "all")
-            )
+            .filter(func.lower(NotificationDB.user_id).in_(list(target_ids)))
             .order_by(NotificationDB.createdAt.desc())
             .all()
         )

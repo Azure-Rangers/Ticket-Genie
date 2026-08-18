@@ -60,3 +60,14 @@ def handle_mark_notification_read(
     if not success:
         raise HTTPException(status_code=404, detail="Notification not found")
     return {"message": f"Marked notification {notif_id} as read"}
+
+
+@router.get("/outbox")
+def list_email_outbox(
+    current_user: dict = Depends(verify_azure_user),
+):
+    """Retrieve sent email outbox audit trail."""
+    from services.email_service import get_outbox_log
+
+    return get_outbox_log()
+

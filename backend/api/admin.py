@@ -121,14 +121,15 @@ def get_admin_leave_queue(current_user: dict = Depends(verify_azure_user)):
     return get_leave_tickets()
 
 
-@router.post("/sql-query")
-def handle_sql_query(
-    req: SQLQueryRequest,
-    current_user: dict = Depends(verify_azure_user),
-):
-    absorbed_role = current_user.get("role") or req.role or "Employee"
-    absorbed_user_id = (
-        current_user.get("oid") or current_user.get("email") or req.user_id or "admin"
-    )
-
     return execute_sql_query(req.query, role=absorbed_role, user_id=absorbed_user_id)
+
+
+@router.post("/trigger-daily-digest")
+def handle_trigger_daily_digest(current_user: dict = Depends(verify_azure_user)):
+    """Trigger daily summary email digest on demand for IT Admins."""
+    require_super_admin(current_user)
+    from services.daily_digest_service import send_daily_admin_digest
+
+    result = send_daily_admin_digest()
+    return result
+

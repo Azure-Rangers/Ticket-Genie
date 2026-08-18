@@ -781,6 +781,114 @@ function initializeGenie() {
     }
 }
 
+/* =========================================================
+   NOTIFICATIONS SYSTEM INTEGRATION
+   ========================================================= */
+
+async function updateNotificationBadges() {
+    try {
+        const fetchFn = window.apiFetchNotifications || (async () => []);
+        const notifications = await fetchFn();
+        const unreadCount = Array.isArray(notifications) ? notifications.filter(n => !n.is_read).length : 0;
+
+        document.querySelectorAll(".notification-count").forEach(el => {
+            el.textContent = unreadCount;
+            el.style.display = unreadCount > 0 ? "inline-block" : "none";
+        });
+
+        document.querySelectorAll(".notification-dot").forEach(el => {
+            el.style.display = unreadCount > 0 ? "block" : "none";
+        });
+    } catch (e) {
+        console.warn("updateNotificationBadges failed:", e);
+    }
+}
+
+async function loadNotificationsFeed() {
+    const container = document.getElementById("notificationsListContainer");
+    if (!container) return;
+
+    container.innerHTML = `<div style="text-align: center; padding: 40px; color: #64748b;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 24px;"></i><p style="margin-top: 12px;">Loading notifications...</p></div>`;
+
+    try {
+        const fetchFn = window.apiFetchNotifications || (async () => []);
+        const notifications = await fetchFn();
+
+        if (!notifications || !Array.isArray(notifications) || notifications.length === 0) {
+            container.innerHTML = `<div style="background: #ffffff; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 40px; text-align: center; color: #64748b;">
+                <i class="fa-regular fa-bell" style="font-size: 32px; color: #94a3b8; margin-bottom: 12px;"></i>
+                <h4 style="margin: 0 0 6px 0; color: #334155;">No Notifications</h4>
+                <p style="margin: 0; font-size: 14px;">You have no active alerts or notifications at this time.</p>
+            </div>`;
+            return;
+        }
+
+        container.innerHTML = "";
+        notifications.forEach(notif => {
+            const card = document.createElement("div");
+            const isUnread = !notif.is_read;
+            const borderLeft = isUnread ? "#3b82f6" : "#cbd5e1";
+
+            let iconClass = "fa-ticket";
+            let iconBg = "#fef9e7";
+            let iconColor = "#b8860b";
+
+            const titleLower = (notif.title || "").toLowerCase();
+            if (titleLower.includes("comment") || titleLower.includes("message") || titleLower.includes("replied")) {
+                iconClass = "fa-comments";
+                iconBg = "#ecfdf5";
+                iconColor = "#059669";
+            } else if (titleLower.includes("status") || titleLower.includes("updated")) {
+                iconClass = "fa-pen-to-square";
+                iconBg = "#eff6ff";
+                iconColor = "#2563eb";
+            } else if (titleLower.includes("leave") || titleLower.includes("pto")) {
+                iconClass = "fa-calendar-days";
+                iconBg = "#fef2f2";
+                iconColor = "#dc2626";
+            } else if (titleLower.includes("announcement") || titleLower.includes("alert")) {
+                iconClass = "fa-bullhorn";
+                iconBg = "#faf5ff";
+                iconColor = "#9333ea";
+            }
+
+            const timeFormatted = notif.createdAt ? new Date(notif.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : "Just now";
+
+            card.style.cssText = `background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid ${borderLeft}; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03); display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; cursor: pointer; transition: all 0.2s ease; margin-bottom: 16px;`;
+
+            card.innerHTML = `
+                <div style="display: flex; gap: 16px; align-items: flex-start;">
+                    <div style="width: 40px; height: 40px; background: ${iconBg}; color: ${iconColor}; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
+                        <i class="fa-solid ${iconClass}"></i>
+                    </div>
+                    <div>
+                        <h4 style="font-size: 16px; color: #0f172a; margin: 0 0 4px 0; font-weight: 700;">${escapeHTML(notif.title)}</h4>
+                        <p style="font-size: 14px; color: #475569; margin: 0 0 8px 0; line-height: 1.5;">${escapeHTML(notif.message)}</p>
+                        <span style="font-size: 12px; color: #64748b;"><i class="fa-regular fa-clock" style="margin-right: 4px;"></i> ${timeFormatted}</span>
+                    </div>
+                </div>
+                <button type="button" class="mark-read-btn" style="background: ${isUnread ? '#eff6ff' : '#f0fdf4'}; color: ${isUnread ? '#3b82f6' : '#10b981'}; border: 1px solid ${isUnread ? '#bfdbfe' : '#a7f3d0'}; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 12px; flex-shrink: 0; cursor: pointer;">
+                    ${isUnread ? 'Mark as Read' : 'Read'}
+                </button>
+            `;
+
+            card.onclick = async () => {
+                if (isUnread && window.apiMarkNotificationRead) {
+                    await window.apiMarkNotificationRead(notif.id);
+                    loadNotificationsFeed();
+                    updateNotificationBadges();
+                }
+            };
+
+            container.appendChild(card);
+        });
+
+    } catch (err) {
+        console.error("loadNotificationsFeed error:", err);
+        container.innerHTML = `<div style="padding: 20px; color: #ef4444;">Failed to load notifications. Please try again.</div>`;
+    }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     initDarkMode();
     initSidebarToggle();
@@ -791,6 +899,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Floating Genie Chat Drawer events
     initializeGenie();
+
+    // Load dynamic notifications and badges
+    loadNotificationsFeed();
+    updateNotificationBadges();
 });
 
 // Bind all global utilities to window
@@ -818,5 +930,8 @@ Object.assign(window, {
     loadTicketDetailPage,
     submitStandardTicket,
     sendTicketReply,
-    initializeGenie
+    initializeGenie,
+    updateNotificationBadges,
+    loadNotificationsFeed
 });
+
