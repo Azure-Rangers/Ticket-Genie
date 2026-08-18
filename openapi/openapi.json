@@ -1576,6 +1576,16 @@
                 "type": "null"
               }
             ]
+          },
+          "active_request_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RequestType"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -1597,6 +1607,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ChatAction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "request_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RequestType"
               },
               {
                 "type": "null"
@@ -1637,6 +1657,11 @@
               }
             ],
             "title": "Knowledge Verified"
+          },
+          "ready_for_review": {
+            "type": "boolean",
+            "title": "Ready For Review",
+            "default": false
           }
         },
         "type": "object",
@@ -2023,6 +2048,16 @@
         ],
         "title": "ReActAgentRequest"
       },
+      "RequestType": {
+        "type": "string",
+        "enum": [
+          "standard",
+          "anonymous",
+          "leave_management"
+        ],
+        "title": "RequestType",
+        "description": "Which of the three existing New Request tabs a ticket_draft is meant\nfor: standardRequestTab, anonymousRequestTab, or leaveRequestTab (see\nfrontend/employee_NM/new-request.html). This is separate from\nChatIntent - intent says \"the user wants to submit a request\";\nrequest_type says which existing form that request belongs in."
+      },
       "SQLQueryRequest": {
         "properties": {
           "query": {
@@ -2152,6 +2187,24 @@
               }
             ],
             "title": "Requester Id"
+          },
+          "department_override": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "HR Team",
+                  "Accounting Team",
+                  "Workplace Operations Team",
+                  "IT Team",
+                  "Upper Management"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Override"
           }
         },
         "type": "object",
@@ -2229,6 +2282,28 @@
               }
             ],
             "title": "Preferreddate"
+          },
+          "startDate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startdate"
+          },
+          "endDate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enddate"
           },
           "is_anonymous": {
             "type": "boolean",

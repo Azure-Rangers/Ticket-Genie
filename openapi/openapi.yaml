@@ -959,6 +959,10 @@ components:
           anyOf:
           - $ref: '#/components/schemas/ChatIntent'
           - type: 'null'
+        active_request_type:
+          anyOf:
+          - $ref: '#/components/schemas/RequestType'
+          - type: 'null'
       type: object
       required:
       - message
@@ -973,6 +977,10 @@ components:
         action:
           anyOf:
           - $ref: '#/components/schemas/ChatAction'
+          - type: 'null'
+        request_type:
+          anyOf:
+          - $ref: '#/components/schemas/RequestType'
           - type: 'null'
         ticket_draft:
           anyOf:
@@ -993,6 +1001,10 @@ components:
           - type: boolean
           - type: 'null'
           title: Knowledge Verified
+        ready_for_review:
+          type: boolean
+          title: Ready For Review
+          default: false
       type: object
       required:
       - message
@@ -1230,6 +1242,23 @@ components:
       required:
       - message
       title: ReActAgentRequest
+    RequestType:
+      type: string
+      enum:
+      - standard
+      - anonymous
+      - leave_management
+      title: RequestType
+      description: 'Which of the three existing New Request tabs a ticket_draft is
+        meant
+
+        for: standardRequestTab, anonymousRequestTab, or leaveRequestTab (see
+
+        frontend/employee_NM/new-request.html). This is separate from
+
+        ChatIntent - intent says "the user wants to submit a request";
+
+        request_type says which existing form that request belongs in.'
     SQLQueryRequest:
       properties:
         query:
@@ -1304,6 +1333,17 @@ components:
           - type: string
           - type: 'null'
           title: Requester Id
+        department_override:
+          anyOf:
+          - type: string
+            enum:
+            - HR Team
+            - Accounting Team
+            - Workplace Operations Team
+            - IT Team
+            - Upper Management
+          - type: 'null'
+          title: Department Override
       type: object
       required:
       - title
@@ -1342,6 +1382,16 @@ components:
           - type: string
           - type: 'null'
           title: Preferreddate
+        startDate:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Startdate
+        endDate:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Enddate
         is_anonymous:
           type: boolean
           title: Is Anonymous

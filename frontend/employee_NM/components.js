@@ -1,6 +1,7 @@
+console.log("%c[TicketGenie Components.js] Script file loaded!", "color: #3b82f6; font-weight: bold; font-size: 14px;");
+
 /* =========================================================
    EMPLOYEE NM PORTAL - UNIFIED SHARED COMPONENTS
-   Matches exact CSS classes in frontend/css/style.css
    ========================================================= */
 
 function getEmployeePages() {
@@ -110,8 +111,9 @@ function renderEmployeeNMTopNav() {
           <input type="text" placeholder="Search..." id="globalSearch">
           <span class="shortcut">⌘ K</span>
         </div>
-        <button class="icon-button" id="darkModeToggle" type="button" aria-label="Toggle Dark Mode">
-          <i class="fa-solid fa-moon" id="darkModeIcon"></i>
+        <button class="icon-button" id="myCustomDarkToggle" type="button" aria-label="Toggle Dark Mode">
+          <i class="fa-solid fa-moon" id="moonIcon"></i>
+          <i class="fa-solid fa-sun" id="sunIcon" style="color: #f59e0b; display: none;"></i>
         </button>
         <button class="icon-button" type="button">
           <i class="fa-regular fa-bell"></i><span class="notification-dot"></span>
@@ -128,7 +130,89 @@ function renderEmployeeNMTopNav() {
   `;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  renderEmployeeNMSidebar();
-  renderEmployeeNMTopNav();
+window.toggleEmployeeDarkMode = function(e) {
+    if (e) {
+        if (e.__darkToggleHandled) return;
+        e.__darkToggleHandled = true;
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    }
+    document.body.classList.toggle("dark-mode");
+    const activeDark = document.body.classList.contains("dark-mode");
+    console.log("%c[Dark Mode Clicked] Active dark mode: " + activeDark, "color: #9333ea; font-weight: bold; font-size: 14px;");
+    localStorage.setItem("theme", activeDark ? "dark" : "light");
+
+    const moonSvg = document.getElementById("customMoon");
+    const sunSvg = document.getElementById("customSun");
+    if (moonSvg && sunSvg) {
+        moonSvg.style.display = activeDark ? "none" : "inline-block";
+        sunSvg.style.display = activeDark ? "inline-block" : "none";
+    }
+
+    const moonIcon = document.getElementById("moonIcon");
+    const sunIcon = document.getElementById("sunIcon");
+    if (moonIcon && sunIcon) {
+        moonIcon.style.display = activeDark ? "none" : "inline-block";
+        sunIcon.style.display = activeDark ? "inline-block" : "none";
+    }
+};
+
+window.toggleEmployeeSidebar = function(e) {
+    if (e) {
+        if (e.__sidebarToggleHandled) return;
+        e.__sidebarToggleHandled = true;
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    }
+    console.log("%c[Hamburger Clicked] Toggling sidebar collapse.", "color: #3b82f6; font-weight: bold; font-size: 14px;");
+    document.body.classList.toggle("sidebar-collapsed");
+    document.body.classList.toggle("sidebar-closed");
+    
+    const sidebar = document.querySelector(".sidebar") || document.getElementById("shared-sidebar");
+    if (sidebar) {
+        sidebar.classList.toggle("collapsed");
+        console.log("[Sidebar Log] Toggled .collapsed on sidebar element.");
+    }
+};
+
+// Global Event Delegation for Dark Mode and Hamburger Sidebar Toggle
+document.addEventListener("click", function(e) {
+    const darkBtn = e.target.closest("#myCustomDarkToggle, #darkModeToggle, .dark-mode-toggle");
+    if (darkBtn) {
+        window.toggleEmployeeDarkMode(e);
+        return;
+    }
+
+    const sidebarBtn = e.target.closest("#sidebarToggle, #brandMenuToggle, .sidebar-toggle");
+    if (sidebarBtn) {
+        window.toggleEmployeeSidebar(e);
+        return;
+    }
 });
+
+// Run initializers
+function initComponents() {
+    renderEmployeeNMSidebar();
+    renderEmployeeNMTopNav();
+    
+    // Check saved theme on load
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "dark") {
+        document.body.classList.add("dark-mode");
+    }
+    const activeDark = document.body.classList.contains("dark-mode");
+    console.log("%c[Initial Theme] Dark mode active: " + activeDark, "color: #10b981; font-weight: bold;");
+
+    const moonSvg = document.getElementById("customMoon");
+    const sunSvg = document.getElementById("customSun");
+    if (moonSvg && sunSvg) {
+        moonSvg.style.display = activeDark ? "none" : "inline-block";
+        sunSvg.style.display = activeDark ? "inline-block" : "none";
+    }
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initComponents);
+} else {
+    initComponents();
+}

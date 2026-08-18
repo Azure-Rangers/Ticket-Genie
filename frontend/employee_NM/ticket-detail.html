@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ticket Thread | TicketGenie</title>
-  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/employee-style.css">
   <link rel="stylesheet" href="employee.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -56,207 +56,22 @@
     <div class="genie-disclaimer">Genie may occasionally provide inaccurate information.</div>
   </div>
 
-  <script src="../js/script.js"></script>
-  <script src="components.js"></script>
+  <script src="components.js?v=20260816_10"></script>
+  <script src="../js/employee-script.js?v=20260816_10"></script>
   <script>
-    let activeTicketId = null;
-
-    document.addEventListener("DOMContentLoaded", async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      activeTicketId = urlParams.get('ticket') || urlParams.get('id') || "HD-1025";
-      await renderEmployeeTicketDetail(activeTicketId);
-
-      // Auto-refresh thread comments every 2.5 seconds so new messages from HR appear live
-      setInterval(async () => {
-        if (!activeTicketId) return;
-        const threadCol = document.querySelector('.thread-column');
-        if (!threadCol) return;
-
-        const comments = await apiGetComments(activeTicketId);
-        let ticket = null;
-        try {
-          const res = await fetch(`${API_BASE_URL}/tickets/${activeTicketId}`);
-          if (res.ok) ticket = await res.json();
-        } catch (err) {}
-        if (!ticket) ticket = { description: 'No description provided.', date: 'Today' };
-
-        let threadHTML = `
-          <div class="message-card employee-card">
-            <div class="msg-header">
-              <div class="msg-author">
-                <div class="msg-author-avatar">EM</div>
-                <div>
-                  <strong>You (Requester)</strong>
-                  <span style="font-size: 0.75rem; color: #6b7280; display: block; font-weight: normal; margin-top: 2px;">Submitted Support Request</span>
-                </div>
-              </div>
-              <div class="msg-time">${ticket.date || (ticket.createdAt ? ticket.createdAt.split('T')[0] : 'Today')}</div>
-            </div>
-            <div class="msg-content">${escapeHTML(ticket.description || 'No description provided.')}</div>
-          </div>
-        `;
-
-        if (comments && comments.length > 0) {
-          comments.forEach(c => {
-            const isEmployee = (c.sender_role || "").toLowerCase() === "employee";
-            const roleTitle = c.sender_role || (isEmployee ? "Employee" : "Operations Admin");
-            const avatarClass = isEmployee ? "" : "hr-avatar";
-            const avatarIcon = isEmployee ? "EM" : '<i class="fa-solid fa-user-shield"></i>';
-            const cardClass = isEmployee ? "employee-card" : "hr-card";
-            const timeStr = c.createdAt ? c.createdAt.replace('T', ' ').substring(0, 16) : 'Just now';
-
-            threadHTML += `
-              <div class="message-card ${cardClass}">
-                <div class="msg-header">
-                  <div class="msg-author">
-                    <div class="msg-author-avatar ${avatarClass}">${avatarIcon}</div>
-                    <div>
-                      <strong>${escapeHTML(isEmployee ? "You (Employee)" : roleTitle)}</strong>
-                      ${!isEmployee ? `<span style="background: #ebdff0; color: #6f4b82; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; margin-left: 6px; font-weight: 700;">HR / Ticketer Response</span>` : ''}
-                    </div>
-                  </div>
-                  <div class="msg-time">${escapeHTML(timeStr)}</div>
-                </div>
-                <div class="msg-content">${escapeHTML(c.message)}</div>
-              </div>
-            `;
-          });
-        }
-
-        const existingCards = threadCol.querySelectorAll('.message-card');
-        const currentCardsCount = existingCards ? existingCards.length : 0;
-        const newCardsCount = (comments ? comments.length : 0) + 1;
-
-        if (currentCardsCount !== newCardsCount) {
-          const replyBox = threadCol.querySelector('.reply-box');
-          const replyBoxHTML = replyBox ? replyBox.outerHTML : '';
-          threadCol.innerHTML = threadHTML + replyBoxHTML;
-        }
-      }, 2500);
-    });
-
-    async function renderEmployeeTicketDetail(ticketId) {
-      const container = document.getElementById("ticketDetailContainer");
-      if (!container) return;
-
-      let ticket = null;
-      try {
-        const res = await fetch(`${API_BASE_URL}/tickets/${ticketId}`);
-        if (res.ok) ticket = await res.json();
-      } catch (err) {}
-
-      if (!ticket) {
-        ticket = {
-          id: ticketId,
-          title: "Support Request",
-          category: "General",
-          department: "IT & HR Operations",
-          priority: "Medium",
-          status: "Open",
-          description: "No ticket description available.",
-          date: "Today"
-        };
-      }
-
-      const comments = await apiGetComments(ticketId);
-
-      // Build Original Ticket Card
-      let threadHTML = `
-        <div class="message-card employee-card">
-          <div class="msg-header">
-            <div class="msg-author">
-              <div class="msg-author-avatar">EM</div>
-              <div>
-                <strong>You (Requester)</strong>
-                <span style="font-size: 0.75rem; color: #6b7280; display: block; font-weight: normal; margin-top: 2px;">Submitted Support Request</span>
-              </div>
-            </div>
-            <div class="msg-time">${ticket.date || (ticket.createdAt ? ticket.createdAt.split('T')[0] : 'Today')}</div>
-          </div>
-          <div class="msg-content">${escapeHTML(ticket.description || 'No description provided.')}</div>
-        </div>
-      `;
-
-      // Build Comments Cards (HR vs Employee)
-      if (comments && comments.length > 0) {
-        comments.forEach(c => {
-          const isEmployee = (c.sender_role || "").toLowerCase() === "employee";
-          const roleTitle = c.sender_role || (isEmployee ? "Employee" : "Operations Admin");
-          const avatarClass = isEmployee ? "" : "hr-avatar";
-          const avatarIcon = isEmployee ? "EM" : '<i class="fa-solid fa-user-shield"></i>';
-          const cardClass = isEmployee ? "employee-card" : "hr-card";
-          const timeStr = c.createdAt ? c.createdAt.replace('T', ' ').substring(0, 16) : 'Just now';
-
-          threadHTML += `
-            <div class="message-card ${cardClass}">
-              <div class="msg-header">
-                <div class="msg-author">
-                  <div class="msg-author-avatar ${avatarClass}">${avatarIcon}</div>
-                  <div>
-                    <strong>${escapeHTML(isEmployee ? "You (Employee)" : roleTitle)}</strong>
-                    ${!isEmployee ? `<span style="background: #ebdff0; color: #6f4b82; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; margin-left: 6px; font-weight: 700;">HR / Ticketer Response</span>` : ''}
-                  </div>
-                </div>
-                <div class="msg-time">${escapeHTML(timeStr)}</div>
-              </div>
-              <div class="msg-content">${escapeHTML(c.message)}</div>
-            </div>
-          `;
-        });
-      }
-
-      // Reply Box HTML matching Admin AV exactly
-      let replyBoxHTML = `
-        <div class="reply-box">
-          <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; color: #2b1b36;">Send message to HR / Support:</div>
-          <textarea id="replyText" class="reply-textarea" placeholder="Type your message to HR..."></textarea>
-          <div class="reply-actions">
-            <button class="btn-send" onclick="submitEmployeeReply('${ticket.id}')">
-              <i class="fa-solid fa-paper-plane"></i> Send Reply
-            </button>
-          </div>
-        </div>
-      `;
-
-      const priorityBadgeClass = (ticket.priority || "").toLowerCase() === "high" ? "badge-high" : "badge-medium";
-
-      container.innerHTML = `
-        <div class="detail-header">
-          <div class="detail-top-row">
-            <h1>Ticket #${ticket.id}: ${escapeHTML(ticket.title)}</h1>
-            <span class="badge ${priorityBadgeClass}">${ticket.priority || 'Medium'} Priority</span>
-          </div>
-          <div class="ticket-info-bar">
-            <div class="info-item"><span>Status</span><strong>${ticket.status || 'Open'}</strong></div>
-            <div class="info-item"><span>Category / Dept</span><strong>${ticket.department || ticket.category || 'General'}</strong></div>
-            <div class="info-item"><span>Created Date</span><strong>${ticket.date || (ticket.createdAt ? ticket.createdAt.split('T')[0] : 'Today')}</strong></div>
-            <div class="info-item"><span>Assigned Team</span><strong>HR & Operations</strong></div>
-          </div>
-        </div>
-        <div class="detail-body">
-          <div class="thread-column">${threadHTML}${replyBoxHTML}</div>
-          <div class="insight-column">
-            <div class="ai-card">
-              <div class="ai-header"><i class="fa-solid fa-wand-magic-sparkles" style="color:#6f4b82;"></i> Support Details & Genie Assist</div>
-              <div class="ai-field"><span class="ai-field-label">Current Status</span><div class="ai-field-text"><strong>${ticket.status || 'Open'}</strong> - Updates will appear here as HR reviews your request.</div></div>
-              <div class="ai-field"><span class="ai-field-label">Assigned Department</span><div class="ai-field-text">${ticket.department || ticket.category || 'General Operations'}</div></div>
-              <div class="ai-field"><span class="ai-field-label">Need Policy Advice?</span><div class="ai-field-text">Use <strong>Ask Genie</strong> at bottom-right to check PTO policies, benefits, or employee rules.</div></div>
-            </div>
-          </div>
-        </div>
-      `;
+function switchPortalView(viewType) {
+    if (typeof showNotification === 'function') {
+        showNotification(viewType === 'management' ? 'Switched to Management View mode.' : 'Switched to Employee View mode.', 'info');
     }
+}
 
-    async function submitEmployeeReply(ticketId) {
-      const textarea = document.getElementById('replyText');
-      if (!textarea) return;
-      const text = textarea.value.trim();
-      if (!text) return;
-
-      textarea.value = "";
-      await apiPostComment(ticketId, text, "Employee");
-      await renderEmployeeTicketDetail(ticketId);
+function handleSignOut(event) {
+    if (event) event.preventDefault();
+    if (confirm('Are you sure you want to sign out of TicketGenie Enterprise?')) {
+        localStorage.removeItem('portalUser');
+        window.location.href = 'index.html';
     }
-  </script>
+}
+</script>
 </body>
 </html>
