@@ -49,80 +49,68 @@ class AIServiceError(Exception):
     """
 
 
-def _strictify_json_schema(node: Any) -> None:
-    """
-    Mutate a Pydantic-generated JSON schema in place into the Azure/OpenAI
-    "strict" structured-output subset: every object schema gets
-    additionalProperties=false and lists every one of its properties in
-    `required` (an Optional field expresses its optionality through its
-    own type - e.g. Pydantic already emits `anyOf: [..., {"type": "null"}]`
-    for `Optional[X] = None` - not by being omitted from `required`, which
-    strict mode does not allow). `default` is stripped since it is not
-    part of the strict-mode keyword subset.
-    """
-
-    if isinstance(node, dict):
-        node.pop("default", None)
-        if node.get("type") == "object" and "properties" in node:
-            node["additionalProperties"] = False
-            node["required"] = list(node["properties"].keys())
-        for value in node.values():
-            _strictify_json_schema(value)
-    elif isinstance(node, list):
-        for item in node:
-            _strictify_json_schema(item)
-
-
-def _pydantic_to_strict_schema(response_model: Any) -> dict[str, Any]:
-    """Build an Azure/OpenAI strict json_schema payload from a Pydantic model."""
-
-    schema = response_model.model_json_schema()
-    _strictify_json_schema(schema)
-    return schema
-
-
 class AIServiceWrapper:
-    """Structured .generate() interface for Pydantic response models
-    (used by the chatbot, knowledge/RAG, summary, and suggested-response
-    agents - see agents/chatbot_agent.py, agents/knowledge_agent.py).
-
-    Internally reuses generate_structured() below - the exact same
-    shared, Key-Vault-backed GROUP1* Azure OpenAI v1 Responses call that
-    agents/orchestrator.py's category/priority/routing classification
-    already goes through - converting the Pydantic response_model into a
-    strict JSON schema instead of opening a second AzureOpenAI SDK client
-    against a separate AZURE_OPENAI_* configuration. There is exactly one
-    Azure OpenAI call path in this module now.
-
-    Contract: always either returns a valid response_model instance or
-    raises AIServiceError - never None. Callers should catch
-    AIServiceError (see services/chatbot_service.handle_message).
-    """
+    """Wrapper class providing a structured .generate() interface for Pydantic response models."""
 
     def generate(
         self, *, system_prompt: str, user_content: str, response_model: Any
     ) -> Any:
-        model_name = getattr(response_model, "__name__", "response")
-
         if use_mock_ai():
             try:
                 return response_model()
-            except Exception as exc:
-                raise AIServiceError(
-                    f"Mock AI mode cannot construct a default {model_name} - "
-                    "it has required fields with no safe default."
-                ) from exc
+            except Exception:
+                pass
 
-        schema = _pydantic_to_strict_schema(response_model)
-        prompt = f"{system_prompt}\n\n{user_content}"
-        data = generate_structured(prompt=prompt, schema=schema, name=model_name)
+        endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+        api_key = os.getenv("AZURE_OPENAI_API_KEY")
+        deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT")
+        api_version = os.getenv("AZURE_OPENAI_API_VERSION", DEFAULT_AZURE_API_VERSION)
+
+        if not (endpoint and api_key and deployment):
+            try:
+                return response_model()
+            except Exception:
+                return None
 
         try:
-            return response_model.model_validate(data)
+            from openai import AzureOpenAI
+
+            client = AzureOpenAI(
+                azure_endpoint=endpoint, api_key=api_key, api_version=api_version
+            )
+            response = client.chat.completions.create(
+                model=deployment,
+                temperature=0,
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_content},
+                ],
+            )
+            raw = response.choices[0].message.content
+            if hasattr(response, "usage") and response.usage:
+                try:
+                    from telemetry import record_llm_metrics
+
+                    record_llm_metrics(
+                        prompt_tokens=response.usage.prompt_tokens or 0,
+                        completion_tokens=response.usage.completion_tokens or 0,
+                        model=deployment,
+                        agent_name="ai_service_wrapper",
+                    )
+                except Exception:
+                    pass
+
+            data = json.loads(raw)
+            if hasattr(response_model, "model_validate"):
+                return response_model.model_validate(data)
+            return response_model(**data)
         except Exception as exc:
-            raise AIServiceError(
-                f"{model_name} response did not match the expected schema."
-            ) from exc
+            logger.warning(f"ai_service.generate failed: {exc}")
+            try:
+                return response_model()
+            except Exception:
+                return None
 
 
 ai_service = AIServiceWrapper()
@@ -147,7 +135,9 @@ def generate_structured(
     api_key = os.getenv("GROUP1OPENAIAPIKEY") or os.getenv("AZURE_OPENAI_API_KEY")
     model = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-5.2")
     if not endpoint or not api_key:
-        raise AIServiceError("Azure OpenAI configuration is missing.")
+        raise AIServiceError(
+            "Azure OpenAI ticket-classification configuration is missing."
+        )
 
     body = {
         "model": model,
