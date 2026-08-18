@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import argparse
 import os
-import subprocess
 import sys
 from pathlib import Path
 
@@ -64,49 +63,33 @@ def load_existing_env(env_path: Path) -> dict[str, str]:
     return env_vars
 
 
-def discover_azure_ad_config() -> dict[str, str]:
-    """Discover Azure AD Tenant ID and App Registration Client ID via Azure CLI."""
-    discovered: dict[str, str] = {}
-    print("\n🔍 Querying Azure AD for App Registration & Tenant details...")
+def apply_secret_aliases(secrets: dict[str, str]) -> dict[str, str]:
+    """Map common key aliases (e.g. SMTP/Gmail, OpenAI) to ensure compatibility across all modules."""
+    aliased = dict(secrets)
 
-    # 1. Discover Tenant ID
-    try:
-        tenant_id = subprocess.check_output(
-            ["az", "account", "show", "--query", "tenantId", "-o", "tsv"],
-            text=True,
-            stderr=subprocess.DEVNULL,
-        ).strip()
-        if tenant_id:
-            discovered["AZURE_TENANT_ID"] = tenant_id
-            print(f"   ✓ Discovered Azure Tenant ID: {tenant_id}")
-    except Exception as err:
-        print(f"   ⚠️ Could not fetch Azure Tenant ID via CLI: {err}")
+    # 1. SMTP & Gmail Aliases
+    if "SMTP_USER" in aliased and "GOOGLE_EMAIL" not in aliased:
+        aliased["GOOGLE_EMAIL"] = aliased["SMTP_USER"]
+    elif "GOOGLE_EMAIL" in aliased and "SMTP_USER" not in aliased:
+        aliased["SMTP_USER"] = aliased["GOOGLE_EMAIL"]
 
-    # 2. Discover App Registration Client ID for TicketGenie
-    try:
-        app_id = subprocess.check_output(
-            [
-                "az",
-                "ad",
-                "app",
-                "list",
-                "--filter",
-                "displayName eq 'TicketGenie' or displayName eq 'Ticket-Genie'",
-                "--query",
-                "[0].appId",
-                "-o",
-                "tsv",
-            ],
-            text=True,
-            stderr=subprocess.DEVNULL,
-        ).strip()
-        if app_id:
-            discovered["AZURE_CLIENT_ID"] = app_id
-            print(f"   ✓ Discovered Azure App Registration Client ID: {app_id}")
-    except Exception as err:
-        print(f"   ⚠️ Could not fetch Azure App Registration Client ID via CLI: {err}")
+    if "SMTP_PASSWORD" in aliased and "GOOGLE_APP_PASSWORD" not in aliased:
+        aliased["GOOGLE_APP_PASSWORD"] = aliased["SMTP_PASSWORD"]
+    elif "GOOGLE_APP_PASSWORD" in aliased and "SMTP_PASSWORD" not in aliased:
+        aliased["SMTP_PASSWORD"] = aliased["GOOGLE_APP_PASSWORD"]
 
-    return discovered
+    # 2. OpenAI Endpoint & Key Aliases
+    if "GROUP1OPENAIENDPOINT" in aliased and "AZURE_OPENAI_ENDPOINT" not in aliased:
+        aliased["AZURE_OPENAI_ENDPOINT"] = aliased["GROUP1OPENAIENDPOINT"]
+    elif "AZURE_OPENAI_ENDPOINT" in aliased and "GROUP1OPENAIENDPOINT" not in aliased:
+        aliased["GROUP1OPENAIENDPOINT"] = aliased["AZURE_OPENAI_ENDPOINT"]
+
+    if "GROUP1OPENAIAPIKEY" in aliased and "AZURE_OPENAI_API_KEY" not in aliased:
+        aliased["AZURE_OPENAI_API_KEY"] = aliased["GROUP1OPENAIAPIKEY"]
+    elif "AZURE_OPENAI_API_KEY" in aliased and "GROUP1OPENAIAPIKEY" not in aliased:
+        aliased["GROUP1OPENAIAPIKEY"] = aliased["AZURE_OPENAI_API_KEY"]
+
+    return aliased
 
 
 def save_env_file(env_path: Path, secrets: dict[str, str]) -> None:
@@ -114,11 +97,9 @@ def save_env_file(env_path: Path, secrets: dict[str, str]) -> None:
     # Load existing env vars to preserve non-secret local configs
     existing_env = load_existing_env(env_path)
 
-    # Discover Azure AD App Registration Client ID and Tenant ID via Azure CLI
-    ad_config = discover_azure_ad_config()
-    existing_env.update(ad_config)
-
-    existing_env.update(secrets)
+    # Apply secret aliases (e.g. SMTP <-> Google Email, OpenAI aliases)
+    updated_secrets = apply_secret_aliases(secrets)
+    existing_env.update(updated_secrets)
 
     lines = [
         "# ==========================================\n",
