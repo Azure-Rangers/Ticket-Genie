@@ -144,9 +144,8 @@ def export_ticket_document(
 ):
     from fastapi import Response
 
-    from services.document_service import generate_ticket_docx, generate_ticket_pdf
-
     from database.crud import get_ticket_comments
+    from services.document_service import generate_ticket_docx, generate_ticket_pdf
 
     ticket = get_ticket_by_id(ticket_id, db=db)
     if ticket is None:

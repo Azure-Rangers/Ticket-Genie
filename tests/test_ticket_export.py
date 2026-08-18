@@ -8,7 +8,6 @@ from fastapi import HTTPException
 
 from services.document_service import generate_ticket_docx, generate_ticket_pdf
 
-
 ROOT = Path(__file__).resolve().parents[1]
 API_JS = (ROOT / "frontend" / "js" / "api.js").read_text(encoding="utf-8")
 EMPLOYEE_JS = (ROOT / "frontend" / "employee_NM" / "employee.js").read_text(encoding="utf-8")

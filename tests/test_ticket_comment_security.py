@@ -6,7 +6,6 @@ from unittest.mock import ANY, MagicMock, patch
 import pytest
 from fastapi import HTTPException
 
-
 ROOT = Path(__file__).resolve().parents[1]
 TICKETS_API = (ROOT / "backend" / "api" / "tickets.py").read_text(encoding="utf-8")
 

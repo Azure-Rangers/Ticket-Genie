@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 API_JS = (ROOT / "frontend" / "js" / "api.js").read_text(encoding="utf-8")
 EMPLOYEE_JS = (
