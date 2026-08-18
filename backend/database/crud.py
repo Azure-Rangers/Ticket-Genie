@@ -932,12 +932,10 @@ def update_user_profile(
 
         user = session.query(UserProfileDB).filter(UserProfileDB.id == user_id).first()
         if not user:
-            if not name or not email:
-                return None
             user = UserProfileDB(
                 id=user_id,
-                name=name,
-                email=email,
+                name=name or "User",
+                email=email or f"{user_id}@example.com",
             )
             session.add(user)
 
