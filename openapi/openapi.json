@@ -396,6 +396,63 @@
         }
       }
     },
+    "/api/tickets/{ticket_id}/suggested-response": {
+      "post": {
+        "tags": [
+          "tickets"
+        ],
+        "summary": "Suggest Response For Ticket",
+        "description": "Draft an AI response for an authorized human support agent to review.",
+        "operationId": "suggest_response_for_ticket_api_tickets__ticket_id__suggested_response_post",
+        "parameters": [
+          {
+            "name": "ticket_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ticket Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/tickets/{ticket_id}/comments": {
       "get": {
         "tags": [
