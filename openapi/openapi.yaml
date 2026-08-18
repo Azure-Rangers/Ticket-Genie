@@ -1382,6 +1382,16 @@ components:
           - type: string
           - type: 'null'
           title: Preferreddate
+        startDate:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Startdate
+        endDate:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Enddate
         is_anonymous:
           type: boolean
           title: Is Anonymous
