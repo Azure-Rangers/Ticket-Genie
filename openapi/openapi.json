@@ -396,6 +396,63 @@
         }
       }
     },
+    "/api/tickets/{ticket_id}/suggested-response": {
+      "post": {
+        "tags": [
+          "tickets"
+        ],
+        "summary": "Suggest Response For Ticket",
+        "description": "Draft an AI response for an authorized human support agent to review.",
+        "operationId": "suggest_response_for_ticket_api_tickets__ticket_id__suggested_response_post",
+        "parameters": [
+          {
+            "name": "ticket_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ticket Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/tickets/{ticket_id}/comments": {
       "get": {
         "tags": [
@@ -1125,13 +1182,14 @@
         }
       }
     },
-    "/api/admin/sql-query": {
+    "/api/admin/trigger-daily-digest": {
       "post": {
         "tags": [
           "admin"
         ],
-        "summary": "Handle Sql Query",
-        "operationId": "handle_sql_query_api_admin_sql_query_post",
+        "summary": "Handle Trigger Daily Digest",
+        "description": "Trigger daily summary email digest on demand for IT Admins.",
+        "operationId": "handle_trigger_daily_digest_api_admin_trigger_daily_digest_post",
         "parameters": [
           {
             "name": "authorization",
@@ -1150,16 +1208,6 @@
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SQLQueryRequest"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1729,6 +1777,54 @@
               "title": "Notif Id"
             }
           },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/outbox": {
+      "get": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "List Email Outbox",
+        "description": "Retrieve sent email outbox audit trail.",
+        "operationId": "list_email_outbox_api_notifications_outbox_get",
+        "parameters": [
           {
             "name": "authorization",
             "in": "header",
@@ -3076,41 +3172,6 @@
         ],
         "title": "RequestType",
         "description": "Which of the three existing New Request tabs a ticket_draft is meant\nfor: standardRequestTab, anonymousRequestTab, or leaveRequestTab (see\nfrontend/employee_NM/new-request.html). This is separate from\nChatIntent - intent says \"the user wants to submit a request\";\nrequest_type says which existing form that request belongs in."
-      },
-      "SQLQueryRequest": {
-        "properties": {
-          "query": {
-            "type": "string",
-            "title": "Query"
-          },
-          "role": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Role"
-          },
-          "user_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "User Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "query"
-        ],
-        "title": "SQLQueryRequest"
       },
       "TicketCandidate": {
         "properties": {

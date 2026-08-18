@@ -1,3 +1,8 @@
+import asyncio
+import logging
+import os
+import sys
+
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -76,3 +81,36 @@ def get_public_config():
         "azureClientId": os.getenv("AZURE_CLIENT_ID", ""),
         "azureTenantId": os.getenv("AZURE_TENANT_ID", ""),
     }
+
+
+logger = logging.getLogger("ticketgenie.main")
+
+
+async def _daily_digest_scheduler_loop():
+    """Background loop that runs daily digest every 24 hours inside the container."""
+    # Initial delay after container startup
+    await asyncio.sleep(15)
+    while True:
+        try:
+            from services.daily_digest_service import send_daily_admin_digest
+
+            logger.info("Executing scheduled daily admin digest email dispatch...")
+            send_daily_admin_digest()
+        except Exception as e:
+            logger.error(f"Error in background daily digest loop: {e}")
+        # Sleep for 24 hours (86400 seconds)
+        await asyncio.sleep(86400)
+
+
+@app.on_event("startup")
+def start_daily_scheduler():
+    is_testing = "pytest" in sys.modules or os.getenv("TESTING", "").lower() == "true"
+    enabled = os.getenv("ENABLE_DAILY_DIGEST_CRON", "true").lower() in (
+        "true",
+        "1",
+        "yes",
+    )
+
+    if enabled and not is_testing:
+        logger.info("Starting background Daily Admin Digest scheduler (24h loop)...")
+        asyncio.create_task(_daily_digest_scheduler_loop())

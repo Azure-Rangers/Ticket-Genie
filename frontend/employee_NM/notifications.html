@@ -156,53 +156,7 @@
         </div>
 
         <!-- Notifications List Feed -->
-        <div style="display: flex; flex-direction: column; gap: 16px;">
-            
-            <!-- Notification Item 1 -->
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #d4a359; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03); display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
-                <div style="display: flex; gap: 16px; align-items: flex-start;">
-                    <div style="width: 40px; height: 40px; background: #fef9e7; color: #b8860b; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
-                        <i class="fa-solid fa-ticket"></i>
-                    </div>
-                    <div>
-                        <h4 style="font-size: 16px; color: #0f172a; margin: 0 0 4px 0; font-weight: 700;">Ticket #HD-1035 Updated</h4>
-                        <p style="font-size: 14px; color: #475569; margin: 0 0 8px 0; line-height: 1.5;">An enterprise specialist replied to your immigration support request.</p>
-                        <span style="font-size: 12px; color: #64748b;"><i class="fa-regular fa-clock" style="margin-right: 4px;"></i> Today • 10:15 AM</span>
-                    </div>
-                </div>
-                <span style="background: #eff6ff; color: #3b82f6; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 12px; flex-shrink: 0;">Unread</span>
-            </div>
-
-            <!-- Notification Item 2 -->
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #d4a359; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03); display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
-                <div style="display: flex; gap: 16px; align-items: flex-start;">
-                    <div style="width: 40px; height: 40px; background: #fef9e7; color: #b8860b; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
-                        <i class="fa-solid fa-calendar-days"></i>
-                    </div>
-                    <div>
-                        <h4 style="font-size: 16px; color: #0f172a; margin: 0 0 4px 0; font-weight: 700;">Leave Request Approved</h4>
-                        <p style="font-size: 14px; color: #475569; margin: 0 0 8px 0; line-height: 1.5;">Your PTO request for August 14, 2026 has been approved by management.</p>
-                        <span style="font-size: 12px; color: #64748b;"><i class="fa-regular fa-clock" style="margin-right: 4px;"></i> Yesterday • 4:20 PM</span>
-                    </div>
-                </div>
-                <span style="background: #f0fdf4; color: #10b981; border: 1px solid #a7f3d0; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 12px; flex-shrink: 0;">Read</span>
-            </div>
-
-            <!-- Notification Item 3 -->
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #d4a359; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03); display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
-                <div style="display: flex; gap: 16px; align-items: flex-start;">
-                    <div style="width: 40px; height: 40px; background: #fef9e7; color: #b8860b; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
-                        <i class="fa-solid fa-bullhorn"></i>
-                    </div>
-                    <div>
-                        <h4 style="font-size: 16px; color: #0f172a; margin: 0 0 4px 0; font-weight: 700;">New Company Announcement</h4>
-                        <p style="font-size: 14px; color: #475569; margin: 0 0 8px 0; line-height: 1.5;">Scheduled Cloud Database & Entra ID Maintenance Window posted by IT Infrastructure.</p>
-                        <span style="font-size: 12px; color: #64748b;"><i class="fa-regular fa-clock" style="margin-right: 4px;"></i> August 15 • 8:00 AM</span>
-                    </div>
-                </div>
-                <span style="background: #f0fdf4; color: #10b981; border: 1px solid #a7f3d0; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 12px; flex-shrink: 0;">Read</span>
-            </div>
-
+        <div id="notificationsListContainer" style="display: flex; flex-direction: column; gap: 16px;">
         </div>
     </section>
 </main>
@@ -246,6 +200,7 @@ function handleSignOut(event) {
     window.location.href = '../index.html';
 }
 </script>
+<script src="../js/api.js?v=20260816_7"></script>
 <script src="components.js?v=20260816_7"></script>
 <script src="../js/employee-script.js?v=20260816_7"></script>
 </body>
