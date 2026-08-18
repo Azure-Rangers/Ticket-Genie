@@ -6,7 +6,8 @@ import logging
 import os
 import time
 import urllib.request
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 from fastapi import Header, HTTPException, status
 
 logger = logging.getLogger("ticketgenie.jwt_verifier")
@@ -23,7 +24,9 @@ def fetch_microsoft_jwks() -> Dict[str, Any]:
         return _JWKS_CACHE["keys"]
 
     try:
-        req = urllib.request.Request(JWKS_URL, headers={"User-Agent": "TicketGenie-Backend"})
+        req = urllib.request.Request(
+            JWKS_URL, headers={"User-Agent": "TicketGenie-Backend"}
+        )
         with urllib.request.urlopen(req, timeout=5) as response:
             if response.status == 200:
                 data = json.loads(response.read().decode("utf-8"))
@@ -73,11 +76,11 @@ def verify_azure_jwt(token: str) -> Dict[str, Any]:
 
     try:
         header, payload = parse_jwt_claims_unverified(token)
-    except Exception:
+    except Exception as err:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid JWT token structure.",
-        )
+        ) from err
 
     # 1. Check expiration
     now = time.time()
@@ -93,7 +96,9 @@ def verify_azure_jwt(token: str) -> Dict[str, Any]:
     # 2. Check audience if AZURE_CLIENT_ID is configured
     aud = payload.get("aud")
     if azure_client_id and aud and aud != azure_client_id:
-        logger.warning(f"JWT audience mismatch: expected '{azure_client_id}', got '{aud}'")
+        logger.warning(
+            f"JWT audience mismatch: expected '{azure_client_id}', got '{aud}'"
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token audience mismatch.",
@@ -118,7 +123,9 @@ def verify_azure_jwt(token: str) -> Dict[str, Any]:
             logger.info("Successfully verified Microsoft JWT RSA signature via JWKS.")
             return verified_payload
     except ImportError:
-        logger.debug("PyJWT RSA cryptography module not installed; using claim validation.")
+        logger.debug(
+            "PyJWT RSA cryptography module not installed; using claim validation."
+        )
     except Exception as e:
         logger.warning(f"Signature verification warning: {e}")
 
@@ -147,22 +154,37 @@ def verify_azure_user(authorization: Optional[str] = Header(None)) -> Dict[str, 
             detail="Invalid JWT claims: missing object ID (oid).",
         )
 
-    email = claims.get("preferred_username") or claims.get("upn") or claims.get("email") or "user@company.com"
+    email = (
+        claims.get("preferred_username")
+        or claims.get("upn")
+        or claims.get("email")
+        or "user@company.com"
+    )
     name = claims.get("name") or email
 
-    role = claims.get("role") or (claims.get("roles")[0] if isinstance(claims.get("roles"), list) and claims.get("roles") else "Employee")
+    role = claims.get("role") or (
+        claims.get("roles")[0]
+        if isinstance(claims.get("roles"), list) and claims.get("roles")
+        else "Employee"
+    )
     department = claims.get("department") or claims.get("dept")
     try:
+        from sqlalchemy import func, or_
+
         from database.connection import SessionLocal
         from database.models_db import DepartmentUserDB
-        from sqlalchemy import func, or_
+
         with SessionLocal() as session:
-            record = session.query(DepartmentUserDB).filter(
-                or_(
-                    DepartmentUserDB.azure_object_id == oid,
-                    func.lower(DepartmentUserDB.user_email) == email.lower(),
+            record = (
+                session.query(DepartmentUserDB)
+                .filter(
+                    or_(
+                        DepartmentUserDB.azure_object_id == oid,
+                        func.lower(DepartmentUserDB.user_email) == email.lower(),
+                    )
                 )
-            ).first()
+                .first()
+            )
             if record:
                 if record.role:
                     role = record.role

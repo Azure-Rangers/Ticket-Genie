@@ -31,12 +31,15 @@ def handle_get_profile(
     current_user: dict = Depends(verify_azure_user),
 ):
     from fastapi import HTTPException
+
     user_oid = current_user.get("oid")
     user_email = current_user.get("email")
-    
+
     profile = get_user_profile(user_id=user_id, azure_oid=user_oid, email=user_email)
     if not profile:
-        raise HTTPException(status_code=404, detail="User profile not found in database")
+        raise HTTPException(
+            status_code=404, detail="User profile not found in database"
+        )
     return profile
 
 
@@ -70,7 +73,9 @@ def handle_azure_login(req: AzureLoginRequest):
             token_oid = claims.get("oid") or claims.get("sub")
             if token_oid:
                 verified_oid = token_oid
-            print(f"✅ [Azure Auth API] Microsoft JWT signature verified for OID: {verified_oid}")
+            print(
+                f"✅ [Azure Auth API] Microsoft JWT signature verified for OID: {verified_oid}"
+            )
         except Exception as err:
             print(f"⚠️ [Azure Auth API] JWT verification warning: {err}")
 
@@ -81,9 +86,11 @@ def handle_azure_login(req: AzureLoginRequest):
     role = "Employee"
 
     with SessionLocal() as session:
-        record = session.query(DepartmentUserDB).filter(
-            DepartmentUserDB.azure_object_id == verified_oid
-        ).first()
+        record = (
+            session.query(DepartmentUserDB)
+            .filter(DepartmentUserDB.azure_object_id == verified_oid)
+            .first()
+        )
         if record:
             if record.role.lower() in ["admin", "super admin", "operations admin"]:
                 is_admin = True
@@ -97,17 +104,22 @@ def handle_azure_login(req: AzureLoginRequest):
     if req.email or req.name:
         try:
             from database.crud import update_user_profile
+
             profile_id = f"usr-admin-{verified_oid[:8]}"
             update_user_profile(
                 user_id=profile_id,
                 name=req.name or req.email.split("@")[0],
                 email=req.email,
-                department=record.department_name if record else "Upper Executive Management",
+                department=record.department_name
+                if record
+                else "Upper Executive Management",
             )
         except Exception as err:
             print(f"Notice: profile sync during login: {err}")
 
-    print(f"👤 [Azure Auth API] User {verified_oid} authenticated as role: '{role}', is_admin: {is_admin}, jwt_verified: {jwt_verified}")
+    print(
+        f"👤 [Azure Auth API] User {verified_oid} authenticated as role: '{role}', is_admin: {is_admin}, jwt_verified: {jwt_verified}"
+    )
     return {
         "status": "success",
         "azure_object_id": verified_oid,
@@ -117,4 +129,3 @@ def handle_azure_login(req: AzureLoginRequest):
         "email": req.email,
         "name": req.name or "Azure User",
     }
-

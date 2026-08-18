@@ -1,10 +1,10 @@
 """Unit & Integration Tests for Security, JWT Verification, and Database RBAC."""
 
-import json
 import base64
+import json
 import time
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from services.jwt_verifier import (
     base64url_decode,
@@ -15,14 +15,13 @@ from services.jwt_verifier import (
 from services.sql_context_service import (
     SQLValidationError,
     validate_and_sanitize_sql,
-    execute_sql_query,
 )
 
 
 def create_mock_jwt(payload_dict: dict, expired: bool = False) -> str:
     """Helper to generate an unverified mock JWT string for testing."""
     header = {"alg": "RS256", "typ": "JWT", "kid": "mock-key-1"}
-    
+
     payload = payload_dict.copy()
     now = int(time.time())
     payload["iat"] = now - 60
@@ -56,6 +55,7 @@ class TestJWTVerifierAndSecurity(unittest.TestCase):
     def test_verify_azure_jwt_expired_token(self):
         expired_token = create_mock_jwt({"oid": "test-oid-123"}, expired=True)
         from fastapi import HTTPException
+
         with self.assertRaises(HTTPException) as ctx:
             verify_azure_jwt(expired_token)
         self.assertEqual(ctx.exception.status_code, 401)
@@ -64,6 +64,7 @@ class TestJWTVerifierAndSecurity(unittest.TestCase):
     def test_verify_azure_user_dev_fallback(self):
         with patch.dict("os.environ", {"AZURE_CLIENT_ID": ""}):
             from fastapi import HTTPException
+
             with self.assertRaises(HTTPException) as ctx:
                 verify_azure_user(authorization=None)
             self.assertEqual(ctx.exception.status_code, 401)
@@ -71,6 +72,7 @@ class TestJWTVerifierAndSecurity(unittest.TestCase):
     def test_verify_azure_user_missing_header_in_prod(self):
         with patch.dict("os.environ", {"AZURE_CLIENT_ID": "mock-client-id"}):
             from fastapi import HTTPException
+
             with self.assertRaises(HTTPException) as ctx:
                 verify_azure_user(authorization=None)
             self.assertEqual(ctx.exception.status_code, 401)
@@ -104,7 +106,9 @@ class TestDatabaseRBACSafety(unittest.TestCase):
 
     def test_super_admin_unscoped_select(self):
         query = "SELECT * FROM tickets"
-        sanitized = validate_and_sanitize_sql(query, role="Super Admin", user_id="admin-1")
+        sanitized = validate_and_sanitize_sql(
+            query, role="Super Admin", user_id="admin-1"
+        )
         self.assertEqual(sanitized, "SELECT * FROM tickets")
 
     def test_unauthorized_table_update_blocked(self):
@@ -117,8 +121,9 @@ class TestSuperAdminRoleManagement(unittest.TestCase):
     """Test suite for SuperAdmin role management & 403 Forbidden enforcement."""
 
     def test_require_super_admin_enforcement(self):
-        from api.admin import require_super_admin
         from fastapi import HTTPException
+
+        from api.admin import require_super_admin
 
         # Non-SuperAdmin roles must raise HTTP 403 Forbidden
         non_super_roles = [
@@ -138,7 +143,9 @@ class TestSuperAdminRoleManagement(unittest.TestCase):
         try:
             require_super_admin(super_ctx)
         except Exception:
-            self.fail("require_super_admin raised exception for valid Super Admin role!")
+            self.fail(
+                "require_super_admin raised exception for valid Super Admin role!"
+            )
 
     def test_department_user_role_crud(self):
         from database.crud import (
@@ -168,7 +175,9 @@ class TestSuperAdminRoleManagement(unittest.TestCase):
         self.assertIn(test_oid, oids)
 
         # 3. Delete mapping from DB and verify removal
-        removed = remove_department_user(department_name=test_dept, azure_object_id=test_oid)
+        removed = remove_department_user(
+            department_name=test_dept, azure_object_id=test_oid
+        )
         self.assertTrue(removed)
 
         users_after = list_department_users(department_name=test_dept)
@@ -177,7 +186,6 @@ class TestSuperAdminRoleManagement(unittest.TestCase):
 
     def test_context_aware_and_department_rbac(self):
         from backend.api.tickets import list_tickets
-        from unittest.mock import MagicMock
 
         mock_db = MagicMock()
         admin_user = {
@@ -189,8 +197,12 @@ class TestSuperAdminRoleManagement(unittest.TestCase):
 
         # 1. Employee view (admin_view=False): Admin sees ONLY their own tickets (effective_requester = admin-oid-999)
         with patch("backend.api.tickets.get_all_tickets") as mock_get_tickets:
-            mock_get_tickets.return_value = [{"id": "HD-999", "requester_id": "admin-oid-999"}]
-            tickets = list_tickets(admin_view=False, db=mock_db, current_user=admin_user)
+            mock_get_tickets.return_value = [
+                {"id": "HD-999", "requester_id": "admin-oid-999"}
+            ]
+            tickets = list_tickets(
+                admin_view=False, db=mock_db, current_user=admin_user
+            )
             mock_get_tickets.assert_called_once_with(
                 status=None,
                 priority=None,

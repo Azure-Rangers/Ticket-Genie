@@ -27,9 +27,15 @@ def list_notifications(
     current_user: dict = Depends(verify_azure_user),
 ):
     user_role = (current_user.get("role") or "").lower()
-    is_admin = any(r in user_role for r in ["admin", "super", "operations"]) or current_user.get("is_dev", False)
+    is_admin = any(
+        r in user_role for r in ["admin", "super", "operations"]
+    ) or current_user.get("is_dev", False)
 
-    target_user_id = user_id if (is_admin and user_id) else (current_user.get("oid") or current_user.get("email") or "user")
+    target_user_id = (
+        user_id
+        if (is_admin and user_id)
+        else (current_user.get("oid") or current_user.get("email") or "user")
+    )
     return get_notifications(user_id=target_user_id)
 
 

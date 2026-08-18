@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -63,9 +64,6 @@ def load_existing_env(env_path: Path) -> dict[str, str]:
     return env_vars
 
 
-import subprocess
-
-
 def discover_azure_ad_config() -> dict[str, str]:
     """Discover Azure AD Tenant ID and App Registration Client ID via Azure CLI."""
     discovered: dict[str, str] = {}
@@ -75,7 +73,8 @@ def discover_azure_ad_config() -> dict[str, str]:
     try:
         tenant_id = subprocess.check_output(
             ["az", "account", "show", "--query", "tenantId", "-o", "tsv"],
-            text=True, stderr=subprocess.DEVNULL
+            text=True,
+            stderr=subprocess.DEVNULL,
         ).strip()
         if tenant_id:
             discovered["AZURE_TENANT_ID"] = tenant_id
@@ -86,8 +85,20 @@ def discover_azure_ad_config() -> dict[str, str]:
     # 2. Discover App Registration Client ID for TicketGenie
     try:
         app_id = subprocess.check_output(
-            ["az", "ad", "app", "list", "--filter", "displayName eq 'TicketGenie' or displayName eq 'Ticket-Genie'", "--query", "[0].appId", "-o", "tsv"],
-            text=True, stderr=subprocess.DEVNULL
+            [
+                "az",
+                "ad",
+                "app",
+                "list",
+                "--filter",
+                "displayName eq 'TicketGenie' or displayName eq 'Ticket-Genie'",
+                "--query",
+                "[0].appId",
+                "-o",
+                "tsv",
+            ],
+            text=True,
+            stderr=subprocess.DEVNULL,
         ).strip()
         if app_id:
             discovered["AZURE_CLIENT_ID"] = app_id

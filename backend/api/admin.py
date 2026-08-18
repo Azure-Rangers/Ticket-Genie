@@ -127,8 +127,8 @@ def handle_sql_query(
     current_user: dict = Depends(verify_azure_user),
 ):
     absorbed_role = current_user.get("role") or req.role or "Employee"
-    absorbed_user_id = current_user.get("oid") or current_user.get("email") or req.user_id or "admin"
-
-    return execute_sql_query(
-        req.query, role=absorbed_role, user_id=absorbed_user_id
+    absorbed_user_id = (
+        current_user.get("oid") or current_user.get("email") or req.user_id or "admin"
     )
+
+    return execute_sql_query(req.query, role=absorbed_role, user_id=absorbed_user_id)

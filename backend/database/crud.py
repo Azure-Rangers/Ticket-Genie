@@ -49,10 +49,14 @@ def _create_ticket_internal(ticket: TicketCreate, db: Optional[Session] = None) 
         # Duplicate submission check within 5 seconds
         if ticket.title and ticket.description:
             cutoff = now - timedelta(seconds=5)
-            recent_tickets = session.query(TicketDB).filter(
-                TicketDB.title == ticket.title,
-                TicketDB.description == ticket.description,
-            ).all()
+            recent_tickets = (
+                session.query(TicketDB)
+                .filter(
+                    TicketDB.title == ticket.title,
+                    TicketDB.description == ticket.description,
+                )
+                .all()
+            )
             for rec in recent_tickets:
                 if rec.createdAt:
                     try:
@@ -120,13 +124,18 @@ def get_all_tickets(
             target_ids = {req_str}
             try:
                 from database.models_db import DepartmentUserDB, UserProfileDB
-                dept_records = session.query(DepartmentUserDB).filter(
-                    or_(
-                        func.lower(DepartmentUserDB.user_email) == req_str,
-                        func.lower(DepartmentUserDB.azure_object_id) == req_str,
-                        func.lower(DepartmentUserDB.id) == req_str,
+
+                dept_records = (
+                    session.query(DepartmentUserDB)
+                    .filter(
+                        or_(
+                            func.lower(DepartmentUserDB.user_email) == req_str,
+                            func.lower(DepartmentUserDB.azure_object_id) == req_str,
+                            func.lower(DepartmentUserDB.id) == req_str,
+                        )
                     )
-                ).all()
+                    .all()
+                )
                 for rec in dept_records:
                     if rec.azure_object_id:
                         target_ids.add(rec.azure_object_id.lower())
@@ -135,12 +144,16 @@ def get_all_tickets(
                     if rec.id:
                         target_ids.add(rec.id.lower())
 
-                profiles = session.query(UserProfileDB).filter(
-                    or_(
-                        func.lower(UserProfileDB.id) == req_str,
-                        func.lower(UserProfileDB.email) == req_str,
+                profiles = (
+                    session.query(UserProfileDB)
+                    .filter(
+                        or_(
+                            func.lower(UserProfileDB.id) == req_str,
+                            func.lower(UserProfileDB.email) == req_str,
+                        )
                     )
-                ).all()
+                    .all()
+                )
                 for prof in profiles:
                     if prof.id:
                         target_ids.add(prof.id.lower())
@@ -867,14 +880,15 @@ def get_user_profile(
     user_id: Optional[str] = None,
     azure_oid: Optional[str] = None,
     email: Optional[str] = None,
-    db: Optional[Session] = None
+    db: Optional[Session] = None,
 ) -> Optional[dict]:
     session = db or SessionLocal()
     should_close = db is None
 
     try:
-        from database.models_db import UserProfileDB
         from sqlalchemy import func
+
+        from database.models_db import UserProfileDB
 
         query = session.query(UserProfileDB)
 
@@ -890,7 +904,9 @@ def get_user_profile(
                 return user.to_dict()
 
         if email:
-            user = query.filter(func.lower(UserProfileDB.email) == email.lower()).first()
+            user = query.filter(
+                func.lower(UserProfileDB.email) == email.lower()
+            ).first()
             if user:
                 return user.to_dict()
 

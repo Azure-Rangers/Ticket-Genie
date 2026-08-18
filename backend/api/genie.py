@@ -77,9 +77,13 @@ def run_react_chat(
 
     # AI Agent absorbs authenticated user's verified role and OID/identity
     absorbed_role = current_user.get("role") or req.role or "Employee"
-    absorbed_user_id = current_user.get("oid") or current_user.get("email") or req.user_id or "user"
+    absorbed_user_id = (
+        current_user.get("oid") or current_user.get("email") or req.user_id or "user"
+    )
 
-    print(f"🤖 [AI Agent Security] ReAct Agent running for user '{absorbed_user_id}' with absorbed role permissions: '{absorbed_role}'")
+    print(
+        f"🤖 [AI Agent Security] ReAct Agent running for user '{absorbed_user_id}' with absorbed role permissions: '{absorbed_role}'"
+    )
 
     result = run_react_agent_loop(
         user_prompt=req.message,
@@ -100,7 +104,12 @@ def handle_exec_agent_command(
 ):
     from agents.exec_agent import execute_upper_management_action
 
-    absorbed_user_id = current_user.get("oid") or current_user.get("email") or req.user_id or "exec_user"
+    absorbed_user_id = (
+        current_user.get("oid")
+        or current_user.get("email")
+        or req.user_id
+        or "exec_user"
+    )
     print(f"🤖 [AI Agent Security] Exec Agent executing for user '{absorbed_user_id}'")
 
     return execute_upper_management_action(

@@ -5,12 +5,15 @@ Loads and executes seed statements directly from SQL seed files.
 
 from pathlib import Path
 from typing import Optional
+
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from database.connection import engine
 
-SEED_SQL_FILE = Path(__file__).resolve().parent.parent.parent / "database" / "seed_data.sql"
+SEED_SQL_FILE = (
+    Path(__file__).resolve().parent.parent.parent / "database" / "seed_data.sql"
+)
 
 
 def seed_initial_data(db: Optional[Session] = None) -> None:
@@ -24,7 +27,11 @@ def seed_initial_data(db: Optional[Session] = None) -> None:
             sql_content = SEED_SQL_FILE.read_text(encoding="utf-8")
             raw_blocks = sql_content.split(";")
             for block in raw_blocks:
-                lines = [line for line in block.splitlines() if not line.strip().startswith("--")]
+                lines = [
+                    line
+                    for line in block.splitlines()
+                    if not line.strip().startswith("--")
+                ]
                 stmt = "\n".join(lines).strip()
                 if stmt:
                     conn.execute(text(stmt))

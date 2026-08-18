@@ -42,12 +42,17 @@ def list_tickets(
     current_user: dict = Depends(verify_azure_user),
 ):
     user_role = (current_user.get("role") or "").lower()
-    is_super = any(r in user_role for r in ["super", "operations", "upper management", "executive"]) or current_user.get("is_dev", False)
+    is_super = any(
+        r in user_role for r in ["super", "operations", "upper management", "executive"]
+    ) or current_user.get("is_dev", False)
     is_admin = is_super or ("admin" in user_role)
 
     if admin_view:
         if not is_admin:
-            raise HTTPException(status_code=403, detail="Admin privileges required for admin_view access.")
+            raise HTTPException(
+                status_code=403,
+                detail="Admin privileges required for admin_view access.",
+            )
         effective_requester = requester_id
         if is_super:
             effective_department = department
@@ -173,7 +178,9 @@ def post_comment_to_ticket(
 ):
     from database.crud import add_ticket_comment
 
-    sender_id = current_user.get("oid") or current_user.get("email") or req.sender_id or "user"
+    sender_id = (
+        current_user.get("oid") or current_user.get("email") or req.sender_id or "user"
+    )
     sender_role = req.sender_role or current_user.get("role") or "Employee"
 
     return add_ticket_comment(

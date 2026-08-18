@@ -3,7 +3,9 @@ from fastapi.testclient import TestClient
 from backend.main import app
 
 client = TestClient(app)
-client.headers["Authorization"] = "Bearer eyJhbGciOiAiUlMyNTYiLCAidHlwIjogIkpXVCJ9.eyJvaWQiOiAiZGMzYjU2ZTktOTI4MC00MGRjLThkNzMtOThiZmQ4MWZkZDZhIiwgImVtYWlsIjogIkFkbWluMUB2aWduZXNocXVhZHJhbnRvdXRsb29rLm9ubWljcm9zb2Z0LmNvbSIsICJuYW1lIjogIkFkbWluIFVzZXIiLCAicm9sZSI6ICJTdXBlciBBZG1pbiIsICJleHAiOiAyNTM0MDIzMDA3OTl9.mock"
+client.headers["Authorization"] = (
+    "Bearer eyJhbGciOiAiUlMyNTYiLCAidHlwIjogIkpXVCJ9.eyJvaWQiOiAiZGMzYjU2ZTktOTI4MC00MGRjLThkNzMtOThiZmQ4MWZkZDZhIiwgImVtYWlsIjogIkFkbWluMUB2aWduZXNocXVhZHJhbnRvdXRsb29rLm9ubWljcm9zb2Z0LmNvbSIsICJuYW1lIjogIkFkbWluIFVzZXIiLCAicm9sZSI6ICJTdXBlciBBZG1pbiIsICJleHAiOiAyNTM0MDIzMDA3OTl9.mock"
+)
 
 
 def test_read_root() -> None:
@@ -162,22 +164,26 @@ def test_azure_login_admin_check() -> None:
 
     test_oid = "test-admin-oid-1111-2222"
     with SessionLocal() as db:
-        existing = db.query(DepartmentUserDB).filter_by(azure_object_id=test_oid).first()
+        existing = (
+            db.query(DepartmentUserDB).filter_by(azure_object_id=test_oid).first()
+        )
         if not existing:
-            db.add(DepartmentUserDB(
-                id="uobj-test-1111",
-                department_name="IT Team",
-                azure_object_id=test_oid,
-                role="Super Admin",
-                user_email="admin@company.com",
-                createdAt="2026-08-16T12:00:00"
-            ))
+            db.add(
+                DepartmentUserDB(
+                    id="uobj-test-1111",
+                    department_name="IT Team",
+                    azure_object_id=test_oid,
+                    role="Super Admin",
+                    user_email="admin@company.com",
+                    createdAt="2026-08-16T12:00:00",
+                )
+            )
             db.commit()
 
     payload = {
         "azure_object_id": test_oid,
         "email": "admin@company.com",
-        "name": "Admin User"
+        "name": "Admin User",
     }
 
     response = client.post("/api/users/azure-login", json=payload)
@@ -223,5 +229,3 @@ def test_prevent_duplicate_ticket_double_posting(monkeypatch) -> None:
 
     # The second POST should return the exact same ticket ID
     assert t1["id"] == t2["id"]
-
-

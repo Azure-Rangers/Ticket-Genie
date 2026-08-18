@@ -57,4 +57,7 @@ def handle_update_onboarding(
     success = update_onboarding_status(record_id, req.status)
     if not success:
         raise HTTPException(status_code=404, detail="Onboarding record not found")
-    return {"message": f"Updated onboarding record {record_id} status to {req.status}", "status": req.status}
+    return {
+        "message": f"Updated onboarding record {record_id} status to {req.status}",
+        "status": req.status,
+    }
