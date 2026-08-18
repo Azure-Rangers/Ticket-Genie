@@ -349,12 +349,15 @@ def _handle_knowledge(
 def handle_message(
     request: ChatRequest,
     *,
+    current_user: Optional[dict] = None,
     ai_service=default_ai_service,
     retriever: KnowledgeRetriever = None,
     ticket_lookup=default_get_ticket_by_id,
     classify_ticket=default_classify_ticket,
 ) -> ChatResponse:
     retriever = retriever or default_knowledge_retriever
+    if current_user and current_user.get("role"):
+        request.role = current_user.get("role")
     message = request.message.strip()
 
     if not message:

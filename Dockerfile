@@ -19,6 +19,7 @@ RUN mkdir -p backend && touch backend/__init__.py \
     && pip install --no-cache-dir .[backend]
 
 COPY backend/ ./backend/
+COPY database/ ./database/
 RUN pip install --no-cache-dir --no-deps .
 
 EXPOSE 8000

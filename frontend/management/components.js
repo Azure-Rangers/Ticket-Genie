@@ -8,7 +8,6 @@ function getManagementPages() {
   return [
     { href: "index.html", title: "SuperAdmin Dashboard", subtitle: "Enterprise Control Center & Telemetry" },
     { href: "inbox.html", title: "Unified Inbox & Triage", subtitle: "Upper Management & Multi-Dept Queue" },
-    { href: "onboarding.html", title: "Onboarding & Visas", subtitle: "Track New Hires, Departures & OPT/Visa Status" },
     { href: "submit-ticket.html", title: "Create Ticket", subtitle: "Executive & Manager Ticket Logging" },
     { href: "departments.html", title: "Departments & RBAC", subtitle: "Manage Enterprise Queues & M365 Object IDs" },
     { href: "hr-portal.html", title: "HR Operations Portal", subtitle: "HR Department Request Management" },
@@ -53,9 +52,6 @@ function renderManagementSidebar() {
         </a>
         <a href="inbox.html" class="nav-item ${currentFile === 'inbox.html' ? 'active' : ''}">
           <i class="fa-solid fa-inbox"></i><span>Inbox & Triage</span>
-        </a>
-        <a href="onboarding.html" class="nav-item ${currentFile === 'onboarding.html' ? 'active' : ''}">
-          <i class="fa-solid fa-plane-arrival"></i><span>Onboarding & Visas</span>
         </a>
         <a href="submit-ticket.html" class="nav-item ${currentFile === 'submit-ticket.html' ? 'active' : ''}">
           <i class="fa-solid fa-plus"></i><span>Create Ticket</span>
@@ -106,7 +102,7 @@ function renderManagementTopNav() {
   const currentFile = getManagementCurrentFilename();
   const pages = getManagementPages();
   const activePage = pages.find(p => p.href === currentFile) || pages[0];
-  const user = JSON.parse(localStorage.getItem("portalUser") || '{"name":"SuperAdmin SS","role":"Super Admin"}');
+  const user = JSON.parse(localStorage.getItem("portalUser") || '{}');
 
   topNavContainer.innerHTML = `
     <header class="topbar">
@@ -217,15 +213,57 @@ function initManagementInteractiveListeners() {
   }
 }
 
+function renderGenieWidget() {
+  if (document.getElementById("genieButton") || document.getElementById("genieChat")) return;
+  const genieContainer = document.createElement("div");
+  genieContainer.className = "genie-container";
+  genieContainer.innerHTML = `
+    <button class="genie-button" id="genieButton" type="button"><i class="ph-fill ph-magic-wand"></i> Ask Genie</button>
+    <div class="genie-chat" id="genieChat">
+      <div class="genie-chat-header">
+        <div class="genie-header-info">
+          <div class="genie-avatar"><i class="ph-fill ph-magic-wand"></i></div>
+          <div><strong>Genie AI</strong><span><span class="genie-status-dot"></span> Online</span></div>
+        </div>
+        <button class="genie-close" id="closeGenieButton" type="button"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="genie-messages" id="genieMessages">
+        <div class="genie-message">
+          <div class="genie-message-avatar"><i class="ph-fill ph-magic-wand"></i></div>
+          <div class="genie-bubble">Hi! I'm Genie. I can help you manage tickets, query policies, or guide you through SuperAdmin tasks.</div>
+        </div>
+        <div class="genie-suggestions">
+          <button class="genie-suggestion" type="button">Check tickets</button>
+          <button class="genie-suggestion" type="button">Bulk approve leave</button>
+          <button class="genie-suggestion" type="button">Find policies</button>
+        </div>
+      </div>
+      <div class="genie-input-area">
+        <input type="text" id="genieInput" placeholder="Ask Genie something..." autocomplete="off">
+        <button type="button" id="genieSendButton"><i class="ph-fill ph-arrow-up"></i></button>
+      </div>
+      <div class="genie-disclaimer">Genie may occasionally provide inaccurate information.</div>
+    </div>
+  `;
+  document.body.appendChild(genieContainer);
+}
+
 // Backwards compatibility helper
 function initSharedComponents() {
   renderManagementSidebar();
   renderManagementTopNav();
   initManagementInteractiveListeners();
+  renderGenieWidget();
+  if (typeof initializeGenie === "function") initializeGenie();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  if (window.AzureAuth && typeof window.AzureAuth.enforcePageAccessControl === "function") {
+    if (!window.AzureAuth.enforcePageAccessControl()) return;
+  }
   renderManagementSidebar();
   renderManagementTopNav();
   initManagementInteractiveListeners();
+  renderGenieWidget();
+  if (typeof initializeGenie === "function") initializeGenie();
 });

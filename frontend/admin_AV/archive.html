@@ -166,18 +166,9 @@
           <thead>
             <tr><th>Ticket Info</th><th>Department</th><th>Resolution Detail & AI Summary</th><th>Closed By</th></tr>
           </thead>
-          <tbody>
+          <tbody id="archiveTableBody">
             <tr>
-              <td><span class="ticket-id">#T-842</span><span class="ticket-subject">Direct Deposit Update</span><div style="font-size: 0.75rem; color: #6b7280;">j.doe@company.com</div></td>
-              <td>Accounting</td>
-              <td><span style="font-weight: 600; color: #4f46e5; font-size: 0.75rem;"><i class="ph-fill ph-magic-wand"></i> AI Auto-Resolved</span><div class="ai-summary">Employee unable to update routing number. AI provided guide and verified successful update via API.</div></td>
-              <td>TicketGenie System<br><span style="font-size: 0.75rem; color: #6b7280;">Aug 12, 2026</span></td>
-            </tr>
-            <tr>
-              <td><span class="ticket-id">#T-840</span><span class="ticket-subject">Harassment Complaint</span><div style="font-size: 0.75rem; color: #6b7280;">[Anonymous]</div></td>
-              <td>HR - Relations<br><span style="font-size:0.7rem; color:#b91c1c; font-weight:bold;">🔒 SENSITIVE</span></td>
-              <td><span style="font-weight: 600; color: #374151; font-size: 0.75rem;"><i class="ph-fill ph-user"></i> Human Resolved</span><div class="ai-summary" style="border-color: #b91c1c; background: #fef2f2;"><strong>Audit Note:</strong> AI summarization disabled for compliance. Resolution details archived in secure vault.</div></td>
-              <td>Sarah Jenkins (HR)<br><span style="font-size: 0.75rem; color: #6b7280;">Aug 10, 2026</span></td>
+              <td colspan="4" style="padding: 20px; text-align: center; color: #6b7280;">Loading audit trail records...</td>
             </tr>
           </tbody>
         </table>
@@ -214,10 +205,13 @@
     </div>
   </main>
   <link rel="stylesheet" href="../css/style.css">
+  <script src="../js/api.js"></script>
+  <script src="../js/azure-auth.js"></script>
+  <script src="../js/theme.js"></script>
   <script src="../js/script.js"></script>
   <script>
     function toggleSidebar() { document.getElementById('appSidebar').classList.toggle('collapsed'); }
-    const userDataString = localStorage.getItem('portalUser');
+    const userDataString = sessionStorage.getItem('portalUser') || localStorage.getItem('portalUser');
     if (userDataString) {
       const user = JSON.parse(userDataString);
       document.getElementById('sidebarRole').innerText = `${user.role} Portal`;
@@ -227,7 +221,48 @@
       if (user.role === 'HR' || user.role === 'Management') document.getElementById('adminNav').style.display = 'block';
       else { window.location.href = 'admin_dashboard.html'; }
     } else { window.location.href = '../index.html'; }
-    initializeGenie();
+
+    async function loadAuditTrailRecords() {
+      try {
+        const tbody = document.getElementById('archiveTableBody');
+        const fetchFn = window.apiFetchTickets || (async () => []);
+        const rawTickets = await fetchFn({ adminView: true });
+
+        if (!rawTickets || !Array.isArray(rawTickets)) {
+          throw new Error("Failed to load audit trail tickets from server.");
+        }
+
+        const resolvedTickets = rawTickets.filter(t => (t.status || '').toLowerCase() === 'resolved');
+
+        if (resolvedTickets.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" style="padding: 20px; text-align: center; color: #9ca3af;">No resolved tickets in audit records.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = resolvedTickets.map(t => {
+          const dateStr = t.updated_at ? new Date(t.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent';
+          return `
+            <tr>
+              <td><span class="ticket-id">#${escapeHTML(t.id)}</span><span class="ticket-subject">${escapeHTML(t.title || t.subject || 'Untitled')}</span><div style="font-size: 0.75rem; color: #6b7280;">${escapeHTML(t.requester_name || t.requester_id || 'User')}</div></td>
+              <td>${escapeHTML(t.department || t.category || 'General')}</td>
+              <td><span style="font-weight: 600; color: #4f46e5; font-size: 0.75rem;"><i class="ph-fill ph-magic-wand"></i> AI Auto-Resolved</span><div class="ai-summary">${escapeHTML(t.ai_summary || t.description || 'Resolution verified.')}</div></td>
+              <td>${escapeHTML(t.assigned_to || 'TicketGenie System')}<br><span style="font-size: 0.75rem; color: #6b7280;">${escapeHTML(dateStr)}</span></td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error("loadAuditTrailRecords error:", err);
+        const tbody = document.getElementById('archiveTableBody');
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="4" style="padding: 20px; text-align: center; color: #dc2626; font-weight: 600;">⚠️ Error loading audit records: ${escapeHTML(err.message)}</td></tr>`;
+        }
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      initializeGenie();
+      loadAuditTrailRecords();
+    });
   </script>
 </body>
 </html>

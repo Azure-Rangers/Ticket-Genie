@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>New Request | TicketGenie Enterprise</title>
-    <link rel="stylesheet" href="../css/employee-style.css">
+    <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         /* Enterprise Layout Fixes for Sidebar & Main Content Alignment */
@@ -93,8 +93,8 @@
 
     <div class="sidebar-bottom">
         <div style="height: 1px; background: #402b4a; margin: 15px 0;"></div>
-        <a href="#" id="signOutBtn" class="nav-item" onclick="handleSignOut(event)" style="color: #fca5a5;">
-            <i class="fa-solid fa-right-from-bracket" style="color: #f87171;"></i><span>Sign Out</span>
+        <a href="../index.html" class="nav-item" style="color: #cbd5e1;">
+            <i class="fa-solid fa-arrow-left" style="color: #94a3b8;"></i><span>Go Back</span>
         </a>
     </div>
 </aside>
@@ -141,11 +141,11 @@
         <i class="fa-solid fa-user-shield" style="color: #c026d3; width: 16px; text-align: center;"></i> Management View
     </button>
 
-    <!-- Divider & Sign Out -->
+    <!-- Divider & Go Back -->
     <div style="height: 1px; background: #f1f5f9; margin: 6px 0;"></div>
-    <button type="button" onclick="handleSignOut(event)" style="width: 100%; text-align: left; background: transparent; border: none; padding: 9px 12px; font-size: 12px; color: #dc2626; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px; border-radius: 6px; transition: background 0.15s ease;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='transparent'">
-        <i class="fa-solid fa-right-from-bracket" style="color: #ef4444; width: 16px; text-align: center;"></i> Sign Out
-    </button>
+    <a href="../index.html" style="width: 100%; text-align: left; background: transparent; border: none; padding: 9px 12px; font-size: 12px; color: #334155; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px; border-radius: 6px; text-decoration: none; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+        <i class="fa-solid fa-arrow-left" style="color: #64748b; width: 16px; text-align: center;"></i> Go Back
+    </a>
 </div>
 </div>
         </div>
@@ -243,7 +243,7 @@
                         <div style="display: flex; gap: 20px;">
                             <div style="flex: 1;">
                                 <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">Leave Type</label>
-                                <select id="leaveTypeSelect" required style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
+                                <select id="leaveTypeSelect" style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
                                     <option>Paid Time Off (PTO)</option>
                                     <option>Sick Leave</option>
                                     <option>Parental Leave</option>
@@ -260,17 +260,17 @@
                         <div style="display: flex; gap: 20px;">
                             <div style="flex: 1;">
                                 <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">Start Date</label>
-                                <input id="leaveStartDate" type="date" required style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
+                                <input id="leaveStartDate" type="date" style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
                             </div>
                             <div style="flex: 1;">
                                 <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">End Date</label>
-                                <input id="leaveEndDate" type="date" required style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
+                                <input id="leaveEndDate" type="date" style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
                             </div>
                         </div>
 
                         <div>
                             <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">Reason / Handover Notes</label>
-                            <textarea id="leaveDescription" rows="5" required placeholder="Enter details for HR review..." style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; box-sizing: border-box;"></textarea>
+                            <textarea id="leaveDescription" rows="5" placeholder="Enter details for HR review..." style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; box-sizing: border-box;"></textarea>
                         </div>
 
                         <!-- Attach Documents Box -->
@@ -314,7 +314,7 @@
 
                         <div>
                             <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">Confidential Message</label>
-                            <textarea id="anonymousDescription" rows="7" required placeholder="Provide detailed information securely and anonymously..." style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; box-sizing: border-box;"></textarea>
+                            <textarea id="anonymousDescription" rows="7" placeholder="Provide detailed information securely and anonymously..." style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; box-sizing: border-box;"></textarea>
                         </div>
 
                         <!-- Attach Documents Box -->
@@ -443,9 +443,13 @@ function switchTab(tabType) {
     }
 }
 
+let isSubmittingRequest = false;
+
 async function submitEmployeeStandardTicket(event) {
     if (event) event.preventDefault();
-    
+    if (isSubmittingRequest) return false;
+
+    const submitBtn = document.getElementById('submitStandardBtn');
     const subjectEl = document.getElementById('standardSubject');
     const deptEl = document.getElementById('standardDepartment');
     const descEl = document.getElementById('standardDescription');
@@ -463,7 +467,7 @@ async function submitEmployeeStandardTicket(event) {
         return false;
     }
 
-    const submitBtn = document.getElementById('submitStandardBtn');
+    isSubmittingRequest = true;
     if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i> Submitting...';
@@ -483,8 +487,7 @@ async function submitEmployeeStandardTicket(event) {
         description: description,
         category: 'IT Support',
         priority: 'Medium',
-        department: backendDept,
-        requester_id: typeof getCurrentRequesterId === 'function' ? getCurrentRequesterId() : 'nm@company.com'
+        department: backendDept
     };
 
     try {
@@ -513,13 +516,13 @@ async function submitEmployeeStandardTicket(event) {
             window.location.href = 'my-tickets.html';
         }, 1200);
     } catch (e) {
+        isSubmittingRequest = false;
         console.error('Ticket submission failed:', e);
         if (typeof showNotification === 'function') {
             showNotification(e.message || 'Unable to submit the support request. Please try again.', 'error');
         } else {
             alert(e.message || 'Unable to submit the support request. Please try again.');
         }
-    } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane" style="margin-right:6px;"></i> Submit Request';
@@ -530,90 +533,38 @@ async function submitEmployeeStandardTicket(event) {
 
 async function submitEmployeeLeaveTicket(event) {
     if (event) event.preventDefault();
+    if (isSubmittingRequest) return false;
+    isSubmittingRequest = true;
 
-    const typeEl = document.getElementById('leaveTypeSelect');
-    const startEl = document.getElementById('leaveStartDate');
-    const endEl = document.getElementById('leaveEndDate');
-    const reasonEl = document.getElementById('leaveDescription');
-    const fileEl = document.getElementById('leaveFileUpload');
-
-    const leaveType = typeEl ? typeEl.value.trim() : '';
-    const startDate = startEl ? startEl.value : '';
-    const endDate = endEl ? endEl.value : '';
-    const reason = reasonEl ? reasonEl.value.trim() : '';
-
-    if (!leaveType || !startDate || !endDate || !reason) {
-        const msg = 'Please select a leave type and fill in the start date, end date, and reason before submitting.';
-        if (typeof showNotification === 'function') showNotification(msg, 'warning');
-        else alert(msg);
-        return false;
+    const btn = document.getElementById('submitLeaveBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i> Submitting...';
     }
 
-    const submitBtn = document.getElementById('submitLeaveBtn');
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i> Submitting...';
-    }
-
-    // Backend TicketCreate still only has one preferredDate field - the
-    // start date is used there, and both dates are also kept visible in
-    // the description so nothing the user entered is lost. Neither date
-    // is fabricated: both come directly from what the user typed.
-    const description = `Leave dates: ${startDate} to ${endDate}. ${reason}`;
-    const files = fileEl ? Array.from(fileEl.files || []) : [];
-
+    const type = document.getElementById('leaveTypeSelect')?.value || 'Paid Time Off (PTO)';
+    const start = document.getElementById('leaveStartDate')?.value || '';
+    const end = document.getElementById('leaveEndDate')?.value || '';
+    const notes = document.getElementById('leaveDescription')?.value || '';
     const payload = {
-        title: `${leaveType} Request`,
-        description: description,
-        category: leaveType,
+        title: `Leave Request: ${type}`,
+        description: `Dates: ${start} to ${end}. ${notes}`,
+        category: 'Time Off',
         priority: 'Medium',
-        preferredDate: startDate,
-        is_anonymous: false,
-        attachment: files.length ? files.map(f => f.name).join(', ') : null,
-        requester_id: typeof getCurrentRequesterId === 'function' ? getCurrentRequesterId() : 'nm@company.com',
-        // Hard business rule: Leave Management always routes to Upper
-        // Management, deterministically, skipping normal AI department
-        // classification (see services/ticket_service.py's
-        // department_override handling).
         department_override: 'Upper Management'
     };
 
     try {
-        let createdTicket;
-        if (typeof apiCreateTicket === 'function') {
-            createdTicket = await apiCreateTicket(payload);
-        } else {
-            const response = await fetch('/api/tickets', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (!response.ok) {
-                throw new Error(`Leave request submission failed (HTTP ${response.status})`);
-            }
-            createdTicket = await response.json();
-        }
-        if (!createdTicket || !createdTicket.id) {
-            throw new Error('The server did not return a created leave request.');
-        }
-
+        if (typeof apiCreateTicket === 'function') await apiCreateTicket(payload);
         if (typeof showNotification === 'function') {
-            showNotification(`Leave request ${createdTicket.id} submitted successfully! Redirecting...`, 'success');
+            showNotification('Leave request submitted successfully! Redirecting...', 'success');
         }
-        setTimeout(() => {
-            window.location.href = 'my-tickets.html';
-        }, 1200);
+        setTimeout(() => { window.location.href = 'my-tickets.html'; }, 1200);
     } catch (e) {
-        console.error('Leave request submission failed:', e);
-        if (typeof showNotification === 'function') {
-            showNotification(e.message || 'Unable to submit the leave request. Please try again.', 'error');
-        } else {
-            alert(e.message || 'Unable to submit the leave request. Please try again.');
-        }
-    } finally {
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fa-solid fa-calendar-check" style="margin-right:6px;"></i> Submit Leave Request';
+        isSubmittingRequest = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-calendar-check" style="margin-right:6px;"></i> Submit Leave Request';
         }
     }
     return false;
@@ -621,85 +572,36 @@ async function submitEmployeeLeaveTicket(event) {
 
 async function submitEmployeeAnonymousTicket(event) {
     if (event) event.preventDefault();
+    if (isSubmittingRequest) return false;
+    isSubmittingRequest = true;
 
-    const categoryEl = document.getElementById('anonymousCategory');
-    const descEl = document.getElementById('anonymousDescription');
-    const fileEl = document.getElementById('anonymousFileUpload');
-
-    const concernArea = categoryEl ? categoryEl.value.trim() : '';
-    const description = descEl ? descEl.value.trim() : '';
-
-    if (!description) {
-        const msg = 'Please provide a confidential message before submitting.';
-        if (typeof showNotification === 'function') showNotification(msg, 'warning');
-        else alert(msg);
-        return false;
+    const btn = document.getElementById('submitAnonymousBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i> Submitting...';
     }
 
-    const submitBtn = document.getElementById('submitAnonymousBtn');
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i> Submitting...';
-    }
-
-    // This form has no subject field - derive a short title from the
-    // message itself (first several words), the same way the backend's
-    // own fallback-title logic would. Never invents new content.
-    const words = description.split(/\s+/).filter(Boolean);
-    const derivedTitle = (words.slice(0, 10).join(' ') || 'Confidential Report').slice(0, 200);
-    const files = fileEl ? Array.from(fileEl.files || []) : [];
-
+    const cat = document.getElementById('anonymousCategory')?.value || 'Confidential';
+    const desc = document.getElementById('anonymousDescription')?.value || '';
     const payload = {
-        title: derivedTitle,
-        description: description,
-        category: concernArea || 'Other',
-        priority: 'Medium',
-        is_anonymous: true,
-        attachment: files.length ? files.map(f => f.name).join(', ') : null,
-        // Identity is never embedded in description/category above -
-        // requester_id is still sent only so the submitter can find their
-        // own anonymous ticket under My Tickets (existing backend
-        // behavior; the ticket record itself does not expose it to other
-        // viewers based on is_anonymous).
-        requester_id: typeof getCurrentRequesterId === 'function' ? getCurrentRequesterId() : 'nm@company.com'
+        title: `Confidential Report: ${cat}`,
+        description: desc,
+        category: cat,
+        priority: 'High',
+        is_anonymous: true
     };
 
     try {
-        let createdTicket;
-        if (typeof apiCreateTicket === 'function') {
-            createdTicket = await apiCreateTicket(payload);
-        } else {
-            const response = await fetch('/api/tickets', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (!response.ok) {
-                throw new Error(`Anonymous submission failed (HTTP ${response.status})`);
-            }
-            createdTicket = await response.json();
-        }
-        if (!createdTicket || !createdTicket.id) {
-            throw new Error('The server did not return a created ticket.');
-        }
-
+        if (typeof apiCreateTicket === 'function') await apiCreateTicket(payload);
         if (typeof showNotification === 'function') {
-            showNotification(`Anonymous request ${createdTicket.id} submitted successfully! Redirecting...`, 'success');
+            showNotification('Anonymous report submitted confidentially! Redirecting...', 'success');
         }
-        setTimeout(() => {
-            window.location.href = 'my-tickets.html';
-        }, 1200);
+        setTimeout(() => { window.location.href = 'my-tickets.html'; }, 1200);
     } catch (e) {
-        console.error('Anonymous submission failed:', e);
-        if (typeof showNotification === 'function') {
-            showNotification(e.message || 'Unable to submit anonymously. Please try again.', 'error');
-        } else {
-            alert(e.message || 'Unable to submit anonymously. Please try again.');
-        }
-    } finally {
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fa-solid fa-user-secret" style="margin-right:6px;"></i> Submit Anonymously';
+        isSubmittingRequest = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-user-secret" style="margin-right:6px;"></i> Submit Anonymously';
         }
     }
     return false;
@@ -713,14 +615,14 @@ function switchPortalView(viewType) {
 
 function handleSignOut(event) {
     if (event) event.preventDefault();
-    if (confirm('Are you sure you want to sign out of TicketGenie Enterprise?')) {
-        localStorage.removeItem('portalUser');
-        window.location.href = 'index.html';
-    }
+    window.location.href = '../index.html';
 }
 </script>
-<script src="components.js?v=20260816_9"></script>
 <script src="../js/api.js?v=20260816_10"></script>
-<script src="../js/employee-script.js?v=20260816_11"></script>
+<script src="../js/script.js?v=20260816_11"></script>
+<script src="../js/azure-auth.js"></script>
+<script src="../js/theme.js"></script>
+<script src="components.js"></script>
+<script src="employee.js"></script>
 </body>
 </html>

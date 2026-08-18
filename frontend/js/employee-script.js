@@ -128,84 +128,10 @@ function showSuccessMessage(ticket) {
 }
 
 /* =========================================================
-   NEW REQUEST FORM
+   NEW REQUEST FORM (HANDLED BY PAGE SPECIFIC FORM SUBMIT HANDLERS)
    ========================================================= */
 function initializeNewRequestForm() {
-    const formConfigs = {
-        newTicketForm: { title: "ticketSubject", category: "ticketCategory", description: "ticketDescription", preferredDate: "preferredDate", file: "fileUpload", anonymous: false },
-        anonTicketForm: { title: "anonTicketSubject", category: "anonTicketCategory", description: "anonTicketDescription", file: "anonFileUpload", anonymous: true },
-        leaveTicketForm: { title: "leaveType", category: "leaveType", description: "leaveDescription", preferredDate: "leaveEndDate", file: "leaveFileUpload", anonymous: false, leave: true, departmentOverride: "Upper Management" }
-    };
-
-    Object.entries(formConfigs).forEach(([formId, config]) => {
-        const form = document.getElementById(formId);
-        if (!form) return;
-
-        form.addEventListener("submit", async function(event) {
-        event.preventDefault();
-
-        const titleElement = document.getElementById(config.title);
-        const categoryElement = document.getElementById(config.category);
-        const descriptionElement = document.getElementById(config.description);
-        const submitBtn = event.target.querySelector('.submit-request-button');
-        const originalSubmitContent = submitBtn?.innerHTML;
-
-        const title = titleElement ? titleElement.value.trim() : "New Request";
-        const category = categoryElement ? categoryElement.value : "General";
-        const description = descriptionElement ? descriptionElement.value.trim() : "";
-
-        if (!title || !category || !description) {
-            showFormError("Please fill out all required fields.");
-            return;
-        }
-        if (title.length < 3 || description.length < 10) {
-            showFormError("The subject must be at least 3 characters and the description at least 10 characters.");
-            return;
-        }
-
-        const oldError = document.querySelector(".form-error-message");
-        if (oldError) oldError.style.display = "none";
-
-        if (submitBtn) {
-            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
-            submitBtn.classList.add('loading');
-        }
-
-        try {
-            let finalDescription = description;
-            if (config.leave) {
-                const startDate = document.getElementById("leaveStartDate")?.value || "";
-                const endDate = document.getElementById("leaveEndDate")?.value || "";
-                finalDescription = `Leave dates: ${startDate} to ${endDate}. ${description}`;
-            }
-            const files = Array.from(document.getElementById(config.file)?.files || []);
-            const newTicket = await apiCreateTicket({
-                title,
-                category,
-                description: finalDescription,
-                preferredDate: config.preferredDate ? (document.getElementById(config.preferredDate)?.value || null) : null,
-                is_anonymous: config.anonymous,
-                attachment: files.length ? files.map(file => file.name).join(", ") : null,
-                requester_id: getCurrentRequesterId(),
-                // Deterministic, fixed to this one static tab - never derived
-                // from chatbot/GPT output. Makes the backend skip normal AI
-                // classification for Leave Management (see
-                // services/ticket_service.py's department_override handling)
-                // so it always routes to Upper Management.
-                ...(config.departmentOverride ? { department_override: config.departmentOverride } : {})
-            });
-
-            showSuccessMessage(newTicket);
-            setTimeout(() => { window.location.href = "my-tickets.html"; }, 1500);
-        } catch (err) {
-            showFormError(err.message || "Unable to submit the request. Please try again.");
-            if (submitBtn) {
-                submitBtn.innerHTML = originalSubmitContent;
-                submitBtn.classList.remove('loading');
-            }
-        }
-        });
-    });
+    // Page-specific inline submit handlers handle ticket creation.
 }
 
 
@@ -237,7 +163,6 @@ function initSidebarToggle() {
 
 function handleSignOut(event) {
     if (event) event.preventDefault();
-    localStorage.removeItem("portalUser");
     window.location.href = "../index.html";
 }
 
@@ -495,8 +420,13 @@ async function loadTicketDetailPage() {
     }
 }
 
+let isSubmittingScriptTicket = false;
+
 async function submitStandardTicket(event) {
     if (event) event.preventDefault();
+    if (isSubmittingScriptTicket) return;
+    isSubmittingScriptTicket = true;
+
     const titleEl = document.getElementById("ticketTitle");
     const deptEl = document.getElementById("ticketDepartment");
     const priorityEl = document.getElementById("ticketPriority");
@@ -510,10 +440,15 @@ async function submitStandardTicket(event) {
         requester_id: getCurrentRequesterId()
     };
 
-    const createFn = window.apiCreateTicket || apiCreateTicket;
-    const result = await createFn(payload);
-    showNotification("Ticket submitted successfully!", "success");
-    setTimeout(() => { window.location.href = "my-tickets.html"; }, 1000);
+    try {
+        const createFn = window.apiCreateTicket || apiCreateTicket;
+        const result = await createFn(payload);
+        showNotification("Ticket submitted successfully!", "success");
+        setTimeout(() => { window.location.href = "my-tickets.html"; }, 1000);
+    } catch (err) {
+        isSubmittingScriptTicket = false;
+        showNotification("Failed to submit ticket.", "error");
+    }
 }
 
 async function sendTicketReply(ticketId) {
@@ -768,25 +703,19 @@ function handleGenieAction(action) {
 }
 
 /* Initialize Floating Genie Drawer globally if present on page */
-document.addEventListener("DOMContentLoaded", () => {
-    initDarkMode();
-    initSidebarToggle();
-    if (typeof initializeProfileDropdown === "function") initializeProfileDropdown();
-    initializeNewRequestForm();
-    initializeMyTickets();
-    applyPendingGenieDraft();
-
-    // Floating Genie Chat Drawer events
+function initializeGenie() {
     const genieBtn = document.getElementById("genieButton");
     const genieChat = document.getElementById("genieChat");
     const closeGenieBtn = document.getElementById("closeGenieButton");
     const genieSendBtn = document.getElementById("genieSendButton");
     const genieInput = document.getElementById("genieInput");
     const genieMessages = document.getElementById("genieMessages");
-    // "Need help writing your request?" button on new-request.html.
     const openGenieFromRequestBtn = document.getElementById("openGenieFromRequest");
 
     if (!genieBtn || !genieChat) return;
+
+    if (genieBtn.dataset.genieInitialized === "true") return;
+    genieBtn.dataset.genieInitialized = "true";
 
     const openGenie = () => genieChat.classList.add("open");
 
@@ -799,8 +728,10 @@ document.addEventListener("DOMContentLoaded", () => {
         openGenieFromRequestBtn.addEventListener("click", openGenie);
     }
 
-    let genieState = loadGenieState();
-    renderGenieHistory(genieMessages, genieState);
+    let genieState = typeof loadGenieState === "function" ? loadGenieState() : null;
+    if (genieMessages && genieState) {
+        renderGenieHistory(genieMessages, genieState);
+    }
 
     async function sendGenieMsg() {
         if (!genieInput) return;
@@ -813,17 +744,22 @@ document.addEventListener("DOMContentLoaded", () => {
         genieInput.disabled = true;
         genieMessages.scrollTop = genieMessages.scrollHeight;
 
-        const response = await apiChatbotMessage(msg, genieState);
-        advanceGenieState(genieState, msg, response);
+        const response = typeof apiChatbotMessage === "function"
+            ? await apiChatbotMessage(msg, genieState)
+            : { message: "Genie assistant ready.", suggestions: [] };
+
+        if (genieState && typeof advanceGenieState === "function") {
+            advanceGenieState(genieState, msg, response);
+        }
 
         renderGenieBotMessage(genieMessages, response.message, response.suggestions);
         genieMessages.scrollTop = genieMessages.scrollHeight;
         genieInput.disabled = false;
         genieInput.focus();
 
-        if (response.ready_for_review) {
+        if (response.ready_for_review && typeof openReadyDraft === "function") {
             openReadyDraft(response);
-        } else {
+        } else if (typeof handleGenieAction === "function") {
             handleGenieAction(response.action);
         }
     }
@@ -834,9 +770,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (e.key === "Enter") sendGenieMsg();
         });
     }
-    // Both the static initial suggestions in the HTML and any rendered
-    // from a chatbot response use this same class - wire them all via
-    // delegation so clicking one sends it as the next message.
+
     if (genieMessages) {
         genieMessages.addEventListener("click", (e) => {
             const btn = e.target.closest(".genie-suggestion");
@@ -845,6 +779,18 @@ document.addEventListener("DOMContentLoaded", () => {
             sendGenieMsg();
         });
     }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    initDarkMode();
+    initSidebarToggle();
+    if (typeof initializeProfileDropdown === "function") initializeProfileDropdown();
+    initializeNewRequestForm();
+    initializeMyTickets();
+    applyPendingGenieDraft();
+
+    // Floating Genie Chat Drawer events
+    initializeGenie();
 });
 
 // Bind all global utilities to window
@@ -871,5 +817,6 @@ Object.assign(window, {
     loadMyTicketsPage,
     loadTicketDetailPage,
     submitStandardTicket,
-    sendTicketReply
+    sendTicketReply,
+    initializeGenie
 });

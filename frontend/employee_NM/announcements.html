@@ -91,8 +91,8 @@
 
     <div class="sidebar-bottom">
         <div style="height: 1px; background: #402b4a; margin: 15px 0;"></div>
-        <a href="#" id="signOutBtn" class="nav-item" onclick="handleSignOut(event)" style="color: #fca5a5;">
-            <i class="fa-solid fa-right-from-bracket" style="color: #f87171;"></i><span>Sign Out</span>
+        <a href="../index.html" class="nav-item" style="color: #cbd5e1;">
+            <i class="fa-solid fa-arrow-left" style="color: #94a3b8;"></i><span>Go Back</span>
         </a>
     </div>
 </aside>
@@ -136,11 +136,11 @@
         <i class="fa-solid fa-user-shield" style="color: #c026d3; width: 16px; text-align: center;"></i> Management View
     </button>
 
-    <!-- Divider & Sign Out -->
+    <!-- Divider & Go Back -->
     <div style="height: 1px; background: #f1f5f9; margin: 6px 0;"></div>
-    <button type="button" onclick="handleSignOut(event)" style="width: 100%; text-align: left; background: transparent; border: none; padding: 9px 12px; font-size: 12px; color: #dc2626; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px; border-radius: 6px; transition: background 0.15s ease;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='transparent'">
-        <i class="fa-solid fa-right-from-bracket" style="color: #ef4444; width: 16px; text-align: center;"></i> Sign Out
-    </button>
+    <a href="../index.html" style="width: 100%; text-align: left; background: transparent; border: none; padding: 9px 12px; font-size: 12px; color: #334155; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px; border-radius: 6px; text-decoration: none; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+        <i class="fa-solid fa-arrow-left" style="color: #64748b; width: 16px; text-align: center;"></i> Go Back
+    </a>
 </div>
 </div>
         </div>
@@ -259,10 +259,7 @@ function switchPortalView(viewType) {
 
 function handleSignOut(event) {
     if (event) event.preventDefault();
-    if (confirm('Are you sure you want to sign out of TicketGenie Enterprise?')) {
-        localStorage.removeItem('portalUser');
-        window.location.href = 'index.html';
-    }
+    window.location.href = '../index.html';
 }
 </script>
 <script src="components.js?v=20260816_7"></script>

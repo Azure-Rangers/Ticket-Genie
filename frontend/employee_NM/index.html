@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Help & Support | TicketGenie Enterprise</title>
-    <link rel="stylesheet" href="../css/employee-style.css">
+    <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         /* Enterprise Layout Fixes for Sidebar & Main Content Alignment */
@@ -93,8 +93,8 @@
 
     <div class="sidebar-bottom">
         <div style="height: 1px; background: #402b4a; margin: 15px 0;"></div>
-        <a href="#" id="signOutBtn" class="nav-item" onclick="handleSignOut(event)" style="color: #fca5a5;">
-            <i class="fa-solid fa-right-from-bracket" style="color: #f87171;"></i><span>Sign Out</span>
+        <a href="../index.html" class="nav-item" style="color: #cbd5e1;">
+            <i class="fa-solid fa-arrow-left" style="color: #94a3b8;"></i><span>Go Back</span>
         </a>
     </div>
 </aside>
@@ -139,11 +139,11 @@
         <i class="fa-solid fa-user-shield" style="color: #c026d3; width: 16px; text-align: center;"></i> Management View
     </button>
 
-    <!-- Divider & Sign Out -->
+    <!-- Divider & Go Back -->
     <div style="height: 1px; background: #f1f5f9; margin: 6px 0;"></div>
-    <button type="button" onclick="handleSignOut(event)" style="width: 100%; text-align: left; background: transparent; border: none; padding: 9px 12px; font-size: 12px; color: #dc2626; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px; border-radius: 6px; transition: background 0.15s ease;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='transparent'">
-        <i class="fa-solid fa-right-from-bracket" style="color: #ef4444; width: 16px; text-align: center;"></i> Sign Out
-    </button>
+    <a href="../index.html" style="width: 100%; text-align: left; background: transparent; border: none; padding: 9px 12px; font-size: 12px; color: #334155; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px; border-radius: 6px; text-decoration: none; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+        <i class="fa-solid fa-arrow-left" style="color: #64748b; width: 16px; text-align: center;"></i> Go Back
+    </a>
 </div>
 </div>
         </div>
@@ -155,7 +155,7 @@
             <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 0;">
                 <div>
                     <span style="font-size: 11px; color: #6f4b82; display: block; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">PORTAL OVERVIEW</span>
-                    <h3 style="font-size: 22px; color: #1e293b; margin-bottom: 4px; font-weight: 700;">Welcome back, Alex</h3>
+                    <h3 id="welcomeUserHeader" style="font-size: 22px; color: #1e293b; margin-bottom: 4px; font-weight: 700;">Welcome back</h3>
                     <p style="font-size: 14px; color: #64748b; margin: 0;">Manage your active requests, browse solutions, and track ticket resolutions.</p>
                 </div>
                 <a href="new-request.html" style="background: #6f4b82; color: #fff; text-decoration: none; padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(43, 27, 54, 0.1); transition: background 0.2s;" onmouseover="this.style.background='#5a3c69'" onmouseout="this.style.background='#6f4b82'">
@@ -274,14 +274,14 @@ function switchPortalView(viewType) {
 
 function handleSignOut(event) {
     if (event) event.preventDefault();
-    if (confirm('Are you sure you want to sign out of TicketGenie Enterprise?')) {
-        localStorage.removeItem('portalUser');
-        window.location.href = 'index.html';
-    }
+    window.location.href = '../index.html';
 }
 </script>
-<script src="components.js?v=20260816_9"></script>
 <script src="../js/api.js?v=20260816_10"></script>
-<script src="../js/employee-script.js?v=20260816_11"></script>
+<script src="../js/script.js?v=20260816_11"></script>
+<script src="../js/azure-auth.js"></script>
+<script src="../js/theme.js"></script>
+<script src="components.js"></script>
+<script src="employee.js"></script>
 </body>
 </html>

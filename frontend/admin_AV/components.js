@@ -96,7 +96,7 @@ function renderAdminAVTopNav() {
   const currentFile = getAdminAVCurrentFilename();
   const pages = getAdminAVPages();
   const activePage = pages.find(p => p.href === currentFile) || pages[0];
-  const user = JSON.parse(localStorage.getItem("portalUser") || '{"name":"Admin AV","role":"Operations Admin"}');
+  const user = JSON.parse(localStorage.getItem("portalUser") || '{}');
 
   topNavContainer.innerHTML = `
     <header class="topbar">

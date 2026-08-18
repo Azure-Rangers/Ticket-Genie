@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from opentelemetry import trace
@@ -46,6 +46,26 @@ def _create_ticket_internal(ticket: TicketCreate, db: Optional[Session] = None) 
         now_str = now.isoformat()
         date_str = now.strftime("%Y-%m-%d")
 
+        # Duplicate submission check within 5 seconds
+        if ticket.title and ticket.description:
+            cutoff = now - timedelta(seconds=5)
+            recent_tickets = (
+                session.query(TicketDB)
+                .filter(
+                    TicketDB.title == ticket.title,
+                    TicketDB.description == ticket.description,
+                )
+                .all()
+            )
+            for rec in recent_tickets:
+                if rec.createdAt:
+                    try:
+                        rec_time = datetime.fromisoformat(rec.createdAt)
+                        if rec_time >= cutoff:
+                            return rec.to_dict()
+                    except Exception:
+                        pass
+
         new_id = _generate_next_id(session)
 
         db_ticket = TicketDB(
@@ -90,6 +110,7 @@ def get_all_tickets(
     priority: Optional[str] = None,
     search: Optional[str] = None,
     requester_id: Optional[str] = None,
+    department: Optional[str] = None,
     db: Optional[Session] = None,
 ) -> List[dict]:
     session = db or SessionLocal()
@@ -99,9 +120,56 @@ def get_all_tickets(
         query = session.query(TicketDB)
 
         if requester_id:
+            req_str = requester_id.lower().strip()
+            target_ids = {req_str}
+            try:
+                from database.models_db import DepartmentUserDB, UserProfileDB
+
+                dept_records = (
+                    session.query(DepartmentUserDB)
+                    .filter(
+                        or_(
+                            func.lower(DepartmentUserDB.user_email) == req_str,
+                            func.lower(DepartmentUserDB.azure_object_id) == req_str,
+                            func.lower(DepartmentUserDB.id) == req_str,
+                        )
+                    )
+                    .all()
+                )
+                for rec in dept_records:
+                    if rec.azure_object_id:
+                        target_ids.add(rec.azure_object_id.lower())
+                    if rec.user_email:
+                        target_ids.add(rec.user_email.lower())
+                    if rec.id:
+                        target_ids.add(rec.id.lower())
+
+                profiles = (
+                    session.query(UserProfileDB)
+                    .filter(
+                        or_(
+                            func.lower(UserProfileDB.id) == req_str,
+                            func.lower(UserProfileDB.email) == req_str,
+                        )
+                    )
+                    .all()
+                )
+                for prof in profiles:
+                    if prof.id:
+                        target_ids.add(prof.id.lower())
+                    if prof.email:
+                        target_ids.add(prof.email.lower())
+
+            except Exception:
+                pass
+
             query = query.filter(
-                func.lower(TicketDB.requester_id) == requester_id.lower().strip()
+                func.lower(TicketDB.requester_id).in_(list(target_ids))
             )
+
+        if department and department.strip():
+            dept_str = f"%{department.lower().strip()}%"
+            query = query.filter(func.lower(TicketDB.department).like(dept_str))
 
         if search:
             s = f"%{search.lower().strip()}%"
@@ -808,42 +876,54 @@ def update_onboarding_status(
 # ---------------------------------------------------------------------------
 
 
-def get_user_profile(user_id: str = "usr-1", db: Optional[Session] = None) -> dict:
+def get_user_profile(
+    user_id: Optional[str] = None,
+    azure_oid: Optional[str] = None,
+    email: Optional[str] = None,
+    db: Optional[Session] = None,
+) -> Optional[dict]:
     session = db or SessionLocal()
     should_close = db is None
 
     try:
+        from sqlalchemy import func
+
         from database.models_db import UserProfileDB
 
-        user = session.query(UserProfileDB).filter(UserProfileDB.id == user_id).first()
-        if not user:
-            user = UserProfileDB(
-                id=user_id,
-                name="Nishita",
-                email="nishita@ticketgenie.com",
-                role="Employee",
-                department="HR & Operations",
-                phone="+1 (555) 019-2834",
-                avatar="NM",
-            )
-            session.add(user)
-            session.commit()
-            session.refresh(user)
+        query = session.query(UserProfileDB)
 
-        return user.to_dict()
+        if user_id:
+            user = query.filter(UserProfileDB.id == user_id).first()
+            if user:
+                return user.to_dict()
+
+        if azure_oid:
+            short_oid = azure_oid[:8]
+            user = query.filter(UserProfileDB.id.like(f"%{short_oid}%")).first()
+            if user:
+                return user.to_dict()
+
+        if email:
+            user = query.filter(
+                func.lower(UserProfileDB.email) == email.lower()
+            ).first()
+            if user:
+                return user.to_dict()
+
+        return None
     finally:
         if should_close:
             session.close()
 
 
 def update_user_profile(
-    user_id: str = "usr-1",
+    user_id: Optional[str] = None,
     name: Optional[str] = None,
     email: Optional[str] = None,
     phone: Optional[str] = None,
     department: Optional[str] = None,
     db: Optional[Session] = None,
-) -> dict:
+) -> Optional[dict]:
     session = db or SessionLocal()
     should_close = db is None
 
@@ -854,8 +934,8 @@ def update_user_profile(
         if not user:
             user = UserProfileDB(
                 id=user_id,
-                name=name or "Nishita",
-                email=email or "nishita@ticketgenie.com",
+                name=name or "User",
+                email=email or f"{user_id}@example.com",
             )
             session.add(user)
 

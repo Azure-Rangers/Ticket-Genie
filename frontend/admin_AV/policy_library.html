@@ -175,10 +175,13 @@
   <div class="modal-backdrop" id="documentModal"><div class="modal"><div class="modal-header"><div><h2 id="modalTitle">Document</h2><div class="modal-meta" id="modalMeta"></div></div><button class="modal-close" id="closeModal" aria-label="Close"><i class="ph ph-x"></i></button></div><div class="modal-body">This policy is available in the current Policy Library. Please review the latest version before sharing guidance or submitting a request.</div></div></div>
 
   <link rel="stylesheet" href="../css/style.css">
+  <script src="../js/api.js"></script>
+  <script src="../js/azure-auth.js"></script>
+  <script src="../js/theme.js"></script>
   <script src="../js/script.js"></script>
   <script>
     function toggleSidebar() { document.getElementById('appSidebar').classList.toggle('collapsed'); }
-    const userDataString = localStorage.getItem('portalUser');
+    const userDataString = sessionStorage.getItem('portalUser') || localStorage.getItem('portalUser');
     if (userDataString) {
       const user = JSON.parse(userDataString);
       document.getElementById('sidebarRole').innerText = `${user.role} Portal`;

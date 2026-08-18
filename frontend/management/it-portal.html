@@ -33,7 +33,7 @@
     .btn-sm:hover { background: #533760; }
   </style>
 </head>
-<body>
+<body class="employee-page management-page">
 
   <div id="shared-sidebar"></div>
 
@@ -87,19 +87,16 @@
     </section>
   </main>
 
+  <script src="../js/api.js"></script>
+  <script src="../js/azure-auth.js"></script>
+  <script src="../js/theme.js"></script>
   <script src="../js/script.js"></script>
   <script src="components.js"></script>
+  <script src="management.js"></script>
   <script>
   document.addEventListener("DOMContentLoaded", async () => {
     try {
-      const tickets = await apiFetchTickets();
-      const itTickets = tickets.filter(t => 
-        (t.category || "").toLowerCase().includes("it") ||
-        (t.category || "").toLowerCase().includes("hardware") ||
-        (t.category || "").toLowerCase().includes("vpn") ||
-        (t.category || "").toLowerCase().includes("password") ||
-        (t.department || "").toLowerCase().includes("it")
-      );
+      const itTickets = await apiFetchTickets({ adminView: true, department: "IT" });
 
       const active = itTickets.filter(t => (t.status || "").toLowerCase() !== "resolved").length;
       const hw = itTickets.filter(t => (t.category || "").toLowerCase().includes("hardware") || (t.title || "").toLowerCase().includes("laptop")).length;
@@ -108,7 +105,7 @@
       document.getElementById("itHardware").textContent = hw;
 
       const tbody = document.getElementById("itTableBody");
-      const displayList = itTickets.length > 0 ? itTickets : tickets;
+      const displayList = itTickets;
       if (!displayList || displayList.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No IT tickets found.</td></tr>`;
         return;
