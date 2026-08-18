@@ -127,10 +127,12 @@
 
   <link rel="stylesheet" href="../css/style.css">
   <script src="../js/api.js"></script>
+  <script src="../js/azure-auth.js"></script>
+  <script src="../js/theme.js"></script>
   <script src="../js/script.js"></script>
   <script>
     function toggleSidebar() { document.getElementById('appSidebar').classList.toggle('collapsed'); }
-    const userDataString = localStorage.getItem('portalUser');
+    const userDataString = sessionStorage.getItem('portalUser') || localStorage.getItem('portalUser');
     if (userDataString) { const user = JSON.parse(userDataString); document.getElementById('sidebarRole').innerText = `${user.role} Portal`; document.getElementById('navName').innerText = user.name; document.getElementById('navSubRole').innerText = `${user.role} Admin`; document.getElementById('navAvatar').innerText = user.name.charAt(0).toUpperCase(); } else { window.location.href = '../index.html'; }
 
     let tickets = [];

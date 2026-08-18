@@ -45,8 +45,8 @@ function getCurrentRequesterId() {
 function mapDepartmentName(val) {
     if (!val || val === "Auto") return null;
     const lower = val.toLowerCase();
-    if (lower.includes("it")) return "IT Team";
-    if (lower.includes("hr") || lower.includes("workplace")) return "HR Team";
+    if (lower.includes("hr") || lower.includes("workplace") || lower.includes("benefit")) return "HR Team";
+    if (/\bit\b/.test(lower) || lower.includes("hardware") || lower.includes("software") || lower.includes("vpn") || lower.includes("tech")) return "IT Team";
     if (lower.includes("account")) return "Accounting Team";
     if (lower.includes("upper") || lower.includes("admin")) return "Upper Management";
     return "IT Team";
@@ -271,8 +271,12 @@ async function renderTicketCommentsThread(ticketId) {
     threadContainer.scrollTop = threadContainer.scrollHeight;
 }
 
+let isSubmittingEmployeeTicket = false;
+
 async function submitStandardTicket(event) {
     if (event) event.preventDefault();
+    if (isSubmittingEmployeeTicket) return;
+    isSubmittingEmployeeTicket = true;
 
     const titleEl = document.getElementById("standardSubject") || document.getElementById("ticketTitle");
     const deptEl = document.getElementById("standardDepartment") || document.getElementById("ticketDepartment");
@@ -283,6 +287,7 @@ async function submitStandardTicket(event) {
     let descStr = descEl ? descEl.value.trim() : "";
 
     if (!titleStr) {
+        isSubmittingEmployeeTicket = false;
         showNotification("Please enter a title for your support request.", "error");
         return;
     }
@@ -326,6 +331,7 @@ async function submitStandardTicket(event) {
 
         setTimeout(() => { window.location.href = "my-tickets.html"; }, 1200);
     } catch (err) {
+        isSubmittingEmployeeTicket = false;
         console.error("submitStandardTicket failed:", err);
         showNotification("Failed to submit ticket. Please check your connection.", "error");
     }
@@ -333,6 +339,9 @@ async function submitStandardTicket(event) {
 
 async function submitLeaveTicket(event) {
     if (event) event.preventDefault();
+    if (isSubmittingEmployeeTicket) return;
+    isSubmittingEmployeeTicket = true;
+
     const leaveForm = document.querySelector("#leaveTabContent form");
     const leaveType = leaveForm ? leaveForm.querySelector("select")?.value : "Paid Time Off (PTO)";
     const handover = leaveForm ? leaveForm.querySelectorAll("input[type='text']")[0]?.value : "";
@@ -371,6 +380,7 @@ async function submitLeaveTicket(event) {
         if (typeof showSuccessMessage === 'function') showSuccessMessage(newTicket);
         setTimeout(() => { window.location.href = "my-tickets.html"; }, 1200);
     } catch (err) {
+        isSubmittingEmployeeTicket = false;
         console.error("submitLeaveTicket failed:", err);
         showNotification("Failed to submit leave request.", "error");
     }
@@ -378,6 +388,9 @@ async function submitLeaveTicket(event) {
 
 async function submitAnonymousTicket(event) {
     if (event) event.preventDefault();
+    if (isSubmittingEmployeeTicket) return;
+    isSubmittingEmployeeTicket = true;
+
     const anonForm = document.querySelector("#anonymousTabContent form");
     const category = anonForm ? anonForm.querySelector("select")?.value : "Confidential";
     const msg = anonForm ? anonForm.querySelector("textarea")?.value : "";
@@ -415,6 +428,7 @@ async function submitAnonymousTicket(event) {
         if (typeof showSuccessMessage === 'function') showSuccessMessage(newTicket);
         setTimeout(() => { window.location.href = "my-tickets.html"; }, 1200);
     } catch (err) {
+        isSubmittingEmployeeTicket = false;
         console.error("submitAnonymousTicket failed:", err);
         showNotification("Failed to submit confidential report.", "error");
     }

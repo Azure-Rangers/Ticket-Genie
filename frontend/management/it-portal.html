@@ -96,14 +96,7 @@
   <script>
   document.addEventListener("DOMContentLoaded", async () => {
     try {
-      const tickets = await apiFetchTickets({ adminView: true });
-      const itTickets = tickets.filter(t => 
-        (t.category || "").toLowerCase().includes("it") ||
-        (t.category || "").toLowerCase().includes("hardware") ||
-        (t.category || "").toLowerCase().includes("vpn") ||
-        (t.category || "").toLowerCase().includes("password") ||
-        (t.department || "").toLowerCase().includes("it")
-      );
+      const itTickets = await apiFetchTickets({ adminView: true, department: "IT" });
 
       const active = itTickets.filter(t => (t.status || "").toLowerCase() !== "resolved").length;
       const hw = itTickets.filter(t => (t.category || "").toLowerCase().includes("hardware") || (t.title || "").toLowerCase().includes("laptop")).length;

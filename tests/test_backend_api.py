@@ -189,3 +189,39 @@ def test_azure_login_admin_check() -> None:
     assert data["is_admin"] is True
     assert data["role"] in ["Admin", "Super Admin"]
 
+
+def test_prevent_duplicate_ticket_double_posting(monkeypatch) -> None:
+    def fake_classify_ticket(title: str, description: str):
+        from agents.orchestrator import TicketClassification
+
+        return TicketClassification(
+            department="IT Team",
+            category="Identity and Access Management",
+            priority="Medium",
+            confidence=0.9,
+            reason="Duplicate post test",
+            needs_human_review=False,
+        )
+
+    monkeypatch.setattr(
+        "services.ticket_service.classify_ticket",
+        fake_classify_ticket,
+    )
+
+    payload = {
+        "title": "Duplicate Submission Protection Test Ticket",
+        "description": "Testing that rapid double posting returns the same ticket rather than creating duplicates.",
+    }
+
+    resp1 = client.post("/api/tickets", json=payload)
+    assert resp1.status_code == 201
+    t1 = resp1.json()
+
+    resp2 = client.post("/api/tickets", json=payload)
+    assert resp2.status_code == 201
+    t2 = resp2.json()
+
+    # The second POST should return the exact same ticket ID
+    assert t1["id"] == t2["id"]
+
+

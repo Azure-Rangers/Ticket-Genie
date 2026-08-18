@@ -92,30 +92,35 @@
       const objectId = azureUser ? azureUser.objectId : "";
       const currentRole = azureUser ? azureUser.role : "Super Admin";
       
+      const idToken = azureUser ? azureUser.idToken : "";
+      
       if (roleType === 'Admin_AV') {
-        localStorage.setItem('portalUser', JSON.stringify({
+        sessionStorage.setItem('portalUser', JSON.stringify({
           email: azureUser ? azureUser.email : 'admin@ticketgenie.com',
           role: currentRole,
           name: azureUser ? azureUser.name : 'Admin AV',
-          objectId: objectId
+          objectId: objectId,
+          idToken: idToken
         }));
         window.location.href = 'admin_AV/admin_dashboard.html';
         
       } else if (roleType === 'Employee_NM') {
-        localStorage.setItem('portalUser', JSON.stringify({
+        sessionStorage.setItem('portalUser', JSON.stringify({
           email: azureUser ? azureUser.email : 'nm@company.com',
           role: currentRole,
           name: azureUser ? azureUser.name : 'Employee NM',
-          objectId: objectId
+          objectId: objectId,
+          idToken: idToken
         }));
         window.location.href = 'employee_NM/index.html'; 
         
       } else if (roleType === 'SuperAdmin_SS') {
-        localStorage.setItem('portalUser', JSON.stringify({
+        sessionStorage.setItem('portalUser', JSON.stringify({
           email: azureUser ? azureUser.email : 'ss@company.com',
           role: currentRole,
           name: azureUser ? azureUser.name : 'SuperAdmin SS',
-          objectId: objectId
+          objectId: objectId,
+          idToken: idToken
         }));
         window.location.href = 'management/index.html';
       }

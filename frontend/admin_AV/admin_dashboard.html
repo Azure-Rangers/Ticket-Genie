@@ -416,7 +416,7 @@
       document.getElementById('appSidebar').classList.toggle('collapsed'); 
     }
     
-    const userDataString = localStorage.getItem('portalUser');
+    const userDataString = sessionStorage.getItem('portalUser') || localStorage.getItem('portalUser');
     if (userDataString) {
       const user = JSON.parse(userDataString);
       document.getElementById('welcomeMessage').innerText = `Welcome back, ${user.name}`;

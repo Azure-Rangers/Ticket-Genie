@@ -10,7 +10,7 @@
         if (url.includes("/api/") && !url.includes("/api/config")) {
             let idToken = "";
             try {
-                const stored = localStorage.getItem("azureUser") || localStorage.getItem("portalUser");
+                const stored = sessionStorage.getItem("azureUser") || sessionStorage.getItem("portalUser") || localStorage.getItem("azureUser") || localStorage.getItem("portalUser");
                 if (stored) {
                     const parsed = JSON.parse(stored);
                     idToken = parsed.idToken || parsed.id_token || "";

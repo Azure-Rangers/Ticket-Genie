@@ -239,7 +239,7 @@
                         <strong>Note:</strong> This ticket will cycle through upper management for approval beforehand.
                     </div>
 
-                    <form id="leaveTicketForm" onsubmit="submitEmployeeLeaveTicket(event)" style="display: flex; flex-direction: column; gap: 24px;">
+                    <form id="leaveTicketForm" onsubmit="event.preventDefault(); submitEmployeeLeaveTicket(event); return false;" style="display: flex; flex-direction: column; gap: 24px;">
                         <div style="display: flex; gap: 20px;">
                             <div style="flex: 1;">
                                 <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">Leave Type</label>
@@ -301,7 +301,7 @@
                         <strong>When to use this request:</strong> Use this form for secure workplace feedback, ethics or compliance reporting, or sensitive suggestions where you require total anonymity from department management views.
                     </div>
 
-                    <form id="anonymousTicketForm" onsubmit="submitEmployeeAnonymousTicket(event)" style="display: flex; flex-direction: column; gap: 24px;">
+                    <form id="anonymousTicketForm" onsubmit="event.preventDefault(); submitEmployeeAnonymousTicket(event); return false;" style="display: flex; flex-direction: column; gap: 24px;">
                         <div>
                             <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">Category / Concern Area</label>
                             <select id="anonymousCategory" style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
@@ -534,13 +534,13 @@ async function submitEmployeeStandardTicket(event) {
 async function submitEmployeeLeaveTicket(event) {
     if (event) event.preventDefault();
     if (isSubmittingRequest) return false;
+    isSubmittingRequest = true;
 
     const btn = document.getElementById('submitLeaveBtn');
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i> Submitting...';
     }
-    isSubmittingRequest = true;
 
     const type = document.getElementById('leaveTypeSelect')?.value || 'Paid Time Off (PTO)';
     const start = document.getElementById('leaveStartDate')?.value || '';
@@ -573,13 +573,13 @@ async function submitEmployeeLeaveTicket(event) {
 async function submitEmployeeAnonymousTicket(event) {
     if (event) event.preventDefault();
     if (isSubmittingRequest) return false;
+    isSubmittingRequest = true;
 
     const btn = document.getElementById('submitAnonymousBtn');
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i> Submitting...';
     }
-    isSubmittingRequest = true;
 
     const cat = document.getElementById('anonymousCategory')?.value || 'Confidential';
     const desc = document.getElementById('anonymousDescription')?.value || '';

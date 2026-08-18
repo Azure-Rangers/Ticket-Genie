@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from opentelemetry import trace
@@ -45,6 +45,22 @@ def _create_ticket_internal(ticket: TicketCreate, db: Optional[Session] = None) 
         now = datetime.now()
         now_str = now.isoformat()
         date_str = now.strftime("%Y-%m-%d")
+
+        # Duplicate submission check within 5 seconds
+        if ticket.title and ticket.description:
+            cutoff = now - timedelta(seconds=5)
+            recent_tickets = session.query(TicketDB).filter(
+                TicketDB.title == ticket.title,
+                TicketDB.description == ticket.description,
+            ).all()
+            for rec in recent_tickets:
+                if rec.createdAt:
+                    try:
+                        rec_time = datetime.fromisoformat(rec.createdAt)
+                        if rec_time >= cutoff:
+                            return rec.to_dict()
+                    except Exception:
+                        pass
 
         new_id = _generate_next_id(session)
 

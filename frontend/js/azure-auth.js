@@ -3,14 +3,28 @@
     window._bearerFetchPatched = true;
     const originalFetch = window.fetch;
 
-    window.fetch = function (resource, options = {}) {
+    function handleExpiredToken() {
+        if (window._reauthInProgress) return;
+        window._reauthInProgress = true;
+        sessionStorage.removeItem("azureUser");
+        sessionStorage.removeItem("portalUser");
+        localStorage.removeItem("azureUser");
+        localStorage.removeItem("portalUser");
+        if (window.AzureAuth && typeof window.AzureAuth.loginWithAzure === "function") {
+            window.AzureAuth.loginWithAzure();
+        } else {
+            window.location.reload();
+        }
+    }
+
+    window.fetch = async function (resource, options = {}) {
         const url = typeof resource === "string" ? resource : resource?.url || "";
 
         // Inject Authorization Bearer header into all backend /api/ requests
         if (url.includes("/api/") && !url.includes("/api/config")) {
             let idToken = "";
             try {
-                const stored = localStorage.getItem("azureUser") || localStorage.getItem("portalUser");
+                const stored = sessionStorage.getItem("azureUser") || sessionStorage.getItem("portalUser") || localStorage.getItem("azureUser") || localStorage.getItem("portalUser");
                 if (stored) {
                     const parsed = JSON.parse(stored);
                     idToken = parsed.idToken || parsed.id_token || "";
@@ -48,7 +62,15 @@
             }
         }
 
-        return originalFetch.call(this, resource, options);
+        const response = await originalFetch.call(this, resource, options);
+
+        // If backend responds with 401 Unauthorized for API calls (excluding config), trigger re-signin
+        if (response.status === 401 && url.includes("/api/") && !url.includes("/api/config") && !url.includes("/api/users/azure-login")) {
+            console.warn("⚠️ Token expired or invalid (401 response). Triggering re-authentication...");
+            handleExpiredToken();
+        }
+
+        return response;
     };
 })();
 
@@ -80,8 +102,8 @@
                         redirectUri: window.location.origin,
                     },
                     cache: {
-                        cacheLocation: "localStorage",
-                        storeAuthStateInCookie: true,
+                        cacheLocation: "sessionStorage",
+                        storeAuthStateInCookie: false,
                     }
                 };
                 msalInstance = new window.msal.PublicClientApplication(msalConfig);
@@ -93,29 +115,67 @@
     }
 
     /**
+     * Check if stored JWT token payload is expired
+     */
+    function isTokenExpired(token) {
+        if (!token) return true;
+        try {
+            const parts = token.split(".");
+            if (parts.length !== 3) return true;
+            const payloadJson = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"));
+            const payload = JSON.parse(payloadJson);
+            if (payload && payload.exp) {
+                // Return true if token is expired (or expires within 10 seconds buffer)
+                const nowInSec = Math.floor(Date.now() / 1000);
+                return payload.exp <= (nowInSec + 10);
+            }
+        } catch (e) {
+            console.warn("⚠️ Error parsing token expiration claim:", e);
+        }
+        return false;
+    }
+
+    /**
+     * Retrieve stored Azure User object ID and claims
+     */
+    /**
      * Retrieve stored Azure User object ID and claims
      */
     function getAzureUser() {
         try {
-            const stored = localStorage.getItem("azureUser");
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                if (parsed && parsed.objectId) return parsed;
+            const storedSession = sessionStorage.getItem("azureUser") || localStorage.getItem("azureUser") || sessionStorage.getItem("portalUser") || localStorage.getItem("portalUser");
+            if (storedSession) {
+                const parsed = JSON.parse(storedSession);
+                if (parsed && (parsed.objectId || parsed.email)) {
+                    if (!parsed.idToken || isTokenExpired(parsed.idToken)) {
+                        console.warn("⚠️ [Auth Check] Invalid or missing Bearer token in session. Purging unauthenticated session cache.");
+                        sessionStorage.removeItem("azureUser");
+                        sessionStorage.removeItem("portalUser");
+                        localStorage.removeItem("azureUser");
+                        localStorage.removeItem("portalUser");
+                        return null;
+                    }
+                    console.log("🔍 [Auth Check] Verified user session from cache source:", { objectId: parsed.objectId || 'N/A', email: parsed.email, role: parsed.role });
+                    return parsed;
+                }
             }
-        } catch (e) { }
+        } catch (e) {
+            console.warn("⚠️ [Auth Check] Error reading cache:", e.message);
+        }
+        console.log("🔍 [Auth Check] No cached user session found in sessionStorage or localStorage.");
         return null;
     }
 
     /**
      * Process Azure AD Account authentication and update role & UI
      */
-    async function handleAuthenticatedAccount(account, idToken) {
+    async function handleAuthenticatedAccount(account, idToken, source = "MSAL Redirect / Silent") {
         const objectId = account?.idTokenClaims?.oid || account?.localAccountId || account?.homeAccountId;
         const userEmail = account?.username || account?.name || "user@company.com";
         const userName = account?.name || userEmail;
         const rawToken = idToken || account?.idToken || account?.idTokenClaims?.rawIdToken || "";
 
-        console.log("🔑 Azure Object ID:", objectId);
+        console.log(`🔑 [Auth Check] Authenticated account via ${source}. Azure Object ID:`, objectId);
 
         let isAdmin = false;
         let role = "Employee";
@@ -150,8 +210,8 @@
             idToken: rawToken,
             timestamp: new Date().toISOString()
         };
-        localStorage.setItem("azureUser", JSON.stringify(azureUser));
-        localStorage.setItem("portalUser", JSON.stringify({
+        sessionStorage.setItem("azureUser", JSON.stringify(azureUser));
+        sessionStorage.setItem("portalUser", JSON.stringify({
             email: userEmail,
             role: role,
             name: userName,
@@ -171,6 +231,7 @@
 
         if (msalInstance && clientId) {
             try {
+                console.log("🚀 [Auth Check] Triggering Azure AD redirect login...");
                 await msalInstance.loginRedirect({
                     scopes: ["User.Read", "openid", "profile"]
                 });
@@ -192,7 +253,7 @@
         // 1. Check local session storage cache first
         const storedUser = getAzureUser();
         if (storedUser) {
-            console.log("🔑 Azure Object ID:", storedUser.objectId);
+            console.log("🔑 [Auth Check] Using active cached session for Azure Object ID:", storedUser.objectId);
             checkAdminPortalVisibility(storedUser);
             return storedUser;
         }
@@ -202,17 +263,24 @@
             try {
                 const redirectResult = await msalInstance.handleRedirectPromise();
                 if (redirectResult && redirectResult.account) {
-                    return await handleAuthenticatedAccount(redirectResult.account, redirectResult.idToken);
+                    console.log("🔍 [Auth Check] Verified account from cache source: MSAL Redirect Result");
+                    return await handleAuthenticatedAccount(redirectResult.account, redirectResult.idToken, "MSAL Redirect Result");
                 }
 
                 const accounts = msalInstance.getAllAccounts();
+                console.log(`🔍 [Auth Check] MSAL cache account count: ${accounts.length}`);
                 if (accounts.length > 0) {
-                    const silentResult = await msalInstance.acquireTokenSilent({
-                        scopes: ["User.Read", "openid", "profile"],
-                        account: accounts[0]
-                    });
-                    if (silentResult && silentResult.account) {
-                        return await handleAuthenticatedAccount(silentResult.account, silentResult.idToken);
+                    try {
+                        const silentResult = await msalInstance.acquireTokenSilent({
+                            scopes: ["User.Read", "openid", "profile"],
+                            account: accounts[0]
+                        });
+                        if (silentResult && silentResult.account) {
+                            console.log("🔍 [Auth Check] Verified account from cache source: MSAL Silent Token (Browser Cache)");
+                            return await handleAuthenticatedAccount(silentResult.account, silentResult.idToken, "MSAL Silent Token");
+                        }
+                    } catch (silentErr) {
+                        console.warn("⚠️ [Auth Check] MSAL Silent token acquisition failed:", silentErr.message);
                     }
                 }
             } catch (err) {
@@ -220,7 +288,7 @@
             }
         }
 
-        // 3. Only if completely unauthenticated: Redirect to Microsoft login once
+        console.log("🔍 [Auth Check] No valid session or MSAL account found. User is unauthenticated.");
         return await loginWithAzure();
     }
 

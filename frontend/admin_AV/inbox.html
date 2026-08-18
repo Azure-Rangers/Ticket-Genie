@@ -258,21 +258,30 @@
   </main>
   <link rel="stylesheet" href="../css/style.css">
   <script src="../js/api.js"></script>
+  <script src="../js/azure-auth.js"></script>
+  <script src="../js/theme.js"></script>
   <script src="../js/script.js"></script>
   <script>
     function toggleSidebar() { document.getElementById('appSidebar').classList.toggle('collapsed'); }
     
     let loggedInUser = "Admin";
-    const userDataString = localStorage.getItem('portalUser');
+    const userDataString = sessionStorage.getItem('portalUser') || localStorage.getItem('portalUser');
     if (userDataString) {
       const user = JSON.parse(userDataString);
-      loggedInUser = user.name;
-      document.getElementById('sidebarRole').innerText = `${user.role} Portal`;
-      document.getElementById('navName').innerText = user.name;
-      document.getElementById('navSubRole').innerText = `${user.role} Admin`;
-      document.getElementById('navAvatar').innerText = user.name.charAt(0).toUpperCase();
-      if (user.role === 'HR' || user.role === 'Management') document.getElementById('adminNav').style.display = 'block';
-    } else { window.location.href = '../index.html'; }
+      loggedInUser = user.name || 'Admin';
+      const roleStr = user.role || 'Admin';
+      if (document.getElementById('sidebarRole')) document.getElementById('sidebarRole').innerText = `${roleStr} Portal`;
+      if (document.getElementById('navName')) document.getElementById('navName').innerText = loggedInUser;
+      if (document.getElementById('navSubRole')) document.getElementById('navSubRole').innerText = `${roleStr} Admin`;
+      if (document.getElementById('navAvatar')) document.getElementById('navAvatar').innerText = loggedInUser.charAt(0).toUpperCase();
+      const adminNav = document.getElementById('adminNav');
+      if (adminNav && (roleStr === 'HR' || roleStr === 'Management' || roleStr === 'Admin')) {
+        adminNav.style.display = 'block';
+      }
+    } else { 
+      console.warn("[Inbox Auth] No portalUser session found in sessionStorage or localStorage. Redirecting to index.html");
+      window.location.href = '../index.html'; 
+    }
 
     // Resizer logic
     const resizer = document.getElementById('dragResizer');
