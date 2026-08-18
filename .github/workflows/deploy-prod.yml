@@ -80,10 +80,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check if Terraform files changed
+        id: check_tf
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "run_tf=true" >> $GITHUB_OUTPUT
+          elif git diff-tree --no-commit-id --name-only -r ${{ github.sha }} | grep -q '^terraform/'; then
+            echo "run_tf=true" >> $GITHUB_OUTPUT
+          else
+            echo "No terraform/ files modified in this commit. Skipping Terraform Apply."
+            echo "run_tf=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Setup Terraform
+        if: steps.check_tf.outputs.run_tf == 'true'
         uses: hashicorp/setup-terraform@v3
 
       - name: Log in to Azure via OIDC
+        if: steps.check_tf.outputs.run_tf == 'true'
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -91,6 +105,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Terraform Init and Apply
+        if: steps.check_tf.outputs.run_tf == 'true'
         working-directory: terraform
         env:
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
