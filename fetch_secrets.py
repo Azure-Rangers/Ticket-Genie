@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import argparse
 import os
-import subprocess
 import sys
 from pathlib import Path
 
@@ -64,51 +63,6 @@ def load_existing_env(env_path: Path) -> dict[str, str]:
     return env_vars
 
 
-def discover_azure_ad_config() -> dict[str, str]:
-    """Discover Azure AD Tenant ID and App Registration Client ID via Azure CLI."""
-    discovered: dict[str, str] = {}
-    print("\n🔍 Querying Azure AD for App Registration & Tenant details...")
-
-    # 1. Discover Tenant ID
-    try:
-        tenant_id = subprocess.check_output(
-            ["az", "account", "show", "--query", "tenantId", "-o", "tsv"],
-            text=True,
-            stderr=subprocess.DEVNULL,
-        ).strip()
-        if tenant_id:
-            discovered["AZURE_TENANT_ID"] = tenant_id
-            print(f"   ✓ Discovered Azure Tenant ID: {tenant_id}")
-    except Exception as err:
-        print(f"   ⚠️ Could not fetch Azure Tenant ID via CLI: {err}")
-
-    # 2. Discover App Registration Client ID for TicketGenie
-    try:
-        app_id = subprocess.check_output(
-            [
-                "az",
-                "ad",
-                "app",
-                "list",
-                "--filter",
-                "displayName eq 'TicketGenie' or displayName eq 'Ticket-Genie'",
-                "--query",
-                "[0].appId",
-                "-o",
-                "tsv",
-            ],
-            text=True,
-            stderr=subprocess.DEVNULL,
-        ).strip()
-        if app_id:
-            discovered["AZURE_CLIENT_ID"] = app_id
-            print(f"   ✓ Discovered Azure App Registration Client ID: {app_id}")
-    except Exception as err:
-        print(f"   ⚠️ Could not fetch Azure App Registration Client ID via CLI: {err}")
-
-    return discovered
-
-
 def apply_secret_aliases(secrets: dict[str, str]) -> dict[str, str]:
     """Map common key aliases (e.g. SMTP/Gmail, OpenAI) to ensure compatibility across all modules."""
     aliased = dict(secrets)
@@ -142,10 +96,6 @@ def save_env_file(env_path: Path, secrets: dict[str, str]) -> None:
     """Save secret key-value pairs to the local .env file."""
     # Load existing env vars to preserve non-secret local configs
     existing_env = load_existing_env(env_path)
-
-    # Discover Azure AD App Registration Client ID and Tenant ID via Azure CLI
-    ad_config = discover_azure_ad_config()
-    existing_env.update(ad_config)
 
     # Apply secret aliases (e.g. SMTP <-> Google Email, OpenAI aliases)
     updated_secrets = apply_secret_aliases(secrets)
