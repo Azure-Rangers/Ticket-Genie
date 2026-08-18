@@ -11,6 +11,7 @@
         localStorage.removeItem("azureUser");
         localStorage.removeItem("portalUser");
         if (window.AzureAuth && typeof window.AzureAuth.loginWithAzure === "function") {
+            console.log("🔐 Triggering Azure AD login due to 401 Unauthorized token response...");
             window.AzureAuth.loginWithAzure();
         } else {
             window.location.reload();
@@ -93,7 +94,17 @@
             }
         } catch (e) { }
 
-        if (clientId && window.msal && window.msal.PublicClientApplication) {
+        if (clientId && (!window.msal || !window.msal.PublicClientApplication)) {
+            await new Promise((resolve) => {
+                const script = document.createElement("script");
+                script.src = "https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js";
+                script.onload = () => resolve();
+                script.onerror = () => resolve();
+                document.head.appendChild(script);
+            });
+        }
+
+        if (clientId && window.msal && window.msal.PublicClientApplication && !msalInstance) {
             try {
                 const msalConfig = {
                     auth: {
@@ -175,10 +186,20 @@
         const userName = account?.name || userEmail;
         const rawToken = idToken || account?.idToken || account?.idTokenClaims?.rawIdToken || "";
 
-        console.log(`🔑 [Auth Check] Authenticated account via ${source}. Azure Object ID:`, objectId);
+        if (rawToken && isTokenExpired(rawToken)) {
+            console.warn(`⚠️ [Auth Check] Token acquired via ${source} is expired. Purging cache.`);
+            sessionStorage.removeItem("azureUser");
+            sessionStorage.removeItem("portalUser");
+            localStorage.removeItem("azureUser");
+            localStorage.removeItem("portalUser");
+            return null;
+        }
+
+        console.log(`🔑 [Auth Check] Authenticating account via ${source}. Azure Object ID:`, objectId);
 
         let isAdmin = false;
         let role = "Employee";
+        let verifiedByBackend = false;
 
         // Query backend for role authorization based on Object ID & verify JWT signature
         try {
@@ -196,9 +217,20 @@
                 const data = await apiRes.json();
                 isAdmin = data.is_admin;
                 role = data.role;
+                verifiedByBackend = true;
+            } else {
+                console.warn(`⚠️ [Azure Auth API] Backend rejected cached authentication (HTTP ${apiRes.status}). Purging session.`);
             }
         } catch (e) {
-            console.warn("⚠️ [Azure Auth API] Backend role check notice:", e.message);
+            console.warn("⚠️ [Azure Auth API] Backend role check error:", e.message);
+        }
+
+        if (!verifiedByBackend && rawToken) {
+            sessionStorage.removeItem("azureUser");
+            sessionStorage.removeItem("portalUser");
+            localStorage.removeItem("azureUser");
+            localStorage.removeItem("portalUser");
+            return null;
         }
 
         const azureUser = {
@@ -235,12 +267,16 @@
                 await msalInstance.loginRedirect({
                     scopes: ["User.Read", "openid", "profile"]
                 });
+                return;
             } catch (err) {
                 console.warn("⚠️ [Azure Auth] Azure AD redirect error:", err.message);
             }
-        } else {
-            console.log("ℹ️ Azure Client ID not configured.");
         }
+        
+        console.log("ℹ️ Redirecting unauthenticated user to landing page portal...");
+        const path = window.location.pathname;
+        const target = path.includes("/admin_AV/") || path.includes("/management/") || path.includes("/employee_NM/") ? "../index.html" : "index.html";
+        window.location.href = target;
         return null;
     }
 
@@ -264,7 +300,8 @@
                 const redirectResult = await msalInstance.handleRedirectPromise();
                 if (redirectResult && redirectResult.account) {
                     console.log("🔍 [Auth Check] Verified account from cache source: MSAL Redirect Result");
-                    return await handleAuthenticatedAccount(redirectResult.account, redirectResult.idToken, "MSAL Redirect Result");
+                    const user = await handleAuthenticatedAccount(redirectResult.account, redirectResult.idToken, "MSAL Redirect Result");
+                    if (user) return user;
                 }
 
                 const accounts = msalInstance.getAllAccounts();
@@ -277,7 +314,8 @@
                         });
                         if (silentResult && silentResult.account) {
                             console.log("🔍 [Auth Check] Verified account from cache source: MSAL Silent Token (Browser Cache)");
-                            return await handleAuthenticatedAccount(silentResult.account, silentResult.idToken, "MSAL Silent Token");
+                            const user = await handleAuthenticatedAccount(silentResult.account, silentResult.idToken, "MSAL Silent Token");
+                            if (user) return user;
                         }
                     } catch (silentErr) {
                         console.warn("⚠️ [Auth Check] MSAL Silent token acquisition failed:", silentErr.message);
@@ -360,8 +398,12 @@
 
         if (!azureUser) {
             if (path.includes("/admin_AV/") || path.includes("/management/") || path.includes("/employee_NM/")) {
-                console.warn("⛔ Unauthenticated access attempt. Redirecting to landing page...");
-                window.location.href = "../index.html";
+                console.warn("⛔ Unauthenticated access attempt. Triggering Azure AD login...");
+                if (typeof loginWithAzure === "function") {
+                    loginWithAzure();
+                } else {
+                    window.location.href = "../index.html";
+                }
                 return false;
             }
             return true;
