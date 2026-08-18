@@ -181,13 +181,26 @@ function renderMyTickets(tickets) {
 async function loadTicketDetailPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const ticketId = urlParams.get("id");
-
-    const fetchFn = window.apiFetchTickets || (async () => []);
-    let tickets = await fetchFn();
-    let ticket = (tickets || []).find(t => String(t.id) === String(ticketId)) || (tickets.length > 0 ? tickets[0] : null);
-
     const container = document.getElementById("ticketDetailContainer");
     if (!container) return;
+
+    if (!ticketId) {
+        container.innerHTML = renderTicketDetailError("No ticket was selected.");
+        return;
+    }
+
+    let ticket;
+    try {
+        const fetchFn = window.apiFetchTicket;
+        if (typeof fetchFn !== "function") throw new Error("Ticket API is unavailable.");
+        ticket = await fetchFn(ticketId);
+    } catch (err) {
+        console.error("loadTicketDetailPage failed:", err);
+        container.innerHTML = renderTicketDetailError(
+            err && err.message ? err.message : "Unable to load this ticket."
+        );
+        return;
+    }
 
     container.innerHTML = `
         <div style="background: white; border-radius: 12px; padding: 28px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 24px;">
@@ -197,8 +210,8 @@ async function loadTicketDetailPage() {
                     <span style="font-size: 13px; color: #64748b;">Ticket ID: <strong>#${escapeHTML(ticket.id)}</strong></span>
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <a href="${window.getExportUrl ? getExportUrl(ticket.id, 'pdf') : '#'}" target="_blank" style="padding: 8px 14px; background: #ef4444; color: white; border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;"><i class="fa-solid fa-file-pdf"></i> Export PDF</a>
-                    <a href="${window.getExportUrl ? getExportUrl(ticket.id, 'docx') : '#'}" target="_blank" style="padding: 8px 14px; background: #2563eb; color: white; border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;"><i class="fa-solid fa-file-word"></i> Export DOCX</a>
+                    <button type="button" onclick="downloadTicketDocument('${escapeHTML(ticket.id)}', 'pdf', this)" style="padding: 8px 14px; background: #ef4444; color: white; border: 0; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
+                    <button type="button" onclick="downloadTicketDocument('${escapeHTML(ticket.id)}', 'docx', this)" style="padding: 8px 14px; background: #2563eb; color: white; border: 0; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;"><i class="fa-solid fa-file-word"></i> Export DOCX</button>
                 </div>
             </div>
 
@@ -230,13 +243,65 @@ async function loadTicketDetailPage() {
     `;
 
     await renderTicketCommentsThread(ticketId);
+
+    const replyInput = document.getElementById("replyMessageInput");
+    if (replyInput) {
+        replyInput.addEventListener("keydown", event => {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                sendTicketReply(ticketId);
+            }
+        });
+    }
+}
+
+function renderTicketDetailError(message) {
+    return `
+        <div role="alert" style="padding: 32px; text-align: center; color: #991b1b; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 12px;">
+            <i class="fa-solid fa-circle-exclamation" style="font-size: 24px; margin-bottom: 10px;"></i>
+            <div style="font-weight: 700; margin-bottom: 6px;">Conversation unavailable</div>
+            <div style="font-size: 13px;">${escapeHTML(message)}</div>
+            <a href="my-tickets.html" style="display: inline-block; margin-top: 16px; color: #6f4b82; font-weight: 700;">Return to My Requests</a>
+        </div>
+    `;
+}
+
+async function downloadTicketDocument(ticketId, format, button) {
+    const originalHtml = button ? button.innerHTML : "";
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
+    }
+    try {
+        if (typeof window.apiDownloadTicketDocument !== "function") {
+            throw new Error("Document export service is unavailable.");
+        }
+        await window.apiDownloadTicketDocument(ticketId, format);
+        showNotification(`${format.toUpperCase()} downloaded.`, "success");
+    } catch (err) {
+        console.error("downloadTicketDocument failed:", err);
+        showNotification(err.message || "Unable to generate the document.", "error");
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = originalHtml;
+        }
+    }
 }
 
 async function renderTicketCommentsThread(ticketId) {
     const threadContainer = document.getElementById("ticketCommentsThread");
     if (!threadContainer) return;
-    const getCommentsFn = window.apiGetComments || (async () => []);
-    const comments = await getCommentsFn(ticketId);
+    let comments;
+    try {
+        const getCommentsFn = window.apiGetComments;
+        if (typeof getCommentsFn !== "function") throw new Error("Conversation API is unavailable.");
+        comments = await getCommentsFn(ticketId);
+    } catch (err) {
+        console.error("renderTicketCommentsThread failed:", err);
+        threadContainer.innerHTML = `<div role="alert" style="text-align:center;color:#991b1b;padding:20px;background:#fff1f2;border-radius:8px;">${escapeHTML(err.message || "Unable to load the conversation.")}</div>`;
+        return;
+    }
 
     if (!comments || comments.length === 0) {
         threadContainer.innerHTML = `
@@ -440,10 +505,24 @@ async function sendTicketReply(ticketId) {
     const msg = replyInput.value.trim();
     if (!msg) return;
 
-    replyInput.value = "";
-    const postFn = window.apiPostComment || apiPostComment;
-    await postFn(ticketId, msg, "Employee");
-    await renderTicketCommentsThread(ticketId);
+    const sendButton = replyInput.parentElement?.querySelector("button");
+    replyInput.disabled = true;
+    if (sendButton) sendButton.disabled = true;
+    try {
+        const postFn = window.apiPostComment;
+        if (typeof postFn !== "function") throw new Error("Conversation API is unavailable.");
+        await postFn(ticketId, msg, "Employee");
+        replyInput.value = "";
+        await renderTicketCommentsThread(ticketId);
+        showNotification("Message sent.", "success");
+    } catch (err) {
+        console.error("sendTicketReply failed:", err);
+        showNotification(err.message || "Unable to send your message.", "error");
+    } finally {
+        replyInput.disabled = false;
+        if (sendButton) sendButton.disabled = false;
+        replyInput.focus();
+    }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -468,6 +547,7 @@ Object.assign(window, {
     initializeMyTickets,
     renderMyTickets,
     loadTicketDetailPage,
+    downloadTicketDocument,
     submitStandardTicket,
     submitLeaveTicket,
     submitAnonymousTicket,

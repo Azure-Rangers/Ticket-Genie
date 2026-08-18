@@ -56,6 +56,9 @@ const API_BASE_URL = window.API_BASE_URL || "/api";
 
 async function apiFetchTickets(params = {}) {
     try {
+        if (window.AzureAuth?.ready) {
+            await window.AzureAuth.ready;
+        }
         const query = new URLSearchParams();
         if (params.search) query.append("search", params.search);
         if (params.status && params.status !== "all") query.append("status", params.status);
@@ -73,6 +76,19 @@ async function apiFetchTickets(params = {}) {
         console.warn("apiFetchTickets failed:", err);
     }
     return [];
+}
+
+async function apiFetchTicket(ticketId) {
+    const res = await fetch(`${API_BASE_URL}/tickets/${encodeURIComponent(ticketId)}`);
+    if (!res.ok) {
+        let detail = `Unable to load ticket (HTTP ${res.status})`;
+        try {
+            const body = await res.json();
+            if (body.detail) detail = body.detail;
+        } catch (e) {}
+        throw new Error(detail);
+    }
+    return await res.json();
 }
 
 async function apiCreateTicket(ticketPayload) {
@@ -109,27 +125,35 @@ async function apiUpdateTicket(ticketId, ticketUpdate) {
 }
 
 async function apiGetComments(ticketId) {
-    try {
-        const res = await fetch(`${API_BASE_URL}/tickets/${ticketId}/comments`);
-        if (!res.ok) return [];
-        return await res.json();
-    } catch (err) {
-        return [];
-    }
+    const res = await fetch(`${API_BASE_URL}/tickets/${encodeURIComponent(ticketId)}/comments`);
+    if (!res.ok) throw new Error(`Unable to load conversation (HTTP ${res.status})`);
+    return await res.json();
 }
 
 async function apiPostComment(ticketId, message, senderRole = "Employee") {
-    try {
-        const res = await fetch(`${API_BASE_URL}/tickets/${ticketId}/comments`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message, sender_role: senderRole }),
-        });
-        return await res.json();
-    } catch (err) {
-        console.error("apiPostComment failed:", err);
-        return null;
+    const res = await fetch(`${API_BASE_URL}/tickets/${encodeURIComponent(ticketId)}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, sender_role: senderRole }),
+    });
+    if (!res.ok) throw new Error(`Unable to send message (HTTP ${res.status})`);
+    return await res.json();
+}
+
+async function apiSuggestTicketResponse(ticketId) {
+    const res = await fetch(
+        `${API_BASE_URL}/tickets/${encodeURIComponent(ticketId)}/suggested-response`,
+        { method: "POST" }
+    );
+    if (!res.ok) {
+        let detail = `Unable to suggest a response (HTTP ${res.status})`;
+        try {
+            const body = await res.json();
+            if (body.detail) detail = body.detail;
+        } catch (e) {}
+        throw new Error(detail);
     }
+    return await res.json();
 }
 
 async function apiFetchAnnouncements() {
@@ -304,14 +328,34 @@ function getExportUrl(ticketId, format = "pdf") {
     return `${API_BASE_URL}/tickets/${ticketId}/export?format=${format}`;
 }
 
+async function apiDownloadTicketDocument(ticketId, format = "pdf") {
+    const safeFormat = format === "docx" ? "docx" : "pdf";
+    const res = await fetch(
+        `${API_BASE_URL}/tickets/${encodeURIComponent(ticketId)}/export?format=${safeFormat}`
+    );
+    if (!res.ok) throw new Error(`Unable to export ticket (HTTP ${res.status})`);
+
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = `ticket_${ticketId}.${safeFormat}`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+}
+
 // Bind API client functions globally to window
 Object.assign(window, {
     API_BASE_URL,
     apiFetchTickets,
+    apiFetchTicket,
     apiCreateTicket,
     apiUpdateTicket,
     apiGetComments,
     apiPostComment,
+    apiSuggestTicketResponse,
     apiFetchAnnouncements,
     apiCreateAnnouncement,
     apiDeleteAnnouncement,
@@ -325,5 +369,6 @@ Object.assign(window, {
     apiGenieChat,
     apiRunReAct,
     apiRunExecAction,
+    apiDownloadTicketDocument,
     getExportUrl
 });

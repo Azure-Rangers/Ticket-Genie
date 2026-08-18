@@ -442,16 +442,30 @@
         return true;
     }
 
+    let resolveAuthReady;
+    const authReady = new Promise(resolve => {
+        resolveAuthReady = resolve;
+    });
+
     window.AzureAuth = {
         getAzureUser: getAzureUser,
         loginWithAzure: loginWithAzure,
         autoLoginAzure: autoLoginAzure,
         checkAdminPortalVisibility: checkAdminPortalVisibility,
-        enforcePageAccessControl: enforcePageAccessControl
+        enforcePageAccessControl: enforcePageAccessControl,
+        ready: authReady
     };
 
-    document.addEventListener("DOMContentLoaded", function () {
-        autoLoginAzure();
-        enforcePageAccessControl();
+    document.addEventListener("DOMContentLoaded", async function () {
+        let user = null;
+        try {
+            user = await autoLoginAzure();
+            enforcePageAccessControl();
+        } finally {
+            // API consumers use this to avoid racing session restoration.
+            // Resolving with null still lets unauthenticated calls reach the
+            // backend, where the required 401 response remains authoritative.
+            resolveAuthReady(user);
+        }
     });
 })();

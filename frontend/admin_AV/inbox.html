@@ -257,8 +257,8 @@
     </div>
   </main>
   <link rel="stylesheet" href="../css/style.css">
-  <script src="../js/api.js"></script>
-  <script src="../js/azure-auth.js"></script>
+  <script src="../js/api.js?v=20260818_4"></script>
+  <script src="../js/azure-auth.js?v=20260818_2"></script>
   <script src="../js/theme.js"></script>
   <script src="../js/script.js"></script>
   <script>
@@ -325,7 +325,18 @@
           throw new Error("Failed to load tickets payload from API endpoint.");
         }
 
-        tickets = rawTickets.map(t => ({
+        const getCommentsFn = window.apiGetComments;
+        const commentSets = await Promise.all(rawTickets.map(async t => {
+          if (typeof getCommentsFn !== "function") return [];
+          try {
+            return await getCommentsFn(t.id);
+          } catch (err) {
+            console.error(`Failed to load comments for ${t.id}:`, err);
+            return [];
+          }
+        }));
+
+        tickets = rawTickets.map((t, index) => ({
           id: t.id,
           status: t.status || "Open",
           subject: t.title || t.subject || "Untitled Ticket",
@@ -339,11 +350,11 @@
           aiAction: t.ai_action || "Review request details and route to appropriate department.",
           sentiment: t.sentiment || "😐 Neutral",
           sentimentBg: "#f3f4f6", sentimentBorder: "#e5e7eb", sentimentColor: "#374151",
-          thread: t.comments ? t.comments.map(c => ({
+          thread: commentSets[index].length ? commentSets[index].map(c => ({
             type: c.sender_role === 'Private' ? 'private' : (c.sender_role === 'System' ? 'system' : 'user'),
-            author: c.author || c.sender_role || 'User',
-            avatar: (c.author || 'U').charAt(0).toUpperCase(),
-            time: c.created_at ? new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
+            author: c.sender_role || 'User',
+            avatar: (c.sender_role || 'U').charAt(0).toUpperCase(),
+            time: c.createdAt ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
             content: c.message || c.content || ''
           })) : [{
             type: 'user',
@@ -428,8 +439,14 @@
 
       let replyBoxHTML = ticket.status.toLowerCase() !== 'resolved' ? `
           <div class="reply-box">
-            <div class="reply-label" style="font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; color: #111827;">Add response:</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;">
+              <div class="reply-label" style="font-size: 0.85rem; font-weight: 600; color: #111827;">Add response:</div>
+              <button type="button" class="btn-secondary" onclick="suggestReply(this)" style="padding:7px 11px;color:#5b21b6;border-color:#ddd6fe;background:#f5f3ff;">
+                <i class="ph-fill ph-sparkle"></i> Suggest reply
+              </button>
+            </div>
             <textarea id="replyText" class="reply-textarea" placeholder="Type your message..."></textarea>
+            <div id="replySuggestionMeta" style="display:none;margin-top:9px;padding:9px 11px;border-radius:7px;background:#f5f3ff;color:#5b21b6;font-size:0.75rem;line-height:1.45;"></div>
             <div class="reply-actions">
               <button class="btn-secondary" onclick="addNote(this)"><i class="ph-fill ph-lock-key"></i> Private Note</button>
               <button class="btn-send" onclick="sendReply(this)">Send Reply</button>
@@ -493,8 +510,10 @@
       const text = document.getElementById('replyText').value.trim();
       if(!text) return;
       const postFn = window.apiPostComment || (async () => null);
-      const res = await postFn(selectedTicketId, `[Private Note] ${text}`, "Private");
-      if (!res) {
+      let res;
+      try {
+        res = await postFn(selectedTicketId, text, "Private");
+      } catch (err) {
         alert("Failed to post private note to database server!");
         return;
       }
@@ -505,18 +524,54 @@
       renderTicketDetail();
     }
 
+    async function suggestReply(btn) {
+      const textarea = document.getElementById('replyText');
+      const meta = document.getElementById('replySuggestionMeta');
+      if (!textarea || !selectedTicketId) return;
+      if (textarea.value.trim() && !window.confirm('Replace your current draft with an AI suggestion?')) return;
+
+      const original = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ph ph-spinner-gap"></i> Drafting...';
+      try {
+        const suggestFn = window.apiSuggestTicketResponse;
+        if (typeof suggestFn !== 'function') throw new Error('Suggestion service is unavailable.');
+        const suggestion = await suggestFn(selectedTicketId);
+        textarea.value = suggestion.message || '';
+        textarea.focus();
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+        if (meta) {
+          const actions = Array.isArray(suggestion.suggested_actions) ? suggestion.suggested_actions : [];
+          meta.innerHTML = `<strong><i class="ph-fill ph-sparkle"></i> AI-generated draft — review before sending.</strong>${actions.length ? `<div style="margin-top:5px;">Suggested next steps: ${actions.map(escapeHTML).join(' • ')}</div>` : ''}${suggestion.safety_notice_required ? '<div style="margin-top:5px;color:#9f1239;"><strong>Sensitive case:</strong> verify wording and escalation requirements.</div>' : ''}`;
+          meta.style.display = 'block';
+        }
+      } catch (err) {
+        console.error('suggestReply failed:', err);
+        alert(err.message || 'Unable to generate a suggested response.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = original;
+      }
+    }
+
     async function sendReply(btn) {
       const text = document.getElementById('replyText').value.trim();
       if(!text) return;
       const postFn = window.apiPostComment || (async () => null);
-      const res = await postFn(selectedTicketId, text, loggedInUser);
-      if (!res) {
+      let res;
+      try {
+        // Normal reply attribution is derived from the verified backend
+        // identity; the browser does not claim an HR role or display name.
+        res = await postFn(selectedTicketId, text);
+      } catch (err) {
         alert("Failed to post reply to database server!");
         return;
       }
       const ticket = tickets.find(t => t.id === selectedTicketId);
       if (ticket) {
-        ticket.thread.push({ type: 'user', author: loggedInUser, avatar: loggedInUser.charAt(0).toUpperCase(), time: 'Just now', content: text });
+        const author = res.sender_role || 'Support';
+        ticket.thread.push({ type: 'user', author, avatar: author.charAt(0).toUpperCase(), time: 'Just now', content: res.message || text });
       }
       renderTicketDetail();
     }

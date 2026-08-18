@@ -28,6 +28,7 @@ backend = [
     "openai>=1.30.0",
     "azure-search-documents>=11.4.0",
     "azure-storage-blob>=12.19.0",
+    "reportlab>=4.0.0",
 ]
 dev = [
     "ruff>=0.3.0",
