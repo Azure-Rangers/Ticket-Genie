@@ -1,3 +1,8 @@
+import asyncio
+import logging
+import os
+import sys
+
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -78,11 +83,6 @@ def get_public_config():
     }
 
 
-import asyncio
-import logging
-import sys
-import os
-
 logger = logging.getLogger("ticketgenie.main")
 
 
@@ -105,9 +105,12 @@ async def _daily_digest_scheduler_loop():
 @app.on_event("startup")
 def start_daily_scheduler():
     is_testing = "pytest" in sys.modules or os.getenv("TESTING", "").lower() == "true"
-    enabled = os.getenv("ENABLE_DAILY_DIGEST_CRON", "true").lower() in ("true", "1", "yes")
+    enabled = os.getenv("ENABLE_DAILY_DIGEST_CRON", "true").lower() in (
+        "true",
+        "1",
+        "yes",
+    )
 
     if enabled and not is_testing:
         logger.info("Starting background Daily Admin Digest scheduler (24h loop)...")
         asyncio.create_task(_daily_digest_scheduler_loop())
-

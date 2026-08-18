@@ -155,8 +155,10 @@ def _create_ticket_internal(ticket: TicketCreate, db: Optional[Session] = None) 
                 from services.email_service import send_ticket_created_email
 
                 send_ticket_created_email(result_dict, recipient_email)
-        except Exception as notif_err:
-            tracer.get_tracer("ticketgenie").start_span("create_ticket_notification_error")
+        except Exception as _notif_err:
+            tracer.get_tracer("ticketgenie").start_span(
+                "create_ticket_notification_error"
+            )
 
         return result_dict
     finally:
@@ -382,9 +384,7 @@ def add_ticket_comment(
                     target_user = req_id or "all"
                     target_email = _resolve_user_email(req_id, session)
 
-                short_msg = (
-                    message[:90] + "..." if len(message) > 90 else message
-                )
+                short_msg = message[:90] + "..." if len(message) > 90 else message
                 create_notification(
                     title=f"New Comment on #{ticket_id}",
                     message=f'{sender_role} replied: "{short_msg}"',
@@ -395,9 +395,7 @@ def add_ticket_comment(
                 if target_email:
                     from services.email_service import send_ticket_comment_email
 
-                    send_ticket_comment_email(
-                        ticket_dict, comment_dict, target_email
-                    )
+                    send_ticket_comment_email(ticket_dict, comment_dict, target_email)
         except Exception:
             pass
 

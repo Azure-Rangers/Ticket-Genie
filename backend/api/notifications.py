@@ -70,4 +70,3 @@ def list_email_outbox(
     from services.email_service import get_outbox_log
 
     return get_outbox_log()
-

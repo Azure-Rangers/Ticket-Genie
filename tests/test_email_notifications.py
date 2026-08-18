@@ -1,5 +1,7 @@
 """Test suite for Email Notifications and Notifications API."""
 
+import time
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -16,9 +18,6 @@ def reset_outbox():
     clear_outbox_log()
     yield
     clear_outbox_log()
-
-
-import time
 
 
 def wait_for_outbox(min_count: int = 1, timeout: float = 2.0):
@@ -82,9 +81,7 @@ def test_ticket_status_update_triggers_email_and_notification():
     outbox = wait_for_outbox(1)
     assert len(outbox) >= 1
 
-    status_email = next(
-        (e for e in outbox if "Status Update" in e["subject"]), None
-    )
+    status_email = next((e for e in outbox if "Status Update" in e["subject"]), None)
     assert status_email is not None
     assert status_email["to"] == "employee_alex@company.com"
     assert "In Progress" in status_email["body_html"]

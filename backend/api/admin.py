@@ -16,7 +16,6 @@ from database.crud import (
     remove_department_user,
 )
 from services.jwt_verifier import verify_azure_user
-from services.sql_context_service import execute_sql_query
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -121,9 +120,6 @@ def get_admin_leave_queue(current_user: dict = Depends(verify_azure_user)):
     return get_leave_tickets()
 
 
-    return execute_sql_query(req.query, role=absorbed_role, user_id=absorbed_user_id)
-
-
 @router.post("/trigger-daily-digest")
 def handle_trigger_daily_digest(current_user: dict = Depends(verify_azure_user)):
     """Trigger daily summary email digest on demand for IT Admins."""
@@ -132,4 +128,3 @@ def handle_trigger_daily_digest(current_user: dict = Depends(verify_azure_user))
 
     result = send_daily_admin_digest()
     return result
-

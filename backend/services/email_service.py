@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import concurrent.futures
+import json
 import logging
 import os
 import smtplib
+import sys
+import urllib.request
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -26,22 +30,25 @@ def clear_outbox_log() -> None:
     OUTBOX_LOG.clear()
 
 
-import concurrent.futures
-import json
-import urllib.request
-
 _EMAIL_EXECUTOR = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 
 def get_smtp_config() -> Dict[str, Any]:
     """Retrieve SMTP, Brevo, SendGrid, and Resend configuration from environment variables."""
-    brevo_key = os.getenv("BREVO_API_KEY", "").strip() or os.getenv("BREVO_KEY", "").strip()
+    brevo_key = (
+        os.getenv("BREVO_API_KEY", "").strip() or os.getenv("BREVO_KEY", "").strip()
+    )
     resend_key = os.getenv("RESEND_API_KEY", "").strip()
     sendgrid_key = os.getenv("SENDGRID_API_KEY", "").strip()
-    
-    host = os.getenv("SMTP_HOST", "smtp-relay.brevo.com" if brevo_key else ("smtp.sendgrid.net" if sendgrid_key else "smtp.gmail.com")).strip()
+
+    host = os.getenv(
+        "SMTP_HOST",
+        "smtp-relay.brevo.com"
+        if brevo_key
+        else ("smtp.sendgrid.net" if sendgrid_key else "smtp.gmail.com"),
+    ).strip()
     port = int(os.getenv("SMTP_PORT", "587").strip() or "587")
-    
+
     user = (
         ("apikey" if sendgrid_key else "")
         or os.getenv("BREVO_USER", "").strip()
@@ -81,7 +88,9 @@ def get_smtp_config() -> Dict[str, Any]:
     }
 
 
-def _send_via_brevo_api(config: Dict[str, Any], to_email: str, subject: str, body_html: str) -> bool:
+def _send_via_brevo_api(
+    config: Dict[str, Any], to_email: str, subject: str, body_html: str
+) -> bool:
     """Send email directly using Brevo REST API v3 over HTTPS (brevo.com)."""
     payload = {
         "sender": {"name": "TicketGenie Support", "email": config["from_email"]},
@@ -104,10 +113,14 @@ def _send_via_brevo_api(config: Dict[str, Any], to_email: str, subject: str, bod
         return response.status in (200, 201, 202)
 
 
-def _send_via_resend_api(config: Dict[str, Any], to_email: str, subject: str, body_html: str) -> bool:
+def _send_via_resend_api(
+    config: Dict[str, Any], to_email: str, subject: str, body_html: str
+) -> bool:
     """Send email directly using Resend Web API over HTTPS (resend.com)."""
     payload = {
-        "from": config["from_email"] if "@" in config["from_email"] else "TicketGenie <onboarding@resend.dev>",
+        "from": config["from_email"]
+        if "@" in config["from_email"]
+        else "TicketGenie <onboarding@resend.dev>",
         "to": [to_email],
         "subject": subject,
         "html": body_html,
@@ -127,7 +140,9 @@ def _send_via_resend_api(config: Dict[str, Any], to_email: str, subject: str, bo
         return response.status in (200, 201, 202)
 
 
-def _send_via_sendgrid_api(config: Dict[str, Any], to_email: str, subject: str, body_html: str) -> bool:
+def _send_via_sendgrid_api(
+    config: Dict[str, Any], to_email: str, subject: str, body_html: str
+) -> bool:
     """Send email directly using SendGrid Web API v3 over HTTPS."""
     payload = {
         "personalizations": [{"to": [{"email": to_email}]}],
@@ -187,7 +202,9 @@ def _send_email_sync(
             if success:
                 log_entry["status"] = "sent_brevo_api"
                 OUTBOX_LOG.append(log_entry)
-                logger.info(f"Successfully sent Brevo API email to {to_email}: {subject}")
+                logger.info(
+                    f"Successfully sent Brevo API email to {to_email}: {subject}"
+                )
                 return True
         except Exception as brevo_err:
             logger.warning(f"Brevo API dispatch failed ({brevo_err}). Trying fallback.")
@@ -199,10 +216,14 @@ def _send_email_sync(
             if success:
                 log_entry["status"] = "sent_resend_api"
                 OUTBOX_LOG.append(log_entry)
-                logger.info(f"Successfully sent Resend API email to {to_email}: {subject}")
+                logger.info(
+                    f"Successfully sent Resend API email to {to_email}: {subject}"
+                )
                 return True
         except Exception as resend_err:
-            logger.warning(f"Resend API dispatch failed ({resend_err}). Trying fallback.")
+            logger.warning(
+                f"Resend API dispatch failed ({resend_err}). Trying fallback."
+            )
 
     # 1. Try SendGrid Web API v3 if API key is set
     if config["sendgrid_key"]:
@@ -211,10 +232,14 @@ def _send_email_sync(
             if success:
                 log_entry["status"] = "sent_sendgrid_api"
                 OUTBOX_LOG.append(log_entry)
-                logger.info(f"Successfully sent SendGrid API email to {to_email}: {subject}")
+                logger.info(
+                    f"Successfully sent SendGrid API email to {to_email}: {subject}"
+                )
                 return True
         except Exception as sg_err:
-            logger.warning(f"SendGrid API dispatch failed ({sg_err}). Trying SMTP fallback.")
+            logger.warning(
+                f"SendGrid API dispatch failed ({sg_err}). Trying SMTP fallback."
+            )
 
     # 2. Try SMTP Dispatch (SendGrid SMTP Relay or Google SMTP)
     if config["user"] and config["password"]:
@@ -242,7 +267,9 @@ def _send_email_sync(
             return True
         except Exception as smtp_err:
             err_msg = str(smtp_err)
-            logger.warning(f"SMTP email dispatch failed ({err_msg}). Recording in outbox log.")
+            logger.warning(
+                f"SMTP email dispatch failed ({err_msg}). Recording in outbox log."
+            )
             log_entry["status"] = "failed_smtp_fallback_logged"
             log_entry["error"] = err_msg
             OUTBOX_LOG.append(log_entry)
@@ -253,9 +280,6 @@ def _send_email_sync(
     OUTBOX_LOG.append(log_entry)
     logger.info(f"[Email Logged Offline] To: {to_email} | Subject: {subject}")
     return True
-
-
-import sys
 
 
 def send_email(
@@ -274,10 +298,11 @@ def send_email(
     should_async = not is_testing if async_dispatch is None else async_dispatch
 
     if should_async:
-        _EMAIL_EXECUTOR.submit(_send_email_sync, to_email, subject, body_html, body_text)
+        _EMAIL_EXECUTOR.submit(
+            _send_email_sync, to_email, subject, body_html, body_text
+        )
         return True
     return _send_email_sync(to_email, subject, body_html, body_text)
-
 
 
 # ---------------------------------------------------------------------------
@@ -452,4 +477,3 @@ def send_ticket_comment_email(
     """
 
     return send_email(to_email=recipient_email, subject=subject, body_html=body_html)
-

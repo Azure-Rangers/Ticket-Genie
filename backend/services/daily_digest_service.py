@@ -6,17 +6,16 @@ import json
 import logging
 import os
 import urllib.request
-
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
+
+from opentelemetry import trace
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from database.connection import SessionLocal
 from database.models_db import DepartmentUserDB, TicketDB, UserProfileDB
 from services.email_service import get_frontend_url, get_smtp_config, send_email
-
-from opentelemetry import trace
 
 logger = logging.getLogger("ticketgenie.daily_digest")
 tracer = trace.get_tracer("ticketgenie.daily_digest")
@@ -41,9 +40,17 @@ def resolve_admin_recipients(session: Optional[Session] = None) -> List[Dict[str
                 continue
             if ":" in part:
                 email, dept = part.split(":", 1)
-                recipients.append({"email": email.strip(), "role": "Admin", "department": dept.strip()})
+                recipients.append(
+                    {
+                        "email": email.strip(),
+                        "role": "Admin",
+                        "department": dept.strip(),
+                    }
+                )
             elif "@" in part:
-                recipients.append({"email": part, "role": "Super Admin", "department": None})
+                recipients.append(
+                    {"email": part, "role": "Super Admin", "department": None}
+                )
         if recipients:
             return recipients
 
@@ -74,7 +81,11 @@ def resolve_admin_recipients(session: Optional[Session] = None) -> List[Dict[str
                 role = u.role or "Admin"
                 dept = u.department_name
                 # Super admins or upper executive management get full organization digest (department = None)
-                if "super" in role.lower() or "executive" in (dept or "").lower() or "upper" in (dept or "").lower():
+                if (
+                    "super" in role.lower()
+                    or "executive" in (dept or "").lower()
+                    or "upper" in (dept or "").lower()
+                ):
                     dept = None
 
                 recipients_map[email.lower()] = {
@@ -100,7 +111,11 @@ def resolve_admin_recipients(session: Optional[Session] = None) -> List[Dict[str
             if email and "@" in email and email.lower() not in recipients_map:
                 role = prof.role or "Admin"
                 dept = prof.department
-                if "super" in role.lower() or "executive" in (dept or "").lower() or "upper" in (dept or "").lower():
+                if (
+                    "super" in role.lower()
+                    or "executive" in (dept or "").lower()
+                    or "upper" in (dept or "").lower()
+                ):
                     dept = None
 
                 recipients_map[email.lower()] = {
@@ -122,12 +137,16 @@ def resolve_admin_recipients(session: Optional[Session] = None) -> List[Dict[str
         smtp_cfg = get_smtp_config()
         fallback = smtp_cfg.get("from_email") or smtp_cfg.get("user")
         if fallback and "@" in fallback:
-            result.append({"email": fallback, "role": "Super Admin", "department": None})
+            result.append(
+                {"email": fallback, "role": "Super Admin", "department": None}
+            )
 
     return result
 
 
-def generate_ai_shift_summary(tickets: List[Dict[str, Any]], department: Optional[str] = None) -> Dict[str, Any]:
+def generate_ai_shift_summary(
+    tickets: List[Dict[str, Any]], department: Optional[str] = None
+) -> Dict[str, Any]:
     """
     Use Azure OpenAI / LLM to analyze active tickets in SQL DB and generate an AI-Visual Shift Analysis.
     The AI model dynamically determines visual theme colors, status badges, progress bar ratios, and spotlight insights.
@@ -136,12 +155,19 @@ def generate_ai_shift_summary(tickets: List[Dict[str, Any]], department: Optiona
     api_key = os.getenv("GROUP1OPENAIAPIKEY", "").strip()
 
     dept_label = f"[{department}]" if department else "[Organization-Wide]"
-    open_tickets = [t for t in tickets if (t.get("status") or "").strip().lower() in ("open", "in progress", "pending")]
-    
+    open_tickets = [
+        t
+        for t in tickets
+        if (t.get("status") or "").strip().lower() in ("open", "in progress", "pending")
+    ]
+
     if not open_tickets:
         return {
             "executive_brief": f"All {dept_label} service desk queues are currently clear with zero pending open tickets.",
-            "recommendations": ["Routine queue health monitoring", "Knowledge base article review"],
+            "recommendations": [
+                "Routine queue health monitoring",
+                "Knowledge base article review",
+            ],
             "risk_alert": f"Low risk - zero {dept_label} backlog.",
             "visual_theme": "emerald_clean",
             "visual_badge": "🟢 QUEUE CLEAR",
@@ -189,11 +215,13 @@ def generate_ai_shift_summary(tickets: List[Dict[str, Any]], department: Optiona
             if not url.endswith("/chat/completions") and not url.endswith("/responses"):
                 url = f"{url}/chat/completions"
 
-            req_body = json.dumps({
-                "messages": prompt_messages,
-                "temperature": 0.3,
-                "response_format": {"type": "json_object"},
-            }).encode("utf-8")
+            req_body = json.dumps(
+                {
+                    "messages": prompt_messages,
+                    "temperature": 0.3,
+                    "response_format": {"type": "json_object"},
+                }
+            ).encode("utf-8")
 
             req = urllib.request.Request(
                 url,
@@ -209,7 +237,7 @@ def generate_ai_shift_summary(tickets: List[Dict[str, Any]], department: Optiona
                 data = json.loads(resp.read().decode("utf-8"))
                 content = data["choices"][0]["message"]["content"]
                 parsed = json.loads(content)
-                
+
                 # Record LLM Token & Cost Telemetry
                 usage = data.get("usage", {})
                 prompt_tokens = usage.get("prompt_tokens", 0)
@@ -217,6 +245,7 @@ def generate_ai_shift_summary(tickets: List[Dict[str, Any]], department: Optiona
                 if prompt_tokens or completion_tokens:
                     try:
                         from telemetry import record_llm_metrics
+
                         record_llm_metrics(
                             prompt_tokens=prompt_tokens,
                             completion_tokens=completion_tokens,
@@ -224,22 +253,38 @@ def generate_ai_shift_summary(tickets: List[Dict[str, Any]], department: Optiona
                             agent_name=f"daily_digest_{department or 'org'}",
                         )
                     except Exception as t_err:
-                        logger.warning(f"Failed to record daily digest LLM metrics: {t_err}")
+                        logger.warning(
+                            f"Failed to record daily digest LLM metrics: {t_err}"
+                        )
 
-                logger.info(f"Successfully generated AI Shift Summary & Visuals for {dept_label} via Azure OpenAI.")
+                logger.info(
+                    f"Successfully generated AI Shift Summary & Visuals for {dept_label} via Azure OpenAI."
+                )
                 return parsed
         except Exception as err:
-            logger.warning(f"Azure OpenAI call failed for daily digest ({err}). Using fallback AI summary & visuals.")
+            logger.warning(
+                f"Azure OpenAI call failed for daily digest ({err}). Using fallback AI summary & visuals."
+            )
 
     # Rule-based fallback summary & visual generation
-    urgent_count = len([t for t in open_tickets if t.get("priority") in ("High", "Urgent", "Critical")])
+    urgent_count = len(
+        [t for t in open_tickets if t.get("priority") in ("High", "Urgent", "Critical")]
+    )
     total_open = max(len(open_tickets), 1)
     urgent_pct = min(100, int((urgent_count / total_open) * 100))
     medium_pct = min(100 - urgent_pct, 60)
     low_pct = max(0, 100 - urgent_pct - medium_pct)
 
-    theme = "critical_red" if urgent_count >= 3 else ("warning_amber" if urgent_count > 0 else "purple_gradient")
-    badge = "🔥 HIGH QUEUE CONGESTION" if urgent_count >= 3 else ("⚠️ ATTENTION REQUIRED" if urgent_count > 0 else "⚡ ACTIVE QUEUE")
+    theme = (
+        "critical_red"
+        if urgent_count >= 3
+        else ("warning_amber" if urgent_count > 0 else "purple_gradient")
+    )
+    badge = (
+        "🔥 HIGH QUEUE CONGESTION"
+        if urgent_count >= 3
+        else ("⚠️ ATTENTION REQUIRED" if urgent_count > 0 else "⚡ ACTIVE QUEUE")
+    )
 
     return {
         "executive_brief": f"Active {dept_label} workload consists of {len(open_tickets)} open tickets, with {urgent_count} high-priority issues requiring immediate attention.",
@@ -248,7 +293,9 @@ def generate_ai_shift_summary(tickets: List[Dict[str, Any]], department: Optiona
             "Review AI-flagged tickets requiring human triage.",
             "Ensure ticket status updates are logged before end-of-shift.",
         ],
-        "risk_alert": f"{dept_label} high priority workload is at {urgent_count} item(s)." if urgent_count > 0 else f"Normal {dept_label} queue operations.",
+        "risk_alert": f"{dept_label} high priority workload is at {urgent_count} item(s)."
+        if urgent_count > 0
+        else f"Normal {dept_label} queue operations.",
         "visual_theme": theme,
         "visual_badge": badge,
         "visual_progress_urgent_pct": urgent_pct,
@@ -258,7 +305,9 @@ def generate_ai_shift_summary(tickets: List[Dict[str, Any]], department: Optiona
     }
 
 
-def generate_daily_digest_data(department: Optional[str] = None, session: Optional[Session] = None) -> Dict[str, Any]:
+def generate_daily_digest_data(
+    department: Optional[str] = None, session: Optional[Session] = None
+) -> Dict[str, Any]:
     """
     Compile tickets summary, AI analysis, and visual metrics scoped for a specific department or full organization.
     """
@@ -275,20 +324,42 @@ def generate_daily_digest_data(department: Optional[str] = None, session: Option
         # Filter by department if specified
         if department:
             dept_lower = department.lower().strip()
-            tickets_dicts = [t for t in tickets_dicts if dept_lower in (t.get("department") or "").lower()]
+            tickets_dicts = [
+                t
+                for t in tickets_dicts
+                if dept_lower in (t.get("department") or "").lower()
+            ]
 
         # Filter strictly by status
-        open_tickets = [t for t in tickets_dicts if (t.get("status") or "").strip().lower() == "open"]
-        in_progress_tickets = [t for t in tickets_dicts if (t.get("status") or "").strip().lower() == "in progress"]
-        resolved_tickets = [t for t in tickets_dicts if (t.get("status") or "").strip().lower() in ("resolved", "closed")]
-        
-        urgent_tickets = [t for t in open_tickets if t.get("priority") in ("High", "Urgent", "Critical")]
+        open_tickets = [
+            t
+            for t in tickets_dicts
+            if (t.get("status") or "").strip().lower() == "open"
+        ]
+        in_progress_tickets = [
+            t
+            for t in tickets_dicts
+            if (t.get("status") or "").strip().lower() == "in progress"
+        ]
+        resolved_tickets = [
+            t
+            for t in tickets_dicts
+            if (t.get("status") or "").strip().lower() in ("resolved", "closed")
+        ]
+
+        urgent_tickets = [
+            t
+            for t in open_tickets
+            if t.get("priority") in ("High", "Urgent", "Critical")
+        ]
         needs_review = [t for t in open_tickets if t.get("needs_human_review") is True]
 
         # Calculate newly created tickets in the last 24h
         now = datetime.now()
         yesterday_iso = (now - timedelta(hours=24)).isoformat()
-        new_tickets = [t for t in open_tickets if (t.get("createdAt") or "") >= yesterday_iso]
+        new_tickets = [
+            t for t in open_tickets if (t.get("createdAt") or "") >= yesterday_iso
+        ]
 
         # Department breakdown
         dept_counts: Dict[str, int] = {}
@@ -297,7 +368,12 @@ def generate_daily_digest_data(department: Optional[str] = None, session: Option
             dept_counts[dept] = dept_counts.get(dept, 0) + 1
 
         # Priority breakdown
-        priority_counts: Dict[str, int] = {"Critical/Urgent": 0, "High": 0, "Medium": 0, "Low": 0}
+        priority_counts: Dict[str, int] = {
+            "Critical/Urgent": 0,
+            "High": 0,
+            "Medium": 0,
+            "Low": 0,
+        }
         for t in open_tickets:
             p = t.get("priority") or "Medium"
             if p in ("Critical", "Urgent", "High"):
@@ -337,12 +413,18 @@ def send_daily_admin_digest() -> Dict[str, Any]:
     Returns result metadata dictionary.
     """
     with tracer.start_as_current_span("daily_digest.send_daily_admin_digest") as span:
-        logger.info("Starting AI-Visual Role & Department Scoped Daily Admin Digest generation...")
+        logger.info(
+            "Starting AI-Visual Role & Department Scoped Daily Admin Digest generation..."
+        )
         recipients = resolve_admin_recipients()
         if not recipients:
             logger.warning("No admin recipients resolved for daily digest.")
             span.set_attribute("digest.status", "skipped")
-            return {"status": "skipped", "reason": "No admin recipients found", "recipients": []}
+            return {
+                "status": "skipped",
+                "reason": "No admin recipients found",
+                "recipients": [],
+            }
 
         frontend_url = get_frontend_url()
         admin_dashboard_url = f"{frontend_url}/admin"
@@ -355,12 +437,13 @@ def send_daily_admin_digest() -> Dict[str, Any]:
 
         for rec in recipients:
             recipient_email = rec["email"]
-            role_label = rec.get("role") or "Admin"
-            dept_scope = rec.get("department") # None = Full Org
+            dept_scope = rec.get("department")  # None = Full Org
 
             cache_key = dept_scope or "org"
             if cache_key not in digest_cache:
-                digest_cache[cache_key] = generate_daily_digest_data(department=dept_scope)
+                digest_cache[cache_key] = generate_daily_digest_data(
+                    department=dept_scope
+                )
 
             digest_data = digest_cache[cache_key]
             dept_display = digest_data["department"]
@@ -383,7 +466,9 @@ def send_daily_admin_digest() -> Dict[str, Any]:
             # AI Recommendations HTML Bullet Points
             recommendations_html = ""
             for rec_item in ai_summary.get("recommendations", []):
-                recommendations_html += f"<li style='margin-bottom: 6px; color: #334155;'>{rec_item}</li>"
+                recommendations_html += (
+                    f"<li style='margin-bottom: 6px; color: #334155;'>{rec_item}</li>"
+                )
 
             # Build Urgent Tickets HTML rows
             urgent_rows_html = ""
@@ -436,7 +521,7 @@ def send_daily_admin_digest() -> Dict[str, Any]:
                     <strong style="color: #6b21a8; font-size: 15px;">AI {dept_display} Workload Analysis</strong>
                   </div>
                   <p style="margin: 0 0 12px 0; font-size: 14px; color: #4c1d95; line-height: 1.6;">
-                    {ai_summary.get('executive_brief')}
+                    {ai_summary.get("executive_brief")}
                   </p>
                   
                   <!-- AI Generated Spotlight Callout -->
@@ -451,7 +536,7 @@ def send_daily_admin_digest() -> Dict[str, Any]:
                     </ul>
                   </div>
                   <div style="margin-top: 10px; font-size: 12px; color: #991b1b; background: #fef2f2; padding: 8px 12px; border-radius: 6px; border: 1px solid #fecaca;">
-                    ⚠️ <strong>Queue Status:</strong> {ai_summary.get('risk_alert')}
+                    ⚠️ <strong>Queue Status:</strong> {ai_summary.get("risk_alert")}
                   </div>
                 </div>
 
@@ -537,14 +622,18 @@ def send_daily_admin_digest() -> Dict[str, Any]:
             """
 
             try:
-                success = send_email(to_email=recipient_email, subject=subject, body_html=body_html)
+                success = send_email(
+                    to_email=recipient_email, subject=subject, body_html=body_html
+                )
                 if success:
                     dispatched_count += 1
                 else:
                     errors.append(f"Failed to dispatch to {recipient_email}")
             except Exception as e:
                 err_msg = str(e)
-                logger.error(f"Error sending daily digest to {recipient_email}: {err_msg}")
+                logger.error(
+                    f"Error sending daily digest to {recipient_email}: {err_msg}"
+                )
                 errors.append(f"{recipient_email}: {err_msg}")
 
         span.set_attribute("digest.dispatched_count", dispatched_count)
