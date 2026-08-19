@@ -61,9 +61,17 @@ SEVERITY_MAPPING = {
 
 def _heuristic_fallback(title: str, content: str, category: str) -> str:
     combined = f"{category} {title} {content}".lower()
-    if any(k in combined for k in ["critical", "emergency", "outage", "security", "breach", "incident", "down", "ransomware", "p0", "sev-1"]):
+    if any(k in combined for k in [
+        "critical", "emergency", "outage", "security", "breach", "incident",
+        "down", "ransomware", "p0", "sev-1", "strike", "striking", "union",
+        "walkout", "disaster", "evacuation", "fatal", "shutdown", "hazard",
+        "urgent", "alert"
+    ]):
         return "Critical"
-    if any(k in combined for k in ["maintenance", "warning", "system alert", "downtime", "interruption", "patch", "upgrade", "degradation"]):
+    if any(k in combined for k in [
+        "maintenance", "warning", "system alert", "downtime", "interruption",
+        "patch", "upgrade", "degradation", "reboot", "advisory", "delay"
+    ]):
         return "Medium"
     return "Low"
 
