@@ -7,8 +7,7 @@
 }
 
 body.sidebar-closed .sidebar,
-body.sidebar-collapsed .sidebar,
-.sidebar.collapsed {
+body.sidebar-collapsed .sidebar {
     transform: translateX(-100%);
     width: 0 !important;
     min-width: 0 !important;
@@ -17,6 +16,16 @@ body.sidebar-collapsed .sidebar,
     overflow: hidden !important;
     opacity: 0 !important;
     pointer-events: none !important;
+}
+
+.sidebar.collapsed {
+    transform: none !important;
+    width: 76px !important;
+    min-width: 76px !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+    overflow-x: hidden !important;
 }
 
 body.sidebar-closed .main-content,
