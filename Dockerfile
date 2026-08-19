@@ -28,7 +28,15 @@ HEALTHCHECK CMD curl --fail http://localhost:8000/health || exit 1
 
 CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
-# Stage 2: Nginx Frontend Application with API Reverse Proxy
+# Stage 2: Svelte Vite Frontend Builder
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+# Stage 3: Nginx Production Frontend
 FROM nginx:alpine AS frontend
 
 ENV PORT=80 \
@@ -39,8 +47,8 @@ ENV PORT=80 \
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy static frontend HTML/CSS/JS files
-COPY frontend/ /usr/share/nginx/html/
+# Copy compiled Svelte production assets from builder stage
+COPY --from=frontend-builder /app/dist /usr/share/nginx/html/
 
 EXPOSE 80
 
