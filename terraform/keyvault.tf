@@ -40,6 +40,15 @@ resource "azurerm_key_vault_access_policy" "admin_user" {
   ]
 }
 
+# 3. Backend Web App Managed Identity Access Policy
+resource "azurerm_key_vault_access_policy" "backend_web_app" {
+  key_vault_id = azurerm_key_vault.kv.id
+  tenant_id    = data.azurerm_client_config.current.tenant_id
+  object_id    = azurerm_linux_web_app.backend.identity[0].principal_id
+
+  secret_permissions = ["Get", "List"]
+}
+
 resource "azurerm_key_vault_secret" "db_password" {
   name         = "db-admin-password"
   value        = random_password.db_password.result

@@ -7,7 +7,7 @@ Works cross-platform on Windows, macOS, and Linux after performing `az login`.
 Usage:
     python fetch_secrets.py
     python fetch_secrets.py --vault-names kv-app-prod-12345
-    python fetch_secrets.py --vault-urls https://group-1.vault.azure.net/ https://kv-app-prod-12345.vault.azure.net/
+    python fetch_secrets.py --vault-urls https://kv-app-prod-12345.vault.azure.net/
 """
 
 from __future__ import annotations
@@ -33,7 +33,6 @@ except ImportError:
 
 # Default vault URLs if none provided via flags or environment
 DEFAULT_VAULT_URLS = [
-    "https://group-1.vault.azure.net/",
     "https://kv-app-prod-12345.vault.azure.net/",
 ]
 
