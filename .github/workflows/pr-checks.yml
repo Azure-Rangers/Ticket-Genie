@@ -6,15 +6,16 @@ on:
       - '**'
   push:
     branches:
-      - '**'
+      - main
+      - dev
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  python-checks:
-    name: Python Quality and Tests
+  backend-checks:
+    name: Backend Quality and Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -35,28 +36,6 @@ jobs:
         run: |
           ruff check .
           ruff format --check .
-
-      - name: Run tests
-        run: pytest
-
-  test-backend:
-    name: FastAPI Backend Tests
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install dependencies
-        run: |
-          pip install .[backend,dev]
-
 
       - name: Verify OpenAPI & Monitoring Specs Are Up to Date
         run: |
