@@ -105,7 +105,12 @@
       // 2. Automatic Ticket Autofill & Review Handling
       if (res.ticket_draft || res.ready_for_review) {
         if (res.ticket_draft) {
-          genieDraftStore.set(res.ticket_draft);
+          // res.request_type is a sibling field on the chat response, not
+          // part of ticket_draft itself (models.chatbot.TicketDraft has no
+          // request_type - see its docstring), so it must be merged in
+          // here or CreateTicketView has no way to know which tab/form
+          // this draft belongs to and silently falls back to Standard.
+          genieDraftStore.set({ ...res.ticket_draft, request_type: res.request_type });
         }
         if (res.ready_for_review) {
           $activeTab = 'create-ticket';
