@@ -27,7 +27,7 @@ def fetch_microsoft_jwks() -> Dict[str, Any]:
         req = urllib.request.Request(
             JWKS_URL, headers={"User-Agent": "TicketGenie-Backend"}
         )
-        with urllib.request.urlopen(req, timeout=5) as response:
+        with urllib.request.urlopen(req, timeout=3) as response:
             if response.status == 200:
                 data = json.loads(response.read().decode("utf-8"))
                 _JWKS_CACHE["keys"] = {key["kid"]: key for key in data.get("keys", [])}
@@ -36,6 +36,9 @@ def fetch_microsoft_jwks() -> Dict[str, Any]:
                 return _JWKS_CACHE["keys"]
     except Exception as e:
         logger.warning(f"Failed to fetch Microsoft JWKS keys: {e}")
+        _JWKS_CACHE["expires_at"] = (
+            now + 60
+        )  # Cache failure for 1 min to prevent stalling all subsequent requests
     return _JWKS_CACHE.get("keys", {})
 
 
@@ -160,7 +163,13 @@ def verify_azure_user(authorization: Optional[str] = Header(None)) -> Dict[str, 
         or claims.get("email")
         or "user@company.com"
     )
-    name = claims.get("name") or email
+
+    given_name = claims.get("given_name")
+    family_name = claims.get("family_name")
+    if given_name and family_name:
+        name = f"{given_name} {family_name}".strip()
+    else:
+        name = claims.get("name") or email
 
     role = claims.get("role") or (
         claims.get("roles")[0]
@@ -190,6 +199,28 @@ def verify_azure_user(authorization: Optional[str] = Header(None)) -> Dict[str, 
                     role = record.role
                 if record.department_name:
                     department = record.department_name
+
+            from database.models_db import UserProfileDB
+
+            profile_id = f"usr-admin-{oid[:8]}"
+            db_profile = (
+                session.query(UserProfileDB)
+                .filter(UserProfileDB.id == profile_id)
+                .first()
+            )
+            if db_profile and db_profile.name:
+                if name in [
+                    "Admin1",
+                    "Employee1",
+                    "Azure User",
+                    "User",
+                ] or db_profile.name not in [
+                    "Admin1",
+                    "Employee1",
+                    "Azure User",
+                    "User",
+                ]:
+                    name = db_profile.name
     except Exception as err:
         logger.warning(f"Database role/department lookup notice: {err}")
 

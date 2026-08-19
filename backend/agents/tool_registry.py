@@ -11,8 +11,9 @@ import logging
 from typing import Any, Dict, List
 
 from database.crud import get_all_tickets, update_ticket
-from models.ticket import TicketUpdate
+from models.ticket import TICKET_DEPARTMENTS, TICKET_PRIORITIES, TicketUpdate
 from services.knowledge_service import answer_question
+from services.role_service import is_ticket_mutation_authorized
 from services.sql_context_service import execute_sql_query
 
 logger = logging.getLogger(__name__)
@@ -24,11 +25,50 @@ def sql_query_tool(query: str, role: str = "Super Admin", user_id: str = "user")
     return json.dumps(res, default=str)
 
 
-def update_ticket_tool(ticket_id: str, field: str, value: str) -> str:
-    """Update a specific field (department, priority, status, queue) on a ticket."""
+def update_ticket_tool(
+    ticket_id: str, field: str, value: str, user_id: str = "user"
+) -> str:
+    """Update a specific field (department, priority, status, queue) on a ticket.
+
+    Authorization is enforced by the caller (execute_tool) before this is
+    invoked. This function still deterministically validates department/
+    priority values against the canonical ticket vocabulary (models.ticket)
+    so GPT can never write an invented value even if it somehow bypasses
+    the ReAct prompt's few-shot examples.
+    """
     valid_fields = {"department", "priority", "status", "queue", "category", "title"}
     if field not in valid_fields:
         return f"Error: Cannot update field '{field}'. Allowed fields: {valid_fields}"
+
+    if field == "department" and value not in TICKET_DEPARTMENTS:
+        return f"Error: '{value}' is not a valid department. Allowed: {', '.join(TICKET_DEPARTMENTS)}"
+    if field == "priority" and value not in TICKET_PRIORITIES:
+        return f"Error: '{value}' is not a valid priority. Allowed: {', '.join(TICKET_PRIORITIES)}"
+
+    if field == "status" and (value or "").strip().lower() in ("resolved", "closed"):
+        from database.crud import _resolve_user_email, get_ticket_by_id
+
+        ticket = get_ticket_by_id(ticket_id)
+        if ticket:
+            req_id = str(ticket.get("requester_id") or "").strip().lower()
+            uid = str(user_id or "").strip().lower()
+            is_creator = False
+            if req_id and uid:
+                if req_id == uid:
+                    is_creator = True
+                else:
+                    resolved_req = (
+                        str(_resolve_user_email(req_id, None) or "").strip().lower()
+                    )
+                    resolved_uid = (
+                        str(_resolve_user_email(uid, None) or "").strip().lower()
+                    )
+                    if resolved_req and (
+                        resolved_req == uid or resolved_req == resolved_uid
+                    ):
+                        is_creator = True
+            if is_creator:
+                return "Error: Forbidden. You cannot resolve tickets you created."
 
     update_payload = TicketUpdate(**{field: value})
     res = update_ticket(ticket_id, update_payload)
@@ -118,10 +158,16 @@ def execute_tool(
         return sql_query_tool(query, role=role, user_id=user_id)
 
     elif tool_name == "update_ticket_tool":
+        if not is_ticket_mutation_authorized(role):
+            return (
+                f"Error: Forbidden. Role '{role}' is not authorized to update tickets. "
+                "Ticket mutations require Admin, Operations Admin, Department Admin, "
+                "Upper Executive Lead, or Super Admin."
+            )
         ticket_id = arguments.get("ticket_id", "")
         field = arguments.get("field", "")
         value = arguments.get("value", "")
-        return update_ticket_tool(ticket_id, field, value)
+        return update_ticket_tool(ticket_id, field, value, user_id=user_id)
 
     elif tool_name == "search_knowledge_tool":
         query = arguments.get("query", "")

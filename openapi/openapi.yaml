@@ -84,6 +84,14 @@ paths:
           - type: string
           - type: 'null'
           title: Requester Id
+      - name: assigned_to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Assigned To
       - name: admin_view
         in: query
         required: false
@@ -740,6 +748,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/analytics/department-health:
+    get:
+      tags:
+      - analytics
+      summary: Get Department Health
+      description: Calculated department analytics scoped by the verified JWT identity.
+      operationId: get_department_health_api_analytics_department_health_get
+      parameters:
+      - name: department
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Department
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/calendar/leave-events:
     get:
       tags:
@@ -909,6 +954,102 @@ paths:
               $ref: '#/components/schemas/AnnouncementCreateRequest'
       responses:
         '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/announcements/latest:
+    get:
+      tags:
+      - announcements
+      summary: Get Latest Announcement
+      description: Retrieve the most recent announcement with AI-evaluated severity
+        metadata.
+      operationId: get_latest_announcement_api_announcements_latest_get
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/announcements/severity:
+    post:
+      tags:
+      - announcements
+      summary: Evaluate Announcement Severity
+      description: Classify the severity of an announcement via AI backend method.
+      operationId: evaluate_announcement_severity_api_announcements_severity_post
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnouncementSeverityRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/announcements/match:
+    post:
+      tags:
+      - announcements
+      summary: Match Ticket To Announcement
+      operationId: match_ticket_to_announcement_api_announcements_match_post
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnouncementMatchRequest'
+      responses:
+        '200':
           description: Successful Response
           content:
             application/json:
@@ -1253,6 +1394,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/users/upper-management:
+    get:
+      tags:
+      - users
+      summary: Get Upper Management Users
+      operationId: get_upper_management_users_api_users_upper_management_get
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/users/azure-login:
     post:
       tags:
@@ -1313,27 +1481,66 @@ components:
       properties:
         title:
           type: string
+          maxLength: 200
+          minLength: 1
           title: Title
         content:
           type: string
+          maxLength: 10000
+          minLength: 1
           title: Content
         category:
           anyOf:
           - type: string
+            maxLength: 100
           - type: 'null'
           title: Category
           default: General Alert
-        author:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Author
-          default: Admin Operations
       type: object
       required:
       - title
       - content
       title: AnnouncementCreateRequest
+    AnnouncementMatchRequest:
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Title
+        description:
+          type: string
+          maxLength: 10000
+          title: Description
+          default: ''
+      type: object
+      required:
+      - title
+      title: AnnouncementMatchRequest
+    AnnouncementSeverityRequest:
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Title
+        content:
+          type: string
+          maxLength: 10000
+          minLength: 1
+          title: Content
+        category:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Category
+          default: General Alert
+      type: object
+      required:
+      - title
+      - content
+      title: AnnouncementSeverityRequest
     AzureLoginRequest:
       properties:
         azure_object_id:
@@ -1394,6 +1601,9 @@ components:
       - ticket_status
       - support_issue
       - general
+      - reassign_ticket
+      - change_priority
+      - create_portal_employee
       title: ChatIntent
     ChatRequest:
       properties:
@@ -1427,6 +1637,10 @@ components:
         active_request_type:
           anyOf:
           - $ref: '#/components/schemas/RequestType'
+          - type: 'null'
+        pending_action:
+          anyOf:
+          - $ref: '#/components/schemas/PendingManagementAction'
           - type: 'null'
       type: object
       required:
@@ -1470,6 +1684,15 @@ components:
           type: boolean
           title: Ready For Review
           default: false
+        pending_action:
+          anyOf:
+          - $ref: '#/components/schemas/PendingManagementAction'
+          - type: 'null'
+        ticket_candidates:
+          items:
+            $ref: '#/components/schemas/TicketCandidate'
+          type: array
+          title: Ticket Candidates
       type: object
       required:
       - message
@@ -1704,6 +1927,100 @@ components:
       required:
       - status
       title: OnboardingUpdateRequest
+    PendingManagementAction:
+      properties:
+        action_type:
+          $ref: '#/components/schemas/ChatIntent'
+        awaiting:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Awaiting
+        ticket_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ticket Id
+        ticket_title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ticket Title
+        current_department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Current Department
+        current_priority:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Current Priority
+        target_department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Target Department
+        target_priority:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Target Priority
+        candidate_tickets:
+          items:
+            $ref: '#/components/schemas/TicketCandidate'
+          type: array
+          title: Candidate Tickets
+        employee_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Employee Name
+        employee_email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Employee Email
+        employee_object_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Employee Object Id
+        employee_role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Employee Role
+        employee_department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Employee Department
+      type: object
+      required:
+      - action_type
+      title: PendingManagementAction
+      description: 'Structured, client-echoed state for an in-progress management
+        write
+
+        action (reassign_ticket / change_priority / create_portal_employee).
+
+        Mirrors how `draft`/`active_intent` already carry ticket-drafting state
+
+        across turns - the backend stays stateless, the frontend just echoes
+
+        back whatever the previous ChatResponse.pending_action was.
+
+
+        `awaiting` names exactly what the next user turn is expected to resolve,
+
+        so services.management_action_service never has to re-guess intent
+
+        from free text alone: "ticket_selection" | "ticket_confirmation" |
+
+        "target_department" | "target_priority" | "employee_field:<name>" |
+
+        "employee_confirmation".'
     ReActAgentRequest:
       properties:
         message:
@@ -1740,6 +2057,33 @@ components:
         ChatIntent - intent says "the user wants to submit a request";
 
         request_type says which existing form that request belongs in.'
+    TicketCandidate:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        department:
+          type: string
+          title: Department
+        priority:
+          type: string
+          title: Priority
+        status:
+          type: string
+          title: Status
+      type: object
+      required:
+      - id
+      - title
+      - department
+      - priority
+      - status
+      title: TicketCandidate
+      description: Minimum info shown when Genie must ask the user which ticket they
+        mean.
     TicketCreate:
       properties:
         title:
@@ -1793,6 +2137,11 @@ components:
           - type: string
           - type: 'null'
           title: Requester Id
+        assigned_to:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Assigned To
         department_override:
           anyOf:
           - type: string
@@ -1842,6 +2191,16 @@ components:
           - type: string
           - type: 'null'
           title: Preferreddate
+        startDate:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Startdate
+        endDate:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Enddate
         is_anonymous:
           type: boolean
           title: Is Anonymous
@@ -1904,6 +2263,21 @@ components:
           - type: string
           - type: 'null'
           title: Requester Id
+        assigned_to:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Assigned To
+        requester:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Requester
+        requester_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Requester Name
         classification_status:
           type: string
           title: Classification Status
@@ -1989,6 +2363,11 @@ components:
           - type: string
           - type: 'null'
           title: Requester Id
+        assigned_to:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Assigned To
       type: object
       title: TicketUpdate
     UserProfileUpdateRequest:

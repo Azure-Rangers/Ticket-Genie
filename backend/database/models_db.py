@@ -28,6 +28,8 @@ class TicketDB(Base):
     model_deployment = Column(String(100), nullable=True)
     parent_ticket_id = Column(String(50), nullable=True)
     auto_resolved = Column(Boolean, default=False, nullable=False)
+    is_synthetic = Column(Boolean, default=False, nullable=False, index=True)
+    assigned_to = Column(String(150), nullable=True, index=True)
 
     def to_dict(self) -> dict:
         return {
@@ -45,6 +47,7 @@ class TicketDB(Base):
             "is_anonymous": self.is_anonymous,
             "attachment": self.attachment,
             "requester_id": self.requester_id,
+            "assigned_to": self.assigned_to,
             "classification_status": self.classification_status,
             "classification_confidence": float(self.classification_confidence)
             if self.classification_confidence
@@ -54,6 +57,7 @@ class TicketDB(Base):
             "model_deployment": self.model_deployment,
             "parent_ticket_id": self.parent_ticket_id,
             "auto_resolved": self.auto_resolved,
+            "is_synthetic": self.is_synthetic,
         }
 
 
@@ -216,6 +220,7 @@ class UserProfileDB(Base):
     department = Column(String(100), nullable=False, default="General")
     phone = Column(String(50), nullable=True, default="+1 (555) 019-2834")
     avatar = Column(String(50), nullable=True, default="NM")
+    azure_object_id = Column(String(100), nullable=True, index=True)
 
     def to_dict(self) -> dict:
         return {
@@ -226,4 +231,5 @@ class UserProfileDB(Base):
             "department": self.department,
             "phone": self.phone,
             "avatar": self.avatar,
+            "azure_object_id": self.azure_object_id,
         }

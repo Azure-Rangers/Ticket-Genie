@@ -77,6 +77,77 @@ def _resolve_user_email(user_id: Optional[str], session: Session) -> Optional[st
     return f"{user_id}@company.com"
 
 
+def _resolve_requester_name(requester_id: Optional[str], session: Session) -> str:
+    """Resolve a raw Azure OID, profile ID, or email to a display name.
+
+    Resolution order:
+    1. Direct match by UserProfileDB.id (e.g. 'usr-emp-001').
+    2. If requester_id looks like an email, query UserProfileDB directly by email.
+    3. Otherwise treat it as an Azure OID GUID: look up DepartmentUserDB.azure_object_id
+       to get the user's email, then resolve UserProfileDB by that email.
+    4. Fall back to the email-prefix or the raw value if no profile exists.
+    """
+    if not requester_id:
+        return "Employee User"
+
+    try:
+        from database.models_db import DepartmentUserDB, UserProfileDB
+
+        # --- Case 1: direct profile ID match (e.g. usr-emp-001, usr-admin-dc3b56e9) ---
+        prof = (
+            session.query(UserProfileDB)
+            .filter(func.lower(UserProfileDB.id) == requester_id.lower())
+            .first()
+        )
+        if prof and prof.name:
+            return prof.name
+
+        # --- Case 2: direct OID match on user_profiles.azure_object_id ---
+        prof2 = (
+            session.query(UserProfileDB)
+            .filter(func.lower(UserProfileDB.azure_object_id) == requester_id.lower())
+            .first()
+        )
+        if prof2 and prof2.name:
+            return prof2.name
+
+        # --- Case 3: requester_id is already an email ---
+        if "@" in requester_id:
+            prof = (
+                session.query(UserProfileDB)
+                .filter(func.lower(UserProfileDB.email) == requester_id.lower())
+                .first()
+            )
+            if prof and prof.name:
+                return prof.name
+            return requester_id.split("@")[0]
+
+        # --- Case 3: requester_id is an Azure OID GUID ---
+        # Step A: find the user's email from department_users
+        dept_u = (
+            session.query(DepartmentUserDB)
+            .filter(
+                func.lower(DepartmentUserDB.azure_object_id) == requester_id.lower()
+            )
+            .first()
+        )
+        if dept_u and dept_u.user_email:
+            # Step B: resolve full name from user_profiles via email
+            prof = (
+                session.query(UserProfileDB)
+                .filter(func.lower(UserProfileDB.email) == dept_u.user_email.lower())
+                .first()
+            )
+            if prof and prof.name:
+                return prof.name
+            return dept_u.user_email.split("@")[0]
+
+    except Exception:
+        pass
+
+    return requester_id
+
+
 def _create_ticket_internal(ticket: TicketCreate, db: Optional[Session] = None) -> dict:
     session = db or SessionLocal()
     should_close = db is None
@@ -121,6 +192,7 @@ def _create_ticket_internal(ticket: TicketCreate, db: Optional[Session] = None) 
             is_anonymous=ticket.is_anonymous,
             attachment=ticket.attachment,
             requester_id=ticket.requester_id,
+            assigned_to=getattr(ticket, "assigned_to", None),
             classification_status=(
                 "Pending AI Triage"
                 if getattr(ticket, "confidence", 0.0) == 0.0
@@ -172,6 +244,7 @@ def get_all_tickets(
     search: Optional[str] = None,
     requester_id: Optional[str] = None,
     department: Optional[str] = None,
+    assigned_to: Optional[str] = None,
     db: Optional[Session] = None,
 ) -> List[dict]:
     session = db or SessionLocal()
@@ -232,6 +305,20 @@ def get_all_tickets(
             dept_str = f"%{department.lower().strip()}%"
             query = query.filter(func.lower(TicketDB.department).like(dept_str))
 
+        if assigned_to and assigned_to.strip():
+            ass_str = assigned_to.lower().strip()
+            if ass_str == "unassigned":
+                query = query.filter(
+                    or_(
+                        TicketDB.assigned_to.is_(None),
+                        func.lower(TicketDB.assigned_to) == "",
+                    )
+                )
+            elif ass_str != "all":
+                query = query.filter(
+                    func.lower(TicketDB.assigned_to).like(f"%{ass_str}%")
+                )
+
         if search:
             s = f"%{search.lower().strip()}%"
             query = query.filter(
@@ -240,6 +327,7 @@ def get_all_tickets(
                     func.lower(TicketDB.id).like(s),
                     func.lower(TicketDB.category).like(s),
                     func.lower(TicketDB.description).like(s),
+                    func.lower(TicketDB.assigned_to).like(s),
                 )
             )
 
@@ -250,7 +338,18 @@ def get_all_tickets(
             query = query.filter(func.lower(TicketDB.priority) == priority.lower())
 
         results = query.all()
-        return [t.to_dict() for t in results]
+        res_list = []
+        for t in results:
+            d = t.to_dict()
+            if t.is_anonymous:
+                d["requester"] = "Anonymous Employee"
+                d["requester_name"] = "Anonymous Employee"
+            else:
+                req_name = _resolve_requester_name(t.requester_id, session)
+                d["requester"] = req_name
+                d["requester_name"] = req_name
+            res_list.append(d)
+        return res_list
     finally:
         if should_close:
             session.close()
@@ -266,7 +365,17 @@ def get_ticket_by_id(ticket_id: str, db: Optional[Session] = None) -> Optional[d
             .filter(func.lower(TicketDB.id) == ticket_id.lower())
             .first()
         )
-        return ticket.to_dict() if ticket else None
+        if not ticket:
+            return None
+        d = ticket.to_dict()
+        if ticket.is_anonymous:
+            d["requester"] = "Anonymous Employee"
+            d["requester_name"] = "Anonymous Employee"
+        else:
+            req_name = _resolve_requester_name(ticket.requester_id, session)
+            d["requester"] = req_name
+            d["requester_name"] = req_name
+        return d
     finally:
         if should_close:
             session.close()
@@ -290,8 +399,11 @@ def update_ticket(
         old_status = ticket.status
         update_data = ticket_update.model_dump(exclude_unset=True)
         for field, value in update_data.items():
-            if value is not None and hasattr(ticket, field):
-                setattr(ticket, field, value)
+            if hasattr(ticket, field):
+                if field == "assigned_to" and (value == "" or value is None):
+                    setattr(ticket, field, None)
+                elif value is not None:
+                    setattr(ticket, field, value)
 
         ticket.updatedAt = datetime.now().isoformat()
         session.commit()
@@ -418,7 +530,15 @@ def get_ticket_comments(ticket_id: str, db: Optional[Session] = None) -> List[di
             .order_by(TicketCommentDB.createdAt.asc())
             .all()
         )
-        return [c.to_dict() for c in comments]
+        res_list = []
+        for c in comments:
+            d = c.to_dict()
+            name = _resolve_requester_name(c.sender_id, session)
+            d["sender_name"] = name
+            if c.sender_id and ("-" in c.sender_id and len(c.sender_id) > 20):
+                d["sender_id"] = name
+            res_list.append(d)
+        return res_list
     finally:
         if should_close:
             session.close()
@@ -1028,6 +1148,11 @@ def get_user_profile(
                 return user.to_dict()
 
         if azure_oid:
+            user = query.filter(
+                func.lower(UserProfileDB.azure_object_id) == azure_oid.lower()
+            ).first()
+            if user:
+                return user.to_dict()
             short_oid = azure_oid[:8]
             user = query.filter(UserProfileDB.id.like(f"%{short_oid}%")).first()
             if user:
@@ -1052,6 +1177,7 @@ def update_user_profile(
     email: Optional[str] = None,
     phone: Optional[str] = None,
     department: Optional[str] = None,
+    azure_object_id: Optional[str] = None,
     db: Optional[Session] = None,
 ) -> Optional[dict]:
     session = db or SessionLocal()
@@ -1060,12 +1186,36 @@ def update_user_profile(
     try:
         from database.models_db import UserProfileDB
 
-        user = session.query(UserProfileDB).filter(UserProfileDB.id == user_id).first()
+        user = None
+        if user_id:
+            user = (
+                session.query(UserProfileDB).filter(UserProfileDB.id == user_id).first()
+            )
+        if not user and azure_object_id:
+            user = (
+                session.query(UserProfileDB)
+                .filter(
+                    func.lower(UserProfileDB.azure_object_id) == azure_object_id.lower()
+                )
+                .first()
+            )
+        if not user and email:
+            user = (
+                session.query(UserProfileDB)
+                .filter(func.lower(UserProfileDB.email) == email.lower())
+                .first()
+            )
+
         if not user:
+            resolved_id = user_id
+            if not resolved_id and azure_object_id:
+                resolved_id = f"usr-admin-{azure_object_id[:8]}"
+            if not resolved_id and email:
+                resolved_id = f"usr-{email.split('@')[0].lower()}"
             user = UserProfileDB(
-                id=user_id,
+                id=resolved_id or "usr-unknown",
                 name=name or "User",
-                email=email or f"{user_id}@example.com",
+                email=email or f"{resolved_id}@example.com",
             )
             session.add(user)
 
@@ -1077,6 +1227,8 @@ def update_user_profile(
             user.phone = phone
         if department:
             user.department = department
+        if azure_object_id:
+            user.azure_object_id = azure_object_id
 
         session.commit()
         session.refresh(user)

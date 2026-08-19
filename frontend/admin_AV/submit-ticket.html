@@ -161,10 +161,10 @@
         </div>
         <div class="form-section-title">Ticket Details</div>
         <div class="form-grid">
-          <div class="input-group full-width"><label>Subject / Brief Summary</label><input type="text" required></div>
+          <div class="input-group full-width"><label>Subject / Brief Summary</label><input type="text" id="ticketTitle" required></div>
           <div class="input-group">
             <label>Category & Routing</label>
-            <select required>
+            <select id="category" required>
               <option value="" disabled selected>Select category...</option>
               <optgroup label="IT"><option>Hardware Issues</option><option>IAM</option></optgroup>
               <optgroup label="HR"><option>Employee Relations</option><option>Leave Requests</option></optgroup>
@@ -173,9 +173,9 @@
           </div>
           <div class="input-group">
             <label>Priority</label>
-            <select required><option>Low</option><option selected>Medium</option><option>High</option></select>
+            <select id="priority" required><option>Low</option><option selected>Medium</option><option>High</option></select>
           </div>
-          <div class="input-group full-width"><label>Detailed Description</label><textarea required></textarea></div>
+          <div class="input-group full-width"><label>Detailed Description</label><textarea id="ticketDesc" required></textarea></div>
         </div>
         <div class="btn-row">
           <button type="button" class="btn-cancel" onclick="window.location.href='admin_dashboard.html'">Cancel</button>

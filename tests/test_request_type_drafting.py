@@ -12,7 +12,7 @@ faked - no live Azure requests.
 
 from agents.chatbot_agent import ChatActionType, ChatbotDecision, ExtractedTicketFields
 from agents.orchestrator import TicketClassification
-from models.chatbot import ChatIntent, ChatRequest, RequestType, TicketDraft
+from models.chatbot import ChatIntent, ChatRequest, ChatScope, RequestType, TicketDraft
 from services import chatbot_service, ticket_draft_service
 
 
@@ -58,6 +58,7 @@ def ask(message, *, decision, classify_ticket=_no_classify_call, **kwargs):
 
 def _standard_decision(**overrides):
     fields = dict(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.SUPPORT_ISSUE,
         action=ChatActionType.SHOW_TICKET_DRAFT,
         message="Here's your draft.",
@@ -269,6 +270,7 @@ def test_knowledge_navigation_status_never_set_request_type_or_draft():
     from agents.chatbot_agent import NavigationTarget
 
     nav_decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.NAVIGATION,
         action=ChatActionType.NAVIGATE,
         message="Heading to My Tickets.",

@@ -88,6 +88,15 @@ def generate_ticket_pdf(
         ),
         Spacer(1, 16),
     ]
+    reason_val = ticket.get("reason") or ticket.get("classification_reason")
+    conf_val = ticket.get("confidence") or ticket.get("classification_confidence")
+    conf_pct = ""
+    if conf_val is not None:
+        try:
+            conf_pct = f" ({int(float(conf_val) * 100)}% confidence)"
+        except Exception:
+            pass
+
     details = [
         ["Field", "Value"],
         ["Ticket ID", cell(ticket.get("id", ticket_id))],
@@ -98,9 +107,18 @@ def generate_ticket_pdf(
         ["Status", cell(ticket.get("status", "N/A"))],
         ["Created", cell(ticket.get("createdAt") or ticket.get("date", "N/A"))],
         ["Last Updated", cell(ticket.get("updatedAt", "N/A"))],
-        ["Requester ID", cell(ticket.get("requester_id", "N/A"))],
-        ["Description", cell(ticket.get("description", "N/A"))],
     ]
+
+    if reason_val:
+        details.append(
+            [
+                "AI Classification",
+                cell(f"AI Auto-Classification{conf_pct}: {reason_val}"),
+            ]
+        )
+
+    details.append(["Description", cell(ticket.get("description", "N/A"))])
+
     details_table = Table(details, colWidths=[125, 405], repeatRows=1)
     details_table.setStyle(
         TableStyle(
@@ -129,7 +147,21 @@ def generate_ticket_pdf(
         ]
     )
 
-    if comments:
+    export_comments = list(comments) if comments else []
+    if reason_val and not any(
+        c.get("sender_role") == "AI Genie (System)" or c.get("sender_role") == "System"
+        for c in export_comments
+    ):
+        export_comments.insert(
+            0,
+            {
+                "createdAt": "Auto-Triaged",
+                "sender_role": "AI Genie (System)",
+                "message": f"AI Auto-Classification{conf_pct}: {reason_val}",
+            },
+        )
+
+    if export_comments:
         rows = [["Date / Time", "Sender", "Message"]]
         rows.extend(
             [
@@ -137,7 +169,7 @@ def generate_ticket_pdf(
                 cell(c.get("sender_role", "Unknown")),
                 cell(c.get("message", "")),
             ]
-            for c in comments
+            for c in export_comments
         )
         conversation = Table(rows, colWidths=[115, 90, 325], repeatRows=1)
         conversation.setStyle(
@@ -188,13 +220,39 @@ def generate_ticket_docx(
 ) -> bytes:
     """Generate a text-compatible DOCX export containing the same report data."""
     ticket, comments = _export_data(ticket_id, ticket=ticket, comments=comments)
+    reason_val = ticket.get("reason") or ticket.get("classification_reason")
+    conf_val = ticket.get("confidence") or ticket.get("classification_confidence")
+    conf_pct = (
+        f" ({int(float(conf_val) * 100)}% confidence)" if conf_val is not None else ""
+    )
+
+    export_comments = list(comments) if comments else []
+    if reason_val and not any(
+        c.get("sender_role") == "AI Genie (System)" or c.get("sender_role") == "System"
+        for c in export_comments
+    ):
+        export_comments.insert(
+            0,
+            {
+                "createdAt": "Auto-Triaged",
+                "sender_role": "AI Genie (System)",
+                "message": f"AI Auto-Classification{conf_pct}: {reason_val}",
+            },
+        )
+
     conversation = (
         "\n".join(
             f"[{c.get('createdAt', 'N/A')}] {c.get('sender_role', 'Unknown')}: {c.get('message', '')}"
-            for c in comments
+            for c in export_comments
         )
         or "No conversation messages have been recorded."
     )
+    ai_line = (
+        f"AI Classification: AI Auto-Classification{conf_pct}: {reason_val}\n"
+        if reason_val
+        else ""
+    )
+
     return f"""TICKETGENIE TICKET REPORT
 Ticket ID: {ticket.get("id", ticket_id)}
 Title: {ticket.get("title", "N/A")}
@@ -203,8 +261,7 @@ Category: {ticket.get("category", "N/A")}
 Priority: {ticket.get("priority", "N/A")}
 Status: {ticket.get("status", "N/A")}
 Created: {ticket.get("createdAt") or ticket.get("date", "N/A")}
-Requester ID: {ticket.get("requester_id", "N/A")}
-
+{ai_line}
 DESCRIPTION
 {ticket.get("description", "No description provided.")}
 

@@ -120,6 +120,45 @@ docker compose up --build -d
 - **FastAPI Backend Swagger Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
 - **FastAPI Health Check:** [http://localhost:8000/health](http://localhost:8000/health)
 
+### Synthetic Analytics Data (Local/Demo)
+
+The local Docker Compose setup enables `ENABLE_SYNTHETIC_ANALYTICS=true` so the Department Analytics dashboard has meaningful demo data. On startup, the backend creates 360 deterministic synthetic tickets only when no synthetic tickets already exist. Real tickets are never replaced or deleted.
+
+For a teammate setting up the project:
+
+```bash
+git pull origin dev
+docker compose up -d --build
+```
+
+To confirm whether the data was created or already existed:
+
+```bash
+docker compose logs backend
+```
+
+Look for a `Synthetic analytics data` message with a status such as `seeded` or `already_seeded`.
+
+To regenerate the demo dataset manually:
+
+```bash
+docker compose exec -T backend python -c "from database.connection import SessionLocal; from services.synthetic_ticket_service import seed_synthetic_tickets; db=SessionLocal(); print(seed_synthetic_tickets(db, count=360)); db.close()"
+```
+
+For native development outside Docker, the equivalent command is:
+
+```bash
+python scripts/seed_synthetic_tickets.py --count 360
+```
+
+Synthetic tickets are marked with `is_synthetic=true`. Regeneration replaces only those records and preserves real company tickets. Disable automatic demo data outside local/demo environments by setting:
+
+```env
+ENABLE_SYNTHETIC_ANALYTICS=false
+```
+
+> **Warning:** `docker compose down -v` deletes the entire local database volume, including both synthetic data and any local real tickets. The synthetic dataset will be recreated on the next startup while the feature is enabled.
+
 To stop the containers:
 ```bash
 docker compose down

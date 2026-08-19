@@ -72,6 +72,22 @@ _MISSING_CATEGORY_MARKERS = ("categ", "leave type", "type of leave")
 _MISSING_DATE_MARKERS = ("date",)
 
 
+def _leave_date_missing_label(draft: TicketDraft) -> Optional[str]:
+    """
+    Leave's start/end dates are tracked independently - never use
+    preferredDate as proof the whole range is known. Returns the precise
+    ask (only what's actually missing), or None once both are known.
+    """
+
+    if draft.startDate and draft.endDate:
+        return None
+    if draft.startDate and not draft.endDate:
+        return "the end date"
+    if draft.endDate and not draft.startDate:
+        return "the start date"
+    return "the start and end dates"
+
+
 def validate_category(value: Optional[str], allowed: List[str]) -> Optional[str]:
     """Snap a model-proposed category to the exact allowed value, or reject it."""
 
@@ -130,12 +146,15 @@ def _merge_description(
     return extracted if extracted else existing
 
 
-def _filter_missing_fields(gpt_missing: List[str], draft: TicketDraft) -> List[str]:
+def _filter_missing_fields(
+    gpt_missing: List[str], draft: TicketDraft, intent: ChatIntent
+) -> List[str]:
     """
     Hard backstop: never re-ask for something the draft already has, even
     if the model's own missing_fields list forgot to drop it.
     """
 
+    is_leave = intent == ChatIntent.LEAVE_MANAGEMENT
     kept = []
     for field in gpt_missing:
         lowered = field.lower()
@@ -149,7 +168,15 @@ def _filter_missing_fields(gpt_missing: List[str], draft: TicketDraft) -> List[s
             marker in lowered for marker in _MISSING_CATEGORY_MARKERS
         ):
             continue
-        if draft.preferredDate and any(
+        if is_leave:
+            # Leave tracks start/end independently (_leave_date_missing_label)
+            # - drop GPT's own free-text date mention unconditionally here
+            # and let merge_extracted_fields append the precise, deterministic
+            # ask below, so wording never depends on GPT's phrasing and
+            # preferredDate is never used as proof the whole range is known.
+            if any(marker in lowered for marker in _MISSING_DATE_MARKERS):
+                continue
+        elif draft.preferredDate and any(
             marker in lowered for marker in _MISSING_DATE_MARKERS
         ):
             continue
@@ -181,7 +208,22 @@ def merge_extracted_fields(
         allowed = LEAVE_TYPES if is_leave else STANDARD_CATEGORIES
         draft.category = validate_category(extracted.category, allowed)
 
-    if not draft.preferredDate:
+    if intent == ChatIntent.LEAVE_MANAGEMENT:
+        if not draft.startDate:
+            # Defensive fallback: prefer the dedicated start_date field,
+            # but also accept preferred_date in case GPT extracts a leave
+            # date there instead - never invented, still validated.
+            draft.startDate = validate_iso_date(
+                extracted.start_date
+            ) or validate_iso_date(extracted.preferred_date)
+        if not draft.endDate:
+            draft.endDate = validate_iso_date(extracted.end_date)
+        # Backward-compat alias only - draft.startDate/draft.endDate are
+        # the source of truth for a leave range; preferredDate just keeps
+        # mirroring startDate for any older code path that still reads it.
+        if not draft.preferredDate and draft.startDate:
+            draft.preferredDate = draft.startDate
+    elif not draft.preferredDate:
         draft.preferredDate = validate_iso_date(extracted.preferred_date)
 
     if not draft.title:
@@ -197,7 +239,7 @@ def merge_extracted_fields(
         # Deterministic, never GPT-controlled - see LEAVE_DEPARTMENT.
         draft.department = LEAVE_DEPARTMENT
 
-    missing = _filter_missing_fields(gpt_missing_fields, draft)
+    missing = _filter_missing_fields(gpt_missing_fields, draft, intent)
 
     if not draft.description and not any(
         m in field.lower() for field in missing for m in _MISSING_DESCRIPTION_MARKERS
@@ -209,6 +251,11 @@ def merge_extracted_fields(
     ):
         label = "leave type" if intent == ChatIntent.LEAVE_MANAGEMENT else "category"
         missing.append(label)
+
+    if intent == ChatIntent.LEAVE_MANAGEMENT:
+        leave_date_label = _leave_date_missing_label(draft)
+        if leave_date_label:
+            missing.append(leave_date_label)
 
     return draft, missing
 

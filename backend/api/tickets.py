@@ -56,6 +56,7 @@ def list_tickets(
     search: Optional[str] = None,
     department: Optional[str] = None,
     requester_id: Optional[str] = None,
+    assigned_to: Optional[str] = None,
     admin_view: bool = False,
     db: Session = Depends(get_db),
     current_user: dict = Depends(verify_azure_user),
@@ -82,12 +83,21 @@ def list_tickets(
         effective_requester = current_user.get("oid") or current_user.get("email")
         effective_department = None
 
+    effective_assigned_to = assigned_to
+    if assigned_to and assigned_to.lower() == "me":
+        effective_assigned_to = (
+            current_user.get("name")
+            or current_user.get("email")
+            or current_user.get("oid")
+        )
+
     tickets_list = get_all_tickets(
         status=status,
         priority=priority,
         search=search,
         requester_id=effective_requester,
         department=effective_department,
+        assigned_to=effective_assigned_to,
         db=db,
     )
     return tickets_list
@@ -117,17 +127,72 @@ def handle_update_ticket(
     db: Session = Depends(get_db),
     current_user: dict = Depends(verify_azure_user),
 ):
+    ticket = get_ticket_by_id(ticket_id, db=db)
+    if ticket is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Ticket not found",
+        )
+
+    if ticket_update.status is not None:
+        new_status = ticket_update.status.strip().lower()
+        if new_status in ("resolved", "closed"):
+            current_user_oid = str(current_user.get("oid") or "").strip().lower()
+            current_user_email = str(current_user.get("email") or "").strip().lower()
+
+            ticket_requester = str(ticket.get("requester_id") or "").strip().lower()
+
+            is_creator = False
+            if ticket_requester:
+                if current_user_oid and ticket_requester == current_user_oid:
+                    is_creator = True
+                elif current_user_email and ticket_requester == current_user_email:
+                    is_creator = True
+                else:
+                    from database.crud import _resolve_user_email
+
+                    resolved_email = (
+                        str(_resolve_user_email(ticket_requester, db) or "")
+                        .strip()
+                        .lower()
+                    )
+                    if current_user_email and resolved_email == current_user_email:
+                        is_creator = True
+
+            if is_creator:
+                raise HTTPException(
+                    status_code=403,
+                    detail="You cannot resolve tickets you created.",
+                )
+
+    old_assigned = ticket.get("assigned_to")
     updated = update_ticket(
         ticket_id,
         ticket_update,
         db=db,
     )
 
-    if updated is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Ticket not found",
-        )
+    # Log system comment on assignment change
+    if "assigned_to" in ticket_update.model_dump(exclude_unset=True):
+        new_assigned = updated.get("assigned_to")
+        if old_assigned != new_assigned:
+            from database.crud import add_ticket_comment
+
+            sender = current_user.get("oid") or current_user.get("email") or "System"
+            if new_assigned:
+                msg = f"[System] Ticket assigned to {new_assigned}."
+            else:
+                msg = "[System] Ticket unassigned."
+            try:
+                add_ticket_comment(
+                    ticket_id=ticket_id,
+                    message=msg,
+                    sender_id=sender,
+                    sender_role="System",
+                    db=db,
+                )
+            except Exception:
+                pass
 
     return updated
 

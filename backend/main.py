@@ -18,8 +18,9 @@ from api.notifications import router as notifications_router
 from api.onboarding import router as onboarding_router
 from api.tickets import router as ticket_router
 from api.users import router as users_router
-from database.connection import init_db_schema
+from database.connection import SessionLocal, init_db_schema
 from database.seed import seed_initial_data
+from services.synthetic_ticket_service import ensure_synthetic_tickets
 from telemetry import setup_telemetry
 
 load_dotenv()
@@ -33,6 +34,10 @@ app = FastAPI(
 # Initialize Database Schema & Seed Initial Data
 init_db_schema()
 seed_initial_data()
+if os.getenv("ENABLE_SYNTHETIC_ANALYTICS", "false").lower() == "true":
+    with SessionLocal() as synthetic_db:
+        synthetic_result = ensure_synthetic_tickets(synthetic_db)
+        print(f"Synthetic analytics data: {synthetic_result}")
 
 # Enable CORS for frontend dynamic requests
 app.add_middleware(

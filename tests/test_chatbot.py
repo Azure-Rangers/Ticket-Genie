@@ -19,7 +19,7 @@ from agents.chatbot_agent import (
 )
 from agents.knowledge_agent import GroundedAnswer
 from backend.main import app
-from models.chatbot import ChatIntent, ChatRequest, RequestType, TicketDraft
+from models.chatbot import ChatIntent, ChatRequest, ChatScope, RequestType, TicketDraft
 from services import chatbot_service
 from services.knowledge_service import KnowledgeDocument, SearchUnavailableError
 
@@ -89,6 +89,7 @@ def ask(
 # keyword matcher would miss (no literal "dashboard").
 def test_navigation_paraphrase_without_literal_keyword():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.NAVIGATION,
         action=ChatActionType.NAVIGATE,
         message="You can see an overview of your work from your dashboard.",
@@ -101,6 +102,7 @@ def test_navigation_paraphrase_without_literal_keyword():
 
 def test_navigation_routes_management_to_management_portal():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.NAVIGATION,
         action=ChatActionType.NAVIGATE,
         message="Here's your dashboard.",
@@ -113,6 +115,7 @@ def test_navigation_routes_management_to_management_portal():
 # 2. Navigation never creates a ticket
 def test_navigation_does_not_start_ticket_draft():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.NAVIGATION,
         action=ChatActionType.NAVIGATE,
         message="Here you go.",
@@ -126,6 +129,7 @@ def test_navigation_does_not_start_ticket_draft():
 # 3. How-to returns explanation/navigation, not a forced ticket
 def test_how_to_returns_models_explanation():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.HOW_TO,
         action=ChatActionType.RESPOND,
         message="Submit reimbursements from New Request under Account Management.",
@@ -138,6 +142,7 @@ def test_how_to_returns_models_explanation():
 # 4 & 5. Knowledge intent queries Search, scoped by authorization
 def test_knowledge_intent_queries_search_with_allowed_scopes():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.KNOWLEDGE,
         action=ChatActionType.SEARCH_KNOWLEDGE,
         message="Let me check.",
@@ -171,6 +176,7 @@ def test_knowledge_intent_queries_search_with_allowed_scopes():
 # 6. Unauthorized documents never reach GPT
 def test_unauthorized_document_never_passed_to_grounded_answer_call():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.KNOWLEDGE,
         action=ChatActionType.SEARCH_KNOWLEDGE,
         message="Let me check.",
@@ -202,6 +208,7 @@ def test_unauthorized_document_never_passed_to_grounded_answer_call():
 # 20. Model output cannot widen authorized scopes
 def test_model_cannot_override_user_permissions():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.KNOWLEDGE,
         action=ChatActionType.SEARCH_KNOWLEDGE,
         message="Let me check.",
@@ -222,6 +229,7 @@ def test_model_cannot_override_user_permissions():
 # expand what's actually retrieved, no matter what the model echoes back.
 def test_prompt_injection_claiming_hr_role_does_not_expand_scopes():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.KNOWLEDGE,
         action=ChatActionType.SEARCH_KNOWLEDGE,
         message="Sure, here is HR information.",
@@ -240,6 +248,7 @@ def test_prompt_injection_claiming_hr_role_does_not_expand_scopes():
 
 def test_prompt_injection_telling_model_to_ignore_permissions_does_not_expand_scopes():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.KNOWLEDGE,
         action=ChatActionType.SEARCH_KNOWLEDGE,
         message="I can only search what you're authorized for.",
@@ -259,6 +268,7 @@ def test_prompt_injection_telling_model_to_ignore_permissions_does_not_expand_sc
 # 7 & 18. No Search result / Search failure -> no hallucination
 def test_no_search_results_does_not_hallucinate():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.KNOWLEDGE,
         action=ChatActionType.SEARCH_KNOWLEDGE,
         message="Let me check.",
@@ -276,6 +286,7 @@ def test_no_search_results_does_not_hallucinate():
 
 def test_search_failure_does_not_fabricate_knowledge():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.KNOWLEDGE,
         action=ChatActionType.SEARCH_KNOWLEDGE,
         message="Let me check.",
@@ -294,6 +305,7 @@ def test_search_failure_does_not_fabricate_knowledge():
 # 8 & 9. Support issue starts ticket drafting; GPT extracts fields
 def test_support_issue_starts_ticket_drafting_with_extracted_fields():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.SUPPORT_ISSUE,
         action=ChatActionType.SHOW_TICKET_DRAFT,
         message="Here's a draft.",
@@ -323,6 +335,7 @@ def test_support_issue_starts_ticket_drafting_with_extracted_fields():
 # 10. Missing ticket fields produce a follow-up question
 def test_missing_ticket_fields_produce_follow_up():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.SUPPORT_ISSUE,
         action=ChatActionType.ASK_FOLLOWUP,
         message="Could you tell me more about what's going on?",
@@ -341,6 +354,7 @@ def test_existing_field_is_not_asked_for_again_even_if_model_forgets():
         description="My laptop is broken.", category="IT & Technology"
     )
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.SUPPORT_ISSUE,
         action=ChatActionType.ASK_FOLLOWUP,
         message="Anything else?",
@@ -360,6 +374,7 @@ def test_existing_field_is_not_asked_for_again_even_if_model_forgets():
 # 12. Ticket draft follows the exact current schema
 def test_ticket_draft_matches_ticket_create_schema():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.SUPPORT_ISSUE,
         action=ChatActionType.SHOW_TICKET_DRAFT,
         message="Here's your draft.",
@@ -379,6 +394,8 @@ def test_ticket_draft_matches_ticket_create_schema():
         "department",
         "description",
         "preferredDate",
+        "startDate",
+        "endDate",
         "is_anonymous",
         "attachment",
     }
@@ -390,6 +407,7 @@ def test_ticket_draft_matches_ticket_create_schema():
 def test_drafting_never_creates_a_real_ticket():
     before = client.get("/api/tickets").json()
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.SUPPORT_ISSUE,
         action=ChatActionType.SHOW_TICKET_DRAFT,
         message="Here's your draft.",
@@ -409,6 +427,7 @@ def test_drafting_never_creates_a_real_ticket():
 # 14 & 15. Leave intent routes to Standard Request draft, extracted semantically
 def test_leave_intent_without_literal_leave_keyword_routes_to_draft():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.LEAVE_MANAGEMENT,
         action=ChatActionType.SHOW_TICKET_DRAFT,
         message="Here's your leave request draft.",
@@ -431,6 +450,7 @@ def test_leave_intent_without_literal_leave_keyword_routes_to_draft():
 
 def test_leave_management_is_forced_into_drafting_even_if_model_action_differs():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.LEAVE_MANAGEMENT,
         action=ChatActionType.RESPOND,  # model picked the "wrong" action
         message="Here is the PTO policy explanation.",
@@ -444,6 +464,7 @@ def test_leave_management_is_forced_into_drafting_even_if_model_action_differs()
 
 def test_incomplete_leave_request_asks_follow_up():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.LEAVE_MANAGEMENT,
         action=ChatActionType.ASK_FOLLOWUP,
         message="What type of leave, and when would it start?",
@@ -458,6 +479,7 @@ def test_incomplete_leave_request_asks_follow_up():
 # 16. Ticket status checks the existing ticket via the existing backend
 def test_ticket_status_with_id_checks_existing_ticket():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.TICKET_STATUS,
         action=ChatActionType.CHECK_TICKET_STATUS,
         message="Let me pull that up.",
@@ -479,6 +501,7 @@ def test_ticket_status_with_id_checks_existing_ticket():
 
 def test_ticket_status_with_unknown_id_does_not_fabricate_status():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.TICKET_STATUS,
         action=ChatActionType.CHECK_TICKET_STATUS,
         message="Let me pull that up.",
@@ -493,6 +516,7 @@ def test_ticket_status_with_unknown_id_does_not_fabricate_status():
 
 def test_ticket_status_without_id_navigates_to_my_tickets():
     decision = ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.TICKET_STATUS,
         action=ChatActionType.CHECK_TICKET_STATUS,
         message="You can check My Tickets.",

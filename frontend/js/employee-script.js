@@ -648,14 +648,18 @@ function prefillRequestForm(requestType, draft) {
     } else if (requestType === "leave_management") {
         setFieldValue("leaveType", draft.category);
         setFieldValue("leaveDescription", draft.description);
-        // KNOWN BACKEND LIMITATION: the chatbot draft only carries a single
-        // preferredDate (models.chatbot.TicketDraft), while this form has
-        // separate start/end date fields. We treat preferredDate as the
-        // start date (the existing chatbot<->form compatibility choice)
-        // and deliberately leave leaveEndDate for the user to confirm
-        // rather than fabricating it - the full range the user typed is
-        // still visible in the prefilled description for review.
-        setFieldValue("leaveStartDate", draft.preferredDate);
+        // draft.startDate/draft.endDate are the source of truth for the
+        // leave range (models.chatbot.TicketDraft). draft.preferredDate is
+        // only a backward-compat fallback for the start date - endDate
+        // must always come from draft.endDate alone.
+        if (draft.startDate) {
+            setFieldValue("leaveStartDate", draft.startDate);
+        } else if (draft.preferredDate) {
+            setFieldValue("leaveStartDate", draft.preferredDate);
+        }
+        if (draft.endDate) {
+            setFieldValue("leaveEndDate", draft.endDate);
+        }
     }
 
     const card = document.querySelector(".request-form-card");
