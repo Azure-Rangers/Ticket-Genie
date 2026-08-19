@@ -65,11 +65,13 @@ def handle_azure_login(req: AzureLoginRequest):
 
     jwt_verified = False
     verified_oid = req.azure_object_id
+    claims = {}
 
     if req.id_token:
         try:
             claims = verify_azure_jwt(req.id_token)
             jwt_verified = True
+            print("DEBUG Claims received from Microsoft token:", claims)
             token_oid = claims.get("oid") or claims.get("sub")
             if token_oid:
                 verified_oid = token_oid
@@ -84,6 +86,7 @@ def handle_azure_login(req: AzureLoginRequest):
 
     is_admin = False
     role = "Employee"
+    department = "Upper Executive Management"
 
     with SessionLocal() as session:
         record = (
@@ -95,24 +98,54 @@ def handle_azure_login(req: AzureLoginRequest):
             if record.role.lower() in ["admin", "super admin", "operations admin"]:
                 is_admin = True
                 role = record.role
+            if record.department_name:
+                department = record.department_name
             # Automatically update user_email on mapping if missing
             if req.email and not record.user_email:
                 record.user_email = req.email
                 session.commit()
 
+    displayName = None
+    if claims:
+        given_name = claims.get("given_name")
+        family_name = claims.get("family_name")
+        if given_name and family_name:
+            displayName = f"{given_name} {family_name}".strip()
+        else:
+            displayName = claims.get("name")
+
+    if not displayName:
+        displayName = req.name or (
+            req.email.split("@")[0] if req.email else "Azure User"
+        )
+
+    with SessionLocal() as session:
+        from database.models_db import UserProfileDB
+
+        profile_id = f"usr-admin-{verified_oid[:8]}"
+        db_profile = (
+            session.query(UserProfileDB).filter(UserProfileDB.id == profile_id).first()
+        )
+        if db_profile and db_profile.name:
+            if displayName in [
+                "Admin1",
+                "Employee1",
+                "Azure User",
+                "User",
+            ] or db_profile.name not in ["Admin1", "Employee1", "Azure User", "User"]:
+                displayName = db_profile.name
+
     # Synchronize user_profiles table from JWT claims upon login
-    if req.email or req.name:
+    if req.email or displayName:
         try:
             from database.crud import update_user_profile
 
             profile_id = f"usr-admin-{verified_oid[:8]}"
             update_user_profile(
                 user_id=profile_id,
-                name=req.name or req.email.split("@")[0],
+                name=displayName,
                 email=req.email,
-                department=record.department_name
-                if record
-                else "Upper Executive Management",
+                department=department,
             )
         except Exception as err:
             print(f"Notice: profile sync during login: {err}")
@@ -125,7 +158,8 @@ def handle_azure_login(req: AzureLoginRequest):
         "azure_object_id": verified_oid,
         "is_admin": is_admin,
         "role": role,
+        "department": department,
         "jwt_verified": jwt_verified,
         "email": req.email,
-        "name": req.name or "Azure User",
+        "name": displayName,
     }

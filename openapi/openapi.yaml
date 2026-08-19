@@ -919,6 +919,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/announcements/match:
+    post:
+      tags:
+      - announcements
+      summary: Match Ticket To Announcement
+      operationId: match_ticket_to_announcement_api_announcements_match_post
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnouncementMatchRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/announcements/{anc_id}:
     delete:
       tags:
@@ -1313,27 +1346,42 @@ components:
       properties:
         title:
           type: string
+          maxLength: 200
+          minLength: 1
           title: Title
         content:
           type: string
+          maxLength: 10000
+          minLength: 1
           title: Content
         category:
           anyOf:
           - type: string
+            maxLength: 100
           - type: 'null'
           title: Category
           default: General Alert
-        author:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Author
-          default: Admin Operations
       type: object
       required:
       - title
       - content
       title: AnnouncementCreateRequest
+    AnnouncementMatchRequest:
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Title
+        description:
+          type: string
+          maxLength: 10000
+          title: Description
+          default: ''
+      type: object
+      required:
+      - title
+      title: AnnouncementMatchRequest
     AzureLoginRequest:
       properties:
         azure_object_id:

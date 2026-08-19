@@ -241,6 +241,7 @@ export async function loginAs(roleType) {
     objectId = 'usr-sup-003';
   }
 
+  let department = roleType === 'Employee' ? 'IT Operations' : 'Upper Executive Management';
   const validToken = makeValidJwt(objectId, email, name, role);
 
   try {
@@ -258,6 +259,7 @@ export async function loginAs(roleType) {
     if (res.ok) {
       const data = await res.json();
       if (data.role) role = data.role;
+      if (data.department) department = data.department;
       console.log(`✅ [Azure Auth API] Verified authentication response:`, data);
     }
   } catch (e) {
@@ -271,6 +273,7 @@ export async function loginAs(roleType) {
     email: email,
     name: name,
     role: role,
+    department: department,
     idToken: validToken,
     timestamp: new Date().toISOString()
   };
