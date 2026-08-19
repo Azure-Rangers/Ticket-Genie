@@ -19,7 +19,7 @@
   import TicketDetailView from './views/TicketDetailView.svelte';
 
   import { activeTab, loadTickets } from './lib/stores/tickets.js';
-  import { userStore, initAuthCheck } from './lib/stores/auth.js';
+  import { userStore, authLoading, initAuthCheck } from './lib/stores/auth.js';
   import GenieAgentWidget from './components/GenieAgentWidget.svelte';
 
   onMount(async () => {
@@ -33,12 +33,18 @@
   $: if ($userStore) {
     console.log("👤 [App User] Active User Session:", { name: $userStore.name, role: $userStore.role, email: $userStore.email });
     loadTickets();
-  } else {
+  } else if (!$authLoading) {
     console.log("🔒 [App User] No Active Session. Rendering Login Portal...");
   }
 </script>
 
-{#if !$userStore}
+{#if $authLoading}
+  <div class="initial-loader">
+    <div class="spinner-ring"></div>
+    <div class="loader-title">TicketGenie</div>
+    <div class="loader-subtitle">Authenticating with Microsoft Entra ID...</div>
+  </div>
+{:else if !$userStore}
   <LoginView />
 {:else}
   <div class="app-layout">
