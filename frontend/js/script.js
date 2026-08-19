@@ -905,7 +905,19 @@ function prefillRequestForm(requestType, draft) {
     } else if (requestType === "leave_management") {
         setFieldValue("leaveTypeSelect", draft.category);
         setFieldValue("leaveDescription", draft.description);
-        setFieldValue("leaveStartDate", draft.preferredDate);
+        // draft.startDate/draft.endDate are the source of truth for the
+        // leave range. draft.preferredDate is only a backward-compat
+        // fallback for the start date (some older drafts may only have
+        // that) - endDate must always come from draft.endDate alone, and
+        // the two fields are never both set from the same value.
+        if (draft.startDate) {
+            setFieldValue("leaveStartDate", draft.startDate);
+        } else if (draft.preferredDate) {
+            setFieldValue("leaveStartDate", draft.preferredDate);
+        }
+        if (draft.endDate) {
+            setFieldValue("leaveEndDate", draft.endDate);
+        }
     }
 
     const card = document.querySelector(".request-form-card") || document.querySelector(".form-container");

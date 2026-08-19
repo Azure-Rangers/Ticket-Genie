@@ -38,7 +38,13 @@ class ExtractedTicketFields(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     category: Optional[str] = None
+    # Standard/Anonymous Request's single date field only - leave null for
+    # leave_management (use start_date/end_date below instead).
     preferred_date: Optional[str] = None
+    # Leave Management's date range - independent fields so a partially
+    # known range (only one date given so far) is representable exactly.
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
     ticket_id: Optional[str] = None
 
 
@@ -177,14 +183,24 @@ TICKET FIELD EXTRACTION RULES (support_issue / create_ticket /
 leave_management):
 - Only extract facts the user actually stated. Never invent a date,
   category, or detail they did not give you.
-- `preferred_date` must be an ISO date (YYYY-MM-DD). If the user gave a
-  relative reference ("before Friday", "next Monday", "tomorrow"),
-  resolve it relative to today's date, which is provided below. If you
-  cannot confidently resolve a date, leave preferred_date null instead
-  of guessing. For leave_management, if the user gives a date range
-  (e.g. "August 20 to August 28"), preferred_date is the START date -
-  still restate the full range (both dates) in `description` so nothing
-  is lost, but never invent a second date field.
+- `preferred_date` must be an ISO date (YYYY-MM-DD), and is only used for
+  support_issue/create_ticket (the Standard Request form's single
+  preferred date). If the user gave a relative reference ("before
+  Friday", "next Monday", "tomorrow"), resolve it relative to today's
+  date, which is provided below. If you cannot confidently resolve a
+  date, leave preferred_date null instead of guessing. Always leave
+  preferred_date null for leave_management - use start_date/end_date
+  instead (next rule).
+- For leave_management specifically, extract `start_date` and, when the
+  user gave one, `end_date` as separate ISO dates (YYYY-MM-DD) - e.g.
+  "August 24 through August 28" -> start_date=2026-08-24,
+  end_date=2026-08-28 (resolve relative references against today's date,
+  provided below). If the user gives only one date for the leave, that
+  is start_date - leave end_date null rather than guessing one. Never
+  invent either date. Still restate the full range in `description` for
+  readability, but start_date/end_date are the fields the leave form
+  actually uses - never omit them just because the range is also
+  mentioned in prose.
 - `category` must be chosen from the allowed list provided below for
   the current flow (support vs leave), matched by meaning - e.g. a
   laptop problem is "IT & Technology", a request for medical leave is

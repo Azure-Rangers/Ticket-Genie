@@ -63,7 +63,16 @@ class TicketDraft(BaseModel):
     priority: Optional[str] = None
     department: Optional[str] = None
     description: Optional[str] = None
+    # Single date, used only by the Standard/Anonymous forms' one date
+    # field. For leave_management, this is a backward-compat alias of
+    # startDate (kept in sync once startDate is known) - it is never the
+    # source of truth for a leave range and must never be read as if it
+    # implies endDate is also known. See services/ticket_draft_service.py.
     preferredDate: Optional[str] = None
+    # Leave Management's date range - the only fields the leave form's
+    # leaveStartDate/leaveEndDate should ever be prefilled from.
+    startDate: Optional[str] = None
+    endDate: Optional[str] = None
     is_anonymous: bool = False
     attachment: Optional[str] = None
 
