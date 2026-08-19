@@ -109,6 +109,26 @@ class AIServiceWrapper:
     ) -> Any:
         model_name = getattr(response_model, "__name__", "response")
 
+        endpoint = os.getenv("GROUP1OPENAIENDPOINT") or os.getenv("AZURE_OPENAI_ENDPOINT")
+        api_key = os.getenv("GROUP1OPENAIAPIKEY") or os.getenv("AZURE_OPENAI_API_KEY")
+
+        if endpoint and api_key:
+            schema = _pydantic_to_strict_schema(response_model)
+            prompt = f"{system_prompt}\n\n{user_content}"
+            data = generate_structured(
+                prompt=prompt,
+                schema=schema,
+                name=model_name,
+                max_tokens=max_tokens,
+            )
+
+            try:
+                return response_model.model_validate(data)
+            except Exception as exc:
+                raise AIServiceError(
+                    f"{model_name} response did not match the expected schema."
+                ) from exc
+
         if use_mock_ai():
             try:
                 return response_model()
@@ -118,21 +138,7 @@ class AIServiceWrapper:
                     "it has required fields with no safe default."
                 ) from exc
 
-        schema = _pydantic_to_strict_schema(response_model)
-        prompt = f"{system_prompt}\n\n{user_content}"
-        data = generate_structured(
-            prompt=prompt,
-            schema=schema,
-            name=model_name,
-            max_tokens=max_tokens,
-        )
-
-        try:
-            return response_model.model_validate(data)
-        except Exception as exc:
-            raise AIServiceError(
-                f"{model_name} response did not match the expected schema."
-            ) from exc
+        raise AIServiceError("Azure OpenAI configuration is missing.")
 
 
 ai_service = AIServiceWrapper()
