@@ -65,6 +65,7 @@ def handle_azure_login(req: AzureLoginRequest):
 
     jwt_verified = False
     verified_oid = req.azure_object_id
+    claims = {}
 
     if req.id_token:
         try:
@@ -112,16 +113,26 @@ def handle_azure_login(req: AzureLoginRequest):
             displayName = f"{given_name} {family_name}".strip()
         else:
             displayName = claims.get("name")
-    
+
     if not displayName:
-        displayName = req.name or (req.email.split("@")[0] if req.email else "Azure User")
+        displayName = req.name or (
+            req.email.split("@")[0] if req.email else "Azure User"
+        )
 
     with SessionLocal() as session:
         from database.models_db import UserProfileDB
+
         profile_id = f"usr-admin-{verified_oid[:8]}"
-        db_profile = session.query(UserProfileDB).filter(UserProfileDB.id == profile_id).first()
+        db_profile = (
+            session.query(UserProfileDB).filter(UserProfileDB.id == profile_id).first()
+        )
         if db_profile and db_profile.name:
-            if displayName in ["Admin1", "Employee1", "Azure User", "User"] or db_profile.name not in ["Admin1", "Employee1", "Azure User", "User"]:
+            if displayName in [
+                "Admin1",
+                "Employee1",
+                "Azure User",
+                "User",
+            ] or db_profile.name not in ["Admin1", "Employee1", "Azure User", "User"]:
                 displayName = db_profile.name
 
     # Synchronize user_profiles table from JWT claims upon login

@@ -160,7 +160,7 @@ def verify_azure_user(authorization: Optional[str] = Header(None)) -> Dict[str, 
         or claims.get("email")
         or "user@company.com"
     )
-    
+
     given_name = claims.get("given_name")
     family_name = claims.get("family_name")
     if given_name and family_name:
@@ -198,10 +198,25 @@ def verify_azure_user(authorization: Optional[str] = Header(None)) -> Dict[str, 
                     department = record.department_name
 
             from database.models_db import UserProfileDB
+
             profile_id = f"usr-admin-{oid[:8]}"
-            db_profile = session.query(UserProfileDB).filter(UserProfileDB.id == profile_id).first()
+            db_profile = (
+                session.query(UserProfileDB)
+                .filter(UserProfileDB.id == profile_id)
+                .first()
+            )
             if db_profile and db_profile.name:
-                if name in ["Admin1", "Employee1", "Azure User", "User"] or db_profile.name not in ["Admin1", "Employee1", "Azure User", "User"]:
+                if name in [
+                    "Admin1",
+                    "Employee1",
+                    "Azure User",
+                    "User",
+                ] or db_profile.name not in [
+                    "Admin1",
+                    "Employee1",
+                    "Azure User",
+                    "User",
+                ]:
                     name = db_profile.name
     except Exception as err:
         logger.warning(f"Database role/department lookup notice: {err}")
