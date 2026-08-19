@@ -213,9 +213,9 @@ def merge_extracted_fields(
             # Defensive fallback: prefer the dedicated start_date field,
             # but also accept preferred_date in case GPT extracts a leave
             # date there instead - never invented, still validated.
-            draft.startDate = validate_iso_date(extracted.start_date) or validate_iso_date(
-                extracted.preferred_date
-            )
+            draft.startDate = validate_iso_date(
+                extracted.start_date
+            ) or validate_iso_date(extracted.preferred_date)
         if not draft.endDate:
             draft.endDate = validate_iso_date(extracted.end_date)
         # Backward-compat alias only - draft.startDate/draft.endDate are

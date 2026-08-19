@@ -119,8 +119,10 @@ def test_both_dates_present_does_not_ask_for_date_again():
     draft, missing = merge_extracted_fields(
         ExtractedTicketFields(),
         existing_draft=TicketDraft(
-            startDate="2026-08-24", endDate="2026-08-28",
-            category="Paid Time Off (PTO)", description="PTO trip",
+            startDate="2026-08-24",
+            endDate="2026-08-28",
+            category="Paid Time Off (PTO)",
+            description="PTO trip",
         ),
         gpt_missing_fields=[],
         intent=ChatIntent.LEAVE_MANAGEMENT,
@@ -132,7 +134,9 @@ def test_both_dates_present_does_not_ask_for_date_again():
 def test_start_only_asks_only_for_end_date():
     draft, missing = merge_extracted_fields(
         ExtractedTicketFields(start_date="2026-08-24"),
-        existing_draft=TicketDraft(category="Paid Time Off (PTO)", description="PTO trip"),
+        existing_draft=TicketDraft(
+            category="Paid Time Off (PTO)", description="PTO trip"
+        ),
         gpt_missing_fields=[],
         intent=ChatIntent.LEAVE_MANAGEMENT,
         request_type=RequestType.LEAVE_MANAGEMENT,
@@ -145,7 +149,9 @@ def test_start_only_asks_only_for_end_date():
 def test_end_only_asks_only_for_start_date():
     draft, missing = merge_extracted_fields(
         ExtractedTicketFields(end_date="2026-08-28"),
-        existing_draft=TicketDraft(category="Paid Time Off (PTO)", description="PTO trip"),
+        existing_draft=TicketDraft(
+            category="Paid Time Off (PTO)", description="PTO trip"
+        ),
         gpt_missing_fields=[],
         intent=ChatIntent.LEAVE_MANAGEMENT,
         request_type=RequestType.LEAVE_MANAGEMENT,
@@ -158,7 +164,9 @@ def test_end_only_asks_only_for_start_date():
 def test_neither_date_asks_for_both():
     draft, missing = merge_extracted_fields(
         ExtractedTicketFields(),
-        existing_draft=TicketDraft(category="Paid Time Off (PTO)", description="PTO trip"),
+        existing_draft=TicketDraft(
+            category="Paid Time Off (PTO)", description="PTO trip"
+        ),
         gpt_missing_fields=[],
         intent=ChatIntent.LEAVE_MANAGEMENT,
         request_type=RequestType.LEAVE_MANAGEMENT,
@@ -174,7 +182,9 @@ def test_backward_compat_preferred_date_fills_start_date_only():
     # fills startDate, and never invents an endDate from it.
     draft, missing = merge_extracted_fields(
         ExtractedTicketFields(preferred_date="2026-08-24"),
-        existing_draft=TicketDraft(category="Paid Time Off (PTO)", description="PTO trip"),
+        existing_draft=TicketDraft(
+            category="Paid Time Off (PTO)", description="PTO trip"
+        ),
         gpt_missing_fields=[],
         intent=ChatIntent.LEAVE_MANAGEMENT,
         request_type=RequestType.LEAVE_MANAGEMENT,
@@ -191,7 +201,9 @@ def test_preferred_date_never_used_as_proof_the_range_is_complete():
     draft, missing = merge_extracted_fields(
         ExtractedTicketFields(),
         existing_draft=TicketDraft(
-            preferredDate="2026-08-24", category="Paid Time Off (PTO)", description="PTO trip"
+            preferredDate="2026-08-24",
+            category="Paid Time Off (PTO)",
+            description="PTO trip",
         ),
         gpt_missing_fields=[],
         intent=ChatIntent.LEAVE_MANAGEMENT,
@@ -228,7 +240,9 @@ def test_frontend_sets_leave_end_date_from_draft_end_date():
 def test_frontend_never_sets_leave_end_date_from_preferred_date():
     block = _leave_prefill_block(SCRIPT_JS)
     end_date_line = next(
-        line for line in block.splitlines() if "leaveEndDate" in line and "setFieldValue" in line
+        line
+        for line in block.splitlines()
+        if "leaveEndDate" in line and "setFieldValue" in line
     )
     assert "preferredDate" not in end_date_line
 

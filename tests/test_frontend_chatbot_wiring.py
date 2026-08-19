@@ -24,7 +24,9 @@ from pathlib import Path
 FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
 SCRIPT_JS = (FRONTEND_DIR / "js" / "script.js").read_text()
 NEW_REQUEST_HTML = (FRONTEND_DIR / "employee_NM" / "new-request.html").read_text()
-MANAGEMENT_SUBMIT_HTML = (FRONTEND_DIR / "management" / "submit-ticket.html").read_text()
+MANAGEMENT_SUBMIT_HTML = (
+    FRONTEND_DIR / "management" / "submit-ticket.html"
+).read_text()
 ADMIN_SUBMIT_HTML = (FRONTEND_DIR / "admin_AV" / "submit-ticket.html").read_text()
 
 OLD_STALE_IDS = (
@@ -194,12 +196,24 @@ def test_current_tab_switch_mechanism_is_reused_not_duplicated():
 
 
 def test_management_submit_page_has_the_ids_genie_targets():
-    for current_id in ("createTicketForm", "ticketTitle", "targetDepartment", "priorityLevel", "ticketDescription"):
+    for current_id in (
+        "createTicketForm",
+        "ticketTitle",
+        "targetDepartment",
+        "priorityLevel",
+        "ticketDescription",
+    ):
         assert f'id="{current_id}"' in MANAGEMENT_SUBMIT_HTML
 
 
 def test_admin_submit_page_has_the_ids_genie_targets():
-    for current_id in ("ticketForm", "ticketTitle", "category", "priority", "ticketDesc"):
+    for current_id in (
+        "ticketForm",
+        "ticketTitle",
+        "category",
+        "priority",
+        "ticketDesc",
+    ):
         assert f'id="{current_id}"' in ADMIN_SUBMIT_HTML
 
 
@@ -213,7 +227,12 @@ def test_prefill_dispatch_targets_each_portals_real_form_ids():
     assert "function prefillManagementForm(draft)" in SCRIPT_JS
     assert "function prefillAdminForm(draft)" in SCRIPT_JS
     assert "function prefillDraftIntoForm(" in SCRIPT_JS
-    for management_id in ("ticketTitle", "ticketDescription", "targetDepartment", "priorityLevel"):
+    for management_id in (
+        "ticketTitle",
+        "ticketDescription",
+        "targetDepartment",
+        "priorityLevel",
+    ):
         assert management_id in SCRIPT_JS
     assert "ticketDesc" in SCRIPT_JS
     # Employee-only ids must never leak into the management/admin prefill

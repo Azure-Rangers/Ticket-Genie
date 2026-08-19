@@ -412,7 +412,9 @@ def handle_message(
     # back by the client) takes the same precedence as active_intent, so a
     # bare follow-up like "the VPN one" or "HD-1024" continues that flow
     # instead of being reclassified from scratch.
-    pending_intent = request.pending_action.action_type if request.pending_action else None
+    pending_intent = (
+        request.pending_action.action_type if request.pending_action else None
+    )
     intent = request.active_intent or pending_intent or decision.intent
 
     if intent in _MANAGEMENT_ACTION_INTENTS:

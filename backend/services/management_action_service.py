@@ -39,22 +39,69 @@ from services.role_service import (
 SCOPE_UNRESOLVED_MESSAGE = (
     "I couldn't determine your ticket scope, so I can't modify a ticket from Genie."
 )
-UNAUTHORIZED_TICKET_MESSAGE = (
-    "I couldn't verify you're authorized to manage that ticket, so I won't make this change."
-)
+UNAUTHORIZED_TICKET_MESSAGE = "I couldn't verify you're authorized to manage that ticket, so I won't make this change."
 
 _AFFIRMATIVE_WORDS = {
-    "yes", "y", "yeah", "yep", "yup", "confirm", "confirmed", "correct",
-    "sure", "ok", "okay", "create", "approve", "approved", "right",
+    "yes",
+    "y",
+    "yeah",
+    "yep",
+    "yup",
+    "confirm",
+    "confirmed",
+    "correct",
+    "sure",
+    "ok",
+    "okay",
+    "create",
+    "approve",
+    "approved",
+    "right",
 }
 _NEGATIVE_WORDS = {
-    "no", "n", "nope", "cancel", "stop", "dont", "never", "incorrect", "wrong",
+    "no",
+    "n",
+    "nope",
+    "cancel",
+    "stop",
+    "dont",
+    "never",
+    "incorrect",
+    "wrong",
 }
 _STOPWORDS = {
-    "the", "a", "an", "this", "that", "these", "those", "to", "for", "please",
-    "can", "you", "move", "reassign", "change", "make", "set", "update",
-    "ticket", "request", "it", "priority", "department", "low", "medium",
-    "high", "critical", "from", "into", "of", "one", "and",
+    "the",
+    "a",
+    "an",
+    "this",
+    "that",
+    "these",
+    "those",
+    "to",
+    "for",
+    "please",
+    "can",
+    "you",
+    "move",
+    "reassign",
+    "change",
+    "make",
+    "set",
+    "update",
+    "ticket",
+    "request",
+    "it",
+    "priority",
+    "department",
+    "low",
+    "medium",
+    "high",
+    "critical",
+    "from",
+    "into",
+    "of",
+    "one",
+    "and",
 }
 
 EMPLOYEE_FIELD_ORDER = [
@@ -137,7 +184,9 @@ def _find_candidate_tickets(
     `scope.unrestricted` is only ever True for a verified Super Admin.
     """
     dept_filter = None if scope.unrestricted else scope.department
-    tickets = get_all_tickets(department=dept_filter) if dept_filter else get_all_tickets()
+    tickets = (
+        get_all_tickets(department=dept_filter) if dept_filter else get_all_tickets()
+    )
 
     if ticket_id_hint:
         tid = ticket_id_hint.strip().upper()
@@ -149,7 +198,8 @@ def _find_candidate_tickets(
             t
             for t in tickets
             if any(
-                k in ((t.get("title") or "") + " " + (t.get("description") or "")).lower()
+                k
+                in ((t.get("title") or "") + " " + (t.get("description") or "")).lower()
                 for k in keywords
             )
         ]
@@ -193,9 +243,7 @@ def _match_candidate(
 
     keywords = set(_extract_keywords(stripped))
     if keywords:
-        matches = [
-            c for c in candidates if keywords & set(_extract_keywords(c.title))
-        ]
+        matches = [c for c in candidates if keywords & set(_extract_keywords(c.title))]
         if len(matches) == 1:
             return matches[0]
     return None
@@ -217,7 +265,9 @@ def _format_candidate_line(c: TicketCandidate, intent: ChatIntent) -> str:
 
 
 def _ask_ticket_selection(
-    pending: PendingManagementAction, candidates: List[TicketCandidate], intent: ChatIntent
+    pending: PendingManagementAction,
+    candidates: List[TicketCandidate],
+    intent: ChatIntent,
 ) -> ChatResponse:
     lines = "\n".join(_format_candidate_line(c, intent) for c in candidates)
     verb = "move" if intent == ChatIntent.REASSIGN_TICKET else "reprioritize"
@@ -255,7 +305,9 @@ def _resolve_ticket_step(
         # still has to come back out of the already-scoped lookup below,
         # so someone can't bypass candidate filtering by just naming an
         # out-of-scope HD-#### id.
-        found = _find_candidate_tickets(scope, message, ticket_id_hint=pending.ticket_id)
+        found = _find_candidate_tickets(
+            scope, message, ticket_id_hint=pending.ticket_id
+        )
         if len(found) == 1:
             _set_ticket(pending, found[0])
             return None
@@ -344,9 +396,17 @@ def _execute_ticket_mutation(
     pending: PendingManagementAction, role: str, user_id: str, intent: ChatIntent
 ) -> ChatResponse:
     if intent == ChatIntent.REASSIGN_TICKET:
-        field, value, before = "department", pending.target_department, pending.current_department
+        field, value, before = (
+            "department",
+            pending.target_department,
+            pending.current_department,
+        )
     else:
-        field, value, before = "priority", pending.target_priority, pending.current_priority
+        field, value, before = (
+            "priority",
+            pending.target_priority,
+            pending.current_priority,
+        )
 
     result = execute_tool(
         "update_ticket_tool",
@@ -425,7 +485,9 @@ def _handle_create_employee(
 
     if pending.awaiting != "employee_confirmation":
         pending.awaiting = "employee_confirmation"
-        return ChatResponse(message=_review_message(pending), intent=intent, pending_action=pending)
+        return ChatResponse(
+            message=_review_message(pending), intent=intent, pending_action=pending
+        )
 
     if _is_affirmative(message):
         add_department_user(
@@ -434,7 +496,11 @@ def _handle_create_employee(
             role=pending.employee_role,
             user_email=pending.employee_email,
         )
-        who = pending.employee_name or pending.employee_email or pending.employee_object_id
+        who = (
+            pending.employee_name
+            or pending.employee_email
+            or pending.employee_object_id
+        )
         return ChatResponse(
             message=(
                 f"Done. Created a portal assignment for {who} — "
@@ -445,10 +511,14 @@ def _handle_create_employee(
         )
     if _is_negative(message):
         return ChatResponse(
-            message="Okay, I won't create that assignment.", intent=intent, pending_action=None
+            message="Okay, I won't create that assignment.",
+            intent=intent,
+            pending_action=None,
         )
 
-    return ChatResponse(message=_review_message(pending), intent=intent, pending_action=pending)
+    return ChatResponse(
+        message=_review_message(pending), intent=intent, pending_action=pending
+    )
 
 
 def _denied(intent: ChatIntent, capability: str) -> ChatResponse:
@@ -505,7 +575,9 @@ def handle_turn(
     current_user: Optional[dict],
 ) -> ChatResponse:
     role = (current_user or {}).get("role") or request.role or "Employee"
-    user_id = (current_user or {}).get("oid") or (current_user or {}).get("email") or "user"
+    user_id = (
+        (current_user or {}).get("oid") or (current_user or {}).get("email") or "user"
+    )
 
     if intent in (ChatIntent.REASSIGN_TICKET, ChatIntent.CHANGE_PRIORITY):
         if not is_ticket_mutation_authorized(role):
@@ -514,7 +586,9 @@ def handle_turn(
         if not is_super_admin(role, (current_user or {}).get("is_dev", False)):
             return _denied(intent, "create new portal employees")
     else:  # pragma: no cover - defensive, chatbot_service only routes the 3 above
-        return ChatResponse(message="I can't help with that here.", intent=ChatIntent.GENERAL)
+        return ChatResponse(
+            message="I can't help with that here.", intent=ChatIntent.GENERAL
+        )
 
     pending = request.pending_action
     if pending is None or pending.action_type != intent:
@@ -530,7 +604,9 @@ def handle_turn(
         # closed here, before any ticket is ever looked up.
         scope = resolve_visibility_scope(current_user)
         if scope is None:
-            return ChatResponse(message=SCOPE_UNRESOLVED_MESSAGE, intent=intent, pending_action=None)
+            return ChatResponse(
+                message=SCOPE_UNRESOLVED_MESSAGE, intent=intent, pending_action=None
+            )
 
         step = _resolve_ticket_step(pending, scope, message, intent)
         if step is not None:
@@ -543,7 +619,9 @@ def handle_turn(
         if target_step is not None:
             return target_step
         if not _ticket_in_scope(scope, pending.ticket_id):
-            return ChatResponse(message=UNAUTHORIZED_TICKET_MESSAGE, intent=intent, pending_action=None)
+            return ChatResponse(
+                message=UNAUTHORIZED_TICKET_MESSAGE, intent=intent, pending_action=None
+            )
         return _execute_ticket_mutation(pending, role, user_id, intent)
 
     return _handle_create_employee(pending, message, intent)
