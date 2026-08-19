@@ -24,6 +24,10 @@ from pathlib import Path
 FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
 SCRIPT_JS = (FRONTEND_DIR / "js" / "script.js").read_text()
 NEW_REQUEST_HTML = (FRONTEND_DIR / "employee_NM" / "new-request.html").read_text()
+MANAGEMENT_SUBMIT_HTML = (
+    FRONTEND_DIR / "management" / "submit-ticket.html"
+).read_text()
+ADMIN_SUBMIT_HTML = (FRONTEND_DIR / "admin_AV" / "submit-ticket.html").read_text()
 
 OLD_STALE_IDS = (
     "newTicketForm",
@@ -182,3 +186,84 @@ def test_current_tab_switch_mechanism_is_reused_not_duplicated():
     # script.js must not define a second, competing tab-switch mechanism.
     assert "function switchTab(" not in SCRIPT_JS
     assert "function switchRequestTab(" not in SCRIPT_JS
+
+
+# ---------------------------------------------------------------------------
+# Management/admin create-ticket handoff (Feature 4) - portal-aware prefill,
+# targeting each portal's REAL current form ids rather than the employee
+# form's ids, still never auto-submitting.
+# ---------------------------------------------------------------------------
+
+
+def test_management_submit_page_has_the_ids_genie_targets():
+    for current_id in (
+        "createTicketForm",
+        "ticketTitle",
+        "targetDepartment",
+        "priorityLevel",
+        "ticketDescription",
+    ):
+        assert f'id="{current_id}"' in MANAGEMENT_SUBMIT_HTML
+
+
+def test_admin_submit_page_has_the_ids_genie_targets():
+    for current_id in (
+        "ticketForm",
+        "ticketTitle",
+        "category",
+        "priority",
+        "ticketDesc",
+    ):
+        assert f'id="{current_id}"' in ADMIN_SUBMIT_HTML
+
+
+def test_portal_context_is_resolved_deterministically_not_by_gpt():
+    assert "function getPortalContext()" in SCRIPT_JS
+    assert '"/management/"' in SCRIPT_JS
+    assert '"/admin_AV/"' in SCRIPT_JS
+
+
+def test_prefill_dispatch_targets_each_portals_real_form_ids():
+    assert "function prefillManagementForm(draft)" in SCRIPT_JS
+    assert "function prefillAdminForm(draft)" in SCRIPT_JS
+    assert "function prefillDraftIntoForm(" in SCRIPT_JS
+    for management_id in (
+        "ticketTitle",
+        "ticketDescription",
+        "targetDepartment",
+        "priorityLevel",
+    ):
+        assert management_id in SCRIPT_JS
+    assert "ticketDesc" in SCRIPT_JS
+    # Employee-only ids must never leak into the management/admin prefill
+    # functions - each portal's prefill only ever targets its own form.
+    mgmt_start = SCRIPT_JS.index("function prefillManagementForm(draft)")
+    mgmt_end = SCRIPT_JS.index("function prefillAdminForm(draft)")
+    assert "standardSubject" not in SCRIPT_JS[mgmt_start:mgmt_end]
+
+
+def test_management_and_admin_forms_are_never_auto_submitted_by_genie():
+    handler_names = (
+        "prefillManagementForm",
+        "prefillAdminForm",
+        "prefillDraftIntoForm",
+        "openReadyDraft",
+        "applyPendingGenieDraft",
+    )
+    start = min(SCRIPT_JS.index(f"function {name}") for name in handler_names)
+    end = SCRIPT_JS.index("// Bind all global utilities to window")
+    region = SCRIPT_JS[start:end]
+    assert "apiCreateTicket(" not in region
+    assert ".submit()" not in region
+
+
+def test_draft_persists_across_navigation_for_every_portal():
+    # Same sessionStorage handoff key/mechanism reused for every portal -
+    # no separate/duplicate persistence path per portal.
+    assert "GENIE_PENDING_DRAFT_KEY" in SCRIPT_JS
+    assert "function applyPendingGenieDraft()" in SCRIPT_JS
+    assert "prefillDraftIntoForm(pending.request_type, pending.draft)" in SCRIPT_JS
+
+
+def test_navigation_to_new_request_resolves_to_each_portals_real_submit_page():
+    assert '"new-request.html") return "submit-ticket.html"' in SCRIPT_JS

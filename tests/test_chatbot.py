@@ -379,6 +379,8 @@ def test_ticket_draft_matches_ticket_create_schema():
         "department",
         "description",
         "preferredDate",
+        "startDate",
+        "endDate",
         "is_anonymous",
         "attachment",
     }

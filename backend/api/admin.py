@@ -16,15 +16,14 @@ from database.crud import (
     remove_department_user,
 )
 from services.jwt_verifier import verify_azure_user
+from services.role_service import is_super_admin
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 def require_super_admin(current_user: dict = Depends(verify_azure_user)):
     """Enforce that only SuperAdmin can create/modify roles and department assignments."""
-    role = (current_user.get("role") or "").lower()
-    is_dev = current_user.get("is_dev", False)
-    if "super" not in role and not is_dev:
+    if not is_super_admin(current_user.get("role"), current_user.get("is_dev", False)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Forbidden: Only Super Admin can manage department role assignments.",
