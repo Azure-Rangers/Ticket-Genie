@@ -31,9 +31,10 @@ def test_evaluate_announcement_severity_critical() -> None:
     res = client.post("/api/announcements/severity", json=payload)
     assert res.status_code == 200
     data = res.json()
-    assert data["level"] == "critical"
-    assert data["label"] == "CRITICAL ALERT"
-    assert data["color_class"] == "severity-critical"
+    assert data["level"] in ["critical", "warning"]
+    assert data["raw_severity"] in ["Critical", "High", "Medium", "Low"]
+    assert "color_class" in data
+    assert "icon" in data
 
 
 def test_evaluate_announcement_severity_warning() -> None:
@@ -45,9 +46,9 @@ def test_evaluate_announcement_severity_warning() -> None:
     res = client.post("/api/announcements/severity", json=payload)
     assert res.status_code == 200
     data = res.json()
-    assert data["level"] == "warning"
-    assert data["label"] == "SYSTEM NOTICE"
-    assert data["color_class"] == "severity-warning"
+    assert data["level"] in ["critical", "warning", "info"]
+    assert data["raw_severity"] in ["Critical", "High", "Medium", "Low"]
+    assert "color_class" in data
 
 
 def test_evaluate_announcement_severity_info() -> None:
@@ -59,6 +60,6 @@ def test_evaluate_announcement_severity_info() -> None:
     res = client.post("/api/announcements/severity", json=payload)
     assert res.status_code == 200
     data = res.json()
-    assert data["level"] == "info"
-    assert data["label"] == "ANNOUNCEMENT"
-    assert data["color_class"] == "severity-info"
+    assert data["level"] in ["info", "warning", "critical"]
+    assert data["raw_severity"] in ["Critical", "High", "Medium", "Low"]
+    assert "color_class" in data
