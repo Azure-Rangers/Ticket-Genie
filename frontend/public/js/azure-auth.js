@@ -238,7 +238,6 @@
             email: userEmail,
             name: userName,
             role: role,
-            department: (role && role.toLowerCase().includes("super")) ? "Upper Executive Management" : "IT Operations",
             isAdmin: isAdmin,
             idToken: rawToken,
             timestamp: new Date().toISOString()
