@@ -25,7 +25,9 @@ def sql_query_tool(query: str, role: str = "Super Admin", user_id: str = "user")
     return json.dumps(res, default=str)
 
 
-def update_ticket_tool(ticket_id: str, field: str, value: str) -> str:
+def update_ticket_tool(
+    ticket_id: str, field: str, value: str, user_id: str = "user"
+) -> str:
     """Update a specific field (department, priority, status, queue) on a ticket.
 
     Authorization is enforced by the caller (execute_tool) before this is
@@ -42,6 +44,31 @@ def update_ticket_tool(ticket_id: str, field: str, value: str) -> str:
         return f"Error: '{value}' is not a valid department. Allowed: {', '.join(TICKET_DEPARTMENTS)}"
     if field == "priority" and value not in TICKET_PRIORITIES:
         return f"Error: '{value}' is not a valid priority. Allowed: {', '.join(TICKET_PRIORITIES)}"
+
+    if field == "status" and (value or "").strip().lower() in ("resolved", "closed"):
+        from database.crud import _resolve_user_email, get_ticket_by_id
+
+        ticket = get_ticket_by_id(ticket_id)
+        if ticket:
+            req_id = str(ticket.get("requester_id") or "").strip().lower()
+            uid = str(user_id or "").strip().lower()
+            is_creator = False
+            if req_id and uid:
+                if req_id == uid:
+                    is_creator = True
+                else:
+                    resolved_req = (
+                        str(_resolve_user_email(req_id, None) or "").strip().lower()
+                    )
+                    resolved_uid = (
+                        str(_resolve_user_email(uid, None) or "").strip().lower()
+                    )
+                    if resolved_req and (
+                        resolved_req == uid or resolved_req == resolved_uid
+                    ):
+                        is_creator = True
+            if is_creator:
+                return "Error: Forbidden. You cannot resolve tickets you created."
 
     update_payload = TicketUpdate(**{field: value})
     res = update_ticket(ticket_id, update_payload)
@@ -140,7 +167,7 @@ def execute_tool(
         ticket_id = arguments.get("ticket_id", "")
         field = arguments.get("field", "")
         value = arguments.get("value", "")
-        return update_ticket_tool(ticket_id, field, value)
+        return update_ticket_tool(ticket_id, field, value, user_id=user_id)
 
     elif tool_name == "search_knowledge_tool":
         query = arguments.get("query", "")

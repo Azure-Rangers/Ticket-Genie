@@ -1,15 +1,26 @@
 <script>
   import StatusBadge from './StatusBadge.svelte';
-  import { changeTicketStatus, selectedTicket } from '../lib/stores/tickets.js';
+  import { changeTicketStatus, selectedTicket, activeTab } from '../lib/stores/tickets.js';
+  import { userStore } from '../lib/stores/auth.js';
 
   export let ticket;
 
+  $: currentOid = ($userStore?.objectId || $userStore?.azure_object_id || $userStore?.oid || '').toLowerCase().trim();
+  $: currentEmail = ($userStore?.email || '').toLowerCase().trim();
+  $: ticketReq = (ticket?.requester_id || ticket?.user_id || '').toLowerCase().trim();
+  $: isCreator = !!(ticketReq && (
+    (currentOid && ticketReq === currentOid) ||
+    (currentEmail && ticketReq === currentEmail)
+  ));
+
   function selectCard() {
     $selectedTicket = ticket;
+    $activeTab = 'ticket-detail';
   }
 
   function quickResolve(e) {
     e.stopPropagation();
+    if (isCreator) return;
     changeTicketStatus(ticket.id, 'Resolved');
   }
 </script>
@@ -42,7 +53,7 @@
       <span class="meta-item"><i class="ph-bold ph-tag"></i> {ticket.category || 'General'}</span>
     </div>
 
-    {#if (ticket.status || '').toLowerCase() !== 'resolved'}
+    {#if (ticket.status || '').toLowerCase() !== 'resolved' && !isCreator}
       <button class="btn-resolve" on:click={quickResolve} title="Quick Resolve Ticket">
         <i class="ph-bold ph-check"></i>
       </button>
@@ -110,6 +121,7 @@
     color: var(--text-muted);
     line-height: 1.4;
     display: -webkit-box;
+    line-clamp: 2;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;

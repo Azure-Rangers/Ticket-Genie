@@ -17,8 +17,13 @@
     }
 
     submitting = true;
+    let textCheck = `${title} ${description} ${departmentSelect}`.toLowerCase();
+    let isLeave = textCheck.includes('leave') || textCheck.includes('pto') || textCheck.includes('vacation') || textCheck.includes('time off') || textCheck.includes('bereavement') || textCheck.includes('parental');
+
     let backendDept = null;
-    if (departmentSelect !== 'Auto') {
+    if (isLeave) {
+      backendDept = 'Upper Management';
+    } else if (departmentSelect !== 'Auto') {
       if (departmentSelect.includes('HR')) backendDept = 'HR Team';
       else if (departmentSelect.includes('Account')) backendDept = 'Accounting Team';
       else if (departmentSelect.includes('Upper') || departmentSelect.includes('Admin')) backendDept = 'Upper Management';

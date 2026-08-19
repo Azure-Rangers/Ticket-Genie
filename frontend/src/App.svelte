@@ -16,6 +16,7 @@
   import NotificationsView from './views/NotificationsView.svelte';
   import ProfileView from './views/ProfileView.svelte';
   import OnboardingView from './views/OnboardingView.svelte';
+  import TicketDetailView from './views/TicketDetailView.svelte';
 
   import { activeTab, loadTickets } from './lib/stores/tickets.js';
   import { userStore, initAuthCheck } from './lib/stores/auth.js';
@@ -31,6 +32,7 @@
 
   $: if ($userStore) {
     console.log("👤 [App User] Active User Session:", { name: $userStore.name, role: $userStore.role, email: $userStore.email });
+    loadTickets();
   } else {
     console.log("🔒 [App User] No Active Session. Rendering Login Portal...");
   }
@@ -58,6 +60,8 @@
           <ProfileView />
         {:else if $activeTab === 'onboarding'}
           <OnboardingView />
+        {:else if $activeTab === 'ticket-detail' || $activeTab === 'ticket-thread'}
+          <TicketDetailView />
         {:else if $activeTab === 'inbox' || $activeTab === 'queue-it' || $activeTab === 'queue-hr' || $activeTab === 'queue-finance'}
           <InboxView />
         {:else if $activeTab === 'knowledge' || $activeTab === 'add-policies'}

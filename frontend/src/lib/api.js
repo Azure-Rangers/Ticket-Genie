@@ -79,17 +79,93 @@ export async function apiDeleteTicket(ticketId) {
   return await res.json();
 }
 
-/** ==================== EXPORT & CALENDAR API ==================== */
-
-export function apiExportTicketPDF(ticketId) {
-  if (!ticketId) return;
-  const url = `${API_BASE_URL}/tickets/${encodeURIComponent(ticketId)}/export?format=pdf`;
-  window.open(url, "_blank");
+export async function apiFetchComments(ticketId) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/tickets/${encodeURIComponent(ticketId)}/comments`, {
+      headers: getAuthHeaders()
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("apiFetchComments failed:", err);
+  }
+  return [];
 }
 
-export function apiExportCalendar() {
-  const url = `${API_BASE_URL}/calendar/export`;
-  window.open(url, "_blank");
+export async function apiPostComment(ticketId, message) {
+  const res = await fetch(`${API_BASE_URL}/tickets/${encodeURIComponent(ticketId)}/comments`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ message })
+  });
+  if (!res.ok) throw new Error("Failed to post comment");
+  return await res.json();
+}
+
+/** ==================== EXPORT & CALENDAR API ==================== */
+
+export async function apiExportTicketPDF(ticketId) {
+  if (!ticketId) return;
+  try {
+    const res = await fetch(`${API_BASE_URL}/tickets/${encodeURIComponent(ticketId)}/export?format=pdf`, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error(`Failed to export PDF (${res.status})`);
+    const blob = await res.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = `Ticket_${ticketId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
+  } catch (err) {
+    console.error("apiExportTicketPDF error:", err);
+    alert(err.message || "Failed to download PDF.");
+  }
+}
+
+export async function apiExportTicketDOCX(ticketId) {
+  if (!ticketId) return;
+  try {
+    const res = await fetch(`${API_BASE_URL}/tickets/${encodeURIComponent(ticketId)}/export?format=docx`, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error(`Failed to export DOCX (${res.status})`);
+    const blob = await res.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = `Ticket_${ticketId}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
+  } catch (err) {
+    console.error("apiExportTicketDOCX error:", err);
+    alert(err.message || "Failed to download DOCX.");
+  }
+}
+
+export async function apiExportCalendar() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/calendar/export.ics`, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error(`Failed to export calendar (${res.status})`);
+    const blob = await res.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = "TicketGenie_Leave_Calendar.ics";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
+  } catch (err) {
+    console.error("apiExportCalendar error:", err);
+    alert(err.message || "Failed to download iCal calendar.");
+  }
 }
 
 /** ==================== KNOWLEDGE BASE API ==================== */
@@ -170,20 +246,32 @@ export async function apiCreateDepartment(name, queueName, description = "") {
 
 /** ==================== AI GENIE AGENT API ==================== */
 
-export async function apiGenieChat(message) {
+export async function apiGenieChat(message, state = {}) {
   try {
+    const payload = {
+      message,
+      role: state.role || "Employee",
+      history: state.history || [],
+      draft: state.draft || null,
+      active_intent: state.active_intent || state.activeIntent || null,
+      active_request_type: state.active_request_type || state.activeRequestType || null
+    };
+
     const res = await fetch("/api/chatbot/message", {
       method: "POST",
       headers: getAuthHeaders(),
-      body: JSON.stringify({ message })
+      body: JSON.stringify(payload)
     });
     if (res.ok) {
       const data = await res.json();
       return {
         reply: data.message || "I am Genie, your AI helpdesk assistant.",
+        message: data.message || "I am Genie, your AI helpdesk assistant.",
         suggestions: data.suggestions || ["Ask a question", "Help me create a ticket", "Check my ticket status"],
         action: data.action || null,
         ticket_draft: data.ticket_draft || null,
+        request_type: data.request_type || null,
+        missing_fields: data.missing_fields || [],
         ready_for_review: data.ready_for_review || false,
         intent: data.intent || null
       };
@@ -202,9 +290,12 @@ export async function apiGenieChat(message) {
       const data = await res.json();
       return {
         reply: data.reply || data.message || "I am Genie, your AI helpdesk assistant.",
+        message: data.reply || data.message || "I am Genie, your AI helpdesk assistant.",
         suggestions: data.suggestions || ["Check my tickets", "IT Help"],
         action: data.action || null,
         ticket_draft: data.ticket_draft || null,
+        request_type: data.request_type || null,
+        missing_fields: data.missing_fields || [],
         ready_for_review: data.ready_for_review || false,
         intent: data.intent || null
       };
@@ -215,9 +306,12 @@ export async function apiGenieChat(message) {
 
   return {
     reply: "I am Genie, your AI support agent. I can assist you with ticket status, IT troubleshooting, and corporate policies.",
+    message: "I am Genie, your AI support agent. I can assist you with ticket status, IT troubleshooting, and corporate policies.",
     suggestions: ["Check my tickets", "IT Help", "Time Off Policy"],
     action: null,
     ticket_draft: null,
+    request_type: null,
+    missing_fields: [],
     ready_for_review: false,
     intent: null
   };

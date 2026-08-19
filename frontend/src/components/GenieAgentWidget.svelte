@@ -7,6 +7,13 @@
   let userMessage = '';
   let isSending = false;
 
+  let history = [];
+  let draft = null;
+  let activeIntent = null;
+  let activeRequestType = null;
+
+  const GENIE_DRAFTING_INTENTS = ['create_ticket', 'support_issue', 'leave_management'];
+
   let messages = [
     {
       sender: 'Genie AI',
@@ -31,7 +38,29 @@
     isSending = true;
 
     try {
-      const res = await apiGenieChat(text);
+      const state = {
+        role: $userStore?.role || 'Employee',
+        history,
+        draft,
+        active_intent: activeIntent,
+        active_request_type: activeRequestType
+      };
+
+      const res = await apiGenieChat(text, state);
+
+      // Advance chat turn history
+      history = [
+        ...history,
+        { role: 'user', message: text },
+        { role: 'assistant', message: res.reply || res.message || '' }
+      ];
+
+      // Update active drafting state
+      const stillDrafting = res.intent && GENIE_DRAFTING_INTENTS.includes(res.intent) && !res.ready_for_review;
+      activeIntent = stillDrafting ? res.intent : null;
+      activeRequestType = stillDrafting ? res.request_type : null;
+      draft = stillDrafting ? (res.ticket_draft || null) : null;
+
       messages = [
         ...messages,
         { sender: 'Genie AI', isBot: true, text: res.reply || 'Request triaged successfully.' }
@@ -56,12 +85,14 @@
         }
       }
 
-      // 2. Automatic Ticket Autofill Handling
+      // 2. Automatic Ticket Autofill & Review Handling
       if (res.ticket_draft || res.ready_for_review) {
         if (res.ticket_draft) {
           genieDraftStore.set(res.ticket_draft);
         }
-        $activeTab = 'create-ticket';
+        if (res.ready_for_review) {
+          $activeTab = 'create-ticket';
+        }
       }
     } catch (err) {
       messages = [

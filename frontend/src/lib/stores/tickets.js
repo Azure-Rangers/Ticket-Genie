@@ -18,7 +18,7 @@ export const filteredTickets = derived(
   ([$tickets, $search, $status, $priority, $tab, $user]) => {
     const isEmployeeView = $tab === 'dashboard' || $tab === 'my-tickets';
     const userEmail = ($user?.email || '').toLowerCase().trim();
-    const userOid = ($user?.azure_object_id || $user?.oid || '').toLowerCase().trim();
+    const userOid = ($user?.objectId || $user?.azure_object_id || $user?.oid || '').toLowerCase().trim();
     const userName = ($user?.name || '').toLowerCase().trim();
 
     return $tickets.filter((t) => {
@@ -27,8 +27,11 @@ export const filteredTickets = derived(
         const reqId = (t.requester_id || t.user_id || '').toLowerCase().trim();
         const reqName = (t.requester || '').toLowerCase().trim();
         const matchesUser = 
+          !reqId ||
+          t.is_anonymous ||
           (userOid && reqId === userOid) || 
           (userEmail && reqId === userEmail) || 
+          (userEmail && reqId.includes(userEmail)) ||
           (userEmail && reqName.includes(userEmail)) ||
           (userName && reqName.includes(userName));
         
@@ -126,6 +129,6 @@ export async function changeTicketStatus(ticketId, newStatus) {
     tickets.update(all => all.map(t => t.id === ticketId ? { ...t, status: newStatus } : t));
   } catch (err) {
     console.error("changeTicketStatus failed:", err);
-    tickets.update(all => all.map(t => t.id === ticketId ? { ...t, status: newStatus } : t));
+    throw err;
   }
 }

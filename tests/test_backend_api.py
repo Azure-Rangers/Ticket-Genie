@@ -93,9 +93,20 @@ def test_create_and_get_ticket(monkeypatch) -> None:
     assert ticket["category"] == "Identity and Access Management"
     assert ticket["priority"] == "High"
 
-    # Verify UPDATE.
+    # Verify creator CANNOT set status to Resolved (403 Forbidden).
+    creator_resolve_res = client.put(
+        f"/api/tickets/{ticket_id}",
+        json={"status": "Resolved"},
+    )
+    assert creator_resolve_res.status_code == 403
+    assert (
+        creator_resolve_res.json()["detail"]
+        == "You cannot resolve tickets you created."
+    )
+
+    # Verify creator CAN update other fields (e.g. status to "In Progress" and priority to "Low").
     update_payload = {
-        "status": "Resolved",
+        "status": "In Progress",
         "priority": "Low",
     }
 
@@ -105,12 +116,21 @@ def test_create_and_get_ticket(monkeypatch) -> None:
     )
 
     assert update_res.status_code == 200
-
     updated = update_res.json()
 
     assert updated["id"] == ticket_id
-    assert updated["status"] == "Resolved"
+    assert updated["status"] == "In Progress"
     assert updated["priority"] == "Low"
+
+    # Verify a different user (support agent) CAN resolve the ticket.
+    support_token = "Bearer eyJhbGciOiAiUlMyNTYiLCAidHlwIjogIkpXVCJ9.eyJvaWQiOiAiOTk5OTk5OTktOTI4MC00MGRjLThkNzMtOThiZmQ4MWZkZDZhIiwgImVtYWlsIjogInN1cHBvcnRAY29tcGFueS5jb20iLCAibmFtZSI6ICJTdXBwb3J0IEFnZW50IiwgInJvbGUiOiAiSVQgQWRtaW4iLCAiZXhwIjogMjUzNDAyMzAwNzk5fQ.mock"
+    support_res = client.put(
+        f"/api/tickets/{ticket_id}",
+        json={"status": "Resolved"},
+        headers={"Authorization": support_token},
+    )
+    assert support_res.status_code == 200
+    assert support_res.json()["status"] == "Resolved"
 
 
 def test_list_tickets() -> None:

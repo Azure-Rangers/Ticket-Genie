@@ -183,6 +183,20 @@ export async function loginWithAzureAD() {
   return await loginAs('Employee');
 }
 
+function makeValidJwt(oid, email, name, role) {
+  const header = { alg: "RS256", typ: "JWT" };
+  const payload = {
+    oid: oid,
+    email: email,
+    name: name,
+    role: role,
+    exp: 253402300799
+  };
+  const b64Header = btoa(JSON.stringify(header)).replace(/=/g, "");
+  const b64Payload = btoa(JSON.stringify(payload)).replace(/=/g, "");
+  return `${b64Header}.${b64Payload}.mock_sig`;
+}
+
 /**
  * Perform login / workspace selection with role exchange
  */
@@ -207,6 +221,8 @@ export async function loginAs(roleType) {
     objectId = 'usr-sup-003';
   }
 
+  const validToken = makeValidJwt(objectId, email, name, role);
+
   try {
     console.log(`🔑 [Auth Check] Authenticating account via /api/users/azure-login. Azure Object ID: ${objectId}`);
     const res = await fetch("/api/users/azure-login", {
@@ -216,7 +232,7 @@ export async function loginAs(roleType) {
         azure_object_id: objectId,
         email: email,
         name: name,
-        id_token: "mock-valid-id-token"
+        id_token: validToken
       })
     });
     if (res.ok) {
@@ -230,10 +246,12 @@ export async function loginAs(roleType) {
 
   const userObj = {
     objectId: objectId,
+    azure_object_id: objectId,
+    oid: objectId,
     email: email,
     name: name,
     role: role,
-    idToken: "mock-valid-id-token",
+    idToken: validToken,
     timestamp: new Date().toISOString()
   };
 
