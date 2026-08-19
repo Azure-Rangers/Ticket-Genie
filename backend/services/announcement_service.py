@@ -1,33 +1,50 @@
-"""Announcement AI Severity Classification and Management Service for TicketGenie."""
+"""Announcement AI Severity Classification Service for TicketGenie."""
 
 from __future__ import annotations
 
-import json
 import logging
-import os
-import re
 from typing import Optional
 
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from database.crud import get_announcements
+from services.ai_service import ai_service
 
 logger = logging.getLogger(__name__)
 
-SEVERITY_METADATA = {
+
+class AnnouncementSeverityDecision(BaseModel):
+    severity: str = Field(
+        default="Medium",
+        description="One of: Critical, High, Medium, Low",
+    )
+    reason: str = Field(
+        default="",
+        description="Brief explanation of why this announcement is important for this role",
+    )
+
+
+SEVERITY_MAPPING = {
     "critical": {
         "level": "critical",
         "label": "CRITICAL ALERT",
         "color_class": "severity-critical",
         "icon": "ph-warning-octagon",
     },
-    "warning": {
+    "high": {
+        "level": "critical",
+        "label": "HIGH PRIORITY",
+        "color_class": "severity-critical",
+        "icon": "ph-warning-octagon",
+    },
+    "medium": {
         "level": "warning",
         "label": "SYSTEM NOTICE",
         "color_class": "severity-warning",
         "icon": "ph-warning",
     },
-    "info": {
+    "low": {
         "level": "info",
         "label": "ANNOUNCEMENT",
         "color_class": "severity-info",
@@ -35,150 +52,76 @@ SEVERITY_METADATA = {
     },
 }
 
-CRITICAL_KEYWORDS = {
-    "critical",
-    "emergency",
-    "outage",
-    "security",
-    "vulnerability",
-    "incident",
-    "breach",
-    "ransomware",
-    "sev-1",
-    "p0",
-    "down",
-    "compromised",
-    "attack",
-    "zero-day",
-}
 
-WARNING_KEYWORDS = {
-    "maintenance",
-    "warning",
-    "system alert",
-    "downtime",
-    "interruption",
-    "scheduled",
-    "upgrade",
-    "patch",
-    "degradation",
-    "reboot",
-    "advisory",
-    "temporary",
-}
-
-
-def _classify_severity_heuristically(
-    title: str,
-    content: str,
-    category: str = "",
-) -> dict:
-    """Deterministic NLP heuristic fallback for announcement severity classification."""
+def _heuristic_fallback(title: str, content: str, category: str) -> str:
     combined = f"{category} {title} {content}".lower()
-    words = set(re.findall(r"[a-z0-9\-]+", combined))
-
-    if words & CRITICAL_KEYWORDS or any(kw in combined for kw in ["system down", "major outage", "security alert"]):
-        meta = SEVERITY_METADATA["critical"]
-        return {
-            **meta,
-            "confidence": 0.95,
-            "reason": "Identified critical operational, security, or outage indicators.",
-        }
-
-    if words & WARNING_KEYWORDS or any(kw in combined for kw in ["system maintenance", "scheduled downtime"]):
-        meta = SEVERITY_METADATA["warning"]
-        return {
-            **meta,
-            "confidence": 0.90,
-            "reason": "Identified scheduled maintenance, downtime, or operational advisory indicators.",
-        }
-
-    meta = SEVERITY_METADATA["info"]
-    return {
-        **meta,
-        "confidence": 0.85,
-        "reason": "Standard informational announcement or company update.",
-    }
+    if any(k in combined for k in ["critical", "emergency", "outage", "security", "breach", "incident", "down", "ransomware", "p0", "sev-1"]):
+        return "Critical"
+    if any(k in combined for k in ["maintenance", "warning", "system alert", "downtime", "interruption", "patch", "upgrade", "degradation"]):
+        return "Medium"
+    return "Low"
 
 
 def classify_announcement_severity(
     title: str,
     content: str,
     category: Optional[str] = "General Alert",
+    role: str = "Employee",
 ) -> dict:
-    """Classify the severity level of an announcement using Azure OpenAI or heuristic fallback."""
+    """Classify how important an announcement is using the AI model from the perspective of a company employee role."""
     category_str = category or "General Alert"
+    role_str = role or "Employee"
 
-    # Fast heuristic check or fallback
-    use_mock = os.getenv("USE_MOCK_AI", "false").lower() == "true"
-    endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-    api_key = os.getenv("AZURE_OPENAI_API_KEY")
+    system_prompt = (
+        f'You are an Employee working at a company with role "{role_str}" '
+        f"and you are looking at an announcement."
+    )
 
-    if use_mock or not endpoint or not api_key:
-        return _classify_severity_heuristically(title, content, category_str)
+    user_content = f"""Tell me how important this announcement is in the following options:
+Critical
+High
+Medium
+Low
 
-    try:
-        import requests
-
-        deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-5.2")
-        api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-08-01-preview")
-        url = f"{endpoint.rstrip('/')}/openai/deployments/{deployment}/chat/completions?api-version={api_version}"
-
-        prompt = f"""You are an enterprise system alert classifier.
-Classify the following company announcement into one of three severity levels:
-- "critical": For emergency outages, security breaches, active incidents, or major system failures.
-- "warning": For scheduled maintenance, planned downtime, patches, or system degradation notices.
-- "info": For general announcements, policy updates, company news, and informational bulletins.
-
-Return ONLY a JSON object with:
-{{
-  "level": "critical" | "warning" | "info",
-  "reason": "<one sentence explanation>",
-  "confidence": <float between 0.0 and 1.0>
-}}
-
-Category: {category_str}
+Announcement:
 Title: {title}
+Category: {category_str}
 Content: {content}
 """
-        response = requests.post(
-            url,
-            headers={
-                "api-key": api_key,
-                "Content-Type": "application/json",
-            },
-            json={
-                "messages": [
-                    {"role": "system", "content": "You are a concise enterprise announcement classifier."},
-                    {"role": "user", "content": prompt},
-                ],
-                "temperature": 0.0,
-                "response_format": {"type": "json_object"},
-            },
-            timeout=5,
+
+    severity_choice = "Medium"
+    reason = ""
+
+    try:
+        decision: AnnouncementSeverityDecision = ai_service.generate(
+            system_prompt=system_prompt,
+            user_content=user_content,
+            response_model=AnnouncementSeverityDecision,
         )
-
-        if response.status_code == 200:
-            result = response.json()
-            raw_text = result["choices"][0]["message"]["content"]
-            parsed = json.loads(raw_text)
-            level = (parsed.get("level") or "info").lower().strip()
-            if level not in SEVERITY_METADATA:
-                level = "info"
-            meta = SEVERITY_METADATA[level]
-            return {
-                **meta,
-                "confidence": float(parsed.get("confidence", 0.9)),
-                "reason": str(parsed.get("reason", "")),
-            }
+        if decision and decision.severity:
+            severity_choice = decision.severity.strip()
+            reason = decision.reason
     except Exception as exc:
-        logger.warning(f"Azure OpenAI announcement classification failed, using fallback: {exc}")
+        logger.info(f"AI severity generation falling back to role-aware heuristic: {exc}")
+        severity_choice = _heuristic_fallback(title, content, category_str)
+        reason = "Classified based on announcement operational scope."
 
-    return _classify_severity_heuristically(title, content, category_str)
+    normalized_choice = severity_choice.lower()
+    meta = SEVERITY_MAPPING.get(normalized_choice, SEVERITY_MAPPING["medium"])
+
+    return {
+        **meta,
+        "raw_severity": severity_choice,
+        "role": role_str,
+        "reason": reason,
+    }
 
 
-def get_latest_announcement_with_severity(db: Optional[Session] = None) -> dict:
-    """Retrieve the most recent announcement and its AI-computed severity metadata."""
+def get_latest_announcement_with_severity(
+    role: str = "Employee",
+    db: Optional[Session] = None,
+) -> dict:
+    """Retrieve the most recent announcement and its AI-computed severity for the current user's role."""
     announcements = get_announcements(db=db)
     if not announcements:
         return {"announcement": None, "severity": None}
@@ -188,6 +131,7 @@ def get_latest_announcement_with_severity(db: Optional[Session] = None) -> dict:
         title=latest.get("title", ""),
         content=latest.get("content", ""),
         category=latest.get("category", ""),
+        role=role,
     )
 
     return {

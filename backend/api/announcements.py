@@ -58,7 +58,8 @@ def list_announcements(current_user: dict = Depends(verify_azure_user)):
 @router.get("/latest")
 def get_latest_announcement(current_user: dict = Depends(verify_azure_user)):
     """Retrieve the most recent announcement with AI-evaluated severity metadata."""
-    return get_latest_announcement_with_severity()
+    user_role = current_user.get("role") or "Employee"
+    return get_latest_announcement_with_severity(role=user_role)
 
 
 @router.post("/severity")
@@ -67,10 +68,12 @@ def evaluate_announcement_severity(
     current_user: dict = Depends(verify_azure_user),
 ):
     """Classify the severity of an announcement via AI backend method."""
+    user_role = current_user.get("role") or "Employee"
     return classify_announcement_severity(
         title=req.title,
         content=req.content,
         category=req.category,
+        role=user_role,
     )
 
 
