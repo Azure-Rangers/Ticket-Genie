@@ -28,7 +28,6 @@ STOP_WORDS = {
     "have",
     "help",
     "into",
-    "issue",
     "just",
     "need",
     "not",
@@ -63,6 +62,8 @@ TERM_ALIASES = {
     "reimbursement": "expense",
     "reimbursements": "expense",
     "maintaining": "maintenance",
+    "issues": "issue",
+    "problems": "issue",
 }
 
 INCIDENT_TERMS = {
@@ -71,6 +72,7 @@ INCIDENT_TERMS = {
     "disruption",
     "down",
     "incident",
+    "issue",
     "maintenance",
     "outage",
     "scheduled",

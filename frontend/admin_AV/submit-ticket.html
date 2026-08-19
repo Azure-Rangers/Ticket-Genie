@@ -68,6 +68,15 @@
     .btn-cancel:hover { background: #f3f4f6; box-shadow: 0 0 0 4px rgba(107, 114, 128, 0.15); }
     .btn-submit { padding: 10px 24px; background: #2b1b38; border: none; border-radius: 6px; color: white; font-weight: 500; cursor: pointer; transition: 0.2s; }
     .btn-submit:hover { background: #4f46e5; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2); }
+    .announcement-warning { display: none; grid-column: span 2; padding: 16px; border: 1px solid #f59e0b; border-left: 4px solid #f59e0b; border-radius: 8px; background: #fffbeb; color: #78350f; gap: 12px; align-items: flex-start; }
+    .announcement-warning.show { display: flex; }
+    .announcement-warning > i { color: #d97706; font-size: 1.35rem; margin-top: 2px; }
+    .announcement-warning p { margin: 5px 0; font-weight: 600; }
+    .announcement-warning span { display: block; color: #92400e; font-size: 0.85rem; line-height: 1.45; }
+    .announcement-actions { display: flex; gap: 10px; margin-top: 12px; }
+    .announcement-actions button, .announcement-actions a { border: 0; border-radius: 6px; padding: 8px 12px; font-size: 0.8rem; font-weight: 600; cursor: pointer; text-decoration: none; }
+    .announcement-actions a { background: #fef3c7; color: #92400e; }
+    .announcement-actions button { background: #d97706; color: white; }
     
     .success-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(253, 253, 253, 0.95); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 1000; }
     .success-overlay h2 { color: #111827; font-size: 2rem; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;}
@@ -176,6 +185,18 @@
             <select id="priority" required><option>Low</option><option selected>Medium</option><option>High</option></select>
           </div>
           <div class="input-group full-width"><label>Detailed Description</label><textarea id="ticketDesc" required></textarea></div>
+          <div class="announcement-warning" id="announcementWarning" role="status" aria-live="polite">
+            <i class="ph-fill ph-warning-circle"></i>
+            <div>
+              <strong>This issue may already be addressed</strong>
+              <p id="matchedAnnouncementTitle"></p>
+              <span id="matchedAnnouncementContent"></span>
+              <div class="announcement-actions">
+                <a href="announcements.html">View announcement</a>
+                <button type="button" id="submitAnywayButton">Submit anyway</button>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="btn-row">
           <button type="button" class="btn-cancel" onclick="window.location.href='admin_dashboard.html'">Cancel</button>
@@ -235,7 +256,23 @@
     } else { window.location.href = '../index.html'; }
 
     let isSubmittingAdminTicket = false;
-    document.getElementById('ticketForm').addEventListener('submit', async function(e) {
+    let bypassAnnouncementCheck = false;
+    const ticketForm = document.getElementById('ticketForm');
+    const announcementWarning = document.getElementById('announcementWarning');
+
+    function clearAnnouncementWarning() {
+      announcementWarning.classList.remove('show');
+      bypassAnnouncementCheck = false;
+    }
+
+    document.getElementById('ticketTitle').addEventListener('input', clearAnnouncementWarning);
+    document.getElementById('ticketDesc').addEventListener('input', clearAnnouncementWarning);
+    document.getElementById('submitAnywayButton').addEventListener('click', () => {
+      bypassAnnouncementCheck = true;
+      ticketForm.requestSubmit();
+    });
+
+    ticketForm.addEventListener('submit', async function(e) {
       e.preventDefault();
       if (isSubmittingAdminTicket) return;
 
@@ -254,6 +291,24 @@
       if (submitBtn) submitBtn.disabled = true;
 
       try {
+        if (!bypassAnnouncementCheck) {
+          try {
+            const match = await apiCheckAnnouncementMatch(title, description);
+            if (match.matched) {
+              document.getElementById('matchedAnnouncementTitle').textContent = `“${match.announcement.title}”`;
+              document.getElementById('matchedAnnouncementContent').textContent = match.announcement.content;
+              announcementWarning.classList.add('show');
+              isSubmittingAdminTicket = false;
+              if (submitBtn) submitBtn.disabled = false;
+              return;
+            }
+          } catch (matchError) {
+            console.warn('Announcement check unavailable:', matchError.message);
+          }
+        }
+
+        bypassAnnouncementCheck = false;
+        announcementWarning.classList.remove('show');
         const createFn = window.apiCreateTicket || (async () => null);
         const newTicket = await createFn({
           category,

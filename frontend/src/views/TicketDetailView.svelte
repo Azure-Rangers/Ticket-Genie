@@ -10,6 +10,9 @@
   let replyMessage = '';
   let sendingReply = false;
   let generatingAiResponse = false;
+  let aiSuggestedActions = [];
+  let aiSafetyNoticeRequired = false;
+  let showingAiGuidance = false;
   let targetTransferDept = '';
   let transferring = false;
   let assigning = false;
@@ -90,10 +93,14 @@
   async function handleAutoGenerateResponse() {
     if (!ticket || !ticket.id) return;
     generatingAiResponse = true;
+    showingAiGuidance = false;
     try {
       const res = await apiSuggestResponse(ticket.id);
       if (res && (res.message || res.suggested_response || res.reply)) {
         replyMessage = res.message || res.suggested_response || res.reply;
+        aiSuggestedActions = Array.isArray(res.suggested_actions) ? res.suggested_actions : [];
+        aiSafetyNoticeRequired = Boolean(res.safety_notice_required);
+        showingAiGuidance = true;
       }
     } catch (err) {
       console.error("Failed to generate AI response:", err);
@@ -203,6 +210,9 @@
     try {
       const createdComment = await apiPostComment(ticket.id, text);
       replyMessage = '';
+      aiSuggestedActions = [];
+      aiSafetyNoticeRequired = false;
+      showingAiGuidance = false;
       if (createdComment && createdComment.id) {
         comments = [...comments, createdComment];
       } else {
@@ -479,6 +489,30 @@
             on:keydown={handleKeydown}
             rows="4"
           ></textarea>
+          {#if showingAiGuidance}
+            <div class="ai-guidance" role="status">
+              <div class="ai-guidance-heading">
+                <i class="ph-fill ph-sparkle"></i>
+                <strong>AI-generated draft — review before sending</strong>
+              </div>
+              {#if aiSuggestedActions.length > 0}
+                <div class="ai-next-steps">
+                  <strong>What to do next</strong>
+                  <ul>
+                    {#each aiSuggestedActions as action}
+                      <li>{action}</li>
+                    {/each}
+                  </ul>
+                </div>
+              {/if}
+              {#if aiSafetyNoticeRequired}
+                <div class="ai-safety-notice">
+                  <i class="ph-bold ph-warning-circle"></i>
+                  <span><strong>Sensitive case:</strong> verify the wording and any escalation requirements before sending.</span>
+                </div>
+              {/if}
+            </div>
+          {/if}
           <div class="reply-actions">
             <button class="btn-send" on:click={handleSendReply} disabled={sendingReply || !replyMessage.trim()}>
               {#if sendingReply}
@@ -524,6 +558,47 @@
     align-items: center;
     gap: 8px;
     transition: all 0.15s;
+  }
+
+  .ai-guidance {
+    margin-top: 10px;
+    padding: 14px 16px;
+    border: 1px solid #ddd6fe;
+    border-left: 4px solid #7c3aed;
+    border-radius: 10px;
+    background: #f5f3ff;
+    color: #4c1d95;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  .ai-guidance-heading {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .ai-next-steps {
+    margin-top: 10px;
+  }
+
+  .ai-next-steps ul {
+    margin: 6px 0 0 20px;
+    padding: 0;
+  }
+
+  .ai-next-steps li + li {
+    margin-top: 4px;
+  }
+
+  .ai-safety-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #ddd6fe;
+    color: #9f1239;
   }
 
   .btn-back:hover {
@@ -809,8 +884,8 @@
     width: 100%;
     border: 1.5px solid #d1d5db;
     border-radius: 8px;
-    min-height: 110px;
-    padding: 14px;
+    min-height: 155px;
+    padding: 16px;
     font-size: 0.9rem;
     line-height: 1.5;
     outline: none;

@@ -110,6 +110,20 @@ async function apiCreateTicket(ticketPayload) {
     return await res.json();
 }
 
+async function apiCheckAnnouncementMatch(title, description = "") {
+    const res = await fetch(`${API_BASE_URL}/announcements/match`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description })
+    });
+
+    if (!res.ok) {
+        throw new Error(`Announcement check failed (HTTP ${res.status})`);
+    }
+
+    return await res.json();
+}
+
 async function apiUpdateTicket(ticketId, ticketUpdate) {
     try {
         const res = await fetch(`${API_BASE_URL}/tickets/${ticketId}`, {

@@ -11,6 +11,7 @@ from agents.response_agent import EmployeeResponse, draft_response
 ROOT = Path(__file__).resolve().parents[1]
 INBOX = (ROOT / "frontend" / "admin_AV" / "inbox.html").read_text(encoding="utf-8")
 API_JS = (ROOT / "frontend" / "js" / "api.js").read_text(encoding="utf-8")
+TICKET_DETAIL = (ROOT / "frontend" / "src" / "views" / "TicketDetailView.svelte").read_text(encoding="utf-8")
 
 
 class FakeAIService:
@@ -40,6 +41,9 @@ def test_response_agent_uses_ticket_and_existing_conversation():
     assert result.safety_notice_required is True
     assert "I am available tomorrow" in ai.call[1]
     assert "Do not claim an action was completed" in ai.call[0]
+    assert "2-4 short, actionable bullet fragments" in ai.call[0]
+    assert "12 words or fewer" in ai.call[0]
+    assert "Do not include paragraphs" in ai.call[0]
 
 
 def test_hr_suggestion_endpoint_excludes_private_notes():
@@ -102,3 +106,11 @@ def test_hr_ui_fills_draft_but_never_auto_sends():
     assert "sendReply(" not in suggest_region
     assert "AI-generated draft" in suggest_region
     assert "../js/api.js?v=20260818_4" in INBOX
+
+
+def test_current_admin_ui_renders_ai_next_steps_and_safety_notice():
+    assert "res.suggested_actions" in TICKET_DETAIL
+    assert "What to do next" in TICKET_DETAIL
+    assert "aiSuggestedActions as action" in TICKET_DETAIL
+    assert "res.safety_notice_required" in TICKET_DETAIL
+    assert "Sensitive case:" in TICKET_DETAIL

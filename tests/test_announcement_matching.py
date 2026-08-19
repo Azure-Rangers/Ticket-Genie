@@ -57,3 +57,22 @@ def test_generic_single_word_does_not_trigger_false_positive():
     )
 
     assert result is None
+
+
+def test_matches_wifi_ticket_to_announcement_describing_issues():
+    result = find_matching_announcement(
+        "Difficulty connecting to wifi",
+        "I cannot get online from the office.",
+        [
+            {
+                "id": "anc-wifi",
+                "title": "Office wide wifi issues",
+                "content": "The technology team is investigating.",
+                "category": "IT System Update",
+            }
+        ],
+    )
+
+    assert result is not None
+    assert result["announcement"]["id"] == "anc-wifi"
+    assert "wifi" in result["matched_terms"]
