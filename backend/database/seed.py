@@ -156,7 +156,9 @@ def seed_initial_data(db: Optional[Session] = None) -> None:
             session.merge(ticket_obj)
 
         session.commit()
-        print("✅ Executed database seed: Core departments, RBAC users, profiles, and tickets populated.")
+        print(
+            "✅ Executed database seed: Core departments, RBAC users, profiles, and tickets populated."
+        )
 
         # 5. Optionally execute external SQL file if present and readable
         if SEED_SQL_FILE.exists():
@@ -189,7 +191,9 @@ def _execute_sql_file(file_path: Path) -> None:
                         conn.execute(text(stmt))
                     except Exception as stmt_err:
                         # Log and continue so non-portable optional statements don't crash startup
-                        logger.debug(f"Non-critical SQL seed statement note: {stmt_err}")
+                        logger.debug(
+                            f"Non-critical SQL seed statement note: {stmt_err}"
+                        )
             conn.commit()
     except Exception as e:
         logger.debug(f"Note executing optional SQL seed file {file_path.name}: {e}")

@@ -75,7 +75,7 @@ def handle_update_profile(
 def get_upper_management_users(
     current_user: dict = Depends(verify_azure_user),
 ):
-    from sqlalchemy import func, or_
+    from sqlalchemy import func
 
     from database.connection import SessionLocal
     from database.models_db import DepartmentUserDB, UserProfileDB
@@ -86,9 +86,7 @@ def get_upper_management_users(
     with SessionLocal() as session:
         dept_users = (
             session.query(DepartmentUserDB)
-            .filter(
-                func.lower(DepartmentUserDB.department_name).contains("upper")
-            )
+            .filter(func.lower(DepartmentUserDB.department_name).contains("upper"))
             .all()
         )
         for du in dept_users:
@@ -105,17 +103,20 @@ def get_upper_management_users(
             if not profile and du.user_email:
                 profile = (
                     session.query(UserProfileDB)
-                    .filter(
-                        func.lower(UserProfileDB.email)
-                        == du.user_email.lower()
-                    )
+                    .filter(func.lower(UserProfileDB.email) == du.user_email.lower())
                     .first()
                 )
 
             name = (
                 profile.name
-                if profile and profile.name and profile.name not in ["Admin1", "Employee1", "Azure User", "User"]
-                else (du.user_email.split("@")[0] if du.user_email else "Upper Management Admin")
+                if profile
+                and profile.name
+                and profile.name not in ["Admin1", "Employee1", "Azure User", "User"]
+                else (
+                    du.user_email.split("@")[0]
+                    if du.user_email
+                    else "Upper Management Admin"
+                )
             )
             role = du.role or (profile.role if profile else "Super Admin")
             email = du.user_email or (profile.email if profile else None)

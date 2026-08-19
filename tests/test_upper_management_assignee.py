@@ -22,12 +22,17 @@ def test_get_upper_management_users() -> None:
     for u in data:
         dept = u.get("department", "")
         role = u.get("role", "")
-        assert "upper" in dept.lower() or "management" in dept.lower() or "operations" in dept.lower()
+        assert (
+            "upper" in dept.lower()
+            or "management" in dept.lower()
+            or "operations" in dept.lower()
+        )
         assert role != "Employee"
 
 
 def test_non_upper_management_users_excluded() -> None:
     from database.crud import update_user_profile
+
     # Create or update non-upper management profiles
     update_user_profile(
         user_id="usr-test-it-emp",
