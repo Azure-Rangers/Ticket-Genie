@@ -233,8 +233,9 @@ class TestCreatorTicketResolutionRestriction(unittest.TestCase):
 
     def test_creator_cannot_resolve_own_ticket(self):
         from fastapi import HTTPException
-        from models.ticket import TicketUpdate
+
         from api.tickets import handle_update_ticket
+        from models.ticket import TicketUpdate
 
         mock_ticket = {
             "id": "HD-101",
@@ -269,8 +270,9 @@ class TestCreatorTicketResolutionRestriction(unittest.TestCase):
 
     def test_creator_cannot_close_own_ticket(self):
         from fastapi import HTTPException
-        from models.ticket import TicketUpdate
+
         from api.tickets import handle_update_ticket
+        from models.ticket import TicketUpdate
 
         mock_ticket = {
             "id": "HD-102",
@@ -301,8 +303,8 @@ class TestCreatorTicketResolutionRestriction(unittest.TestCase):
             self.assertEqual(ctx.exception.status_code, 403)
 
     def test_non_creator_can_resolve_ticket(self):
-        from models.ticket import TicketUpdate
         from api.tickets import handle_update_ticket
+        from models.ticket import TicketUpdate
 
         mock_ticket = {
             "id": "HD-103",
@@ -334,8 +336,8 @@ class TestCreatorTicketResolutionRestriction(unittest.TestCase):
                 self.assertEqual(res["status"], "Resolved")
 
     def test_creator_can_update_other_fields(self):
-        from models.ticket import TicketUpdate
         from api.tickets import handle_update_ticket
+        from models.ticket import TicketUpdate
 
         mock_ticket = {
             "id": "HD-104",
@@ -390,4 +392,3 @@ class TestCreatorTicketResolutionRestriction(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

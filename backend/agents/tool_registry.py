@@ -25,7 +25,9 @@ def sql_query_tool(query: str, role: str = "Super Admin", user_id: str = "user")
     return json.dumps(res, default=str)
 
 
-def update_ticket_tool(ticket_id: str, field: str, value: str, user_id: str = "user") -> str:
+def update_ticket_tool(
+    ticket_id: str, field: str, value: str, user_id: str = "user"
+) -> str:
     """Update a specific field (department, priority, status, queue) on a ticket.
 
     Authorization is enforced by the caller (execute_tool) before this is
@@ -55,9 +57,15 @@ def update_ticket_tool(ticket_id: str, field: str, value: str, user_id: str = "u
                 if req_id == uid:
                     is_creator = True
                 else:
-                    resolved_req = str(_resolve_user_email(req_id, None) or "").strip().lower()
-                    resolved_uid = str(_resolve_user_email(uid, None) or "").strip().lower()
-                    if resolved_req and (resolved_req == uid or resolved_req == resolved_uid):
+                    resolved_req = (
+                        str(_resolve_user_email(req_id, None) or "").strip().lower()
+                    )
+                    resolved_uid = (
+                        str(_resolve_user_email(uid, None) or "").strip().lower()
+                    )
+                    if resolved_req and (
+                        resolved_req == uid or resolved_req == resolved_uid
+                    ):
                         is_creator = True
             if is_creator:
                 return "Error: Forbidden. You cannot resolve tickets you created."

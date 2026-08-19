@@ -99,7 +99,10 @@ def test_create_and_get_ticket(monkeypatch) -> None:
         json={"status": "Resolved"},
     )
     assert creator_resolve_res.status_code == 403
-    assert creator_resolve_res.json()["detail"] == "You cannot resolve tickets you created."
+    assert (
+        creator_resolve_res.json()["detail"]
+        == "You cannot resolve tickets you created."
+    )
 
     # Verify creator CAN update other fields (e.g. status to "In Progress" and priority to "Low").
     update_payload = {
@@ -120,9 +123,7 @@ def test_create_and_get_ticket(monkeypatch) -> None:
     assert updated["priority"] == "Low"
 
     # Verify a different user (support agent) CAN resolve the ticket.
-    support_token = (
-        "Bearer eyJhbGciOiAiUlMyNTYiLCAidHlwIjogIkpXVCJ9.eyJvaWQiOiAiOTk5OTk5OTktOTI4MC00MGRjLThkNzMtOThiZmQ4MWZkZDZhIiwgImVtYWlsIjogInN1cHBvcnRAY29tcGFueS5jb20iLCAibmFtZSI6ICJTdXBwb3J0IEFnZW50IiwgInJvbGUiOiAiSVQgQWRtaW4iLCAiZXhwIjogMjUzNDAyMzAwNzk5fQ.mock"
-    )
+    support_token = "Bearer eyJhbGciOiAiUlMyNTYiLCAidHlwIjogIkpXVCJ9.eyJvaWQiOiAiOTk5OTk5OTktOTI4MC00MGRjLThkNzMtOThiZmQ4MWZkZDZhIiwgImVtYWlsIjogInN1cHBvcnRAY29tcGFueS5jb20iLCAibmFtZSI6ICJTdXBwb3J0IEFnZW50IiwgInJvbGUiOiAiSVQgQWRtaW4iLCAiZXhwIjogMjUzNDAyMzAwNzk5fQ.mock"
     support_res = client.put(
         f"/api/tickets/{ticket_id}",
         json={"status": "Resolved"},

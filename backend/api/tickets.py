@@ -141,9 +141,11 @@ def handle_update_ticket(
                 else:
                     from database.crud import _resolve_user_email
 
-                    resolved_email = str(
-                        _resolve_user_email(ticket_requester, db) or ""
-                    ).strip().lower()
+                    resolved_email = (
+                        str(_resolve_user_email(ticket_requester, db) or "")
+                        .strip()
+                        .lower()
+                    )
                     if current_user_email and resolved_email == current_user_email:
                         is_creator = True
 
@@ -160,7 +162,6 @@ def handle_update_ticket(
     )
 
     return updated
-
 
 
 # ---------------------------------------------------------------------------
