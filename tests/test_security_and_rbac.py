@@ -228,5 +228,166 @@ class TestSuperAdminRoleManagement(unittest.TestCase):
             self.assertEqual(len(tickets), 1)
 
 
+class TestCreatorTicketResolutionRestriction(unittest.TestCase):
+    """Test suite ensuring users cannot resolve tickets they created themselves."""
+
+    def test_creator_cannot_resolve_own_ticket(self):
+        from fastapi import HTTPException
+        from models.ticket import TicketUpdate
+        from api.tickets import handle_update_ticket
+
+        mock_ticket = {
+            "id": "HD-101",
+            "title": "My Laptop Is Slow",
+            "description": "Laptop running slowly after update.",
+            "status": "Open",
+            "requester_id": "usr-creator-123",
+            "category": "IT Support",
+            "priority": "Medium",
+            "department": "IT Team",
+            "date": "2026-08-18",
+            "createdAt": "2026-08-18T10:00:00",
+        }
+        current_user = {
+            "oid": "usr-creator-123",
+            "email": "creator@company.com",
+            "role": "Employee",
+        }
+
+        with patch("api.tickets.get_ticket_by_id", return_value=mock_ticket):
+            with self.assertRaises(HTTPException) as ctx:
+                handle_update_ticket(
+                    ticket_id="HD-101",
+                    ticket_update=TicketUpdate(status="Resolved"),
+                    db=MagicMock(),
+                    current_user=current_user,
+                )
+            self.assertEqual(ctx.exception.status_code, 403)
+            self.assertEqual(
+                ctx.exception.detail, "You cannot resolve tickets you created."
+            )
+
+    def test_creator_cannot_close_own_ticket(self):
+        from fastapi import HTTPException
+        from models.ticket import TicketUpdate
+        from api.tickets import handle_update_ticket
+
+        mock_ticket = {
+            "id": "HD-102",
+            "title": "Need Monitor",
+            "description": "Need a second monitor for setup.",
+            "status": "Open",
+            "requester_id": "usr-creator-123",
+            "category": "IT Support",
+            "priority": "Medium",
+            "department": "IT Team",
+            "date": "2026-08-18",
+            "createdAt": "2026-08-18T10:00:00",
+        }
+        current_user = {
+            "oid": "usr-creator-123",
+            "email": "creator@company.com",
+            "role": "Super Admin",
+        }
+
+        with patch("api.tickets.get_ticket_by_id", return_value=mock_ticket):
+            with self.assertRaises(HTTPException) as ctx:
+                handle_update_ticket(
+                    ticket_id="HD-102",
+                    ticket_update=TicketUpdate(status="Closed"),
+                    db=MagicMock(),
+                    current_user=current_user,
+                )
+            self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_non_creator_can_resolve_ticket(self):
+        from models.ticket import TicketUpdate
+        from api.tickets import handle_update_ticket
+
+        mock_ticket = {
+            "id": "HD-103",
+            "title": "VPN Setup Issue",
+            "description": "Cannot connect to VPN",
+            "status": "Open",
+            "requester_id": "usr-employee-456",
+            "category": "IT Support",
+            "priority": "Medium",
+            "department": "IT Team",
+            "date": "2026-08-18",
+            "createdAt": "2026-08-18T10:00:00",
+        }
+        current_user = {
+            "oid": "usr-support-789",
+            "email": "support@company.com",
+            "role": "IT Admin",
+        }
+
+        resolved_ticket = {**mock_ticket, "status": "Resolved"}
+        with patch("api.tickets.get_ticket_by_id", return_value=mock_ticket):
+            with patch("api.tickets.update_ticket", return_value=resolved_ticket):
+                res = handle_update_ticket(
+                    ticket_id="HD-103",
+                    ticket_update=TicketUpdate(status="Resolved"),
+                    db=MagicMock(),
+                    current_user=current_user,
+                )
+                self.assertEqual(res["status"], "Resolved")
+
+    def test_creator_can_update_other_fields(self):
+        from models.ticket import TicketUpdate
+        from api.tickets import handle_update_ticket
+
+        mock_ticket = {
+            "id": "HD-104",
+            "title": "Keyboard Key Stuck",
+            "description": "Letter A key is stuck",
+            "status": "Open",
+            "requester_id": "usr-creator-123",
+            "category": "IT Support",
+            "priority": "Low",
+            "department": "IT Team",
+            "date": "2026-08-18",
+            "createdAt": "2026-08-18T10:00:00",
+        }
+        current_user = {
+            "oid": "usr-creator-123",
+            "email": "creator@company.com",
+            "role": "Employee",
+        }
+
+        updated_ticket = {**mock_ticket, "priority": "High"}
+        with patch("api.tickets.get_ticket_by_id", return_value=mock_ticket):
+            with patch("api.tickets.update_ticket", return_value=updated_ticket):
+                res = handle_update_ticket(
+                    ticket_id="HD-104",
+                    ticket_update=TicketUpdate(priority="High"),
+                    db=MagicMock(),
+                    current_user=current_user,
+                )
+                self.assertEqual(res["priority"], "High")
+
+    def test_update_ticket_tool_blocks_creator_resolution(self):
+        from agents.tool_registry import update_ticket_tool
+
+        mock_ticket = {
+            "id": "HD-105",
+            "title": "Software Request",
+            "description": "Requesting Figma license",
+            "status": "Open",
+            "requester_id": "usr-creator-123",
+        }
+
+        with patch("database.crud.get_ticket_by_id", return_value=mock_ticket):
+            res = update_ticket_tool(
+                ticket_id="HD-105",
+                field="status",
+                value="Resolved",
+                user_id="usr-creator-123",
+            )
+            self.assertIn("Forbidden", res)
+            self.assertIn("You cannot resolve tickets you created", res)
+
+
 if __name__ == "__main__":
     unittest.main()
+

@@ -13,6 +13,14 @@
 
   let commentText = '';
   
+  $: currentOid = ($userStore?.objectId || $userStore?.azure_object_id || $userStore?.oid || '').toLowerCase().trim();
+  $: currentEmail = ($userStore?.email || '').toLowerCase().trim();
+  $: ticketReq = ($selectedTicket?.requester_id || $selectedTicket?.user_id || '').toLowerCase().trim();
+  $: isCreator = !!(ticketReq && (
+    (currentOid && ticketReq === currentOid) ||
+    (currentEmail && ticketReq === currentEmail)
+  ));
+
   $: activeComments = $selectedTicket?.comments || [
     {
       sender: $selectedTicket?.requester || 'Requester',
@@ -163,13 +171,15 @@
               >
                 In Progress
               </button>
-              <button 
-                class="btn-status resolve" 
-                class:active={$selectedTicket.status === 'Resolved'} 
-                on:click={() => handleStatusSelect('Resolved')}
-              >
-                Resolved
-              </button>
+              {#if !isCreator}
+                <button 
+                  class="btn-status resolve" 
+                  class:active={$selectedTicket.status === 'Resolved'} 
+                  on:click={() => handleStatusSelect('Resolved')}
+                >
+                  Resolved
+                </button>
+              {/if}
             </div>
           {/if}
 

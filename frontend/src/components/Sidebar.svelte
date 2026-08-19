@@ -21,7 +21,7 @@
   <div class="sidebar-top">
     <!-- Brand Header -->
     <div class="sidebar-header">
-      <div class="brand-cluster" on:click={() => $sidebarCollapsed && toggleSidebar()} role="button" tabindex="0">
+      <div class="brand-cluster" on:click={() => $sidebarCollapsed && toggleSidebar()} on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && $sidebarCollapsed && toggleSidebar()} role="button" tabindex="0">
         <div class="bot-icon" title={$sidebarCollapsed ? 'Click to expand sidebar' : ''}>
           <i class="ph-fill ph-ticket"></i>
         </div>

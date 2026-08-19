@@ -20,6 +20,14 @@
     createdAt: 'Auto-Triaged'
   } : null;
 
+  $: currentOid = ($userStore?.objectId || $userStore?.azure_object_id || $userStore?.oid || '').toLowerCase().trim();
+  $: currentEmail = ($userStore?.email || '').toLowerCase().trim();
+  $: ticketReq = (ticket?.requester_id || ticket?.user_id || '').toLowerCase().trim();
+  $: isCreator = !!(ticketReq && (
+    (currentOid && ticketReq === currentOid) ||
+    (currentEmail && ticketReq === currentEmail)
+  ));
+
   $: displayComments = systemAiMessage 
     ? [systemAiMessage, ...comments.filter(c => c.sender_role !== 'System')] 
     : comments;
@@ -189,13 +197,15 @@
             >
               In Progress
             </button>
-            <button 
-              class="btn-status resolve" 
-              class:active={ticket.status === 'Resolved'} 
-              on:click={() => handleStatusChange('Resolved')}
-            >
-              Resolved
-            </button>
+            {#if !isCreator}
+              <button 
+                class="btn-status resolve" 
+                class:active={ticket.status === 'Resolved'} 
+                on:click={() => handleStatusChange('Resolved')}
+              >
+                Resolved
+              </button>
+            {/if}
           </div>
         {/if}
       </div>

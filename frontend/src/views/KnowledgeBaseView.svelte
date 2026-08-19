@@ -162,8 +162,8 @@
 
 <!-- Add Policy Modal -->
 {#if isAddPolicyOpen}
-  <div class="modal-backdrop" on:click={() => isAddPolicyOpen = false}>
-    <div class="modal-card animate-fade" on:click|stopPropagation>
+  <div class="modal-backdrop" role="button" tabindex="0" on:click={(e) => e.target === e.currentTarget && (isAddPolicyOpen = false)} on:keydown={(e) => e.key === 'Escape' && (isAddPolicyOpen = false)}>
+    <div class="modal-card animate-fade">
       <div class="modal-header">
         <h2><i class="ph-duotone ph-file-plus"></i> Add Corporate Policy Article</h2>
         <button class="btn-close" on:click={() => isAddPolicyOpen = false}><i class="ph-bold ph-x"></i></button>
@@ -175,13 +175,13 @@
         {/if}
 
         <div class="form-group">
-          <label>Policy Title</label>
-          <input type="text" placeholder="e.g. Remote Work Security Guidelines" bind:value={newPolicyTitle} />
+          <label for="kb-policy-title">Policy Title</label>
+          <input id="kb-policy-title" type="text" placeholder="e.g. Remote Work Security Guidelines" bind:value={newPolicyTitle} />
         </div>
 
         <div class="form-group">
-          <label>Category</label>
-          <select bind:value={newPolicyCategory}>
+          <label for="kb-policy-category">Category</label>
+          <select id="kb-policy-category" bind:value={newPolicyCategory}>
             <option value="IT & Security">IT & Security</option>
             <option value="HR & Benefits">HR & Benefits</option>
             <option value="Hardware">Hardware</option>
@@ -190,8 +190,8 @@
         </div>
 
         <div class="form-group">
-          <label>Policy Content & Instructions</label>
-          <textarea rows="5" placeholder="Detailed policy text and resolution steps..." bind:value={newPolicyContent}></textarea>
+          <label for="kb-policy-content">Policy Content & Instructions</label>
+          <textarea id="kb-policy-content" rows="5" placeholder="Detailed policy text and resolution steps..." bind:value={newPolicyContent}></textarea>
         </div>
       </div>
 

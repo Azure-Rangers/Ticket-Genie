@@ -129,6 +129,6 @@ export async function changeTicketStatus(ticketId, newStatus) {
     tickets.update(all => all.map(t => t.id === ticketId ? { ...t, status: newStatus } : t));
   } catch (err) {
     console.error("changeTicketStatus failed:", err);
-    tickets.update(all => all.map(t => t.id === ticketId ? { ...t, status: newStatus } : t));
+    throw err;
   }
 }

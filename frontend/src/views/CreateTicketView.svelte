@@ -307,7 +307,7 @@
 
           <form on:submit|preventDefault={handleSubmitLeave} class="form-body">
             <div class="form-group">
-              <label>Assigned Department Queue</label>
+              <span class="form-label">Assigned Department Queue</span>
               <div class="autofill-badge">
                 <i class="ph-bold ph-shield-check text-success"></i> <strong>Upper Management</strong> (Autofilled for Leave & PTO Approval)
               </div>
@@ -615,7 +615,7 @@
     gap: 20px;
   }
 
-  label {
+  label, .form-label {
     font-size: 0.82rem;
     font-weight: 600;
     color: var(--text-main);
