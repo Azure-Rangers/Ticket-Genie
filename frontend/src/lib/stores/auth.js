@@ -175,12 +175,32 @@ export async function initAuthCheck() {
     return cachedUser;
   }
 
-  console.log("⚡ [Auth Check] Unauthenticated session. Automatically authenticating via Microsoft Entra ID...");
-  return await loginAs('Employee');
+  console.log("🔒 [Auth Check] Unauthenticated session. Always requiring user login via Microsoft Entra ID.");
+  azureAuthStatus.set("Unauthenticated");
+  userStore.set(null);
+  authLoading.set(false);
+  return null;
 }
 
 export async function loginWithAzureAD() {
-  return await loginAs('Employee');
+  authLoading.set(true);
+  if (window.AzureAuth && typeof window.AzureAuth.loginWithAzure === 'function') {
+    try {
+      const user = await window.AzureAuth.loginWithAzure();
+      if (user) {
+        azureAuthStatus.set(`Authenticated as ${user.email} (${user.role})`);
+        userStore.set(user);
+        authLoading.set(false);
+        return user;
+      }
+    } catch (e) {
+      console.warn("⚠️ [Auth Check] loginWithAzure call failed:", e.message);
+    }
+  }
+  azureAuthStatus.set("Unauthenticated");
+  userStore.set(null);
+  authLoading.set(false);
+  return null;
 }
 
 function makeValidJwt(oid, email, name, role) {
@@ -271,6 +291,6 @@ export function logout() {
   sessionStorage.removeItem("portalUser");
   localStorage.removeItem("azureUser");
   localStorage.removeItem("portalUser");
-  azureAuthStatus.set("Unauthenticated - Select Workspace Below");
+  azureAuthStatus.set("Unauthenticated");
   userStore.set(null);
 }

@@ -1,17 +1,9 @@
 <script>
-  import { searchQuery, isCreateModalOpen, ticketMetrics } from '../lib/stores/tickets.js';
-  import { userStore, loginAs, logout, isSuperAdmin, isAdmin } from '../lib/stores/auth.js';
-
-  let showRoleDropdown = false;
-
-  function handleRoleSelect(roleType) {
-    loginAs(roleType);
-    showRoleDropdown = false;
-  }
+  import { searchQuery, isCreateModalOpen } from '../lib/stores/tickets.js';
+  import { userStore, logout } from '../lib/stores/auth.js';
 
   function handleLogout() {
     logout();
-    showRoleDropdown = false;
   }
 </script>
 

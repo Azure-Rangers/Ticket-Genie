@@ -1,19 +1,15 @@
 <script>
-  import { userStore, azureAuthStatus, loginAs, loginWithAzureAD } from '../lib/stores/auth.js';
+  import { userStore, azureAuthStatus, loginWithAzureAD } from '../lib/stores/auth.js';
   import { onMount } from 'svelte';
 
   onMount(() => {
-    console.log("🔐 [Login Portal] Mounted LoginView screen. Waiting for user authentication...");
+    console.log("🔐 [Login Portal] Mounted LoginView screen. Auto-initiating Azure AD authentication...");
+    handleAzureSignIn();
   });
 
   function handleAzureSignIn() {
     console.log("🚀 [Login Portal] Sign In with Azure AD button clicked.");
     loginWithAzureAD();
-  }
-
-  function selectPortal(roleType) {
-    console.log(`🖱️ [Login Portal] Workspace button clicked: ${roleType}`);
-    loginAs(roleType);
   }
 </script>
 
@@ -21,7 +17,7 @@
   <div class="login-wrapper animate-fade">
     <div class="login-header">
       <h1><span class="bot-icon"><i class="ph-fill ph-ticket"></i></span> TicketGenie</h1>
-      <p>Enterprise Authentication & Workspace Selection</p>
+      <p>Enterprise Microsoft Entra ID Authentication</p>
     </div>
     
     <div class="portal-container">
@@ -35,38 +31,6 @@
       <button class="azure-signin-btn" on:click={handleAzureSignIn}>
         <i class="ph-bold ph-windows-logo"></i>
         <span>Sign In with Azure AD (SSO)</span>
-      </button>
-
-      <div class="divider"><span>OR SELECT DEMO WORKSPACE</span></div>
-
-      <!-- Employee Portal Button -->
-      <button class="portal-btn" on:click={() => selectPortal('Employee')}>
-        <div class="portal-icon icon-employee"><i class="ph-duotone ph-user"></i></div>
-        <div class="portal-text">
-          <h3>Employee Portal (NM)</h3>
-          <p>Submit tickets, search policies, and check request status</p>
-        </div>
-        <i class="ph-bold ph-caret-right caret"></i>
-      </button>
-
-      <!-- Ticketer / Admin (AV) Button -->
-      <button class="portal-btn" on:click={() => selectPortal('Admin')}>
-        <div class="portal-icon icon-admin"><i class="ph-duotone ph-shield-check"></i></div>
-        <div class="portal-text">
-          <h3>Ticketer / Admin Portal (AV)</h3>
-          <p>Manage triage inbox, process tickets, and handle queue requests</p>
-        </div>
-        <i class="ph-bold ph-caret-right caret"></i>
-      </button>
-
-      <!-- SuperAdmin Governance Portal (SS) Button -->
-      <button class="portal-btn" on:click={() => selectPortal('SuperAdmin')}>
-        <div class="portal-icon icon-super"><i class="ph-duotone ph-crown"></i></div>
-        <div class="portal-text">
-          <h3>SuperAdmin Governance Portal (SS)</h3>
-          <p>Enterprise control center, RBAC object mapping, and telemetry</p>
-        </div>
-        <i class="ph-bold ph-caret-right caret"></i>
       </button>
     </div>
   </div>
@@ -155,84 +119,6 @@
     background: #005a9e;
     transform: translateY(-1px);
     box-shadow: 0 6px 16px rgba(0, 120, 212, 0.35);
-  }
-
-  .divider {
-    text-align: center;
-    border-bottom: 1px solid #e2e8f0;
-    line-height: 0.1em;
-    margin: 12px 0 6px;
-  }
-
-  .divider span {
-    background: #fff;
-    padding: 0 10px;
-    font-size: 0.68rem;
-    font-weight: 700;
-    color: #94a3b8;
-    letter-spacing: 0.8px;
-  }
-
-  .portal-btn {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 16px 20px;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    background: #ffffff;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: left;
-    width: 100%;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-  }
-
-  .portal-btn:hover {
-    border-color: #a5b4fc;
-    background: #fefeff;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.1);
-  }
-
-  .portal-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.4rem;
-    flex-shrink: 0;
-  }
-
-  .icon-admin { background: #eef2ff; color: #4f46e5; }
-  .icon-employee { background: #f0fdf4; color: #16a34a; }
-  .icon-super { background: #fffbeb; color: #b45309; border: 1px solid #fef08a; }
-
-  .portal-text h3 {
-    font-size: 1rem;
-    color: #111827;
-    margin-bottom: 4px;
-    font-weight: 600;
-  }
-
-  .portal-text p {
-    font-size: 0.8rem;
-    color: #6b7280;
-    line-height: 1.4;
-  }
-
-  .caret {
-    margin-left: auto;
-    color: #9ca3af;
-    font-size: 1.2rem;
-    transition: transform 0.2s;
-  }
-
-  .portal-btn:hover .caret {
-    color: #4f46e5;
-    transform: translateX(4px);
   }
 
   .azure-status {
