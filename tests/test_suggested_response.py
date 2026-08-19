@@ -11,7 +11,9 @@ from agents.response_agent import EmployeeResponse, draft_response
 ROOT = Path(__file__).resolve().parents[1]
 INBOX = (ROOT / "frontend" / "admin_AV" / "inbox.html").read_text(encoding="utf-8")
 API_JS = (ROOT / "frontend" / "js" / "api.js").read_text(encoding="utf-8")
-TICKET_DETAIL = (ROOT / "frontend" / "src" / "views" / "TicketDetailView.svelte").read_text(encoding="utf-8")
+TICKET_DETAIL = (
+    ROOT / "frontend" / "src" / "views" / "TicketDetailView.svelte"
+).read_text(encoding="utf-8")
 
 
 class FakeAIService:
