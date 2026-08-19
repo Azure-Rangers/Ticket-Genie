@@ -100,7 +100,12 @@ class AIServiceWrapper:
     """
 
     def generate(
-        self, *, system_prompt: str, user_content: str, response_model: Any
+        self,
+        *,
+        system_prompt: str,
+        user_content: str,
+        response_model: Any,
+        max_tokens: Optional[int] = None,
     ) -> Any:
         model_name = getattr(response_model, "__name__", "response")
 
@@ -115,7 +120,12 @@ class AIServiceWrapper:
 
         schema = _pydantic_to_strict_schema(response_model)
         prompt = f"{system_prompt}\n\n{user_content}"
-        data = generate_structured(prompt=prompt, schema=schema, name=model_name)
+        data = generate_structured(
+            prompt=prompt,
+            schema=schema,
+            name=model_name,
+            max_tokens=max_tokens,
+        )
 
         try:
             return response_model.model_validate(data)
@@ -140,7 +150,11 @@ def use_mock_ai() -> bool:
 
 
 def generate_structured(
-    *, prompt: str, schema: dict[str, Any], name: str
+    *,
+    prompt: str,
+    schema: dict[str, Any],
+    name: str,
+    max_tokens: Optional[int] = None,
 ) -> dict[str, Any]:
     """Call the configured Azure v1 Responses endpoint with strict JSON output."""
     endpoint = os.getenv("GROUP1OPENAIENDPOINT") or os.getenv("AZURE_OPENAI_ENDPOINT")
@@ -149,7 +163,7 @@ def generate_structured(
     if not endpoint or not api_key:
         raise AIServiceError("Azure OpenAI configuration is missing.")
 
-    body = {
+    body: dict[str, Any] = {
         "model": model,
         "input": prompt,
         "text": {
@@ -161,6 +175,9 @@ def generate_structured(
             }
         },
     }
+    if max_tokens is not None:
+        body["max_output_tokens"] = max_tokens
+        body["max_tokens"] = max_tokens
     try:
         response = requests.post(
             endpoint,

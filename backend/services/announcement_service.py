@@ -1,7 +1,6 @@
 """Announcement AI Severity Classification Service for TicketGenie."""
 
-from __future__ import annotations
-
+from enum import Enum
 import logging
 from typing import Optional
 
@@ -14,10 +13,17 @@ from services.ai_service import ai_service
 logger = logging.getLogger(__name__)
 
 
+class SeverityLevelEnum(str, Enum):
+    CRITICAL = "Critical"
+    HIGH = "High"
+    MEDIUM = "Medium"
+    LOW = "Low"
+
+
 class AnnouncementSeverityDecision(BaseModel):
-    severity: str = Field(
-        default="Medium",
-        description="One of: Critical, High, Medium, Low",
+    severity: SeverityLevelEnum = Field(
+        default=SeverityLevelEnum.MEDIUM,
+        description="Must be strictly one of: Critical, High, Medium, Low",
     )
     reason: str = Field(
         default="",
@@ -97,9 +103,11 @@ Content: {content}
             system_prompt=system_prompt,
             user_content=user_content,
             response_model=AnnouncementSeverityDecision,
+            max_tokens=25,
         )
         if decision and decision.severity:
-            severity_choice = decision.severity.strip()
+            val = decision.severity.value if hasattr(decision.severity, "value") else str(decision.severity)
+            severity_choice = val.strip()
             reason = decision.reason
     except Exception as exc:
         logger.info(f"AI severity generation falling back to role-aware heuristic: {exc}")
