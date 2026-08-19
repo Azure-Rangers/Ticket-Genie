@@ -1,11 +1,12 @@
 <script>
   import StatusBadge from './StatusBadge.svelte';
-  import { changeTicketStatus, selectedTicket } from '../lib/stores/tickets.js';
+  import { changeTicketStatus, selectedTicket, activeTab } from '../lib/stores/tickets.js';
 
   export let ticket;
 
   function selectCard() {
     $selectedTicket = ticket;
+    $activeTab = 'ticket-detail';
   }
 
   function quickResolve(e) {

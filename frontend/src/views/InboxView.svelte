@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { checkAuthGuard, userStore } from '../lib/stores/auth.js';
+  import { checkAuthGuard, userStore, isTicketer } from '../lib/stores/auth.js';
   import { tickets, filteredTickets, statusFilter, priorityFilter, selectedTicket, changeTicketStatus } from '../lib/stores/tickets.js';
   import StatusBadge from '../components/StatusBadge.svelte';
   import TicketCard from '../components/TicketCard.svelte';
@@ -8,7 +8,7 @@
   import { apiExportTicketPDF, apiExportCalendar } from '../lib/api.js';
 
   onMount(() => {
-    checkAuthGuard('ticketer');
+    checkAuthGuard('employee');
   });
 
   let commentText = '';
@@ -145,31 +145,33 @@
             <p>{$selectedTicket.description || 'No detailed description provided for this request.'}</p>
           </div>
 
-          <!-- Quick Action Buttons -->
-          <div class="status-actions">
-            <span>Change Status:</span>
-            <button 
-              class="btn-status open" 
-              class:active={$selectedTicket.status === 'Open'} 
-              on:click={() => handleStatusSelect('Open')}
-            >
-              Open
-            </button>
-            <button 
-              class="btn-status progress" 
-              class:active={$selectedTicket.status === 'In Progress'} 
-              on:click={() => handleStatusSelect('In Progress')}
-            >
-              In Progress
-            </button>
-            <button 
-              class="btn-status resolve" 
-              class:active={$selectedTicket.status === 'Resolved'} 
-              on:click={() => handleStatusSelect('Resolved')}
-            >
-              Resolved
-            </button>
-          </div>
+          <!-- Quick Action Buttons for Support Staff -->
+          {#if isTicketer($userStore)}
+            <div class="status-actions">
+              <span>Change Status:</span>
+              <button 
+                class="btn-status open" 
+                class:active={$selectedTicket.status === 'Open'} 
+                on:click={() => handleStatusSelect('Open')}
+              >
+                Open
+              </button>
+              <button 
+                class="btn-status progress" 
+                class:active={$selectedTicket.status === 'In Progress'} 
+                on:click={() => handleStatusSelect('In Progress')}
+              >
+                In Progress
+              </button>
+              <button 
+                class="btn-status resolve" 
+                class:active={$selectedTicket.status === 'Resolved'} 
+                on:click={() => handleStatusSelect('Resolved')}
+              >
+                Resolved
+              </button>
+            </div>
+          {/if}
 
           <!-- Conversation Thread -->
           <div class="comments-section">

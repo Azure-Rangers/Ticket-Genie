@@ -457,7 +457,7 @@
     document.addEventListener("DOMContentLoaded", async function () {
         let user = null;
         try {
-            user = getAzureUser();
+            user = await autoLoginAzure();
         } finally {
             resolveAuthReady(user);
         }

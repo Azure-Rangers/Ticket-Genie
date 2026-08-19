@@ -28,6 +28,8 @@ MANAGEMENT_SUBMIT_HTML = (
     FRONTEND_DIR / "management" / "submit-ticket.html"
 ).read_text()
 ADMIN_SUBMIT_HTML = (FRONTEND_DIR / "admin_AV" / "submit-ticket.html").read_text()
+SRC_API_JS = (FRONTEND_DIR / "src" / "lib" / "api.js").read_text()
+GENIE_WIDGET_SVELTE = (FRONTEND_DIR / "src" / "components" / "GenieAgentWidget.svelte").read_text()
 
 OLD_STALE_IDS = (
     "newTicketForm",
@@ -59,6 +61,15 @@ def test_no_local_static_genie_response_generator_remains():
 def test_conversation_state_fields_are_sent_to_the_backend():
     for field in ("history", "draft", "active_intent", "active_request_type"):
         assert field in SCRIPT_JS
+        assert field in SRC_API_JS
+
+
+def test_svelte_widget_tracks_and_sends_conversation_state():
+    assert "apiGenieChat(text, state)" in GENIE_WIDGET_SVELTE
+    assert "history" in GENIE_WIDGET_SVELTE
+    assert "draft" in GENIE_WIDGET_SVELTE
+    assert "active_intent" in GENIE_WIDGET_SVELTE
+    assert "active_request_type" in GENIE_WIDGET_SVELTE
 
 
 def test_form_opening_is_gated_on_ready_for_review():

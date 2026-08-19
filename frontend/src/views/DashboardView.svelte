@@ -1,8 +1,29 @@
 <script>
-  import { ticketMetrics, filteredTickets, activeTab, isCreateModalOpen, selectedTicket } from '../lib/stores/tickets.js';
+  import { onMount } from 'svelte';
+  import { ticketMetrics, filteredTickets, activeTab, isCreateModalOpen, selectedTicket, loadTickets } from '../lib/stores/tickets.js';
   import { userStore } from '../lib/stores/auth.js';
   import StatusBadge from '../components/StatusBadge.svelte';
   import TicketCard from '../components/TicketCard.svelte';
+
+  let queueFilter = 'unresolved'; // 'unresolved' | 'all' | 'resolved'
+
+  $: unresolvedTickets = $filteredTickets.filter(t => {
+    const status = (t.status || '').toLowerCase();
+    return status !== 'resolved' && status !== 'closed';
+  });
+
+  $: resolvedTickets = $filteredTickets.filter(t => {
+    const status = (t.status || '').toLowerCase();
+    return status === 'resolved' || status === 'closed';
+  });
+
+  $: displayTickets = queueFilter === 'unresolved' 
+    ? unresolvedTickets 
+    : (queueFilter === 'resolved' ? resolvedTickets : $filteredTickets);
+
+  onMount(() => {
+    loadTickets();
+  });
 </script>
 
 <div class="dashboard-view animate-fade">
@@ -65,19 +86,53 @@
     <!-- Active Queue Section -->
     <div class="section-card">
       <div class="card-section-header">
-        <h2><i class="ph-duotone ph-list-checks"></i> Priority Work Queue</h2>
-        <span class="count-pill">{$filteredTickets.length} Items</span>
+        <div class="header-left">
+          <h2><i class="ph-duotone ph-list-checks"></i> Priority Work Queue</h2>
+          <span class="count-pill">{displayTickets.length} Items</span>
+        </div>
+
+        <div class="queue-filter-tabs">
+          <button 
+            class="q-tab" 
+            class:active={queueFilter === 'unresolved'} 
+            on:click={() => queueFilter = 'unresolved'}
+          >
+            Unresolved ({unresolvedTickets.length})
+          </button>
+          <button 
+            class="q-tab" 
+            class:active={queueFilter === 'all'} 
+            on:click={() => queueFilter = 'all'}
+          >
+            All ({$filteredTickets.length})
+          </button>
+          <button 
+            class="q-tab" 
+            class:active={queueFilter === 'resolved'} 
+            on:click={() => queueFilter = 'resolved'}
+          >
+            Resolved ({resolvedTickets.length})
+          </button>
+        </div>
       </div>
 
       <div class="tickets-wrapper">
-        {#if $filteredTickets.length === 0}
+        {#if displayTickets.length === 0}
           <div class="empty-state">
             <i class="ph-duotone ph-tray empty-icon"></i>
-            <p>No active tickets match your search criteria</p>
+            <p>
+              {#if queueFilter === 'unresolved'}
+                No unresolved tickets in your active work queue
+              {:else if queueFilter === 'resolved'}
+                No resolved tickets found
+              {:else}
+                No active tickets match your search criteria
+              {/if}
+            </p>
           </div>
         {:else}
           <div class="tickets-list">
-            {#each $filteredTickets as ticket}
+            {#each displayTickets as ticket}
               <TicketCard {ticket} />
             {/each}
           </div>
@@ -281,6 +336,14 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
   .card-section-header h2 {
@@ -298,6 +361,37 @@
     border-radius: 20px;
     font-size: 0.78rem;
     font-weight: 600;
+  }
+
+  .queue-filter-tabs {
+    display: flex;
+    align-items: center;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: 8px;
+    gap: 2px;
+  }
+
+  .q-tab {
+    background: transparent;
+    border: none;
+    padding: 5px 11px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .q-tab:hover {
+    color: var(--text-main);
+  }
+
+  .q-tab.active {
+    background: #ffffff;
+    color: var(--primary);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   }
 
   .tickets-list {

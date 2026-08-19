@@ -63,8 +63,13 @@
     errorMsg = '';
     successMsg = '';
 
+    let textCheck = `${title} ${description} ${category} ${departmentSelect}`.toLowerCase();
+    let isLeave = textCheck.includes('leave') || textCheck.includes('pto') || textCheck.includes('vacation') || textCheck.includes('time off') || textCheck.includes('bereavement') || textCheck.includes('parental');
+
     let backendDept = null;
-    if (departmentSelect !== 'Auto') {
+    if (isLeave) {
+      backendDept = 'Upper Management';
+    } else if (departmentSelect !== 'Auto') {
       if (departmentSelect.includes('HR')) backendDept = 'HR Team';
       else if (departmentSelect.includes('Account')) backendDept = 'Accounting Team';
       else if (departmentSelect.includes('Upper') || departmentSelect.includes('Admin')) backendDept = 'Upper Management';
@@ -113,6 +118,7 @@
         category: 'Time Off',
         priority: 'Medium',
         department: 'Upper Management',
+        department_override: 'Upper Management',
         requester: $userStore?.name || 'Employee User',
         status: 'Open'
       });
@@ -300,6 +306,13 @@
           </div>
 
           <form on:submit|preventDefault={handleSubmitLeave} class="form-body">
+            <div class="form-group">
+              <label>Assigned Department Queue</label>
+              <div class="autofill-badge">
+                <i class="ph-bold ph-shield-check text-success"></i> <strong>Upper Management</strong> (Autofilled for Leave & PTO Approval)
+              </div>
+            </div>
+
             <div class="form-group">
               <label for="leave-type">Leave Type</label>
               <select id="leave-type" bind:value={leaveType}>
@@ -671,6 +684,18 @@
   .sub-text {
     font-size: 0.75rem;
     color: var(--text-muted);
+  }
+
+  .autofill-badge {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #047857;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .file-list {
