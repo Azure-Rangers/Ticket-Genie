@@ -16,6 +16,8 @@ trigger:
 variables:
   azureServiceConnection: "TicketGenie"
   resourceGroupName: "Azure_Rangers"
+  keyVaultName: "kv-app-prod-12345"
+  aiKeyVaultName: "group-1"
   acrName: "acrwebappprodticketgenie"
   acrLoginServer: "acrwebappprodticketgenie.azurecr.io"
   frontendImageRepository: "ticketgenie"
@@ -71,12 +73,12 @@ stages:
                   -f Dockerfile .
 
   - stage: UpdateWebApp
-    displayName: Update Web App Containers
+    displayName: Update Web App Containers & Secrets
     dependsOn: BuildAndPush
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - deployment: DeployWebApp
-        displayName: Point Web Apps at new container images
+        displayName: Point Web Apps at new container images and configure Key Vault secrets
         environment: production
         pool:
           vmImage: ubuntu-latest
@@ -87,7 +89,7 @@ stages:
                 - checkout: none
 
                 - task: AzureCLI@2
-                  displayName: Update backend and frontend web app containers and restart
+                  displayName: Update backend and frontend web app containers and Key Vault references
                   inputs:
                     azureSubscription: $(azureServiceConnection)
                     scriptType: bash
@@ -95,7 +97,26 @@ stages:
                     inlineScript: |
                       set -euo pipefail
 
-                      # 1. Update Backend Web App (FastAPI REST API on Port 8000)
+                      echo "=== 1. Ensuring Backend Managed Identity and Key Vault Access ==="
+                      # Enable System-Assigned Managed Identity on Backend Web App (idempotent)
+                      az webapp identity assign \
+                        --resource-group "$(resourceGroupName)" \
+                        --name "$(backendWebAppName)" >/dev/null || true
+
+                      BACKEND_PRINCIPAL_ID=$(az webapp identity show \
+                        --resource-group "$(resourceGroupName)" \
+                        --name "$(backendWebAppName)" \
+                        --query principalId -o tsv 2>/dev/null || echo "")
+
+                      if [ -n "$BACKEND_PRINCIPAL_ID" ]; then
+                        echo "Configuring Key Vault access policy for Principal ID: $BACKEND_PRINCIPAL_ID..."
+                        az keyvault set-policy \
+                          --name "$(keyVaultName)" \
+                          --object-id "$BACKEND_PRINCIPAL_ID" \
+                          --secret-permissions get list >/dev/null || true
+                      fi
+
+                      echo "=== 2. Updating Backend Web App (FastAPI REST API on Port 8000) ==="
                       az webapp config container set \
                         --resource-group "$(resourceGroupName)" \
                         --name "$(backendWebAppName)" \
@@ -105,13 +126,29 @@ stages:
                       az webapp config appsettings set \
                         --resource-group "$(resourceGroupName)" \
                         --name "$(backendWebAppName)" \
-                        --settings WEBSITES_PORT=8000
+                        --settings \
+                          WEBSITES_PORT=8000 \
+                          AZURE_CLIENT_ID="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=azure-client-id)" \
+                          AZURE_TENANT_ID="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=azure-tenant-id)" \
+                          GOOGLE_EMAIL="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=google-email)" \
+                          SMTP_USER="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=smtp-user)" \
+                          GOOGLE_APP_PASSWORD="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=google-app-password)" \
+                          SMTP_PASSWORD="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=smtp-password)" \
+                          SMTP_HOST="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=smtp-host)" \
+                          SMTP_PORT="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=smtp-port)" \
+                          SMTP_USE_TLS="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=smtp-use-tls)" \
+                          AZURE_OPENAI_ENDPOINT="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=azure-openai-endpoint)" \
+                          GROUP1OPENAIENDPOINT="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=group1openaiendpoint)" \
+                          AZURE_OPENAI_API_KEY="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=azure-openai-api-key)" \
+                          GROUP1OPENAIAPIKEY="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=group1openaiapikey)" \
+                          AZURE_AI_SEARCH_ENDPOINT="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=azure-ai-search-endpoint)" \
+                          AZURE_AI_SEARCH_KEY="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=azure-ai-search-key)"
 
                       az webapp restart \
                         --resource-group "$(resourceGroupName)" \
                         --name "$(backendWebAppName)"
 
-                      # 2. Update Frontend Web App (Nginx UI on Port 80)
+                      echo "=== 3. Updating Frontend Web App (Nginx UI on Port 80) ==="
                       az webapp config container set \
                         --resource-group "$(resourceGroupName)" \
                         --name "$(frontendWebAppName)" \

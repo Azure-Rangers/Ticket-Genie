@@ -75,6 +75,10 @@ resource "azurerm_linux_web_app" "backend" {
     }
   }
 
+  identity {
+    type = "SystemAssigned"
+  }
+
   app_settings = {
     "DATABASE_URL"                               = "Server=tcp:${azurerm_mssql_server.sql.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.db.name};Persist Security Info=False;User ID=${azurerm_mssql_server.sql.administrator_login};Password=${random_password.db_password.result};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
     "WEBSITES_PORT"                              = "8000"
@@ -82,6 +86,21 @@ resource "azurerm_linux_web_app" "backend" {
     "APPLICATIONINSIGHTS_CONNECTION_STRING"      = azurerm_application_insights.appi.connection_string
     "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
     "OTEL_TRACES_SAMPLER"                        = "always_on"
+    "AZURE_CLIENT_ID"                            = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-client-id)"
+    "AZURE_TENANT_ID"                            = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-tenant-id)"
+    "GOOGLE_EMAIL"                               = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=google-email)"
+    "SMTP_USER"                                  = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=smtp-user)"
+    "GOOGLE_APP_PASSWORD"                        = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=google-app-password)"
+    "SMTP_PASSWORD"                              = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=smtp-password)"
+    "SMTP_HOST"                                  = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=smtp-host)"
+    "SMTP_PORT"                                  = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=smtp-port)"
+    "SMTP_USE_TLS"                               = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=smtp-use-tls)"
+    "AZURE_OPENAI_ENDPOINT"                      = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-openai-endpoint)"
+    "GROUP1OPENAIENDPOINT"                       = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=group1openaiendpoint)"
+    "AZURE_OPENAI_API_KEY"                       = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-openai-api-key)"
+    "GROUP1OPENAIAPIKEY"                         = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=group1openaiapikey)"
+    "AZURE_AI_SEARCH_ENDPOINT"                   = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-ai-search-endpoint)"
+    "AZURE_AI_SEARCH_KEY"                        = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-ai-search-key)"
   }
 
   lifecycle {
