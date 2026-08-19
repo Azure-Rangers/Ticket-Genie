@@ -109,6 +109,15 @@ class AIServiceWrapper:
     ) -> Any:
         model_name = getattr(response_model, "__name__", "response")
 
+        if use_mock_ai():
+            try:
+                return response_model()
+            except Exception as exc:
+                raise AIServiceError(
+                    f"Mock AI mode cannot construct a default {model_name} - "
+                    "it has required fields with no safe default."
+                ) from exc
+
         endpoint = os.getenv("GROUP1OPENAIENDPOINT") or os.getenv("AZURE_OPENAI_ENDPOINT")
         api_key = os.getenv("GROUP1OPENAIAPIKEY") or os.getenv("AZURE_OPENAI_API_KEY")
 
@@ -127,15 +136,6 @@ class AIServiceWrapper:
             except Exception as exc:
                 raise AIServiceError(
                     f"{model_name} response did not match the expected schema."
-                ) from exc
-
-        if use_mock_ai():
-            try:
-                return response_model()
-            except Exception as exc:
-                raise AIServiceError(
-                    f"Mock AI mode cannot construct a default {model_name} - "
-                    "it has required fields with no safe default."
                 ) from exc
 
         raise AIServiceError("Azure OpenAI configuration is missing.")
@@ -162,10 +162,11 @@ def generate_structured(
     name: str,
     max_tokens: Optional[int] = None,
 ) -> dict[str, Any]:
-    """Call the configured Azure v1 Responses endpoint with strict JSON output."""
+    """Call the configured Azure v1 Responses endpoint or Azure OpenAI endpoint with strict JSON output."""
     endpoint = os.getenv("GROUP1OPENAIENDPOINT") or os.getenv("AZURE_OPENAI_ENDPOINT")
     api_key = os.getenv("GROUP1OPENAIAPIKEY") or os.getenv("AZURE_OPENAI_API_KEY")
     model = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-5.2")
+
     if not endpoint or not api_key:
         raise AIServiceError("Azure OpenAI configuration is missing.")
 
@@ -184,12 +185,13 @@ def generate_structured(
     if max_tokens is not None:
         body["max_output_tokens"] = max_tokens
         body["max_tokens"] = max_tokens
+
     try:
         response = requests.post(
             endpoint,
             headers={"api-key": api_key, "Content-Type": "application/json"},
             json=body,
-            timeout=60,
+            timeout=3,
         )
         response.raise_for_status()
         payload = response.json()
@@ -205,7 +207,38 @@ def generate_structured(
         return json.loads(output_text)
     except AIServiceError:
         raise
-    except (requests.RequestException, ValueError, TypeError) as exc:
+    except Exception as exc:
+        try:
+            from openai import AzureOpenAI
+            api_version = os.getenv("AZURE_OPENAI_API_VERSION", DEFAULT_AZURE_API_VERSION)
+            client = AzureOpenAI(
+                azure_endpoint=endpoint,
+                api_key=api_key,
+                api_version=api_version,
+                timeout=2.0,
+                max_retries=0,
+            )
+            resp = client.chat.completions.create(
+                model=model,
+                temperature=0.0,
+                max_tokens=max_tokens or 150,
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": name,
+                        "schema": schema,
+                        "strict": True,
+                    },
+                },
+                messages=[
+                    {"role": "user", "content": prompt},
+                ],
+            )
+            content = resp.choices[0].message.content
+            if content:
+                return json.loads(content)
+        except Exception:
+            pass
         logger.warning("Structured AI agent call failed: %s", exc)
         raise AIServiceError("Azure OpenAI agent call failed.") from exc
 

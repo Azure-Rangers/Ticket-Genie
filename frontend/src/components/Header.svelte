@@ -1,15 +1,17 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { activeTab } from '../lib/stores/tickets.js';
   import { userStore } from '../lib/stores/auth.js';
   import { apiFetchLatestAnnouncementWithSeverity } from '../lib/api.js';
 
   let latestAnnouncement = null;
   let severity = { level: 'info', label: 'ANNOUNCEMENT', icon: 'ph-megaphone', color_class: 'severity-info' };
+  let abortController = null;
 
   onMount(async () => {
+    abortController = new AbortController();
     try {
-      const data = await apiFetchLatestAnnouncementWithSeverity();
+      const data = await apiFetchLatestAnnouncementWithSeverity(abortController.signal);
       if (data && data.announcement) {
         latestAnnouncement = data.announcement;
         if (data.severity) {
@@ -17,7 +19,15 @@
         }
       }
     } catch (err) {
-      console.warn("Failed to load header announcement with AI severity from backend:", err);
+      if (err?.name !== 'AbortError') {
+        console.warn("Failed to load header announcement with AI severity from backend:", err);
+      }
+    }
+  });
+
+  onDestroy(() => {
+    if (abortController) {
+      abortController.abort();
     }
   });
 </script>

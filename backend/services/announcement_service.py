@@ -107,16 +107,23 @@ Content: {content}
     reason = ""
 
     try:
-        decision: AnnouncementSeverityDecision = ai_service.generate(
-            system_prompt=system_prompt,
-            user_content=user_content,
-            response_model=AnnouncementSeverityDecision,
-            max_tokens=25,
-        )
-        if decision and decision.severity:
-            val = decision.severity.value if hasattr(decision.severity, "value") else str(decision.severity)
-            severity_choice = val.strip()
-            reason = decision.reason
+        import concurrent.futures
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        try:
+            future = executor.submit(
+                ai_service.generate,
+                system_prompt=system_prompt,
+                user_content=user_content,
+                response_model=AnnouncementSeverityDecision,
+                max_tokens=25,
+            )
+            decision: AnnouncementSeverityDecision = future.result(timeout=1.5)
+            if decision and decision.severity:
+                val = decision.severity.value if hasattr(decision.severity, "value") else str(decision.severity)
+                severity_choice = val.strip()
+                reason = decision.reason
+        finally:
+            executor.shutdown(wait=False, cancel_futures=True)
     except Exception as exc:
         logger.info(f"AI severity generation falling back to role-aware heuristic: {exc}")
         severity_choice = _heuristic_fallback(title, content, category_str)
@@ -133,6 +140,9 @@ Content: {content}
     }
 
 
+_SEVERITY_CACHE: dict[str, dict] = {}
+
+
 def get_latest_announcement_with_severity(
     role: str = "Employee",
     db: Optional[Session] = None,
@@ -143,12 +153,20 @@ def get_latest_announcement_with_severity(
         return {"announcement": None, "severity": None}
 
     latest = announcements[0]
+    cache_key = f"{latest.get('id')}_{role}_{latest.get('title')}"
+    if cache_key in _SEVERITY_CACHE:
+        return {
+            "announcement": latest,
+            "severity": _SEVERITY_CACHE[cache_key],
+        }
+
     severity = classify_announcement_severity(
         title=latest.get("title", ""),
         content=latest.get("content", ""),
         category=latest.get("category", ""),
         role=role,
     )
+    _SEVERITY_CACHE[cache_key] = severity
 
     return {
         "announcement": latest,

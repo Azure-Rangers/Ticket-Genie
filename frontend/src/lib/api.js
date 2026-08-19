@@ -415,14 +415,20 @@ export async function apiFetchUpperManagementUsers() {
   ];
 }
 
-export async function apiFetchLatestAnnouncementWithSeverity() {
+export async function apiFetchLatestAnnouncementWithSeverity(signal = null) {
   try {
-    const res = await fetch(`${API_BASE_URL}/announcements/latest`, { headers: getAuthHeaders() });
+    const options = { headers: getAuthHeaders() };
+    if (signal) {
+      options.signal = signal;
+    }
+    const res = await fetch(`${API_BASE_URL}/announcements/latest`, options);
     if (res.ok) {
       return await res.json();
     }
   } catch (err) {
-    console.warn("apiFetchLatestAnnouncementWithSeverity failed:", err);
+    if (err?.name !== "AbortError") {
+      console.warn("apiFetchLatestAnnouncementWithSeverity failed:", err);
+    }
   }
   return { announcement: null, severity: null };
 }
