@@ -18,6 +18,57 @@ def test_get_upper_management_users() -> None:
     assert any(
         "Greg Davis" in n or "Sarah Jenkins" in n or "Alex Vance" in n for n in names
     )
+    # Check that each returned user is in Upper Management department and has appropriate management role
+    for u in data:
+        dept = u.get("department", "")
+        role = u.get("role", "")
+        assert "upper" in dept.lower() or "management" in dept.lower() or "operations" in dept.lower()
+        assert role != "Employee"
+
+
+def test_non_upper_management_users_excluded() -> None:
+    from database.crud import update_user_profile
+    # Create or update non-upper management profiles
+    update_user_profile(
+        user_id="usr-test-it-emp",
+        name="IT Specialist User",
+        email="itspecialist@company.com",
+        role="IT Specialist",
+        department="IT Team",
+    )
+    update_user_profile(
+        user_id="usr-test-general-emp",
+        name="General Employee User",
+        email="generalemp@company.com",
+        role="Employee",
+        department="General Staff",
+    )
+
+    res = client.get("/api/users/upper-management")
+    assert res.status_code == 200
+    data = res.json()
+    returned_names = [u.get("name") for u in data]
+    assert "IT Specialist User" not in returned_names
+    assert "General Employee User" not in returned_names
+
+
+def test_azure_login_defaults_to_general_staff() -> None:
+    login_payload = {
+        "azure_object_id": "test-oid-employee-999",
+        "email": "standardemployee@company.com",
+        "name": "Standard Employee",
+    }
+    res = client.post("/api/users/azure-login", json=login_payload)
+    assert res.status_code == 200
+    login_data = res.json()
+    assert login_data["department"] == "General Staff"
+    assert login_data["role"] == "Employee"
+
+    # Verify this new user is NOT in the upper management approvers list
+    res_approvers = client.get("/api/users/upper-management")
+    approvers = res_approvers.json()
+    approver_names = [u.get("name") for u in approvers]
+    assert "Standard Employee" not in approver_names
 
 
 def test_submit_leave_request_with_upper_management_assignee() -> None:

@@ -84,16 +84,59 @@ def get_upper_management_users(
     seen_names = set()
 
     with SessionLocal() as session:
+        dept_users = (
+            session.query(DepartmentUserDB)
+            .filter(
+                func.lower(DepartmentUserDB.department_name).contains("upper")
+            )
+            .all()
+        )
+        for du in dept_users:
+            profile = None
+            if du.azure_object_id:
+                profile = (
+                    session.query(UserProfileDB)
+                    .filter(
+                        func.lower(UserProfileDB.azure_object_id)
+                        == du.azure_object_id.lower()
+                    )
+                    .first()
+                )
+            if not profile and du.user_email:
+                profile = (
+                    session.query(UserProfileDB)
+                    .filter(
+                        func.lower(UserProfileDB.email)
+                        == du.user_email.lower()
+                    )
+                    .first()
+                )
+
+            name = (
+                profile.name
+                if profile and profile.name and profile.name not in ["Admin1", "Employee1", "Azure User", "User"]
+                else (du.user_email.split("@")[0] if du.user_email else "Upper Management Admin")
+            )
+            role = du.role or (profile.role if profile else "Super Admin")
+            email = du.user_email or (profile.email if profile else None)
+
+            if name not in seen_names:
+                seen_names.add(name)
+                users.append(
+                    {
+                        "id": du.id,
+                        "name": name,
+                        "email": email,
+                        "role": role,
+                        "department": du.department_name,
+                    }
+                )
+
         profiles = (
             session.query(UserProfileDB)
             .filter(
-                or_(
-                    func.lower(UserProfileDB.department).contains("upper"),
-                    func.lower(UserProfileDB.department).contains("executive"),
-                    func.lower(UserProfileDB.role).contains("super"),
-                    func.lower(UserProfileDB.role).contains("management"),
-                    func.lower(UserProfileDB.role).contains("executive"),
-                )
+                func.lower(UserProfileDB.department).contains("upper"),
+                func.lower(UserProfileDB.role) != "employee",
             )
             .all()
         )
@@ -107,34 +150,6 @@ def get_upper_management_users(
                         "email": p.email,
                         "role": p.role,
                         "department": p.department,
-                    }
-                )
-
-        dept_users = (
-            session.query(DepartmentUserDB)
-            .filter(
-                or_(
-                    func.lower(DepartmentUserDB.department_name).contains("upper"),
-                    func.lower(DepartmentUserDB.department_name).contains("executive"),
-                )
-            )
-            .all()
-        )
-        for du in dept_users:
-            name = (
-                du.user_email.split("@")[0]
-                if du.user_email
-                else "Upper Management Admin"
-            )
-            if name not in seen_names:
-                seen_names.add(name)
-                users.append(
-                    {
-                        "id": du.id,
-                        "name": name,
-                        "email": du.user_email,
-                        "role": du.role,
-                        "department": du.department_name,
                     }
                 )
 
@@ -156,7 +171,11 @@ def get_upper_management_users(
         },
     ]
     for d in defaults:
-        if d["name"] not in seen_names:
+        existing = next((u for u in users if u["name"] == d["name"]), None)
+        if existing:
+            if existing.get("role") in ["Employee", "Member", None]:
+                existing["role"] = d["role"]
+        elif d["name"] not in seen_names:
             seen_names.add(d["name"])
             users.append(d)
 
@@ -192,7 +211,7 @@ def handle_azure_login(req: AzureLoginRequest):
 
     is_admin = False
     role = "Employee"
-    department = "Upper Executive Management"
+    department = "General Staff"
 
     with SessionLocal() as session:
         record = (
@@ -212,6 +231,7 @@ def handle_azure_login(req: AzureLoginRequest):
         if record:
             if record.role.lower() in ["admin", "super admin", "operations admin"]:
                 is_admin = True
+            if record.role:
                 role = record.role
             if record.department_name:
                 department = record.department_name
@@ -285,6 +305,7 @@ def handle_azure_login(req: AzureLoginRequest):
                 user_id=profile_id,
                 name=displayName,
                 email=req.email,
+                role=role,
                 department=department,
                 azure_object_id=verified_oid,
             )

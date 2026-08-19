@@ -6,6 +6,8 @@ trigger:
     include:
       - frontend/**
       - backend/**
+      - database/**
+      - scripts/**
       - Dockerfile
       - docker-compose.yml
       - nginx.conf
