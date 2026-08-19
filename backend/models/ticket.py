@@ -72,6 +72,8 @@ class TicketResponse(BaseModel):
     classification_reason: Optional[str] = None
     needs_human_review: bool = False
     model_deployment: Optional[str] = None
+    onboarding_id: Optional[str] = None
+    due_date: Optional[str] = None
 
 
 class GenieChatRequest(BaseModel):

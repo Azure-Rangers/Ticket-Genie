@@ -415,6 +415,53 @@ export async function apiFetchUpperManagementUsers() {
   ];
 }
 
+/** ==================== ONBOARDING PIPELINE ==================== */
+
+async function onboardingRequest(path = "", options = {}) {
+  const res = await fetch(`${API_BASE_URL}/onboarding${path}`, {
+    ...options,
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    let detail = `Onboarding request failed (${res.status})`;
+    try {
+      const body = await res.json();
+      if (body.detail) detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
+    } catch (e) {}
+    throw new Error(detail);
+  }
+  return await res.json();
+}
+
+export function apiFetchOnboardingCases() {
+  return onboardingRequest();
+}
+
+export function apiFetchOnboardingCase(onboardingId) {
+  return onboardingRequest(`/${encodeURIComponent(onboardingId)}`);
+}
+
+export function apiSuggestOnboardingPlan(jobTitle, startDate) {
+  return onboardingRequest("/suggest", {
+    method: "POST",
+    body: JSON.stringify({ job_title: jobTitle, start_date: startDate })
+  });
+}
+
+export function apiStartOnboarding(payload) {
+  return onboardingRequest("/start", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function apiAddOnboardingTicket(onboardingId, payload) {
+  return onboardingRequest(`/${encodeURIComponent(onboardingId)}/tickets`, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
 export async function apiFetchLatestAnnouncementWithSeverity(signal = null) {
   try {
     const options = { headers: getAuthHeaders() };

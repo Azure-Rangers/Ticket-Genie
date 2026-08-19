@@ -30,6 +30,8 @@ class TicketDB(Base):
     auto_resolved = Column(Boolean, default=False, nullable=False)
     is_synthetic = Column(Boolean, default=False, nullable=False, index=True)
     assigned_to = Column(String(150), nullable=True, index=True)
+    onboarding_id = Column(String(50), nullable=True, index=True)
+    due_date = Column(String(50), nullable=True)
 
     def to_dict(self) -> dict:
         return {
@@ -58,6 +60,8 @@ class TicketDB(Base):
             "parent_ticket_id": self.parent_ticket_id,
             "auto_resolved": self.auto_resolved,
             "is_synthetic": self.is_synthetic,
+            "onboarding_id": self.onboarding_id,
+            "due_date": self.due_date,
         }
 
 
@@ -190,23 +194,31 @@ class OnboardingDB(Base):
 
     id = Column(String(50), primary_key=True, index=True)
     employee_name = Column(String(150), nullable=False)
+    employee_email = Column(String(150), nullable=True)
     role = Column(String(100), nullable=False)
     department = Column(String(100), nullable=False)
+    manager = Column(String(150), nullable=True)
+    location = Column(String(150), nullable=True)
     visa_status = Column(String(100), nullable=False, default="H1-B / OPT")
     start_date = Column(String(50), nullable=False)
     status = Column(String(50), nullable=False, default="In Progress")
     createdAt = Column(String(50), nullable=False)
+    created_by = Column(String(150), nullable=True)
 
     def to_dict(self) -> dict:
         return {
             "id": self.id,
             "employee_name": self.employee_name,
+            "employee_email": self.employee_email,
             "role": self.role,
             "department": self.department,
+            "manager": self.manager,
+            "location": self.location,
             "visa_status": self.visa_status,
             "start_date": self.start_date,
             "status": self.status,
             "createdAt": self.createdAt,
+            "created_by": self.created_by,
         }
 
 

@@ -117,6 +117,8 @@ def init_db_schema():
                     "classification_reason": "TEXT",
                     "needs_human_review": "BOOLEAN DEFAULT 0",
                     "model_deployment": "VARCHAR(100)",
+                    "onboarding_id": "VARCHAR(50)",
+                    "due_date": "VARCHAR(50)",
                 }
                 for column_name, column_type in additions.items():
                     if column_name not in existing_cols:
@@ -140,6 +142,33 @@ def init_db_schema():
                         )
                     )
 
+                onboarding_cols = [
+                    r[1]
+                    for r in conn.execute(
+                        text("PRAGMA table_info(onboarding)")
+                    ).fetchall()
+                ]
+                onboarding_additions = {
+                    "employee_email": "VARCHAR(150)",
+                    "manager": "VARCHAR(150)",
+                    "location": "VARCHAR(150)",
+                    "created_by": "VARCHAR(150)",
+                }
+                for column_name, column_type in onboarding_additions.items():
+                    if column_name not in onboarding_cols:
+                        conn.execute(
+                            text(
+                                f"ALTER TABLE onboarding ADD COLUMN {column_name} {column_type}"
+                            )
+                        )
+
+                conn.execute(
+                    text(
+                        "CREATE INDEX IF NOT EXISTS ix_tickets_onboarding_id "
+                        "ON tickets (onboarding_id)"
+                    )
+                )
+
                 conn.commit()
         elif engine.dialect.name == "mssql":
             with engine.begin() as conn:
@@ -148,6 +177,38 @@ def init_db_schema():
                         "IF COL_LENGTH('tickets', 'is_synthetic') IS NULL "
                         "ALTER TABLE tickets ADD is_synthetic BIT NOT NULL "
                         "CONSTRAINT DF_tickets_is_synthetic DEFAULT 0"
+                    )
+                )
+                conn.execute(
+                    text(
+                        "IF COL_LENGTH('tickets', 'onboarding_id') IS NULL "
+                        "ALTER TABLE tickets ADD onboarding_id VARCHAR(50) NULL"
+                    )
+                )
+                conn.execute(
+                    text(
+                        "IF COL_LENGTH('tickets', 'due_date') IS NULL "
+                        "ALTER TABLE tickets ADD due_date VARCHAR(50) NULL"
+                    )
+                )
+                for column_name, column_type in {
+                    "employee_email": "VARCHAR(150) NULL",
+                    "manager": "VARCHAR(150) NULL",
+                    "location": "VARCHAR(150) NULL",
+                    "created_by": "VARCHAR(150) NULL",
+                }.items():
+                    conn.execute(
+                        text(
+                            f"IF COL_LENGTH('onboarding', '{column_name}') IS NULL "
+                            f"ALTER TABLE onboarding ADD {column_name} {column_type}"
+                        )
+                    )
+                conn.execute(
+                    text(
+                        "IF NOT EXISTS (SELECT 1 FROM sys.indexes "
+                        "WHERE name = 'ix_tickets_onboarding_id') "
+                        "CREATE INDEX ix_tickets_onboarding_id "
+                        "ON tickets (onboarding_id)"
                     )
                 )
     except Exception as e:
