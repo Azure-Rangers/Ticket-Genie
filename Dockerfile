@@ -20,7 +20,8 @@ RUN mkdir -p backend && touch backend/__init__.py \
 
 COPY backend/ ./backend/
 COPY database/ ./database/
-RUN pip install --no-cache-dir --no-deps .
+RUN pip install --no-cache-dir --no-deps . \
+    && rm -rf build ticket_genie.egg-info
 
 EXPOSE 8000
 
@@ -52,6 +53,6 @@ COPY --from=frontend-builder /app/dist /usr/share/nginx/html/
 
 EXPOSE 80
 
-HEALTHCHECK CMD wget --quiet --tries=1 --spider http://localhost:80/ || exit 1
+HEALTHCHECK CMD wget --quiet --tries=1 --spider http://127.0.0.1:80/ || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]

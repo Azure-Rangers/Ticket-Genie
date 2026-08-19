@@ -17,6 +17,24 @@ not in script.js).
 
 There's no JS test runner in this repo, so these are content-level
 assertions on the actual served files.
+
+frontend/js/script.js, frontend/employee_NM/, frontend/management/, and
+frontend/admin_AV/ (SCRIPT_JS/NEW_REQUEST_HTML/MANAGEMENT_SUBMIT_HTML/
+ADMIN_SUBMIT_HTML below) are now DEAD CODE from before the Svelte
+migration: none of those directories sit under frontend/public/ (Vite's
+only verbatim-copy source) and vite.config.js declares no multi-page
+build.rollupOptions.input, so Vite's build only ever emits
+frontend/index.html's own bundle - the Docker image's frontend stage
+copies just that `dist/` output into nginx. The live app is a single-page
+Svelte app (frontend/src/App.svelte switches between src/views/* by an
+activeTab store, e.g. CreateTicketView.svelte for ticket creation); the
+live Genie is frontend/src/components/GenieAgentWidget.svelte calling
+frontend/src/lib/api.js's apiGenieChat(). The SCRIPT_JS/*_HTML-based
+tests below are kept anyway per explicit instruction not to remove
+still-useful legacy/backward-compatibility coverage - just be aware they
+no longer describe what's actually deployed. The "Live Svelte frontend"
+section further down covers the endpoint wiring that actually runs in
+production.
 """
 
 from pathlib import Path
@@ -72,6 +90,47 @@ def test_svelte_widget_tracks_and_sends_conversation_state():
     assert "draft" in GENIE_WIDGET_SVELTE
     assert "active_intent" in GENIE_WIDGET_SVELTE
     assert "active_request_type" in GENIE_WIDGET_SVELTE
+
+
+# ---------------------------------------------------------------------------
+# Live Svelte frontend (frontend/src/lib/api.js + GenieAgentWidget.svelte) -
+# the endpoint wiring that actually runs in the deployed app (see module
+# docstring: frontend/js/script.js is not shipped by the Vite/Docker
+# build). These tests guard the LIVE path directly, independent of
+# whatever the legacy SCRIPT_JS-based tests above continue to assert.
+# ---------------------------------------------------------------------------
+
+
+def test_live_api_js_calls_the_real_chatbot_endpoint():
+    assert "/api/chatbot/message" in SRC_API_JS
+
+
+def test_live_api_js_chatbot_call_is_the_primary_send_path():
+    # /api/chatbot/message must be tried first, not only reachable through
+    # (or replaced by) the legacy /api/genie/chat fallback further down in
+    # the same function.
+    start = SRC_API_JS.index("export async function apiGenieChat")
+    fallback_start = SRC_API_JS.index("/api/genie/chat", start)
+    primary_region = SRC_API_JS[start:fallback_start]
+    assert "/api/chatbot/message" in primary_region
+
+
+def test_genie_widget_imports_and_uses_the_live_api_module():
+    assert "from '../lib/api.js'" in GENIE_WIDGET_SVELTE
+    assert "apiGenieChat" in GENIE_WIDGET_SVELTE
+    assert "apiGenieChat(text, state)" in GENIE_WIDGET_SVELTE
+
+
+def test_genie_widget_does_not_depend_on_dead_legacy_script_js():
+    # The live widget must send messages through the imported ES-module
+    # apiGenieChat (frontend/src/lib/api.js) only - never through the dead
+    # frontend/js/script.js or the unused legacy global from
+    # frontend/public/js/api.js (loaded into global scope by index.html
+    # but never wired into the Svelte app - see module docstring).
+    assert "script.js" not in GENIE_WIDGET_SVELTE
+    assert "public/js" not in GENIE_WIDGET_SVELTE
+    assert "window.apiGenieChat" not in GENIE_WIDGET_SVELTE
+    assert "getGenieResponse" not in GENIE_WIDGET_SVELTE
 
 
 def test_form_opening_is_gated_on_ready_for_review():

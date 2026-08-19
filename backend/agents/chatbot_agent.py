@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from models.chatbot import ChatIntent, ChatTurn, RequestType, TicketDraft
+from models.chatbot import ChatIntent, ChatScope, ChatTurn, RequestType, TicketDraft
 from services.ai_service import ai_service as default_ai_service
 
 
@@ -68,6 +68,25 @@ class ManagementActionFields(BaseModel):
 
 
 class ChatbotDecision(BaseModel):
+    # Required, no default: the workplace-scope guardrail
+    # (services.chatbot_service.handle_message) must never silently treat
+    # a missing/malformed scope as workplace. If GPT omits this field (or
+    # the response otherwise fails schema validation), ai_service.generate
+    # raises AIServiceError - handle_message's existing AI-failure path
+    # returns its safe fallback, and the out-of-scope early exit is never
+    # reached. A default here would let a malformed response fail open
+    # straight into the normal pipeline instead.
+    #
+    # Deliberately a bare annotation with no Field(description=...): a
+    # description on an enum-typed field renders as a sibling of "$ref" in
+    # the strict JSON schema services/ai_service.py sends to Azure, and
+    # Azure's strict-mode validator rejects any keyword alongside "$ref"
+    # ("$ref cannot have keywords {'description'}") - confirmed live,
+    # this made every chatbot turn fail with a 400, not just out-of-scope
+    # ones. The full scope guidance already lives in the SCOPE section of
+    # CHATBOT_DECISION_PROMPT below, which GPT reads regardless - no
+    # semantic guidance is lost by removing the redundant per-field copy.
+    scope: ChatScope
     intent: ChatIntent
     action: ChatActionType
     message: str
@@ -97,7 +116,50 @@ yourself here - that happens in a separate step after authorized
 knowledge is retrieved. Just decide what the user wants and extract any
 facts they already gave you.
 
-INTENTS (choose exactly one):
+SCOPE (decide this first, independently of everything else below):
+Genie exists to help with workplace matters only - company policy, HR,
+IT, accounting, workplace operations, tickets, leave, payroll, benefits,
+company devices/software, and similar. Set `scope`:
+- workplace: the turn is about a workplace matter, OR it's a normal
+  conversational continuation of one (e.g. answering a follow-up
+  question Genie itself just asked, giving more detail about an issue
+  already being discussed).
+- out_of_scope: the turn is about something with no genuine connection
+  to work - general trivia, recipes, movies/TV/streaming
+  recommendations, sports, celebrities, general politics/elections
+  (who to vote for), weather forecasts, poetry/creative writing about
+  non-work topics, or similar.
+Judge by MEANING, not by whether a topic word appears - a topic word
+alone (e.g. "movie", "weather", "politics") does not decide it either
+way. What decides it is whether the subject is genuinely the company/
+workplace or something personal/unrelated:
+- "Can you help me write an email to HR about my benefits?" -> workplace
+- "Write me an email inviting my friends to a movie." -> out_of_scope
+- "What is the company's policy on political discussions at work?" ->
+  workplace (the subject is a company policy, not politics itself)
+- "Who should I vote for?" -> out_of_scope
+- "Can I watch Netflix on my company laptop?" -> workplace (it's about
+  a company device/policy)
+- "Recommend me a Netflix show." -> out_of_scope
+- "What's the weather policy for office closures?" -> workplace
+- "What's tomorrow's weather?" -> out_of_scope
+- "My VPN isn't working." / "How do reimbursements work?" / "Can I take
+  leave next Friday?" / "Move HD-1023 to IT." -> workplace
+- "Give me a biryani recipe." / "What movie should I watch?" / "Tell me
+  about Taylor Swift." / "Explain the NBA playoffs." -> out_of_scope
+
+This must be judged fresh on THIS turn's actual message, even when the
+intent below is already fixed by an in-progress flow (ticket drafting or
+a management action awaiting more info): if the user abandons that flow
+and asks something with no workplace connection, scope is out_of_scope
+for this turn regardless of what came before. Conversely, don't mark an
+on-topic continuation (e.g. a plain date, a department name, "yes") as
+out_of_scope just because it's short - short is not the same as
+unrelated. When genuinely unsure, prefer workplace - only choose
+out_of_scope when confident the turn has no real workplace connection.
+
+INTENTS (choose exactly one; irrelevant when scope is out_of_scope, but
+still classify honestly):
 - navigation: the user wants to get to a page/feature in the app
   (e.g. "how do I get to my dashboard", "where can I see my open
   requests", "take me to notifications"). Never offer to create a

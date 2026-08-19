@@ -14,7 +14,7 @@ served script.js, matching tests/test_frontend_chatbot_wiring.py's approach.
 from pathlib import Path
 
 from agents.chatbot_agent import ChatActionType, ChatbotDecision, ExtractedTicketFields
-from models.chatbot import ChatIntent, ChatRequest, RequestType, TicketDraft
+from models.chatbot import ChatIntent, ChatRequest, ChatScope, RequestType, TicketDraft
 from services import chatbot_service
 from services.ticket_draft_service import merge_extracted_fields
 
@@ -34,6 +34,7 @@ def ask_leave(message, *, decision, **kwargs):
 
 def _leave_decision(action_type=ChatActionType.SHOW_TICKET_DRAFT, **fields):
     return ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=ChatIntent.LEAVE_MANAGEMENT,
         action=action_type,
         message="",

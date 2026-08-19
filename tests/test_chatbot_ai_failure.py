@@ -38,7 +38,11 @@ from backend.main import app
 from models.chatbot import ChatRequest
 from services import ai_service as ai_service_module
 from services import chatbot_service
-from services.ai_service import AIServiceError, AIServiceWrapper
+from services.ai_service import (
+    AIServiceError,
+    AIServiceWrapper,
+    _pydantic_to_strict_schema,
+)
 
 client = TestClient(app)
 client.headers["Authorization"] = (
@@ -173,6 +177,7 @@ def test_chatbot_decision_round_trips_through_the_shared_strict_schema_path(
     monkeypatch.setenv("GROUP1OPENAIAPIKEY", "real-shared-key")
 
     decision_payload = {
+        "scope": "workplace",
         "intent": "support_issue",
         "action": "show_ticket_draft",
         "message": "Here's your draft.",
@@ -203,6 +208,41 @@ def test_chatbot_decision_round_trips_through_the_shared_strict_schema_path(
     assert result.intent == "support_issue"
     assert result.request_type == "standard"
     assert result.ticket_fields.title == "Need two monitors"
+
+
+def test_strict_schema_never_puts_a_sibling_keyword_next_to_a_ref():
+    """
+    Regression guard: Azure/OpenAI's strict json_schema mode rejects any
+    property whose schema is a "$ref" with a sibling keyword (e.g.
+    "description") - live error: "$ref cannot have keywords
+    {'description'}". Pydantic emits a bare "$ref" for an enum-typed
+    field (see ChatIntent/RequestType/etc. above), but adding
+    Field(description=...) to an enum-typed field makes Pydantic attach
+    that description alongside the "$ref" instead, which is invalid under
+    strict mode and made EVERY chatbot turn fail with a 400 - not just
+    scope-related ones - until models.chatbot.ChatbotDecision.scope was
+    fixed to a bare annotation. This walks the real schema every chatbot
+    request sends and fails if any $defs-based ("$ref") property ever
+    regresses to carrying a sibling keyword again, for any field.
+    """
+
+    from agents.chatbot_agent import ChatbotDecision
+
+    def _check(node, path):
+        if isinstance(node, dict):
+            if "$ref" in node and len(node) > 1:
+                extra = set(node) - {"$ref"}
+                raise AssertionError(
+                    f"{path}: $ref has forbidden sibling keyword(s) {extra}"
+                )
+            for key, value in node.items():
+                _check(value, f"{path}.{key}")
+        elif isinstance(node, list):
+            for i, item in enumerate(node):
+                _check(item, f"{path}[{i}]")
+
+    schema = _pydantic_to_strict_schema(ChatbotDecision)
+    _check(schema, "schema")
 
 
 def test_grounded_answer_round_trips_through_the_shared_strict_schema_path(
@@ -325,11 +365,12 @@ def test_successful_decision_still_works_normally():
         ChatbotDecision,
         ExtractedTicketFields,
     )
-    from models.chatbot import ChatIntent, RequestType
+    from models.chatbot import ChatIntent, ChatScope, RequestType
 
     class _FakeAIService:
         def generate(self, *, system_prompt, user_content, response_model):
             return ChatbotDecision(
+                scope=ChatScope.WORKPLACE,
                 intent=ChatIntent.SUPPORT_ISSUE,
                 action=ChatActionType.SHOW_TICKET_DRAFT,
                 message="Here's your draft.",

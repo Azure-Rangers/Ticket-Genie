@@ -23,6 +23,7 @@ from database.crud import create_ticket, get_ticket_by_id
 from models.chatbot import (
     ChatIntent,
     ChatRequest,
+    ChatScope,
     PendingManagementAction,
     TicketCandidate,
 )
@@ -50,6 +51,7 @@ def ask_mgmt(message, *, decision, current_user, pending_action=None, **kwargs):
 
 def _decision(intent, action_type=ChatActionType.MANAGEMENT_ACTION, **fields):
     return ChatbotDecision(
+        scope=ChatScope.WORKPLACE,
         intent=intent,
         action=action_type,
         message="",

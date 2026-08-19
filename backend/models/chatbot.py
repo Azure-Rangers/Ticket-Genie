@@ -22,6 +22,19 @@ class ChatIntent(str, Enum):
     CREATE_PORTAL_EMPLOYEE = "create_portal_employee"
 
 
+class ChatScope(str, Enum):
+    """
+    Semantic scope classification for a single user turn, decided by GPT
+    alongside ChatIntent (see agents/chatbot_agent.ChatbotDecision.scope).
+    services.chatbot_service enforces this deterministically as a hard
+    early exit BEFORE any ticket drafting, RAG retrieval, ticket-status
+    lookup, or management-action dispatch - see its module docstring.
+    """
+
+    WORKPLACE = "workplace"
+    OUT_OF_SCOPE = "out_of_scope"
+
+
 class RequestType(str, Enum):
     """
     Which of the three existing New Request tabs a ticket_draft is meant
