@@ -1,18 +1,29 @@
 <script>
+  import { onMount } from 'svelte';
   import { activeTab, isCreateModalOpen, submitNewTicket } from '../lib/stores/tickets.js';
   import { userStore } from '../lib/stores/auth.js';
-  import { apiCheckAnnouncementMatch } from '../lib/api.js';
+  import { apiCheckAnnouncementMatch, apiFetchUpperManagementUsers } from '../lib/api.js';
 
   let title = '';
   let departmentSelect = 'Auto';
   let category = 'Auto';
   let priority = 'Medium';
   let description = '';
+  let selectedApprover = '';
+  let upperManagementUsers = [];
   let submitting = false;
   let errorMsg = '';
   let announcementMatch = null;
   let checkingAnnouncements = false;
   let bypassAnnouncementCheck = false;
+
+  onMount(async () => {
+    try {
+      upperManagementUsers = await apiFetchUpperManagementUsers();
+    } catch (err) {
+      console.warn("Failed to fetch upper management users:", err);
+    }
+  });
 
   async function handleSubmit() {
     if (!title.trim()) {
@@ -61,12 +72,14 @@
         priority,
         department: backendDept,
         department_override: backendDept,
+        assigned_to: backendDept === 'Upper Management' ? (selectedApprover || null) : null,
         requester: $userStore?.name || 'Employee User',
         status: 'Open'
       });
       $isCreateModalOpen = false;
       title = '';
       description = '';
+      selectedApprover = '';
     } catch (err) {
       errorMsg = err.message || 'Failed to submit ticket.';
     } finally {
@@ -151,6 +164,18 @@
             </select>
           </div>
         </div>
+
+        {#if departmentSelect.includes('Upper') || departmentSelect.includes('Admin')}
+          <div class="form-group animate-fade">
+            <label for="modal-approver"><i class="ph-bold ph-user-check"></i> Assign Upper Management Approver</label>
+            <select id="modal-approver" bind:value={selectedApprover}>
+              <option value="">✨ Upper Management Pool (Unassigned)</option>
+              {#each upperManagementUsers as user}
+                <option value={user.name}>{user.name} ({user.role || 'Upper Management'})</option>
+              {/each}
+            </select>
+          </div>
+        {/if}
 
         <div class="form-group">
           <label for="ticket-desc">Description & Details</label>

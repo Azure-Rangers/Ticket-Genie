@@ -7,6 +7,7 @@ export const loading = writable(false);
 export const searchQuery = writable('');
 export const statusFilter = writable('all');
 export const priorityFilter = writable('all');
+export const assigneeFilter = writable('all');
 const savedTab = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('activeTab') : null;
 const savedPrevTab = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('previousTab') : null;
 let savedSelectedTicket = null;
@@ -100,8 +101,8 @@ export function isSameDepartment(userDeptRaw, ticketDeptRaw) {
 }
 
 export const filteredTickets = derived(
-  [tickets, searchQuery, statusFilter, priorityFilter, activeTab, userStore],
-  ([$tickets, $search, $status, $priority, $tab, $user]) => {
+  [tickets, searchQuery, statusFilter, priorityFilter, assigneeFilter, activeTab, userStore],
+  ([$tickets, $search, $status, $priority, $assignee, $tab, $user]) => {
     const isEmployeeView = $tab === 'dashboard' || $tab === 'my-tickets';
     const userEmail = ($user?.email || '').toLowerCase().trim();
     const userOid = ($user?.objectId || $user?.azure_object_id || $user?.oid || '').toLowerCase().trim();
@@ -149,12 +150,26 @@ export const filteredTickets = derived(
         (t.title && t.title.toLowerCase().includes($search.toLowerCase())) ||
         (t.id && t.id.toLowerCase().includes($search.toLowerCase())) ||
         (t.category && t.category.toLowerCase().includes($search.toLowerCase())) ||
-        (t.description && t.description.toLowerCase().includes($search.toLowerCase()));
+        (t.description && t.description.toLowerCase().includes($search.toLowerCase())) ||
+        (t.assigned_to && t.assigned_to.toLowerCase().includes($search.toLowerCase()));
 
       const matchStatus = $status === 'all' || t.status?.toLowerCase() === $status.toLowerCase();
       const matchPriority = $priority === 'all' || t.priority?.toLowerCase() === $priority.toLowerCase();
 
-      return matchSearch && matchStatus && matchPriority;
+      const assignedStr = (t.assigned_to || '').toLowerCase().trim();
+      const matchAssignee = $assignee === 'all'
+        ? true
+        : $assignee === 'unassigned'
+        ? (!assignedStr)
+        : $assignee === 'me'
+        ? (assignedStr && (
+            (userName && assignedStr.includes(userName)) ||
+            (userEmail && assignedStr.includes(userEmail)) ||
+            (userOid && assignedStr.includes(userOid))
+          ))
+        : true;
+
+      return matchSearch && matchStatus && matchPriority && matchAssignee;
     });
   }
 );
@@ -177,8 +192,6 @@ export const ticketMetrics = derived(filteredTickets, ($tickets) => {
     slaPercent: slaPassed || 98
   };
 });
-
-
 
 export async function submitNewTicket(payload) {
   loading.set(true);
@@ -215,6 +228,32 @@ export async function transferTicketDepartment(ticketId, newDepartment) {
     return updated;
   } catch (err) {
     console.error("transferTicketDepartment failed:", err);
+    throw err;
+  }
+}
+
+export async function assignTicketToSelf(ticketId, assigneeName = null) {
+  try {
+    const user = get(userStore);
+    const name = assigneeName || user?.name || user?.email?.split('@')[0] || 'Support Agent';
+    const updated = await apiUpdateTicket(ticketId, { assigned_to: name });
+    tickets.update(all => all.map(t => t.id === ticketId ? { ...t, assigned_to: name } : t));
+    selectedTicket.update(st => (st && st.id === ticketId ? { ...st, assigned_to: name } : st));
+    return updated;
+  } catch (err) {
+    console.error("assignTicketToSelf failed:", err);
+    throw err;
+  }
+}
+
+export async function unassignTicket(ticketId) {
+  try {
+    const updated = await apiUpdateTicket(ticketId, { assigned_to: '' });
+    tickets.update(all => all.map(t => t.id === ticketId ? { ...t, assigned_to: null } : t));
+    selectedTicket.update(st => (st && st.id === ticketId ? { ...st, assigned_to: null } : st));
+    return updated;
+  } catch (err) {
+    console.error("unassignTicket failed:", err);
     throw err;
   }
 }

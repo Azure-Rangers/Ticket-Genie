@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { checkAuthGuard, userStore, isTicketer } from '../lib/stores/auth.js';
-  import { filteredTickets, statusFilter, priorityFilter, selectedTicket, activeTab, changeTicketStatus } from '../lib/stores/tickets.js';
+  import { filteredTickets, statusFilter, priorityFilter, assigneeFilter, selectedTicket, activeTab, changeTicketStatus, assignTicketToSelf } from '../lib/stores/tickets.js';
   import StatusBadge from '../components/StatusBadge.svelte';
   import { apiExportTicketPDF, apiExportCalendar } from '../lib/api.js';
 
@@ -19,6 +19,15 @@
     changeTicketStatus(ticket.id, 'Resolved');
   }
 
+  async function handleSelfAssign(e, ticket) {
+    e.stopPropagation();
+    try {
+      await assignTicketToSelf(ticket.id);
+    } catch (err) {
+      alert(err.message || "Failed to assign ticket.");
+    }
+  }
+
   function getRequesterName(t) {
     if (t.is_anonymous) return 'Anonymous Employee';
     if (t.requester && t.requester !== t.department) return t.requester;
@@ -31,6 +40,8 @@
     }
     return 'Employee User';
   }
+
+  $: isEmployeeRole = $userStore?.role === 'Employee';
 
   $: queueTitle = $activeTab === 'queue-it' ? 'IT Department Queue'
                 : $activeTab === 'queue-hr' ? 'HR Department Queue'
@@ -72,6 +83,15 @@
           <option value="Low">Low</option>
         </select>
       </div>
+
+      <div class="filter-group">
+        <label for="inbox-assignee-filter"><i class="ph-bold ph-user-check"></i> Assignee:</label>
+        <select id="inbox-assignee-filter" bind:value={$assigneeFilter}>
+          <option value="all">All Assignees</option>
+          <option value="unassigned">Unassigned Only</option>
+          <option value="me">Assigned to Me</option>
+        </select>
+      </div>
     </div>
   </div>
 
@@ -91,6 +111,7 @@
             <th>Title & Description</th>
             <th>Requester</th>
             <th>Department</th>
+            <th>Assignee</th>
             <th>Priority</th>
             <th>Status</th>
             <th>Created</th>
@@ -128,6 +149,26 @@
                 <span class="category-tag dept-badge">
                   <i class="ph-bold ph-buildings"></i> {ticket.department || 'General'}
                 </span>
+              </td>
+              <td>
+                {#if ticket.assigned_to}
+                  <span class="assignee-badge">
+                    <i class="ph-bold ph-user-check"></i> {ticket.assigned_to}
+                  </span>
+                {:else}
+                  <div class="unassigned-wrapper">
+                    <span class="unassigned-tag">Unassigned</span>
+                    {#if !isEmployeeRole}
+                      <button 
+                        class="btn-claim-inline"
+                        on:click={(e) => handleSelfAssign(e, ticket)}
+                        title="Assign ticket to me"
+                      >
+                        Claim
+                      </button>
+                    {/if}
+                  </div>
+                {/if}
               </td>
               <td>
                 <StatusBadge status={ticket.priority || 'Medium'} type="priority" />
@@ -391,6 +432,51 @@
 
   .btn-quick-resolve:hover {
     background: #10b981;
+    color: #ffffff;
+  }
+
+  .assignee-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #0369a1;
+    background: #e0f2fe;
+    border: 1px solid #bae6fd;
+    padding: 3px 9px;
+    border-radius: 6px;
+  }
+
+  .unassigned-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .unassigned-tag {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+
+  .btn-claim-inline {
+    background: #e0e7ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-claim-inline:hover {
+    background: #4338ca;
     color: #ffffff;
   }
 

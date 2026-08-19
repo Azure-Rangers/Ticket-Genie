@@ -71,6 +71,82 @@ def handle_update_profile(
     )
 
 
+@router.get("/upper-management")
+def get_upper_management_users(
+    current_user: dict = Depends(verify_azure_user),
+):
+    from sqlalchemy import func, or_
+
+    from database.connection import SessionLocal
+    from database.models_db import DepartmentUserDB, UserProfileDB
+
+    users = []
+    seen_names = set()
+
+    with SessionLocal() as session:
+        profiles = (
+            session.query(UserProfileDB)
+            .filter(
+                or_(
+                    func.lower(UserProfileDB.department).contains("upper"),
+                    func.lower(UserProfileDB.department).contains("executive"),
+                    func.lower(UserProfileDB.role).contains("super"),
+                    func.lower(UserProfileDB.role).contains("management"),
+                    func.lower(UserProfileDB.role).contains("executive"),
+                )
+            )
+            .all()
+        )
+        for p in profiles:
+            if p.name and p.name not in seen_names:
+                seen_names.add(p.name)
+                users.append(
+                    {
+                        "id": p.id,
+                        "name": p.name,
+                        "email": p.email,
+                        "role": p.role,
+                        "department": p.department,
+                    }
+                )
+
+        dept_users = (
+            session.query(DepartmentUserDB)
+            .filter(
+                or_(
+                    func.lower(DepartmentUserDB.department_name).contains("upper"),
+                    func.lower(DepartmentUserDB.department_name).contains("executive"),
+                )
+            )
+            .all()
+        )
+        for du in dept_users:
+            name = du.user_email.split("@")[0] if du.user_email else "Upper Management Admin"
+            if name not in seen_names:
+                seen_names.add(name)
+                users.append(
+                    {
+                        "id": du.id,
+                        "name": name,
+                        "email": du.user_email,
+                        "role": du.role,
+                        "department": du.department_name,
+                    }
+                )
+
+    defaults = [
+        {"name": "Greg Davis", "role": "Super Admin & VP Operations", "department": "Upper Executive Management"},
+        {"name": "Sarah Jenkins", "role": "Director of HR & Operations", "department": "Upper Management"},
+        {"name": "Alex Vance", "role": "Chief Operations Officer", "department": "Upper Management"},
+    ]
+    for d in defaults:
+        if d["name"] not in seen_names:
+            seen_names.add(d["name"])
+            users.append(d)
+
+    return users
+
+
 @router.post("/azure-login")
 def handle_azure_login(req: AzureLoginRequest):
     from services.jwt_verifier import verify_azure_jwt

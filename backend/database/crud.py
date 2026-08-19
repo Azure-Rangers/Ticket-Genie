@@ -189,6 +189,7 @@ def _create_ticket_internal(ticket: TicketCreate, db: Optional[Session] = None) 
             is_anonymous=ticket.is_anonymous,
             attachment=ticket.attachment,
             requester_id=ticket.requester_id,
+            assigned_to=getattr(ticket, "assigned_to", None),
             classification_status=(
                 "Pending AI Triage"
                 if getattr(ticket, "confidence", 0.0) == 0.0
@@ -240,6 +241,7 @@ def get_all_tickets(
     search: Optional[str] = None,
     requester_id: Optional[str] = None,
     department: Optional[str] = None,
+    assigned_to: Optional[str] = None,
     db: Optional[Session] = None,
 ) -> List[dict]:
     session = db or SessionLocal()
@@ -300,6 +302,20 @@ def get_all_tickets(
             dept_str = f"%{department.lower().strip()}%"
             query = query.filter(func.lower(TicketDB.department).like(dept_str))
 
+        if assigned_to and assigned_to.strip():
+            ass_str = assigned_to.lower().strip()
+            if ass_str == "unassigned":
+                query = query.filter(
+                    or_(
+                        TicketDB.assigned_to.is_(None),
+                        func.lower(TicketDB.assigned_to) == "",
+                    )
+                )
+            elif ass_str != "all":
+                query = query.filter(
+                    func.lower(TicketDB.assigned_to).like(f"%{ass_str}%")
+                )
+
         if search:
             s = f"%{search.lower().strip()}%"
             query = query.filter(
@@ -308,6 +324,7 @@ def get_all_tickets(
                     func.lower(TicketDB.id).like(s),
                     func.lower(TicketDB.category).like(s),
                     func.lower(TicketDB.description).like(s),
+                    func.lower(TicketDB.assigned_to).like(s),
                 )
             )
 
@@ -379,8 +396,11 @@ def update_ticket(
         old_status = ticket.status
         update_data = ticket_update.model_dump(exclude_unset=True)
         for field, value in update_data.items():
-            if value is not None and hasattr(ticket, field):
-                setattr(ticket, field, value)
+            if hasattr(ticket, field):
+                if field == "assigned_to" and (value == "" or value is None):
+                    setattr(ticket, field, None)
+                elif value is not None:
+                    setattr(ticket, field, value)
 
         ticket.updatedAt = datetime.now().isoformat()
         session.commit()

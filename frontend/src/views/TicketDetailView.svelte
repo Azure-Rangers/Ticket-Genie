@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { selectedTicket, activeTab, previousTab, changeTicketStatus, transferTicketDepartment } from '../lib/stores/tickets.js';
+  import { selectedTicket, activeTab, previousTab, changeTicketStatus, transferTicketDepartment, assignTicketToSelf, unassignTicket } from '../lib/stores/tickets.js';
   import { userStore, isTicketer } from '../lib/stores/auth.js';
   import StatusBadge from '../components/StatusBadge.svelte';
   import { apiFetchComments, apiPostComment, apiSuggestResponse, apiExportTicketPDF, apiExportTicketDOCX, apiExportCalendar } from '../lib/api.js';
@@ -12,10 +12,57 @@
   let generatingAiResponse = false;
   let targetTransferDept = '';
   let transferring = false;
+  let assigning = false;
   let errorMsg = '';
 
   $: if (ticket && ticket.department && !targetTransferDept) {
     targetTransferDept = ticket.department;
+  }
+
+  $: currentUserName = $userStore?.name || $userStore?.email?.split('@')[0] || '';
+  $: currentUserEmail = ($userStore?.email || '').toLowerCase().trim();
+  $: currentUserOid = ($userStore?.objectId || $userStore?.azure_object_id || $userStore?.oid || '').toLowerCase().trim();
+
+  $: isAssignedToCurrent = (() => {
+    if (!ticket || !ticket.assigned_to) return false;
+    const a = ticket.assigned_to.toLowerCase().trim();
+    return (currentUserName && a.includes(currentUserName.toLowerCase())) ||
+           (currentUserEmail && a.includes(currentUserEmail)) ||
+           (currentUserOid && a.includes(currentUserOid));
+  })();
+
+  async function handleSelfAssignDetail() {
+    if (!ticket) return;
+    assigning = true;
+    try {
+      const updated = await assignTicketToSelf(ticket.id);
+      if (updated) {
+        ticket = { ...ticket, assigned_to: updated.assigned_to };
+        $selectedTicket = ticket;
+        await loadComments();
+      }
+    } catch (err) {
+      alert(err.message || "Failed to self-assign ticket.");
+    } finally {
+      assigning = false;
+    }
+  }
+
+  async function handleUnassignDetail() {
+    if (!ticket) return;
+    assigning = true;
+    try {
+      const updated = await unassignTicket(ticket.id);
+      if (updated) {
+        ticket = { ...ticket, assigned_to: null };
+        $selectedTicket = ticket;
+        await loadComments();
+      }
+    } catch (err) {
+      alert(err.message || "Failed to unassign ticket.");
+    } finally {
+      assigning = false;
+    }
   }
 
   async function handleTransferTicket() {
@@ -260,6 +307,10 @@
             <span class="meta-val"><i class="ph-bold ph-buildings"></i> {ticket.department || 'Unassigned'}</span>
           </div>
           <div class="meta-item">
+            <span class="meta-label">Assignee</span>
+            <span class="meta-val"><i class="ph-bold ph-user-check"></i> {ticket.assigned_to || 'Unassigned'}</span>
+          </div>
+          <div class="meta-item">
             <span class="meta-label">Priority</span>
             <StatusBadge status={ticket.priority || 'Medium'} type="priority" />
           </div>
@@ -283,6 +334,37 @@
         </div>
 
         {#if isTicketer($userStore)}
+          <!-- Assignee Action Bar -->
+          <div class="assignee-change-bar">
+            <span class="assignee-bar-title"><i class="ph-bold ph-user-check"></i> Ticket Assignee:</span>
+            <span class="current-assignee-text">{ticket.assigned_to ? ticket.assigned_to : 'Unassigned'}</span>
+            {#if !isAssignedToCurrent}
+              <button 
+                class="btn-assign-me" 
+                on:click={handleSelfAssignDetail}
+                disabled={assigning}
+              >
+                {#if assigning}
+                  <i class="ph-bold ph-spinner animate-spin"></i> Assigning...
+                {:else}
+                  <i class="ph-bold ph-user-plus"></i> Assign to Me
+                {/if}
+              </button>
+            {:else}
+              <button 
+                class="btn-unassign-me" 
+                on:click={handleUnassignDetail}
+                disabled={assigning}
+              >
+                {#if assigning}
+                  <i class="ph-bold ph-spinner animate-spin"></i> Updating...
+                {:else}
+                  <i class="ph-bold ph-user-minus"></i> Unassign Ticket
+                {/if}
+              </button>
+            {/if}
+          </div>
+
           <div class="status-change-bar">
             <span>Update Ticket Status:</span>
             <button 
@@ -853,6 +935,84 @@
   }
 
   .btn-transfer:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .assignee-change-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--border-color);
+  }
+
+  .assignee-bar-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .current-assignee-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #0369a1;
+    background: #e0f2fe;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1px solid #bae6fd;
+  }
+
+  .btn-assign-me {
+    background: #4338ca;
+    color: #ffffff;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s, transform 0.1s;
+  }
+
+  .btn-assign-me:hover:not(:disabled) {
+    background: #3730a3;
+    transform: translateY(-1px);
+  }
+
+  .btn-assign-me:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-unassign-me {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+
+  .btn-unassign-me:hover:not(:disabled) {
+    background: #e2e8f0;
+    color: #1e293b;
+  }
+
+  .btn-unassign-me:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }

@@ -209,6 +209,7 @@ class TestSuperAdminRoleManagement(unittest.TestCase):
                 search=None,
                 requester_id="admin-oid-999",
                 department=None,
+                assigned_to=None,
                 db=mock_db,
             )
             self.assertEqual(len(tickets), 1)
@@ -223,6 +224,7 @@ class TestSuperAdminRoleManagement(unittest.TestCase):
                 search=None,
                 requester_id=None,
                 department="IT Team",
+                assigned_to=None,
                 db=mock_db,
             )
             self.assertEqual(len(tickets), 1)

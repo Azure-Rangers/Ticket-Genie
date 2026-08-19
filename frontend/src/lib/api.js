@@ -397,3 +397,20 @@ export async function apiFetchUserProfile() {
   }
   return { name: "User", email: "user@ticketgenie.com", role: "Employee", department: "Operations" };
 }
+
+export async function apiFetchUpperManagementUsers() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/users/upper-management`, { headers: getAuthHeaders() });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) return data;
+    }
+  } catch (err) {
+    console.warn("apiFetchUpperManagementUsers failed:", err);
+  }
+  return [
+    { name: "Greg Davis", role: "Super Admin & VP Operations", department: "Upper Executive Management" },
+    { name: "Sarah Jenkins", role: "Director of HR & Operations", department: "Upper Management" },
+    { name: "Alex Vance", role: "Chief Operations Officer", department: "Upper Management" }
+  ];
+}

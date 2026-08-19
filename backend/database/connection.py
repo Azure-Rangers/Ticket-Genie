@@ -107,6 +107,10 @@ def init_db_schema():
                     conn.execute(
                         text("ALTER TABLE tickets ADD COLUMN requester_id VARCHAR(150)")
                     )
+                if "assigned_to" not in existing_cols:
+                    conn.execute(
+                        text("ALTER TABLE tickets ADD COLUMN assigned_to VARCHAR(150)")
+                    )
                 additions = {
                     "classification_status": "VARCHAR(50) DEFAULT 'Classified'",
                     "classification_confidence": "VARCHAR(20)",

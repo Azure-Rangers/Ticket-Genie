@@ -29,6 +29,7 @@ class TicketDB(Base):
     parent_ticket_id = Column(String(50), nullable=True)
     auto_resolved = Column(Boolean, default=False, nullable=False)
     is_synthetic = Column(Boolean, default=False, nullable=False, index=True)
+    assigned_to = Column(String(150), nullable=True, index=True)
 
     def to_dict(self) -> dict:
         return {
@@ -46,6 +47,7 @@ class TicketDB(Base):
             "is_anonymous": self.is_anonymous,
             "attachment": self.attachment,
             "requester_id": self.requester_id,
+            "assigned_to": self.assigned_to,
             "classification_status": self.classification_status,
             "classification_confidence": float(self.classification_confidence)
             if self.classification_confidence

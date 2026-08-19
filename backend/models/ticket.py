@@ -26,6 +26,7 @@ class TicketCreate(BaseModel):
     is_anonymous: bool = False
     attachment: Optional[str] = None
     requester_id: Optional[str] = None
+    assigned_to: Optional[str] = None
     # Deterministic routing bypass for the small set of request types that
     # must NEVER go through AI classification (currently: Leave Management,
     # which always routes to "Upper Management" - see
@@ -47,6 +48,7 @@ class TicketUpdate(BaseModel):
     is_anonymous: Optional[bool] = None
     attachment: Optional[str] = None
     requester_id: Optional[str] = None
+    assigned_to: Optional[str] = None
 
 
 class TicketResponse(BaseModel):
@@ -62,6 +64,7 @@ class TicketResponse(BaseModel):
     is_anonymous: bool = False
     attachment: Optional[str] = None
     requester_id: Optional[str] = None
+    assigned_to: Optional[str] = None
     requester: Optional[str] = None
     requester_name: Optional[str] = None
     classification_status: str = "Classified"
