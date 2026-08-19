@@ -39,6 +39,7 @@ except ImportError:
 
 DEFAULT_CONFIDENCE_THRESHOLD = 0.70
 DEFAULT_AZURE_API_VERSION = "2024-08-01-preview"
+DEFAULT_AI_TIMEOUT = 8.0
 
 
 class AIServiceError(Exception):
@@ -188,12 +189,18 @@ def generate_structured(
         body["max_output_tokens"] = max_tokens
         body["max_tokens"] = max_tokens
 
+    timeout_raw = os.getenv("AZURE_OPENAI_TIMEOUT", str(DEFAULT_AI_TIMEOUT))
+    try:
+        timeout = float(timeout_raw)
+    except ValueError:
+        timeout = DEFAULT_AI_TIMEOUT
+
     try:
         response = requests.post(
             endpoint,
             headers={"api-key": api_key, "Content-Type": "application/json"},
             json=body,
-            timeout=3,
+            timeout=timeout,
         )
         response.raise_for_status()
         payload = response.json()
@@ -220,7 +227,7 @@ def generate_structured(
                 azure_endpoint=endpoint,
                 api_key=api_key,
                 api_version=api_version,
-                timeout=2.0,
+                timeout=timeout,
                 max_retries=0,
             )
             resp = client.chat.completions.create(
@@ -371,9 +378,18 @@ def _call_azure_openai(
     if context:
         user_content += f"\nAdditional context: {json.dumps(context, default=str)}"
 
+    timeout_raw = os.getenv("AZURE_OPENAI_TIMEOUT", str(DEFAULT_AI_TIMEOUT))
+    try:
+        timeout = float(timeout_raw)
+    except ValueError:
+        timeout = DEFAULT_AI_TIMEOUT
+
     try:
         client = AzureOpenAI(
-            azure_endpoint=endpoint, api_key=api_key, api_version=api_version
+            azure_endpoint=endpoint,
+            api_key=api_key,
+            api_version=api_version,
+            timeout=timeout,
         )
         response = client.chat.completions.create(
             model=deployment,

@@ -1177,6 +1177,7 @@ def update_user_profile(
     email: Optional[str] = None,
     phone: Optional[str] = None,
     department: Optional[str] = None,
+    role: Optional[str] = None,
     azure_object_id: Optional[str] = None,
     db: Optional[Session] = None,
 ) -> Optional[dict]:
@@ -1216,6 +1217,8 @@ def update_user_profile(
                 id=resolved_id or "usr-unknown",
                 name=name or "User",
                 email=email or f"{resolved_id}@example.com",
+                role=role or "Employee",
+                department=department or "General",
             )
             session.add(user)
 
@@ -1227,6 +1230,8 @@ def update_user_profile(
             user.phone = phone
         if department:
             user.department = department
+        if role:
+            user.role = role
         if azure_object_id:
             user.azure_object_id = azure_object_id
 
