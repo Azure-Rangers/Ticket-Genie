@@ -2,34 +2,24 @@
   import { onMount } from 'svelte';
   import { activeTab } from '../lib/stores/tickets.js';
   import { userStore } from '../lib/stores/auth.js';
-  import { apiFetchAnnouncements } from '../lib/api.js';
+  import { apiFetchLatestAnnouncementWithSeverity } from '../lib/api.js';
 
   let latestAnnouncement = null;
+  let severity = { level: 'info', label: 'ANNOUNCEMENT', icon: 'ph-megaphone', color_class: 'severity-info' };
 
   onMount(async () => {
     try {
-      const list = await apiFetchAnnouncements();
-      if (Array.isArray(list) && list.length > 0) {
-        latestAnnouncement = list[0];
+      const data = await apiFetchLatestAnnouncementWithSeverity();
+      if (data && data.announcement) {
+        latestAnnouncement = data.announcement;
+        if (data.severity) {
+          severity = data.severity;
+        }
       }
     } catch (err) {
-      console.warn("Failed to load header announcement:", err);
+      console.warn("Failed to load header announcement with AI severity from backend:", err);
     }
   });
-
-  function getSeverity(anc) {
-    if (!anc) return { level: 'info', label: 'ANNOUNCEMENT', icon: 'ph-megaphone', colorClass: 'severity-info' };
-    const text = `${anc.category || ''} ${anc.title || ''} ${anc.content || ''}`.toLowerCase();
-    if (text.includes('critical') || text.includes('emergency') || text.includes('outage') || text.includes('security') || text.includes('vulnerability') || text.includes('incident') || text.includes('breach')) {
-      return { level: 'critical', label: 'CRITICAL ALERT', icon: 'ph-warning-octagon', colorClass: 'severity-critical' };
-    }
-    if (text.includes('maintenance') || text.includes('warning') || text.includes('system alert') || text.includes('downtime') || text.includes('interruption') || text.includes('scheduled')) {
-      return { level: 'warning', label: 'SYSTEM NOTICE', icon: 'ph-warning', colorClass: 'severity-warning' };
-    }
-    return { level: 'info', label: 'ANNOUNCEMENT', icon: 'ph-megaphone', colorClass: 'severity-info' };
-  }
-
-  $: severity = getSeverity(latestAnnouncement);
 </script>
 
 <header class="header">
@@ -37,14 +27,14 @@
     {#if latestAnnouncement}
       <!-- svelte-ignore a11y-click-events-have-key-events a11y-interactive-supports-focus -->
       <div 
-        class="announcement-banner {severity.colorClass} animate-fade"
+        class="announcement-banner {severity.color_class || severity.colorClass || 'severity-info'} animate-fade"
         on:click={() => $activeTab = 'announcements'}
         role="button"
         tabindex="0"
         title="Click to view all company announcements"
       >
         <span class="severity-pill">
-          <i class="ph-bold {severity.icon}"></i> {severity.label}
+          <i class="ph-bold {severity.icon || 'ph-megaphone'}"></i> {severity.label || 'ANNOUNCEMENT'}
         </span>
         <span class="banner-title">{latestAnnouncement.title}</span>
         {#if latestAnnouncement.content}

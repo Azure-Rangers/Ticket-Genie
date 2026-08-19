@@ -414,3 +414,36 @@ export async function apiFetchUpperManagementUsers() {
     { name: "Alex Vance", role: "Chief Operations Officer", department: "Upper Management" }
   ];
 }
+
+export async function apiFetchLatestAnnouncementWithSeverity() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/announcements/latest`, { headers: getAuthHeaders() });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn("apiFetchLatestAnnouncementWithSeverity failed:", err);
+  }
+  return { announcement: null, severity: null };
+}
+
+export async function apiClassifyAnnouncementSeverity(payload) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/announcements/severity`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn("apiClassifyAnnouncementSeverity failed:", err);
+  }
+  return {
+    level: "info",
+    label: "ANNOUNCEMENT",
+    color_class: "severity-info",
+    icon: "ph-megaphone"
+  };
+}
