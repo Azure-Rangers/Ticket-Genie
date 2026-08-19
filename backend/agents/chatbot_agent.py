@@ -76,20 +76,17 @@ class ChatbotDecision(BaseModel):
     # returns its safe fallback, and the out-of-scope early exit is never
     # reached. A default here would let a malformed response fail open
     # straight into the normal pipeline instead.
-    scope: ChatScope = Field(
-        description=(
-            "workplace if this turn is about company/workplace matters "
-            "(policy, HR, IT, accounting, tickets, leave, or how the reply "
-            "should be produced for one of those); out_of_scope if it's "
-            "about something unrelated to work (recipes, movies/TV, "
-            "sports, celebrities, general politics, weather, trivia, "
-            "etc). Judged by meaning, not by whether a topic word appears "
-            "- see the SCOPE section above for the exact test and "
-            "examples. Always set this field explicitly - only set "
-            "out_of_scope when genuinely confident the turn is unrelated "
-            "to work; when unsure, choose workplace."
-        ),
-    )
+    #
+    # Deliberately a bare annotation with no Field(description=...): a
+    # description on an enum-typed field renders as a sibling of "$ref" in
+    # the strict JSON schema services/ai_service.py sends to Azure, and
+    # Azure's strict-mode validator rejects any keyword alongside "$ref"
+    # ("$ref cannot have keywords {'description'}") - confirmed live,
+    # this made every chatbot turn fail with a 400, not just out-of-scope
+    # ones. The full scope guidance already lives in the SCOPE section of
+    # CHATBOT_DECISION_PROMPT below, which GPT reads regardless - no
+    # semantic guidance is lost by removing the redundant per-field copy.
+    scope: ChatScope
     intent: ChatIntent
     action: ChatActionType
     message: str
