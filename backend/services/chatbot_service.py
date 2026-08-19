@@ -23,6 +23,7 @@ from models.chatbot import (
     ChatIntent,
     ChatRequest,
     ChatResponse,
+    ChatScope,
     RequestType,
 )
 from models.ticket import TICKET_DEPARTMENTS, TICKET_PRIORITIES
@@ -57,6 +58,32 @@ COULD_NOT_VERIFY_MESSAGE = (
     "authorized to access. You can browse the Knowledge Base for related "
     "articles, or I can help you open a support request."
 )
+OUT_OF_SCOPE_MESSAGE = (
+    "I can only help with workplace-related questions and requests. "
+    "Please ask me about company policies, HR, IT, accounting, workplace "
+    "operations, tickets, leave, or other work-related support."
+)
+
+
+def _out_of_scope_response() -> ChatResponse:
+    """
+    Fixed, safe refusal for a turn GPT classified as scope=out_of_scope
+    (models.chatbot.ChatScope). Deliberately ignores decision.message -
+    GPT may have already started answering the unrelated question in that
+    field, and that answer must never reach the user. Never carries a
+    ticket_draft/pending_action/action forward, so a request that's mid
+    ticket-draft or mid management-action can't have unrelated content
+    folded into it on this turn; the caller (handle_message) returns this
+    BEFORE any drafting, RAG, ticket-status, or management-action code
+    runs, so the existing_draft the client already holds is simply never
+    touched this turn.
+    """
+
+    return ChatResponse(
+        message=OUT_OF_SCOPE_MESSAGE,
+        intent=ChatIntent.GENERAL,
+        suggestions=PREDEFINED_SUGGESTIONS,
+    )
 
 
 def _gpt_unavailable_response() -> ChatResponse:
@@ -406,6 +433,19 @@ def handle_message(
         # violated by a future change, instead of crashing with a 500 -
         # never fabricate an intent/request_type/ticket_draft here.
         return _gpt_unavailable_response()
+
+    # Hard early exit: a turn GPT successfully classified as out-of-scope
+    # is rejected immediately, before any active_intent/pending_action
+    # continuation logic, ticket drafting, RAG, ticket-status lookup, or
+    # management-action dispatch runs below - see _out_of_scope_response's
+    # docstring. This check runs unconditionally every turn (never
+    # skipped because active_intent/pending_action is already set), so an
+    # in-progress flow can't be used to smuggle unrelated content past the
+    # guardrail. Only a *successful* classification can trigger this - a
+    # GPT/service failure is handled by the `except`/None-check above and
+    # must never be treated as an out-of-scope refusal.
+    if decision.scope == ChatScope.OUT_OF_SCOPE:
+        return _out_of_scope_response()
 
     # A continuation always keeps the flow's intent - the model doesn't get
     # to silently change it mid-draft. A pending management action (echoed

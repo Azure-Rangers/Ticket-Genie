@@ -173,6 +173,7 @@ def test_chatbot_decision_round_trips_through_the_shared_strict_schema_path(
     monkeypatch.setenv("GROUP1OPENAIAPIKEY", "real-shared-key")
 
     decision_payload = {
+        "scope": "workplace",
         "intent": "support_issue",
         "action": "show_ticket_draft",
         "message": "Here's your draft.",
@@ -325,11 +326,12 @@ def test_successful_decision_still_works_normally():
         ChatbotDecision,
         ExtractedTicketFields,
     )
-    from models.chatbot import ChatIntent, RequestType
+    from models.chatbot import ChatIntent, ChatScope, RequestType
 
     class _FakeAIService:
         def generate(self, *, system_prompt, user_content, response_model):
             return ChatbotDecision(
+                scope=ChatScope.WORKPLACE,
                 intent=ChatIntent.SUPPORT_ISSUE,
                 action=ChatActionType.SHOW_TICKET_DRAFT,
                 message="Here's your draft.",
