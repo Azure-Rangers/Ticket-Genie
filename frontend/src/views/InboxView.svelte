@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { checkAuthGuard, userStore, isTicketer } from '../lib/stores/auth.js';
-  import { filteredTickets, statusFilter, priorityFilter, assigneeFilter, selectedTicket, activeTab, changeTicketStatus, assignTicketToSelf } from '../lib/stores/tickets.js';
+  import { filteredTickets, searchQuery, statusFilter, priorityFilter, assigneeFilter, selectedTicket, activeTab, changeTicketStatus, assignTicketToSelf } from '../lib/stores/tickets.js';
   import StatusBadge from '../components/StatusBadge.svelte';
   import { apiExportTicketPDF, apiExportCalendar } from '../lib/api.js';
 
@@ -117,6 +117,21 @@
 
     <!-- Filter Control Bar -->
     <div class="filter-bar">
+      <!-- In-Page Search Bar -->
+      <div class="inbox-search">
+        <i class="ph-bold ph-magnifying-glass search-icon"></i>
+        <input 
+          type="text" 
+          placeholder="Search tickets by ID, title, requester..." 
+          bind:value={$searchQuery}
+        />
+        {#if $searchQuery}
+          <button class="clear-search-btn" on:click={() => $searchQuery = ''} title="Clear search">
+            <i class="ph-bold ph-x"></i>
+          </button>
+        {/if}
+      </div>
+
       <div class="filter-group">
         <label for="inbox-status-filter"><i class="ph-bold ph-funnel"></i> Status:</label>
         <select id="inbox-status-filter" bind:value={$statusFilter}>
@@ -384,7 +399,64 @@
   .filter-bar {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 16px;
+  }
+
+  .inbox-search {
+    position: relative;
+    width: 280px;
+    min-width: 200px;
+  }
+
+  .inbox-search .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    pointer-events: none;
+  }
+
+  .inbox-search input {
+    width: 100%;
+    padding: 8px 32px 8px 36px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: #ffffff;
+    font-size: 0.82rem;
+    color: var(--text-main);
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+  }
+
+  .inbox-search input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  }
+
+  .clear-search-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .clear-search-btn:hover {
+    color: var(--text-main);
+    background: #f1f5f9;
   }
 
   .filter-group {
