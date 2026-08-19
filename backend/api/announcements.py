@@ -10,8 +10,8 @@ from database.crud import (
     delete_announcement,
     get_announcements,
 )
-from services.jwt_verifier import verify_azure_user
 from services.announcement_match_service import find_matching_announcement
+from services.jwt_verifier import verify_azure_user
 
 router = APIRouter(prefix="/announcements", tags=["announcements"])
 
