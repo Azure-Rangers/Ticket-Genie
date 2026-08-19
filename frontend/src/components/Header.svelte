@@ -38,34 +38,10 @@
       <span>Create Ticket</span>
     </button>
 
-    <!-- Workspace & Role Dropdown -->
-    <div class="role-switcher">
-      <button class="btn-role" on:click={() => showRoleDropdown = !showRoleDropdown}>
-        <i class="ph-duotone ph-user-gear"></i>
-        <span>{$userStore?.role || 'Portal Workspace'}</span>
-        <i class="ph-bold ph-caret-down"></i>
-      </button>
-
-      {#if showRoleDropdown}
-        <div class="dropdown-menu animate-fade">
-          <div class="dropdown-header">Switch Workspace</div>
-          <button class="dropdown-item" class:active={$userStore?.role === 'Employee'} on:click={() => handleRoleSelect('Employee')}>
-            <i class="ph-duotone ph-user"></i> Employee Portal (NM)
-          </button>
-          <button class="dropdown-item" class:active={$userStore?.role === 'Admin'} on:click={() => handleRoleSelect('Admin')}>
-            <i class="ph-duotone ph-shield-check"></i> Ticketer / Admin (AV)
-          </button>
-          <button class="dropdown-item" class:active={$userStore?.role === 'SuperAdmin'} on:click={() => handleRoleSelect('SuperAdmin')}>
-            <i class="ph-duotone ph-crown"></i> SuperAdmin Governance (SS)
-          </button>
-          
-          <div class="dropdown-divider"></div>
-
-          <button class="dropdown-item logout-item" on:click={handleLogout}>
-            <i class="ph-bold ph-sign-out"></i> Log Out / Portal Select
-          </button>
-        </div>
-      {/if}
+    <!-- Authenticated User Profile Badge -->
+    <div class="user-profile-badge">
+      <i class="ph-duotone ph-user-circle"></i>
+      <span>{$userStore?.name || 'Employee User'}</span>
     </div>
   </div>
 </header>
@@ -167,11 +143,7 @@
     box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
   }
 
-  .role-switcher {
-    position: relative;
-  }
-
-  .btn-role {
+  .user-profile-badge {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -182,76 +154,10 @@
     font-size: 0.83rem;
     font-weight: 600;
     color: var(--text-main);
-    cursor: pointer;
-    transition: all 0.2s;
   }
 
-  .btn-role:hover {
-    border-color: var(--primary);
-    background: #ffffff;
-  }
-
-  .dropdown-menu {
-    position: absolute;
-    right: 0;
-    top: calc(100% + 8px);
-    width: 240px;
-    background: #ffffff;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    box-shadow: var(--shadow-lg);
-    padding: 8px;
-    z-index: 50;
-  }
-
-  .dropdown-header {
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    padding: 6px 10px;
-    letter-spacing: 0.5px;
-  }
-
-  .dropdown-divider {
-    height: 1px;
-    background: var(--border-color);
-    margin: 6px 0;
-  }
-
-  .dropdown-item {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    background: transparent;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.82rem;
-    color: var(--text-main);
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: left;
-  }
-
-  .dropdown-item:hover {
-    background: var(--primary-light);
+  .user-profile-badge i {
+    font-size: 1.2rem;
     color: var(--primary);
-  }
-
-  .dropdown-item.active {
-    font-weight: 600;
-    background: var(--primary-light);
-    color: var(--primary);
-  }
-
-  .logout-item {
-    color: #dc2626;
-  }
-
-  .logout-item:hover {
-    background: #fef2f2;
-    color: #dc2626;
   }
 </style>
