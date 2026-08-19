@@ -65,6 +65,12 @@ _DEPARTMENT_TO_STANDARD_CATEGORY = {
 
 _ISO_DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _TICKET_ID_PATTERN = re.compile(r"^HD-\d+$", re.IGNORECASE)
+# Accepts the same "HD-1024" id with a space or no separator instead of a
+# dash (e.g. "HD 1024", "HD1024") - the exact same ticket number, just
+# typed differently. Still anchored on the literal "HD" prefix plus
+# digits only, so it can never grab an unrelated number out of the
+# message the way a bare \d+ scan would.
+_TICKET_ID_LOOSE_PATTERN = re.compile(r"^HD[\s-]*(\d+)$", re.IGNORECASE)
 
 _MISSING_TITLE_MARKERS = ("title", "subject")
 _MISSING_DESCRIPTION_MARKERS = ("description", "detail", "reason", "what happened")
@@ -116,11 +122,24 @@ def validate_iso_date(value: Optional[str]) -> Optional[str]:
 
 
 def validate_ticket_id(value: Optional[str]) -> Optional[str]:
+    """
+    Normalize a model-extracted ticket reference to the canonical "HD-####"
+    form, or reject it. Accepts the bare number ("2005"), the canonical
+    dash form ("HD-2005"), and the space-separated form users actually type
+    ("HD 2005") - all three are the same ticket ID, just formatted
+    differently by the user or by GPT's "exactly as given" extraction.
+    Never loosely scans for digits anywhere in free text - only these
+    specific, already-ticket-shaped forms.
+    """
     if not value:
         return None
     value = value.strip().upper()
-    if not value.startswith("HD-"):
-        value = f"HD-{value}" if value.isdigit() else value
+    if value.isdigit():
+        value = f"HD-{value}"
+    else:
+        loose = _TICKET_ID_LOOSE_PATTERN.match(value)
+        if loose:
+            value = f"HD-{loose.group(1)}"
     return value if _TICKET_ID_PATTERN.match(value) else None
 
 

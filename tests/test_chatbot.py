@@ -18,8 +18,16 @@ from agents.chatbot_agent import (
     NavigationTarget,
 )
 from agents.knowledge_agent import GroundedAnswer
+from agents.ticket_conversation_agent import ConversationSummary
 from backend.main import app
-from models.chatbot import ChatIntent, ChatRequest, ChatScope, RequestType, TicketDraft
+from models.chatbot import (
+    ChatIntent,
+    ChatRequest,
+    ChatScope,
+    ChatTurn,
+    RequestType,
+    TicketDraft,
+)
 from services import chatbot_service
 from services.knowledge_service import KnowledgeDocument, SearchUnavailableError
 
@@ -39,6 +47,8 @@ class FakeAIService:
     def generate(self, *, system_prompt, user_content, response_model):
         self.calls.append((system_prompt, user_content, response_model))
         value = self.responses[response_model]
+        if isinstance(value, Exception):
+            raise value
         if isinstance(value, list):
             return value.pop(0)
         return value
@@ -66,6 +76,10 @@ def _no_ticket_found(ticket_id):
     return None
 
 
+def _no_comments(ticket_id):
+    return []
+
+
 def ask(
     message,
     *,
@@ -73,15 +87,19 @@ def ask(
     ai_service=None,
     retriever=None,
     ticket_lookup=_no_ticket_found,
+    comment_lookup=_no_comments,
+    current_user=None,
     **kwargs,
 ):
     request = ChatRequest(message=message, **kwargs)
     service = ai_service or FakeAIService({ChatbotDecision: decision})
     return chatbot_service.handle_message(
         request,
+        current_user=current_user,
         ai_service=service,
         retriever=retriever or FakeRetriever(),
         ticket_lookup=ticket_lookup,
+        comment_lookup=comment_lookup,
     ), service
 
 
@@ -488,22 +506,51 @@ def test_incomplete_leave_request_asks_follow_up():
     assert response.missing_fields
 
 
-# 16. Ticket status checks the existing ticket via the existing backend
-def test_ticket_status_with_id_checks_existing_ticket():
-    decision = ChatbotDecision(
+# 16. Ticket status checks the existing ticket via the existing backend,
+# and returns the actual retrieved details in the SAME turn - not an
+# acknowledgement that a lookup will happen.
+_OWNER_USER = {"oid": "user-1", "email": "owner@company.com", "role": "Employee"}
+
+
+def _full_ticket(**overrides):
+    ticket = {
+        "id": "HD-1024",
+        "title": "VPN issue",
+        "status": "In Progress",
+        "priority": "High",
+        "department": "IT Team",
+        "assigned_to": "support@company.com",
+        "createdAt": "2026-08-18T10:00:00",
+        "updatedAt": "2026-08-19T09:30:00",
+        "date": "2026-08-18",
+        "requester_id": "user-1",
+    }
+    ticket.update(overrides)
+    return ticket
+
+
+def _status_decision(ticket_id="HD-1024", message="I'll look up ticket HD-1024 now."):
+    return ChatbotDecision(
         scope=ChatScope.WORKPLACE,
         intent=ChatIntent.TICKET_STATUS,
         action=ChatActionType.CHECK_TICKET_STATUS,
-        message="Let me pull that up.",
-        ticket_fields=ExtractedTicketFields(ticket_id="HD-1024"),
+        message=message,
+        ticket_fields=ExtractedTicketFields(ticket_id=ticket_id) if ticket_id else None,
     )
+
+
+def test_ticket_status_with_id_checks_existing_ticket():
+    ticket = _full_ticket()
 
     def fake_lookup(ticket_id):
         assert ticket_id == "HD-1024"
-        return {"id": "HD-1024", "title": "VPN issue", "status": "In Progress"}
+        return ticket
 
     response, _ = ask(
-        "Where is ticket HD-1024?", decision=decision, ticket_lookup=fake_lookup
+        "Where is ticket HD-1024?",
+        decision=_status_decision(),
+        ticket_lookup=fake_lookup,
+        current_user=_OWNER_USER,
     )
     assert response.intent == "ticket_status"
     assert response.action.type == "lookup_ticket"
@@ -511,16 +558,435 @@ def test_ticket_status_with_id_checks_existing_ticket():
     assert "In Progress" in response.message
 
 
-def test_ticket_status_with_unknown_id_does_not_fabricate_status():
-    decision = ChatbotDecision(
-        scope=ChatScope.WORKPLACE,
-        intent=ChatIntent.TICKET_STATUS,
-        action=ChatActionType.CHECK_TICKET_STATUS,
-        message="Let me pull that up.",
-        ticket_fields=ExtractedTicketFields(ticket_id="HD-9999"),
+# 1, 2. Same-turn execution: GPT's acknowledgement-only message never
+# reaches the user once the ticket is actually found - the response is
+# built entirely from the retrieved ticket, and no confirmation step is
+# ever inserted for a read-only lookup (no pending_action).
+def test_ticket_status_executes_lookup_same_turn_no_acknowledgement_only():
+    ticket = _full_ticket()
+    response, _ = ask(
+        "What's the status of HD 1024?",
+        decision=_status_decision(
+            message="I can check the status of that request. I'll look up "
+            "ticket HD 1024 now."
+        ),
+        ticket_lookup=lambda tid: ticket,
+        current_user=_OWNER_USER,
+    )
+    for phrase in ("i'll look up", "i can check", "let me check", "i'll check"):
+        assert phrase not in response.message.lower()
+    assert response.pending_action is None
+
+
+# 3, 4, 5, 6, 7. The formatted response includes id, status, priority,
+# department, and created/updated dates whenever the ticket has them.
+def test_ticket_status_response_includes_available_fields():
+    ticket = _full_ticket()
+    response, _ = ask(
+        "What's the status of HD-1024?",
+        decision=_status_decision(),
+        ticket_lookup=lambda tid: ticket,
+        current_user=_OWNER_USER,
+    )
+    assert "HD-1024" in response.message
+    assert "In Progress" in response.message
+    assert "High" in response.message
+    assert "IT Team" in response.message
+    assert "Aug 18, 2026" in response.message
+    assert "Aug 19, 2026" in response.message
+
+
+# 8, 9. A latest comment is included when present; optional fields with no
+# value (no comments, no assignee, no update yet) are omitted, not
+# fabricated.
+def test_ticket_status_includes_latest_note_when_present():
+    ticket = _full_ticket()
+    comments = [
+        {"sender_role": "Support", "message": "Looking into this now."},
+        {"sender_role": "Support", "message": "Your request is under manager review."},
+    ]
+    summary = ConversationSummary(
+        has_meaningful_content=True,
+        summary="The requester asked for help; support is reviewing it.",
     )
     response, _ = ask(
-        "Where is ticket HD-9999?", decision=decision, ticket_lookup=_no_ticket_found
+        "What's the status of HD-1024?",
+        decision=_status_decision(),
+        ai_service=FakeAIService(
+            {ChatbotDecision: _status_decision(), ConversationSummary: summary}
+        ),
+        ticket_lookup=lambda tid: ticket,
+        comment_lookup=lambda tid: comments,
+        current_user=_OWNER_USER,
+    )
+    assert "Latest update: Your request is under manager review." in response.message
+
+
+# 1, 7. A ticket with several meaningful visible comments gets a
+# conversation summary AND still shows the latest update separately -
+# the summary never replaces it.
+def test_ticket_status_includes_conversation_summary_with_several_comments():
+    ticket = _full_ticket()
+    comments = [
+        {
+            "sender_role": "Employee",
+            "message": "I need two weeks of bereavement leave.",
+        },
+        {
+            "sender_role": "Upper Management",
+            "message": "Acknowledged, this is under review.",
+        },
+        {
+            "sender_role": "Upper Management",
+            "message": "Approval is still pending manager sign-off.",
+        },
+    ]
+    summary_text = (
+        "The requester asked for two weeks of bereavement leave. Upper "
+        "Management acknowledged the request and said it is under review. "
+        "Approval is still pending."
+    )
+    ai_service = FakeAIService(
+        {
+            ChatbotDecision: _status_decision(),
+            ConversationSummary: ConversationSummary(
+                has_meaningful_content=True, summary=summary_text
+            ),
+        }
+    )
+    response, _ = ask(
+        "What's the status of HD-1024?",
+        decision=_status_decision(),
+        ai_service=ai_service,
+        ticket_lookup=lambda tid: ticket,
+        comment_lookup=lambda tid: comments,
+        current_user=_OWNER_USER,
+    )
+    assert "Conversation summary:" in response.message
+    assert summary_text in response.message
+    assert (
+        "Latest update: Approval is still pending manager sign-off." in response.message
+    )
+
+
+# 2. The summary call is grounded only in the actual retrieved comment
+# text - nothing else is passed as "conversation" content.
+def test_conversation_summary_prompt_uses_only_retrieved_comment_content():
+    ticket = _full_ticket()
+    comments = [{"sender_role": "Support", "message": "Escalated to the VPN team."}]
+    ai_service = FakeAIService(
+        {
+            ChatbotDecision: _status_decision(),
+            ConversationSummary: ConversationSummary(
+                has_meaningful_content=True, summary="Escalated to the VPN team."
+            ),
+        }
+    )
+    ask(
+        "What's the status of HD-1024?",
+        decision=_status_decision(),
+        ai_service=ai_service,
+        ticket_lookup=lambda tid: ticket,
+        comment_lookup=lambda tid: comments,
+        current_user=_OWNER_USER,
+    )
+    summary_calls = [
+        call for call in ai_service.calls if call[2] is ConversationSummary
+    ]
+    assert len(summary_calls) == 1
+    _, user_content, _ = summary_calls[0]
+    assert "Escalated to the VPN team." in user_content
+
+
+# Regression: comments are looked up by the SAME ticket_id that was
+# resolved/authorized for this turn (_handle_ticket_status passes the
+# identical `ticket_id` local to both ticket_lookup and
+# _visible_comments -> comment_lookup), so a second ticket's comments can
+# never bleed into this ticket's summary or latest-update line even when
+# both tickets exist and are queried in the same test session.
+def test_conversation_summary_never_leaks_comments_across_tickets():
+    vpn_ticket = _full_ticket(id="HD-1024", title="VPN issue")
+    leave_ticket = _full_ticket(id="HD-2005", title="Bereavement Leave")
+    tickets_by_id = {"HD-1024": vpn_ticket, "HD-2005": leave_ticket}
+
+    vpn_comments = [
+        {"sender_role": "Support", "message": "VPN client reinstalled, testing now."}
+    ]
+    leave_comments = [
+        {
+            "sender_role": "Upper Management",
+            "message": "Bereavement leave approved for two weeks.",
+        }
+    ]
+    comments_by_id = {"HD-1024": vpn_comments, "HD-2005": leave_comments}
+
+    def ticket_lookup(tid):
+        return tickets_by_id.get(tid)
+
+    def comment_lookup(tid):
+        return comments_by_id.get(tid, [])
+
+    # Query HD-1024 (VPN ticket)
+    ai_service_vpn = FakeAIService(
+        {
+            ChatbotDecision: _status_decision(ticket_id="HD-1024"),
+            ConversationSummary: ConversationSummary(
+                has_meaningful_content=True,
+                summary="The VPN client was reinstalled and is being tested.",
+            ),
+        }
+    )
+    response_vpn, _ = ask(
+        "What's the status of HD-1024?",
+        decision=_status_decision(ticket_id="HD-1024"),
+        ai_service=ai_service_vpn,
+        ticket_lookup=ticket_lookup,
+        comment_lookup=comment_lookup,
+        current_user=_OWNER_USER,
+    )
+    assert "HD-1024" in response_vpn.message
+    assert "reinstalled" in response_vpn.message
+    assert "Bereavement" not in response_vpn.message
+    assert "bereavement" not in response_vpn.message.lower()
+    vpn_summary_calls = [
+        call for call in ai_service_vpn.calls if call[2] is ConversationSummary
+    ]
+    assert len(vpn_summary_calls) == 1
+    assert "Bereavement leave approved" not in vpn_summary_calls[0][1]
+    assert "VPN client reinstalled" in vpn_summary_calls[0][1]
+
+    # Query HD-2005 (bereavement leave ticket) - the reverse assertions
+    ai_service_leave = FakeAIService(
+        {
+            ChatbotDecision: _status_decision(ticket_id="HD-2005"),
+            ConversationSummary: ConversationSummary(
+                has_meaningful_content=True,
+                summary="Bereavement leave was approved for two weeks.",
+            ),
+        }
+    )
+    response_leave, _ = ask(
+        "What's the status of HD-2005?",
+        decision=_status_decision(ticket_id="HD-2005"),
+        ai_service=ai_service_leave,
+        ticket_lookup=ticket_lookup,
+        comment_lookup=comment_lookup,
+        current_user=_OWNER_USER,
+    )
+    assert "HD-2005" in response_leave.message
+    assert "Bereavement" in response_leave.message
+    assert "VPN" not in response_leave.message
+    leave_summary_calls = [
+        call for call in ai_service_leave.calls if call[2] is ConversationSummary
+    ]
+    assert len(leave_summary_calls) == 1
+    assert "VPN client reinstalled" not in leave_summary_calls[0][1]
+    assert "Bereavement leave approved" in leave_summary_calls[0][1]
+
+
+# 3. A Private/internal comment never reaches the summarizer, and never
+# appears in the response, when the caller isn't authorized to see it.
+def test_private_comments_excluded_from_summary_and_response():
+    ticket = _full_ticket()
+    comments = [
+        {"sender_role": "Support", "message": "Public note: contacting IT."},
+        {
+            "sender_role": "Private",
+            "message": "SECRET-INTERNAL-ONLY: escalate to legal quietly.",
+        },
+    ]
+    ai_service = FakeAIService(
+        {
+            ChatbotDecision: _status_decision(),
+            ConversationSummary: ConversationSummary(
+                has_meaningful_content=True, summary="IT was contacted."
+            ),
+        }
+    )
+    response, _ = ask(
+        "What's the status of HD-1024?",
+        decision=_status_decision(),
+        ai_service=ai_service,
+        ticket_lookup=lambda tid: ticket,
+        comment_lookup=lambda tid: comments,
+        current_user=_OWNER_USER,  # plain Employee, not admin
+    )
+    summary_calls = [
+        call for call in ai_service.calls if call[2] is ConversationSummary
+    ]
+    assert "SECRET-INTERNAL-ONLY" not in summary_calls[0][1]
+    assert "SECRET-INTERNAL-ONLY" not in response.message
+    # The Private note is also the most recent comment, so the "latest
+    # update" line must fall back to the last visible (non-Private) one.
+    assert "Latest update: Public note: contacting IT." in response.message
+
+
+# 4. No comments at all -> no Conversation summary section, and no
+# summarization call is even made.
+def test_ticket_status_no_comments_omits_conversation_summary():
+    ticket = _full_ticket()
+    response, _ = ask(
+        "What's the status of HD-1024?",
+        decision=_status_decision(),
+        ticket_lookup=lambda tid: ticket,
+        current_user=_OWNER_USER,
+    )
+    assert "Conversation summary" not in response.message
+
+
+# 5. A single trivial/non-substantive comment may still call the
+# summarizer, but the summary is omitted once GPT reports no meaningful
+# content - never padded with something that "should" exist.
+def test_ticket_status_trivial_comment_may_omit_summary():
+    ticket = _full_ticket()
+    comments = [{"sender_role": "System", "message": "[System] Ticket assigned to X."}]
+    ai_service = FakeAIService(
+        {
+            ChatbotDecision: _status_decision(),
+            ConversationSummary: ConversationSummary(
+                has_meaningful_content=False, summary=""
+            ),
+        }
+    )
+    response, _ = ask(
+        "What's the status of HD-1024?",
+        decision=_status_decision(),
+        ai_service=ai_service,
+        ticket_lookup=lambda tid: ticket,
+        comment_lookup=lambda tid: comments,
+        current_user=_OWNER_USER,
+    )
+    assert "Conversation summary" not in response.message
+
+
+# 6. If the summarizer call fails outright, the ticket-status lookup
+# still succeeds with all the deterministic ticket facts intact - just
+# without a conversation summary.
+def test_ticket_status_summary_failure_does_not_fail_lookup():
+    ticket = _full_ticket()
+    comments = [{"sender_role": "Support", "message": "Working on it."}]
+    ai_service = FakeAIService(
+        {
+            ChatbotDecision: _status_decision(),
+            ConversationSummary: RuntimeError("summarizer unavailable"),
+        }
+    )
+    response, _ = ask(
+        "What's the status of HD-1024?",
+        decision=_status_decision(),
+        ai_service=ai_service,
+        ticket_lookup=lambda tid: ticket,
+        comment_lookup=lambda tid: comments,
+        current_user=_OWNER_USER,
+    )
+    assert "Conversation summary" not in response.message
+    assert "HD-1024" in response.message
+    assert "In Progress" in response.message
+    assert "Latest update: Working on it." in response.message
+
+
+# 8. Unauthorized ticket lookup still reveals nothing, even when the
+# ticket has rich comment/conversation data available.
+def test_ticket_status_unauthorized_lookup_reveals_no_conversation_data():
+    ticket = _full_ticket(requester_id="someone-else")
+    comments = [
+        {"sender_role": "Support", "message": "Detailed internal discussion here."}
+    ]
+    response, _ = ask(
+        "What's the status of HD-1024?",
+        decision=_status_decision(),
+        ticket_lookup=lambda tid: ticket,
+        comment_lookup=lambda tid: comments,
+        current_user={
+            "oid": "user-1",
+            "email": "user1@company.com",
+            "role": "Employee",
+        },
+    )
+    assert response.message == "You don't have access to view that ticket."
+    assert "Detailed internal discussion" not in response.message
+    assert "Conversation summary" not in response.message
+
+
+def test_ticket_status_omits_missing_optional_fields_without_fabricating():
+    ticket = _full_ticket(priority=None, assigned_to=None, updatedAt=None)
+    response, _ = ask(
+        "What's the status of HD-1024?",
+        decision=_status_decision(),
+        ticket_lookup=lambda tid: ticket,
+        current_user=_OWNER_USER,
+    )
+    assert "Priority" not in response.message
+    assert "Assigned to" not in response.message
+    assert "Last updated" not in response.message
+    assert "Latest update" not in response.message
+
+
+# 10. A ticket that exists but isn't the caller's, and isn't in a scope
+# they're authorized for, is denied without leaking its details.
+def test_ticket_status_unauthorized_lookup_is_denied_safely():
+    ticket = _full_ticket(requester_id="someone-else")
+    response, _ = ask(
+        "What's the status of HD-1024?",
+        decision=_status_decision(),
+        ticket_lookup=lambda tid: ticket,
+        current_user={
+            "oid": "user-1",
+            "email": "user1@company.com",
+            "role": "Employee",
+        },
+    )
+    assert response.message == "You don't have access to view that ticket."
+    assert "In Progress" not in response.message
+    assert "IT Team" not in response.message
+
+
+# 11. Read-only status lookup never requires confirmation - it answers
+# directly, with no pending_action, even on the very first turn.
+def test_ticket_status_lookup_requires_no_confirmation():
+    ticket = _full_ticket()
+    response, _ = ask(
+        "What's the status of HD-1024?",
+        decision=_status_decision(),
+        ticket_lookup=lambda tid: ticket,
+        current_user=_OWNER_USER,
+    )
+    assert response.pending_action is None
+    assert response.action.type == "lookup_ticket"
+
+
+# 13. Both "HD 2005" (space) and "HD-2005" (dash) formats resolve to the
+# same canonical ticket.
+def test_ticket_status_parses_space_and_dash_id_formats():
+    ticket = _full_ticket(id="HD-2005", title="Bereavement Leave")
+    for raw_id in ("HD 2005", "HD-2005"):
+        response, _ = ask(
+            f"What's the status of {raw_id}?",
+            decision=_status_decision(ticket_id=raw_id),
+            ticket_lookup=lambda tid: ticket if tid == "HD-2005" else None,
+            current_user=_OWNER_USER,
+        )
+        assert response.action.ticket_id == "HD-2005"
+        assert "HD-2005" in response.message
+
+
+# 14. A bare number with no "HD" prefix, mentioned incidentally, is never
+# treated as a ticket id by the deterministic validator.
+def test_random_unrelated_number_is_not_treated_as_ticket_id():
+    from services.ticket_draft_service import validate_ticket_id
+
+    assert validate_ticket_id("invoice 2005 refund") is None
+    assert validate_ticket_id("2026") == "HD-2026"  # bare digits still allowed
+    assert validate_ticket_id("HD 2005") == "HD-2005"
+    assert validate_ticket_id("HD-2005") == "HD-2005"
+
+
+def test_ticket_status_with_unknown_id_does_not_fabricate_status():
+    response, _ = ask(
+        "Where is ticket HD-9999?",
+        decision=_status_decision(ticket_id="HD-9999"),
+        ticket_lookup=_no_ticket_found,
+        current_user=_OWNER_USER,
     )
     assert "couldn't find" in response.message.lower()
     assert response.action.type == "navigate"
@@ -535,6 +1001,28 @@ def test_ticket_status_without_id_navigates_to_my_tickets():
     )
     response, _ = ask("What's the status of my ticket?", decision=decision)
     assert response.action.target == "dashboard"
+
+
+# Follow-up turn ("who's assigned to it?") with no ticket number of its
+# own resolves the ticket from conversation history, not a new memory
+# system, and still returns real data rather than re-asking.
+def test_ticket_status_follow_up_resolves_ticket_from_history():
+    ticket = _full_ticket()
+    decision = _status_decision(ticket_id=None, message="")
+    response, _ = ask(
+        "Who is assigned to it?",
+        decision=decision,
+        ticket_lookup=lambda tid: ticket if tid == "HD-1024" else None,
+        current_user=_OWNER_USER,
+        history=[
+            ChatTurn(role="user", message="What's the status of HD-1024?"),
+            ChatTurn(
+                role="assistant", message="HD-1024 — VPN issue\nStatus: In Progress"
+            ),
+        ],
+    )
+    assert response.action.ticket_id == "HD-1024"
+    assert "support@company.com" in response.message
 
 
 # 17. GPT failure never falls back to unsafe keyword guessing

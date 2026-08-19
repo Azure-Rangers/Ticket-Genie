@@ -327,8 +327,19 @@ leave_management):
   gave you.
 
 TICKET STATUS:
-- If the user gives a ticket number (e.g. "HD-1024", "ticket 1024"),
-  put it in ticket_fields.ticket_id exactly as given.
+- If the user gives a ticket number in any form (e.g. "HD-1024",
+  "HD 1024", "ticket 1024", "1024"), put it in ticket_fields.ticket_id
+  exactly as given - the backend normalizes the format. This is a direct,
+  same-turn lookup: never respond with only an acknowledgement like "I'll
+  check that" or "let me look that up" - `message` should be empty or a
+  brief neutral note, since the backend replaces it with the actual
+  ticket details it retrieves.
+- If the current message has no ticket number but is clearly still about
+  a specific ticket already named earlier in the conversation (e.g. "who
+  is assigned to it?", "when was it last updated?", "please do"), leave
+  ticket_fields.ticket_id null rather than guessing - the backend
+  resolves it from the most recently mentioned ticket number in the
+  conversation history shown above.
 
 REQUEST TYPE (only meaningful for create_ticket / support_issue /
 leave_management - leave it null for every other intent):

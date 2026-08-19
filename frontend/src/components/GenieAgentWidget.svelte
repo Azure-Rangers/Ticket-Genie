@@ -358,6 +358,10 @@
     font-size: 0.85rem;
     line-height: 1.45;
     box-shadow: var(--shadow-sm);
+    /* Ticket status replies are multi-line (id/status/priority/etc, one
+       per line) - preserve those line breaks instead of collapsing them
+       into a single run-on line, while still wrapping long lines. */
+    white-space: pre-line;
   }
 
   .genie-bubble.typing {
