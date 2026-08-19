@@ -97,6 +97,12 @@ def init_db_schema():
                             "ALTER TABLE tickets ADD COLUMN auto_resolved BOOLEAN DEFAULT 0"
                         )
                     )
+                if "is_synthetic" not in existing_cols:
+                    conn.execute(
+                        text(
+                            "ALTER TABLE tickets ADD COLUMN is_synthetic BOOLEAN DEFAULT 0"
+                        )
+                    )
                 if "requester_id" not in existing_cols:
                     conn.execute(
                         text("ALTER TABLE tickets ADD COLUMN requester_id VARCHAR(150)")
@@ -116,6 +122,15 @@ def init_db_schema():
                             )
                         )
                 conn.commit()
+        elif engine.dialect.name == "mssql":
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        "IF COL_LENGTH('tickets', 'is_synthetic') IS NULL "
+                        "ALTER TABLE tickets ADD is_synthetic BIT NOT NULL "
+                        "CONSTRAINT DF_tickets_is_synthetic DEFAULT 0"
+                    )
+                )
     except Exception as e:
         print(f"⚠️ Error creating database schema: {e}")
 

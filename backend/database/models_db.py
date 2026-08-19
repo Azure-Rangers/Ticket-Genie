@@ -28,6 +28,7 @@ class TicketDB(Base):
     model_deployment = Column(String(100), nullable=True)
     parent_ticket_id = Column(String(50), nullable=True)
     auto_resolved = Column(Boolean, default=False, nullable=False)
+    is_synthetic = Column(Boolean, default=False, nullable=False, index=True)
 
     def to_dict(self) -> dict:
         return {
@@ -54,6 +55,7 @@ class TicketDB(Base):
             "model_deployment": self.model_deployment,
             "parent_ticket_id": self.parent_ticket_id,
             "auto_resolved": self.auto_resolved,
+            "is_synthetic": self.is_synthetic,
         }
 
 
