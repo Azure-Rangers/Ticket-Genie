@@ -29,7 +29,9 @@ MANAGEMENT_SUBMIT_HTML = (
 ).read_text()
 ADMIN_SUBMIT_HTML = (FRONTEND_DIR / "admin_AV" / "submit-ticket.html").read_text()
 SRC_API_JS = (FRONTEND_DIR / "src" / "lib" / "api.js").read_text()
-GENIE_WIDGET_SVELTE = (FRONTEND_DIR / "src" / "components" / "GenieAgentWidget.svelte").read_text()
+GENIE_WIDGET_SVELTE = (
+    FRONTEND_DIR / "src" / "components" / "GenieAgentWidget.svelte"
+).read_text()
 
 OLD_STALE_IDS = (
     "newTicketForm",

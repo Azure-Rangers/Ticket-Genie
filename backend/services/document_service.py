@@ -110,7 +110,12 @@ def generate_ticket_pdf(
     ]
 
     if reason_val:
-        details.append(["AI Classification", cell(f"AI Auto-Classification{conf_pct}: {reason_val}")])
+        details.append(
+            [
+                "AI Classification",
+                cell(f"AI Auto-Classification{conf_pct}: {reason_val}"),
+            ]
+        )
 
     details.append(["Description", cell(ticket.get("description", "N/A"))])
 
@@ -143,12 +148,18 @@ def generate_ticket_pdf(
     )
 
     export_comments = list(comments) if comments else []
-    if reason_val and not any(c.get("sender_role") == "AI Genie (System)" or c.get("sender_role") == "System" for c in export_comments):
-        export_comments.insert(0, {
-            "createdAt": "Auto-Triaged",
-            "sender_role": "AI Genie (System)",
-            "message": f"AI Auto-Classification{conf_pct}: {reason_val}"
-        })
+    if reason_val and not any(
+        c.get("sender_role") == "AI Genie (System)" or c.get("sender_role") == "System"
+        for c in export_comments
+    ):
+        export_comments.insert(
+            0,
+            {
+                "createdAt": "Auto-Triaged",
+                "sender_role": "AI Genie (System)",
+                "message": f"AI Auto-Classification{conf_pct}: {reason_val}",
+            },
+        )
 
     if export_comments:
         rows = [["Date / Time", "Sender", "Message"]]
@@ -211,15 +222,23 @@ def generate_ticket_docx(
     ticket, comments = _export_data(ticket_id, ticket=ticket, comments=comments)
     reason_val = ticket.get("reason") or ticket.get("classification_reason")
     conf_val = ticket.get("confidence") or ticket.get("classification_confidence")
-    conf_pct = f" ({int(float(conf_val) * 100)}% confidence)" if conf_val is not None else ""
+    conf_pct = (
+        f" ({int(float(conf_val) * 100)}% confidence)" if conf_val is not None else ""
+    )
 
     export_comments = list(comments) if comments else []
-    if reason_val and not any(c.get("sender_role") == "AI Genie (System)" or c.get("sender_role") == "System" for c in export_comments):
-        export_comments.insert(0, {
-            "createdAt": "Auto-Triaged",
-            "sender_role": "AI Genie (System)",
-            "message": f"AI Auto-Classification{conf_pct}: {reason_val}"
-        })
+    if reason_val and not any(
+        c.get("sender_role") == "AI Genie (System)" or c.get("sender_role") == "System"
+        for c in export_comments
+    ):
+        export_comments.insert(
+            0,
+            {
+                "createdAt": "Auto-Triaged",
+                "sender_role": "AI Genie (System)",
+                "message": f"AI Auto-Classification{conf_pct}: {reason_val}",
+            },
+        )
 
     conversation = (
         "\n".join(
@@ -228,7 +247,11 @@ def generate_ticket_docx(
         )
         or "No conversation messages have been recorded."
     )
-    ai_line = f"AI Classification: AI Auto-Classification{conf_pct}: {reason_val}\n" if reason_val else ""
+    ai_line = (
+        f"AI Classification: AI Auto-Classification{conf_pct}: {reason_val}\n"
+        if reason_val
+        else ""
+    )
 
     return f"""TICKETGENIE TICKET REPORT
 Ticket ID: {ticket.get("id", ticket_id)}

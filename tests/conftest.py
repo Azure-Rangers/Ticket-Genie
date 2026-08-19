@@ -1,6 +1,7 @@
 """Pytest configuration and automatic test database cleanup fixtures."""
 
 import pytest
+
 from database.connection import SessionLocal
 from database.models_db import TicketDB
 
