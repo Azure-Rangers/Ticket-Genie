@@ -2,21 +2,26 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
+# Canonical ticket vocabulary. Single source of truth reused everywhere a
+# department/priority value must be validated against the real allowed set
+# (TicketCreate/CompletedTicket's Literal fields below, plus the Genie
+# management-action service - see services/management_action_service.py).
+TICKET_DEPARTMENTS: tuple[str, ...] = (
+    "HR Team",
+    "Accounting Team",
+    "Workplace Operations Team",
+    "IT Team",
+    "Upper Management",
+)
+TICKET_PRIORITIES: tuple[str, ...] = ("Low", "Medium", "High", "Critical")
+
 
 class TicketCreate(BaseModel):
     title: str = Field(min_length=3, max_length=200)
     description: str = Field(min_length=10)
     category: Optional[str] = Field(default="IT Support")
     priority: Optional[str] = Field(default="Medium")
-    department: Optional[
-        Literal[
-            "HR Team",
-            "Accounting Team",
-            "Workplace Operations Team",
-            "IT Team",
-            "Upper Management",
-        ]
-    ] = None
+    department: Optional[Literal[TICKET_DEPARTMENTS]] = None
     preferredDate: Optional[str] = None
     is_anonymous: bool = False
     attachment: Optional[str] = None
@@ -29,15 +34,7 @@ class TicketCreate(BaseModel):
     # `department` above, which classify_ticket() always overwrites - this
     # field is the only thing that can make a submission skip
     # classification entirely. Never set from free-text/GPT output.
-    department_override: Optional[
-        Literal[
-            "HR Team",
-            "Accounting Team",
-            "Workplace Operations Team",
-            "IT Team",
-            "Upper Management",
-        ]
-    ] = None
+    department_override: Optional[Literal[TICKET_DEPARTMENTS]] = None
 
 
 class TicketUpdate(BaseModel):
@@ -92,15 +89,9 @@ class CompletedTicket(TicketCreate):
     it in.
     """
 
-    department: Literal[
-        "HR Team",
-        "Accounting Team",
-        "Workplace Operations Team",
-        "IT Team",
-        "Upper Management",
-    ]
+    department: Literal[TICKET_DEPARTMENTS]
     category: str
-    priority: Literal["Low", "Medium", "High", "Critical"]
+    priority: Literal[TICKET_PRIORITIES]
     confidence: float = Field(ge=0.0, le=1.0)
     reason: str
     needs_human_review: bool

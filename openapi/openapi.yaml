@@ -1394,6 +1394,9 @@ components:
       - ticket_status
       - support_issue
       - general
+      - reassign_ticket
+      - change_priority
+      - create_portal_employee
       title: ChatIntent
     ChatRequest:
       properties:
@@ -1427,6 +1430,10 @@ components:
         active_request_type:
           anyOf:
           - $ref: '#/components/schemas/RequestType'
+          - type: 'null'
+        pending_action:
+          anyOf:
+          - $ref: '#/components/schemas/PendingManagementAction'
           - type: 'null'
       type: object
       required:
@@ -1470,6 +1477,15 @@ components:
           type: boolean
           title: Ready For Review
           default: false
+        pending_action:
+          anyOf:
+          - $ref: '#/components/schemas/PendingManagementAction'
+          - type: 'null'
+        ticket_candidates:
+          items:
+            $ref: '#/components/schemas/TicketCandidate'
+          type: array
+          title: Ticket Candidates
       type: object
       required:
       - message
@@ -1704,6 +1720,100 @@ components:
       required:
       - status
       title: OnboardingUpdateRequest
+    PendingManagementAction:
+      properties:
+        action_type:
+          $ref: '#/components/schemas/ChatIntent'
+        awaiting:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Awaiting
+        ticket_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ticket Id
+        ticket_title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ticket Title
+        current_department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Current Department
+        current_priority:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Current Priority
+        target_department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Target Department
+        target_priority:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Target Priority
+        candidate_tickets:
+          items:
+            $ref: '#/components/schemas/TicketCandidate'
+          type: array
+          title: Candidate Tickets
+        employee_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Employee Name
+        employee_email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Employee Email
+        employee_object_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Employee Object Id
+        employee_role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Employee Role
+        employee_department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Employee Department
+      type: object
+      required:
+      - action_type
+      title: PendingManagementAction
+      description: 'Structured, client-echoed state for an in-progress management
+        write
+
+        action (reassign_ticket / change_priority / create_portal_employee).
+
+        Mirrors how `draft`/`active_intent` already carry ticket-drafting state
+
+        across turns - the backend stays stateless, the frontend just echoes
+
+        back whatever the previous ChatResponse.pending_action was.
+
+
+        `awaiting` names exactly what the next user turn is expected to resolve,
+
+        so services.management_action_service never has to re-guess intent
+
+        from free text alone: "ticket_selection" | "ticket_confirmation" |
+
+        "target_department" | "target_priority" | "employee_field:<name>" |
+
+        "employee_confirmation".'
     ReActAgentRequest:
       properties:
         message:
@@ -1740,6 +1850,33 @@ components:
         ChatIntent - intent says "the user wants to submit a request";
 
         request_type says which existing form that request belongs in.'
+    TicketCandidate:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        department:
+          type: string
+          title: Department
+        priority:
+          type: string
+          title: Priority
+        status:
+          type: string
+          title: Status
+      type: object
+      required:
+      - id
+      - title
+      - department
+      - priority
+      - status
+      title: TicketCandidate
+      description: Minimum info shown when Genie must ask the user which ticket they
+        mean.
     TicketCreate:
       properties:
         title:
@@ -1842,6 +1979,16 @@ components:
           - type: string
           - type: 'null'
           title: Preferreddate
+        startDate:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Startdate
+        endDate:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Enddate
         is_anonymous:
           type: boolean
           title: Is Anonymous
