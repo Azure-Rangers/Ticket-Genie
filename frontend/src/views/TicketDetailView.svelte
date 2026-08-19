@@ -1,17 +1,111 @@
 <script>
   import { onMount } from 'svelte';
-  import { selectedTicket, activeTab, changeTicketStatus } from '../lib/stores/tickets.js';
+  import { selectedTicket, activeTab, previousTab, changeTicketStatus, transferTicketDepartment } from '../lib/stores/tickets.js';
   import { userStore, isTicketer } from '../lib/stores/auth.js';
   import StatusBadge from '../components/StatusBadge.svelte';
-  import { apiFetchComments, apiPostComment, apiExportTicketPDF, apiExportTicketDOCX, apiExportCalendar } from '../lib/api.js';
+  import { apiFetchComments, apiPostComment, apiSuggestResponse, apiExportTicketPDF, apiExportTicketDOCX, apiExportCalendar } from '../lib/api.js';
 
   let comments = [];
   let loadingComments = false;
   let replyMessage = '';
   let sendingReply = false;
+  let generatingAiResponse = false;
+  let targetTransferDept = '';
+  let transferring = false;
   let errorMsg = '';
 
+  $: if (ticket && ticket.department && !targetTransferDept) {
+    targetTransferDept = ticket.department;
+  }
+
+  async function handleTransferTicket() {
+    if (!ticket || !targetTransferDept || targetTransferDept === ticket.department) return;
+    transferring = true;
+    try {
+      const updated = await transferTicketDepartment(ticket.id, targetTransferDept);
+      if (updated) {
+        ticket = { ...ticket, department: targetTransferDept };
+        $selectedTicket = ticket;
+        const targetTab = targetTransferDept.includes('IT') ? 'queue-it'
+                        : targetTransferDept.includes('HR') ? 'queue-hr'
+                        : (targetTransferDept.includes('Account') || targetTransferDept.includes('Fin')) ? 'queue-finance'
+                        : 'inbox';
+        $activeTab = targetTab;
+      }
+    } catch (err) {
+      console.error("Failed to transfer ticket:", err);
+      alert(err.message || "Failed to transfer ticket");
+    } finally {
+      transferring = false;
+    }
+  }
+
+  async function handleAutoGenerateResponse() {
+    if (!ticket || !ticket.id) return;
+    generatingAiResponse = true;
+    try {
+      const res = await apiSuggestResponse(ticket.id);
+      if (res && (res.message || res.suggested_response || res.reply)) {
+        replyMessage = res.message || res.suggested_response || res.reply;
+      }
+    } catch (err) {
+      console.error("Failed to generate AI response:", err);
+      alert(err.message || "Failed to generate AI response");
+    } finally {
+      generatingAiResponse = false;
+    }
+  }
+
+  function isRawGuid(str) {
+    return str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+  }
+
+  function getSenderDisplayName(c) {
+    // If backend resolved a real name (not a GUID), use it
+    if (c.sender_name && !isRawGuid(c.sender_name)) return c.sender_name;
+    if (c.sender && !isRawGuid(c.sender) && !c.sender.includes('-')) return c.sender;
+
+    // Check if it's the currently logged-in user
+    const sId = c.sender_id || '';
+    if (sId && $userStore && (sId === $userStore.objectId || sId === $userStore.azure_object_id || sId === $userStore.oid)) {
+      return $userStore.name || $userStore.email?.split('@')[0] || 'Employee';
+    }
+
+    // Email address — use prefix
+    if (sId.includes('@')) return sId.split('@')[0];
+
+    // Raw GUID or anything unresolvable — show clean role-based label
+    const role = c.sender_role || '';
+    if (role === 'Support' || role === 'Admin' || role === 'Ticketer') return 'Support Agent';
+    return 'Employee';
+  }
+
   $: ticket = $selectedTicket;
+
+  $: requesterDisplayName = (() => {
+    if (!ticket) return 'Employee';
+    const rid = ticket.requester_id || '';
+    // If the requester is the currently logged-in user, use their known name
+    if ($userStore && rid && (
+      rid === $userStore.oid ||
+      rid === $userStore.objectId ||
+      rid === $userStore.azure_object_id
+    )) {
+      return $userStore.name || $userStore.email?.split('@')[0] || 'Employee';
+    }
+    // Use backend-resolved name if it's not a raw GUID
+    if (ticket.requester_name && !isRawGuid(ticket.requester_name)) {
+      return ticket.requester_name;
+    }
+    return 'Employee';
+  })();
+
+  $: backLabel = $previousTab === 'inbox' ? 'Triage Inbox'
+               : $previousTab === 'queue-it' ? 'IT Queue'
+               : $previousTab === 'queue-hr' ? 'HR Queue'
+               : $previousTab === 'queue-finance' ? 'Finance Queue'
+               : $previousTab === 'dashboard' || $previousTab === 'my-tickets' ? 'My Tickets'
+               : 'Previous View';
 
   $: systemAiMessage = (ticket?.classification_reason || ticket?.reason) ? {
     sender_id: 'AI Genie',
@@ -101,7 +195,7 @@
   }
 
   function goBack() {
-    $activeTab = 'dashboard';
+    $activeTab = $previousTab || 'dashboard';
   }
 
   function downloadDocx(ticketId) {
@@ -122,7 +216,7 @@
   <!-- Back Button & Page Header -->
   <div class="detail-nav-header">
     <button class="btn-back" on:click={goBack}>
-      <i class="ph-bold ph-arrow-left"></i> Back to My Tickets
+      <i class="ph-bold ph-arrow-left"></i> Back to {backLabel}
     </button>
   </div>
 
@@ -159,7 +253,11 @@
         <div class="meta-strip">
           <div class="meta-item">
             <span class="meta-label">Category</span>
-            <span class="meta-val"><i class="ph-bold ph-tag"></i> {ticket.category || ticket.department || 'IT Support'}</span>
+            <span class="meta-val"><i class="ph-bold ph-tag"></i> {ticket.category || 'General'}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Department</span>
+            <span class="meta-val"><i class="ph-bold ph-buildings"></i> {ticket.department || 'Unassigned'}</span>
           </div>
           <div class="meta-item">
             <span class="meta-label">Priority</span>
@@ -172,6 +270,10 @@
           <div class="meta-item">
             <span class="meta-label">Created Date</span>
             <span class="meta-val"><i class="ph-bold ph-calendar"></i> {ticket.date || ticket.createdAt || 'Today'}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Submitted By</span>
+            <span class="meta-val"><i class="ph-bold ph-user"></i> {requesterDisplayName}</span>
           </div>
         </div>
 
@@ -207,6 +309,28 @@
               </button>
             {/if}
           </div>
+
+          <!-- Transfer & Re-route Bar -->
+          <div class="transfer-change-bar">
+            <span class="transfer-title"><i class="ph-bold ph-arrows-left-right"></i> Transfer / Re-route:</span>
+            <select class="transfer-select" bind:value={targetTransferDept}>
+              <option value="IT Team">IT Team Queue</option>
+              <option value="HR Team">HR Team Queue</option>
+              <option value="Accounting">Finance & Ops Queue</option>
+              <option value="Upper Executive Management">Upper Management Queue</option>
+            </select>
+            <button 
+              class="btn-transfer" 
+              on:click={handleTransferTicket}
+              disabled={transferring || !targetTransferDept || targetTransferDept === ticket.department}
+            >
+              {#if transferring}
+                <i class="ph-bold ph-spinner animate-spin"></i> Transferring...
+              {:else}
+                <i class="ph-bold ph-paper-plane-tilt"></i> Transfer & Re-route
+              {/if}
+            </button>
+          </div>
         {/if}
       </div>
 
@@ -237,7 +361,7 @@
               >
                 <div class="bubble-header">
                   <span class="sender-name">
-                    {c.sender_id || c.sender || 'User'} 
+                    {getSenderDisplayName(c)} 
                     <span class="role-tag">({c.sender_role || 'Employee'})</span>
                   </span>
                   <span class="msg-time">{c.createdAt || c.time || 'Recently'}</span>
@@ -249,19 +373,39 @@
         </div>
 
         <div class="reply-box">
-          <input 
-            type="text" 
-            placeholder="Type a message or response to support..." 
+          <div class="reply-header">
+            <span class="reply-label">Add Response</span>
+            {#if isTicketer($userStore)}
+              <button 
+                class="btn-ai-suggest" 
+                on:click={handleAutoGenerateResponse}
+                disabled={generatingAiResponse}
+                title="Auto generate an AI suggested response for this ticket"
+              >
+                {#if generatingAiResponse}
+                  <i class="ph-bold ph-spinner animate-spin"></i> Generating Response...
+                {:else}
+                  <i class="ph-bold ph-sparkle"></i> Suggest reply (AI)
+                {/if}
+              </button>
+            {/if}
+          </div>
+          <textarea 
+            class="reply-textarea" 
+            placeholder="Type your message or response to support (Cmd+Enter / Ctrl+Enter to send)..." 
             bind:value={replyMessage}
             on:keydown={handleKeydown}
-          />
-          <button class="btn-send" on:click={handleSendReply} disabled={sendingReply || !replyMessage.trim()}>
-            {#if sendingReply}
-              <i class="ph-bold ph-spinner animate-spin"></i> Sending...
-            {:else}
-              <i class="ph-bold ph-paper-plane-right"></i> Send Message
-            {/if}
-          </button>
+            rows="4"
+          ></textarea>
+          <div class="reply-actions">
+            <button class="btn-send" on:click={handleSendReply} disabled={sendingReply || !replyMessage.trim()}>
+              {#if sendingReply}
+                <i class="ph-bold ph-spinner animate-spin"></i> Sending...
+              {:else}
+                <i class="ph-bold ph-paper-plane-right"></i> Send Message
+              {/if}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -560,27 +704,55 @@
 
   .reply-box {
     display: flex;
-    gap: 12px;
-    padding-top: 14px;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 16px;
     border-top: 1px solid var(--border-color);
   }
 
-  .reply-box input {
-    flex: 1;
-    padding: 12px 16px;
-    border-radius: 10px;
-    border: 1px solid var(--border-color);
-    font-size: 0.88rem;
+  .reply-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
   }
 
-  .reply-box input:focus {
+  .reply-label {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+
+  .reply-textarea {
+    width: 100%;
+    border: 1.5px solid #d1d5db;
+    border-radius: 8px;
+    min-height: 110px;
+    padding: 14px;
+    font-size: 0.9rem;
+    line-height: 1.5;
     outline: none;
-    border-color: var(--primary);
+    font-family: inherit;
+    resize: vertical;
+    transition: 0.2s;
+    box-sizing: border-box;
+    color: var(--text-main);
+    background: #ffffff;
+  }
+
+  .reply-textarea:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3.5px rgba(99, 102, 241, 0.12);
+  }
+
+  .reply-actions {
+    display: flex;
+    justify-content: flex-end;
   }
 
   .btn-send {
-    padding: 12px 22px;
-    border-radius: 10px;
+    padding: 10px 22px;
+    border-radius: 8px;
     border: none;
     background: var(--primary);
     color: #ffffff;
@@ -598,6 +770,90 @@
 
   .btn-send:disabled {
     opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .btn-ai-suggest {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: #ffffff;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.25);
+  }
+
+  .btn-ai-suggest:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+  }
+
+  .btn-ai-suggest:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .transfer-change-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--border-color);
+  }
+
+  .transfer-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .transfer-select {
+    padding: 7px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-main);
+    background: #ffffff;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .transfer-select:focus {
+    border-color: var(--primary);
+  }
+
+  .btn-transfer {
+    background: #0284c7;
+    color: #ffffff;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s;
+  }
+
+  .btn-transfer:hover:not(:disabled) {
+    background: #0369a1;
+  }
+
+  .btn-transfer:disabled {
+    opacity: 0.5;
     cursor: not-allowed;
   }
 </style>

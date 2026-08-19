@@ -121,6 +121,17 @@ def init_db_schema():
                                 f"ALTER TABLE tickets ADD COLUMN {column_name} {column_type}"
                             )
                         )
+
+                # user_profiles column additions
+                profile_cols = [
+                    r[1]
+                    for r in conn.execute(text("PRAGMA table_info(user_profiles)")).fetchall()
+                ]
+                if "azure_object_id" not in profile_cols:
+                    conn.execute(
+                        text("ALTER TABLE user_profiles ADD COLUMN azure_object_id VARCHAR(100)")
+                    )
+
                 conn.commit()
         elif engine.dialect.name == "mssql":
             with engine.begin() as conn:

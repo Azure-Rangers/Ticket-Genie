@@ -218,6 +218,7 @@ class UserProfileDB(Base):
     department = Column(String(100), nullable=False, default="General")
     phone = Column(String(50), nullable=True, default="+1 (555) 019-2834")
     avatar = Column(String(50), nullable=True, default="NM")
+    azure_object_id = Column(String(100), nullable=True, index=True)
 
     def to_dict(self) -> dict:
         return {
@@ -228,4 +229,5 @@ class UserProfileDB(Base):
             "department": self.department,
             "phone": self.phone,
             "avatar": self.avatar,
+            "azure_object_id": self.azure_object_id,
         }

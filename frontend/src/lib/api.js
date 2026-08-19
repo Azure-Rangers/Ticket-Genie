@@ -101,6 +101,22 @@ export async function apiPostComment(ticketId, message) {
   return await res.json();
 }
 
+export async function apiSuggestResponse(ticketId) {
+  const res = await fetch(`${API_BASE_URL}/tickets/${encodeURIComponent(ticketId)}/suggested-response`, {
+    method: "POST",
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    let detail = `Failed to generate AI response (${res.status})`;
+    try {
+      const body = await res.json();
+      if (body.detail) detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
+    } catch (e) {}
+    throw new Error(detail);
+  }
+  return await res.json();
+}
+
 /** ==================== EXPORT & CALENDAR API ==================== */
 
 export async function apiExportTicketPDF(ticketId) {

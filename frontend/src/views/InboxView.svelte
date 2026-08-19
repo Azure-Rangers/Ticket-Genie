@@ -1,75 +1,54 @@
 <script>
   import { onMount } from 'svelte';
   import { checkAuthGuard, userStore, isTicketer } from '../lib/stores/auth.js';
-  import { tickets, filteredTickets, statusFilter, priorityFilter, selectedTicket, changeTicketStatus } from '../lib/stores/tickets.js';
+  import { filteredTickets, statusFilter, priorityFilter, selectedTicket, activeTab, changeTicketStatus } from '../lib/stores/tickets.js';
   import StatusBadge from '../components/StatusBadge.svelte';
-  import TicketCard from '../components/TicketCard.svelte';
-
   import { apiExportTicketPDF, apiExportCalendar } from '../lib/api.js';
 
   onMount(() => {
     checkAuthGuard('employee');
   });
 
-  let commentText = '';
-  
-  $: currentOid = ($userStore?.objectId || $userStore?.azure_object_id || $userStore?.oid || '').toLowerCase().trim();
-  $: currentEmail = ($userStore?.email || '').toLowerCase().trim();
-  $: ticketReq = ($selectedTicket?.requester_id || $selectedTicket?.user_id || '').toLowerCase().trim();
-  $: isCreator = !!(ticketReq && (
-    (currentOid && ticketReq === currentOid) ||
-    (currentEmail && ticketReq === currentEmail)
-  ));
-
-  $: activeComments = $selectedTicket?.comments || [
-    {
-      sender: $selectedTicket?.requester || 'Requester',
-      role: 'Requester',
-      text: $selectedTicket?.description || 'Support request created.',
-      time: $selectedTicket?.created_at || 'Recently'
-    },
-    ...($selectedTicket?.classification_reason ? [{
-      sender: 'TicketGenie AI Assistant',
-      role: 'System',
-      text: `AI Auto-Classification (${Math.round(($selectedTicket.classification_confidence || 0.94) * 100)}% confidence): ${$selectedTicket.classification_reason}`,
-      time: 'Auto-Triaged'
-    }] : [])
-  ];
-
-  async function addComment() {
-    if (!commentText.trim() || !$selectedTicket) return;
-    const newComment = {
-      sender: $userStore?.name || 'Admin User',
-      role: $userStore?.role || 'Ticketer',
-      text: commentText,
-      time: 'Just now'
-    };
-    try {
-      await apiUpdateTicket($selectedTicket.id, { notes: commentText });
-    } catch (e) {
-      console.warn("Notice updating notes:", e);
-    }
-    const currentComments = $selectedTicket.comments || [];
-    $selectedTicket = {
-      ...$selectedTicket,
-      comments: [...currentComments, newComment]
-    };
-    commentText = '';
+  function openTicketChat(ticket) {
+    $selectedTicket = ticket;
+    $activeTab = 'ticket-detail';
   }
 
-  function handleStatusSelect(status) {
-    if ($selectedTicket) {
-      changeTicketStatus($selectedTicket.id, status);
-      $selectedTicket = { ...$selectedTicket, status };
-    }
+  function handleQuickResolve(e, ticket) {
+    e.stopPropagation();
+    changeTicketStatus(ticket.id, 'Resolved');
   }
+
+  function getRequesterName(t) {
+    if (t.is_anonymous) return 'Anonymous Employee';
+    if (t.requester && t.requester !== t.department) return t.requester;
+    if (t.requester_name && t.requester_name !== t.department) return t.requester_name;
+    if (t.requester_id) {
+      if (t.requester_id.includes('@')) {
+        return t.requester_id.split('@')[0];
+      }
+      return t.requester_id;
+    }
+    return 'Employee User';
+  }
+
+  $: queueTitle = $activeTab === 'queue-it' ? 'IT Department Queue'
+                : $activeTab === 'queue-hr' ? 'HR Department Queue'
+                : $activeTab === 'queue-finance' ? 'Finance & Operations Queue'
+                : 'Triage Inbox';
+
+  $: queueSubtitle = $activeTab === 'queue-it' ? 'Manage and resolve active IT support requests'
+                   : $activeTab === 'queue-hr' ? 'Manage and resolve HR and benefits requests'
+                   : $activeTab === 'queue-finance' ? 'Manage finance, accounts, and procurement requests'
+                   : 'Interactive tabular view for triaging, inspecting, and opening ticket conversation threads';
 </script>
 
 <div class="inbox-view animate-fade">
+  <!-- Header & Filters Bar -->
   <div class="inbox-header">
     <div>
-      <h1 class="view-title">Triage Inbox</h1>
-      <p class="view-subtitle">Filter, inspect, assign, and resolve incoming service tickets</p>
+      <h1 class="view-title">{queueTitle}</h1>
+      <p class="view-subtitle">{queueSubtitle}</p>
     </div>
 
     <!-- Filter Control Bar -->
@@ -96,127 +75,96 @@
     </div>
   </div>
 
-  <div class="inbox-layout">
-    <!-- Ticket List Column -->
-    <div class="ticket-list-col">
-      {#if $filteredTickets.length === 0}
-        <div class="empty-inbox">
-          <i class="ph-duotone ph-tray"></i>
-          <p>No tickets match the selected filters</p>
-        </div>
-      {:else}
-        {#each $filteredTickets as ticket}
-          <TicketCard {ticket} />
-        {/each}
-      {/if}
-    </div>
-
-    <!-- Selected Ticket Detail Inspector -->
-    <div class="ticket-detail-pane">
-      {#if $selectedTicket}
-        <div class="detail-card animate-fade">
-          <div class="detail-header">
-            <div>
-              <span class="detail-id">{$selectedTicket.id}</span>
-              <h2 class="detail-title">{$selectedTicket.title}</h2>
-            </div>
-            <div class="header-right-group">
-              <StatusBadge status={$selectedTicket.status} type="status" />
-              <div class="action-btn-group">
-                <button class="btn-action-export" on:click={() => apiExportTicketPDF($selectedTicket.id)} title="Download Ticket PDF Summary">
-                  <i class="ph-bold ph-file-pdf"></i> Download PDF
-                </button>
-                <button class="btn-action-calendar" on:click={() => apiExportCalendar()} title="Export to iCal Calendar">
-                  <i class="ph-bold ph-calendar-plus"></i> iCal
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="meta-row">
-            <div class="meta-block">
-              <span class="meta-label">Requester</span>
-              <span class="meta-val"><i class="ph-bold ph-user"></i> {$selectedTicket.requester || 'Employee User'}</span>
-            </div>
-            <div class="meta-block">
-              <span class="meta-label">Category</span>
-              <span class="meta-val"><i class="ph-bold ph-tag"></i> {$selectedTicket.category || 'IT & Infrastructure'}</span>
-            </div>
-            <div class="meta-block">
-              <span class="meta-label">Priority</span>
-              <StatusBadge status={$selectedTicket.priority || 'Medium'} type="priority" />
-            </div>
-          </div>
-
-          <div class="description-box">
-            <h4>Issue Description</h4>
-            <p>{$selectedTicket.description || 'No detailed description provided for this request.'}</p>
-          </div>
-
-          <!-- Quick Action Buttons for Support Staff -->
-          {#if isTicketer($userStore)}
-            <div class="status-actions">
-              <span>Change Status:</span>
-              <button 
-                class="btn-status open" 
-                class:active={$selectedTicket.status === 'Open'} 
-                on:click={() => handleStatusSelect('Open')}
-              >
-                Open
-              </button>
-              <button 
-                class="btn-status progress" 
-                class:active={$selectedTicket.status === 'In Progress'} 
-                on:click={() => handleStatusSelect('In Progress')}
-              >
-                In Progress
-              </button>
-              {#if !isCreator}
-                <button 
-                  class="btn-status resolve" 
-                  class:active={$selectedTicket.status === 'Resolved'} 
-                  on:click={() => handleStatusSelect('Resolved')}
-                >
-                  Resolved
-                </button>
-              {/if}
-            </div>
-          {/if}
-
-          <!-- Conversation Thread -->
-          <div class="comments-section">
-            <h4>Conversation Thread ({activeComments.length})</h4>
-            <div class="comments-list">
-              {#each activeComments as c}
-                <div class="comment-item" class:system-comment={c.role === 'System'}>
-                  <div class="comment-header">
-                    <span class="comment-sender">{c.sender} <span class="role-tag">({c.role})</span></span>
-                    <span class="comment-time">{c.time}</span>
-                  </div>
-                  <p class="comment-text">{c.text}</p>
+  <!-- Tabular Queue Container -->
+  <div class="table-container">
+    {#if $filteredTickets.length === 0}
+      <div class="empty-inbox">
+        <i class="ph-duotone ph-tray"></i>
+        <h3>No tickets found</h3>
+        <p>No tickets match the selected filters or search criteria.</p>
+      </div>
+    {:else}
+      <table class="tickets-table">
+        <thead>
+          <tr>
+            <th>Ticket ID</th>
+            <th>Title & Description</th>
+            <th>Requester</th>
+            <th>Department</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th class="text-right">Chat / Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each $filteredTickets as ticket}
+            <!-- svelte-ignore a11y-click-events-have-key-events a11y-interactive-supports-focus -->
+            <tr 
+              class="ticket-row" 
+              class:selected={$selectedTicket?.id === ticket.id}
+              on:click={() => openTicketChat(ticket)}
+              role="button"
+              tabindex="0"
+            >
+              <td>
+                <span class="id-badge">{ticket.id || 'TICK-0000'}</span>
+              </td>
+              <td>
+                <div class="title-cell">
+                  <span class="ticket-title-text">{ticket.title}</span>
+                  {#if ticket.description}
+                    <span class="ticket-desc-snippet">{ticket.description}</span>
+                  {/if}
                 </div>
-              {/each}
-            </div>
-
-            <div class="comment-input-box">
-              <input 
-                type="text" 
-                placeholder="Type a response or resolution note..." 
-                bind:value={commentText}
-                on:keydown={(e) => e.key === 'Enter' && addComment()}
-              />
-              <button on:click={addComment}><i class="ph-bold ph-paper-plane-right"></i></button>
-            </div>
-          </div>
-        </div>
-      {:else}
-        <div class="no-selection">
-          <i class="ph-duotone ph-cursor-click"></i>
-          <h3>Select a ticket from the queue</h3>
-          <p>Click any ticket on the left to view details, update status, or add notes</p>
-        </div>
-      {/if}
-    </div>
+              </td>
+              <td>
+                <div class="requester-cell">
+                  <i class="ph-bold ph-user user-icon"></i>
+                  <span>{getRequesterName(ticket)}</span>
+                </div>
+              </td>
+              <td>
+                <span class="category-tag dept-badge">
+                  <i class="ph-bold ph-buildings"></i> {ticket.department || 'General'}
+                </span>
+              </td>
+              <td>
+                <StatusBadge status={ticket.priority || 'Medium'} type="priority" />
+              </td>
+              <td>
+                <StatusBadge status={ticket.status || 'Open'} type="status" />
+              </td>
+              <td>
+                <span class="date-text">
+                  <i class="ph-bold ph-calendar"></i> {ticket.date || ticket.createdAt || 'Recently'}
+                </span>
+              </td>
+              <td class="text-right">
+                <div class="action-cell">
+                  <button 
+                    class="btn-open-chat" 
+                    on:click={(e) => { e.stopPropagation(); openTicketChat(ticket); }}
+                    title="Open Chat Conversation Thread"
+                  >
+                    <i class="ph-bold ph-chats"></i> Chat
+                  </button>
+                  {#if (ticket.status || '').toLowerCase() !== 'resolved'}
+                    <button 
+                      class="btn-quick-resolve" 
+                      on:click={(e) => handleQuickResolve(e, ticket)}
+                      title="Quick Resolve Ticket"
+                    >
+                      <i class="ph-bold ph-check"></i>
+                    </button>
+                  {/if}
+                </div>
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    {/if}
   </div>
 </div>
 
@@ -227,13 +175,17 @@
     flex-direction: column;
     gap: 20px;
     height: 100%;
-    overflow: hidden;
+    overflow-y: auto;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .inbox-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
   }
 
   .view-title {
@@ -245,6 +197,7 @@
   .view-subtitle {
     font-size: 0.85rem;
     color: var(--text-muted);
+    margin-top: 2px;
   }
 
   .filter-bar {
@@ -263,290 +216,201 @@
   }
 
   .filter-group select {
-    padding: 8px 12px;
+    padding: 8px 14px;
     border-radius: 8px;
     border: 1px solid var(--border-color);
     background: #ffffff;
     font-size: 0.82rem;
+    color: var(--text-main);
+    cursor: pointer;
   }
 
-  .inbox-layout {
-    display: grid;
-    grid-template-columns: 420px 1fr;
-    gap: 24px;
-    flex: 1;
+  .table-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
     overflow: hidden;
-  }
-
-  .ticket-list-col {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    overflow-y: auto;
-    padding-right: 6px;
+  }
+
+  .tickets-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.85rem;
+  }
+
+  .tickets-table th {
+    background: #f8fafc;
+    padding: 14px 18px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .tickets-table td {
+    padding: 16px 18px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+
+  .ticket-row {
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+
+  .ticket-row:hover {
+    background: #f8fafc;
+  }
+
+  .ticket-row.selected {
+    background: #f0fdf4;
+  }
+
+  .id-badge {
+    font-family: monospace;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--primary);
+    background: var(--primary-light);
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+  }
+
+  .title-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 380px;
+  }
+
+  .ticket-title-text {
+    font-weight: 700;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    line-height: 1.3;
+  }
+
+  .ticket-desc-snippet {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 360px;
+  }
+
+  .requester-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    color: var(--text-main);
+  }
+
+  .user-icon {
+    color: var(--text-muted);
+  }
+
+  .category-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 3px 9px;
+    border-radius: 6px;
+  }
+
+  .category-tag.dept-badge {
+    color: #1e1b4b;
+    background: #e0e7ff;
+    border: 1px solid #c7d2fe;
+    font-weight: 700;
+  }
+
+  .date-text {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .text-right {
+    text-align: right;
+  }
+
+  .action-cell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .btn-open-chat {
+    background: var(--primary);
+    color: #ffffff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+  }
+
+  .btn-open-chat:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+  }
+
+  .btn-quick-resolve {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-quick-resolve:hover {
+    background: #10b981;
+    color: #ffffff;
   }
 
   .empty-inbox {
     text-align: center;
-    padding: 60px 20px;
+    padding: 80px 20px;
     color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
   }
 
   .empty-inbox i {
-    font-size: 3rem;
-    margin-bottom: 8px;
-  }
-
-  .ticket-detail-pane {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    overflow-y: auto;
-    box-shadow: var(--shadow-sm);
-  }
-
-  .detail-card {
-    padding: 28px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .detail-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  .header-right-group {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 8px;
-  }
-
-  .action-btn-group {
-    display: flex;
-    gap: 6px;
-  }
-
-  .btn-action-export, .btn-action-calendar {
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    background: #ffffff;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--text-main);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    transition: all 0.15s;
-  }
-
-  .btn-action-export:hover {
-    border-color: #ef4444;
-    color: #ef4444;
-    background: #fef2f2;
-  }
-
-  .btn-action-calendar:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-    background: var(--primary-light);
-  }
-
-  .detail-id {
-    font-family: monospace;
-    font-weight: 700;
-    font-size: 0.85rem;
-    color: var(--primary);
-    background: var(--primary-light);
-    padding: 2px 8px;
-    border-radius: 6px;
-  }
-
-  .detail-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--text-main);
-    margin-top: 6px;
-  }
-
-  .meta-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    background: #f8fafc;
-    padding: 14px;
-    border-radius: 10px;
-    border: 1px solid #e2e8f0;
-  }
-
-  .meta-block {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .meta-label {
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-
-  .meta-val {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--text-main);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .description-box h4 {
-    font-size: 0.9rem;
-    font-weight: 700;
-    margin-bottom: 6px;
-  }
-
-  .description-box p {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    line-height: 1.5;
-  }
-
-  .status-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.82rem;
-    font-weight: 600;
-    padding: 14px 0;
-    border-top: 1px solid #f1f5f9;
-    border-bottom: 1px solid #f1f5f9;
-  }
-
-  .btn-status {
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    border: 1px solid var(--border-color);
-    background: #ffffff;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .btn-status.open.active { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
-  .btn-status.progress.active { background: #fffbeb; color: #d97706; border-color: #fde68a; }
-  .btn-status.resolve.active { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
-
-  .comments-section h4 {
-    font-size: 0.9rem;
-    font-weight: 700;
-    margin-bottom: 12px;
-  }
-
-  .comments-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    max-height: 240px;
-    overflow-y: auto;
-    margin-bottom: 12px;
-  }
-
-  .comment-item {
-    background: #f8fafc;
-    border-radius: 10px;
-    padding: 12px 14px;
-    border: 1px solid var(--border-color);
-  }
-
-  .comment-item.system-comment {
-    background: #f5f3ff;
-    border-color: #ddd6fe;
-  }
-
-  .comment-header {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.78rem;
-    margin-bottom: 4px;
-  }
-
-  .comment-sender {
-    font-weight: 700;
-    color: var(--text-main);
-  }
-
-  .role-tag {
-    font-weight: 400;
-    color: var(--text-muted);
-  }
-
-  .comment-time {
-    color: var(--text-muted);
-    font-size: 0.72rem;
-  }
-
-  .comment-text {
-    font-size: 0.82rem;
-    color: var(--text-main);
-    line-height: 1.4;
-  }
-
-  .comment-input-box {
-    display: flex;
-    gap: 8px;
-  }
-
-  .comment-input-box input {
-    flex: 1;
-    padding: 10px 14px;
-    border-radius: 10px;
-    border: 1px solid var(--border-color);
-    font-size: 0.83rem;
-  }
-
-  .comment-input-box button {
-    background: var(--primary);
-    color: white;
-    border: none;
-    padding: 0 16px;
-    border-radius: 10px;
-    cursor: pointer;
-  }
-
-  .no-selection {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    color: var(--text-muted);
-    padding: 40px;
-  }
-
-  .no-selection i {
     font-size: 3.5rem;
-    margin-bottom: 12px;
     color: #cbd5e1;
   }
 
-  .no-selection h3 {
+  .empty-inbox h3 {
     font-size: 1.1rem;
     color: var(--text-main);
-    margin-bottom: 4px;
-  }
-
-  .no-selection p {
-    font-size: 0.85rem;
   }
 </style>

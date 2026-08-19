@@ -62,6 +62,8 @@ class TicketResponse(BaseModel):
     is_anonymous: bool = False
     attachment: Optional[str] = None
     requester_id: Optional[str] = None
+    requester: Optional[str] = None
+    requester_name: Optional[str] = None
     classification_status: str = "Classified"
     classification_confidence: Optional[float] = None
     classification_reason: Optional[str] = None
