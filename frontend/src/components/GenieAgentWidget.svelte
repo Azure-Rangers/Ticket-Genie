@@ -1,7 +1,31 @@
 <script>
   import { activeTab, genieDraftStore } from '../lib/stores/tickets.js';
-  import { userStore } from '../lib/stores/auth.js';
+  import { userStore, isTicketer, isAdmin, isSuperAdmin } from '../lib/stores/auth.js';
   import { apiGenieChat } from '../lib/api.js';
+
+  // Every activeTab value Genie may navigate to, and (where the live
+  // Sidebar.svelte gates the equivalent nav item) the same role predicate
+  // Sidebar itself uses - kept in exact sync with the backend's
+  // NavigationTarget -> activeTab map in services/chatbot_service.py.
+  // Backend already sends the EXACT activeTab string (never a raw path or
+  // URL), so this is a whitelist + defense-in-depth role re-check, not a
+  // second translation layer.
+  const NAV_TAB_ROLE_GATE = {
+    inbox: isTicketer,
+    analytics: isTicketer,
+    settings: isAdmin,
+    onboarding: isSuperAdmin,
+    'leave-calendar': isSuperAdmin
+  };
+  const NAV_TABS = new Set([
+    'dashboard',
+    'create-ticket',
+    'knowledge',
+    'notifications',
+    'announcements',
+    'profile',
+    ...Object.keys(NAV_TAB_ROLE_GATE)
+  ]);
 
   let isOpen = false;
   let userMessage = '';
@@ -71,17 +95,10 @@
 
       // 1. Automatic Navigation Handling
       if (res.action && res.action.type === 'navigate') {
-        const target = (res.action.target || '').toLowerCase();
-        if (target.includes('my-tickets') || target.includes('inbox')) {
-          $activeTab = 'inbox';
-        } else if (target.includes('new-request') || target.includes('submit-ticket')) {
-          $activeTab = 'create-ticket';
-        } else if (target.includes('knowledge')) {
-          $activeTab = 'knowledge';
-        } else if (target.includes('analytics')) {
-          $activeTab = 'analytics';
-        } else if (target.includes('settings') || target.includes('rbac')) {
-          $activeTab = 'settings';
+        const target = res.action.target || '';
+        const roleGate = NAV_TAB_ROLE_GATE[target];
+        if (NAV_TABS.has(target) && (!roleGate || roleGate($userStore))) {
+          $activeTab = target;
         }
       }
 

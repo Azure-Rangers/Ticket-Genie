@@ -66,6 +66,8 @@
           <ProfileView />
         {:else if $activeTab === 'onboarding'}
           <OnboardingView />
+        {:else if $activeTab === 'leave-calendar'}
+          <LeaveCalendarView />
         {:else if $activeTab === 'ticket-detail' || $activeTab === 'ticket-thread'}
           <TicketDetailView />
         {:else if $activeTab === 'inbox' || $activeTab === 'queue-it' || $activeTab === 'queue-hr' || $activeTab === 'queue-finance'}

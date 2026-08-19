@@ -26,12 +26,26 @@ class ChatActionType(str, Enum):
 
 
 class NavigationTarget(str, Enum):
+    """
+    Semantic-only destinations GPT may choose from. Deliberately named for
+    WHAT the user wants, not a page/tab identifier - services.chatbot_service
+    is the single place that deterministically maps each of these to the
+    current live Svelte SPA's activeTab value (frontend/src/App.svelte),
+    applying role gating along the way. GPT must never see or produce a raw
+    tab name/URL.
+    """
+
     DASHBOARD = "dashboard"
-    NEW_REQUEST = "new_request"
+    CREATE_TICKET = "create_ticket"
     MY_TICKETS = "my_tickets"
     KNOWLEDGE_BASE = "knowledge_base"
     NOTIFICATIONS = "notifications"
-    CHAT_HISTORY = "chat_history"
+    ANNOUNCEMENTS = "announcements"
+    PROFILE = "profile"
+    SETTINGS = "settings"
+    ANALYTICS = "analytics"
+    ONBOARDING = "onboarding"
+    LEAVE_CALENDAR = "leave_calendar"
 
 
 class ExtractedTicketFields(BaseModel):
@@ -235,11 +249,17 @@ create_portal_employee only - populate `management_fields`, leave
 
 NAVIGATION RULES:
 - Only choose from these exact navigation targets: dashboard,
-  new_request, my_tickets, knowledge_base, notifications, chat_history.
-  Never invent a target or a URL - the backend maps the target to a
-  real page.
+  create_ticket, my_tickets, knowledge_base, notifications,
+  announcements, profile, settings, analytics, onboarding,
+  leave_calendar. Never invent a target or a URL - the backend maps the
+  target to the real page and independently checks whether the user's
+  role is allowed to see it.
 - If the message doesn't clearly match one of those targets, treat it
   as how_to instead of guessing a navigation target.
+- Use create_ticket only for "take me to the create ticket page" style
+  navigation requests, not for "I want to report/request X" - that is
+  create_ticket/support_issue/leave_management INTENT with a ticket
+  draft instead (see INTENTS above), never plain navigation.
 
 TICKET FIELD EXTRACTION RULES (support_issue / create_ticket /
 leave_management):

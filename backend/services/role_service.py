@@ -68,6 +68,37 @@ def is_super_admin(role: Optional[str], is_dev: bool = False) -> bool:
     return "super" in (role or "").lower() or is_dev
 
 
+def is_department_ticketer(role: Optional[str]) -> bool:
+    """Whether `role` sees department-ticketer-tier navigation (Inbox,
+    Analytics) in the live UI.
+
+    Mirrors frontend/src/lib/stores/auth.js's isTicketer() exactly (a
+    substring check against admin/ticketer/manager/super/operations) so
+    Genie's navigation gating in services.chatbot_service always agrees
+    with what frontend/src/components/Sidebar.svelte actually shows for
+    the same role string - not a new, independently-drifting rule.
+    """
+
+    normalized = (role or "").lower()
+    return any(
+        keyword in normalized
+        for keyword in ("admin", "ticketer", "manager", "super", "operations")
+    )
+
+
+def is_admin_role(role: Optional[str]) -> bool:
+    """Whether `role` sees admin-tier navigation (Settings) in the live UI.
+
+    Mirrors frontend/src/lib/stores/auth.js's isAdmin() exactly (a
+    substring check against admin/manager/super/operations).
+    """
+
+    normalized = (role or "").lower()
+    return any(
+        keyword in normalized for keyword in ("admin", "manager", "super", "operations")
+    )
+
+
 def is_ticket_mutation_authorized(role: Optional[str]) -> bool:
     """Whether `role` may reassign a ticket's department or priority.
 
