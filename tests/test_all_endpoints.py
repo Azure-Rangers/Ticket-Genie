@@ -1,6 +1,7 @@
 import os
 import sys
 
+import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
@@ -81,14 +82,18 @@ def test_announcements_crud():
 
 
 def test_announcement_creation_role_boundary():
-    assert require_announcement_admin({"role": "Admin", "oid": "admin-1"})["oid"] == "admin-1"
-    assert require_announcement_admin({"role": "Super Admin", "oid": "super-1"})["oid"] == "super-1"
+    assert (
+        require_announcement_admin({"role": "Admin", "oid": "admin-1"})["oid"]
+        == "admin-1"
+    )
+    assert (
+        require_announcement_admin({"role": "Super Admin", "oid": "super-1"})["oid"]
+        == "super-1"
+    )
 
-    try:
+    with pytest.raises(HTTPException) as error:
         require_announcement_admin({"role": "Employee", "oid": "employee-1"})
-        assert False, "Employee must not be allowed to create announcements"
-    except HTTPException as exc:
-        assert exc.status_code == 403
+    assert error.value.status_code == 403
 
 
 def test_notifications_crud():

@@ -5,14 +5,51 @@ from __future__ import annotations
 import re
 from typing import Iterable, Optional
 
-
 STOP_WORDS = {
-    "about", "after", "again", "also", "already", "and", "are", "because",
-    "been", "before", "being", "can", "cannot", "company", "could", "create",
-    "does", "employee", "from", "have", "help", "into", "issue", "just",
-    "need", "not", "please", "problem", "request", "some", "that", "the",
-    "their", "there", "they", "this", "ticket", "unable", "user", "want",
-    "with", "working", "would", "your",
+    "about",
+    "after",
+    "again",
+    "also",
+    "already",
+    "and",
+    "are",
+    "because",
+    "been",
+    "before",
+    "being",
+    "can",
+    "cannot",
+    "company",
+    "could",
+    "create",
+    "does",
+    "employee",
+    "from",
+    "have",
+    "help",
+    "into",
+    "issue",
+    "just",
+    "need",
+    "not",
+    "please",
+    "problem",
+    "request",
+    "some",
+    "that",
+    "the",
+    "their",
+    "there",
+    "they",
+    "this",
+    "ticket",
+    "unable",
+    "user",
+    "want",
+    "with",
+    "working",
+    "would",
+    "your",
 }
 
 TERM_ALIASES = {
@@ -29,12 +66,25 @@ TERM_ALIASES = {
 }
 
 INCIDENT_TERMS = {
-    "closure", "degraded", "disruption", "down", "incident", "maintenance",
-    "outage", "scheduled", "unavailable", "upgrade",
+    "closure",
+    "degraded",
+    "disruption",
+    "down",
+    "incident",
+    "maintenance",
+    "outage",
+    "scheduled",
+    "unavailable",
+    "upgrade",
 }
 
 SERVICE_TERMS = {
-    "email", "network", "payroll", "teams", "vpn", "wifi",
+    "email",
+    "network",
+    "payroll",
+    "teams",
+    "vpn",
+    "wifi",
 }
 
 
@@ -71,9 +121,7 @@ def find_matching_announcement(
             continue
 
         has_incident_context = bool(all_terms & INCIDENT_TERMS)
-        strong_single_term = bool(
-            overlap & SERVICE_TERMS and has_incident_context
-        )
+        strong_single_term = bool(overlap & SERVICE_TERMS and has_incident_context)
         if len(overlap) < 2 and not strong_single_term:
             continue
 

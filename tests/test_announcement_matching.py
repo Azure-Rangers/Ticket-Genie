@@ -1,6 +1,5 @@
 from services.announcement_match_service import find_matching_announcement
 
-
 ANNOUNCEMENTS = [
     {
         "id": "anc-vpn",
