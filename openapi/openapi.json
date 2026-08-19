@@ -2113,9 +2113,179 @@
         "tags": [
           "onboarding"
         ],
-        "summary": "List Onboarding Records",
-        "operationId": "list_onboarding_records_api_onboarding_get",
+        "summary": "List Cases",
+        "operationId": "list_cases_api_onboarding_get",
         "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/onboarding/suggest": {
+      "post": {
+        "tags": [
+          "onboarding"
+        ],
+        "summary": "Suggest Onboarding Plan",
+        "operationId": "suggest_onboarding_plan_api_onboarding_suggest_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnboardingSuggestionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/onboarding/start": {
+      "post": {
+        "tags": [
+          "onboarding"
+        ],
+        "summary": "Start Onboarding",
+        "operationId": "start_onboarding_api_onboarding_start_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnboardingStartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/onboarding/{onboarding_id}": {
+      "get": {
+        "tags": [
+          "onboarding"
+        ],
+        "summary": "Get Case",
+        "operationId": "get_case_api_onboarding__onboarding_id__get",
+        "parameters": [
+          {
+            "name": "onboarding_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Onboarding Id"
+            }
+          },
           {
             "name": "authorization",
             "in": "header",
@@ -2154,77 +2324,20 @@
           }
         }
       },
-      "post": {
+      "patch": {
         "tags": [
           "onboarding"
         ],
-        "summary": "Handle Create Onboarding",
-        "operationId": "handle_create_onboarding_api_onboarding_post",
+        "summary": "Update Case",
+        "operationId": "update_case_api_onboarding__onboarding_id__patch",
         "parameters": [
           {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/OnboardingCreateRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/onboarding/{record_id}": {
-      "put": {
-        "tags": [
-          "onboarding"
-        ],
-        "summary": "Handle Update Onboarding",
-        "operationId": "handle_update_onboarding_api_onboarding__record_id__put",
-        "parameters": [
-          {
-            "name": "record_id",
+            "name": "onboarding_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Record Id"
+              "title": "Onboarding Id"
             }
           },
           {
@@ -2256,6 +2369,72 @@
         },
         "responses": {
           "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/onboarding/{onboarding_id}/tickets": {
+      "post": {
+        "tags": [
+          "onboarding"
+        ],
+        "summary": "Add Ticket To Case",
+        "operationId": "add_ticket_to_case_api_onboarding__onboarding_id__tickets_post",
+        "parameters": [
+          {
+            "name": "onboarding_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Onboarding Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnboardingTicketPlanItem"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -3244,69 +3423,188 @@
         ],
         "title": "NotificationCreateRequest"
       },
-      "OnboardingCreateRequest": {
+      "OnboardingStartRequest": {
         "properties": {
           "employee_name": {
             "type": "string",
+            "maxLength": 150,
+            "minLength": 2,
             "title": "Employee Name"
           },
-          "role": {
+          "employee_email": {
             "type": "string",
-            "title": "Role"
+            "maxLength": 150,
+            "minLength": 3,
+            "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+            "title": "Employee Email"
           },
-          "department": {
+          "job_title": {
             "type": "string",
-            "title": "Department"
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Job Title"
+          },
+          "employee_department": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Employee Department"
+          },
+          "manager": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 150
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manager"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 150
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
           },
           "visa_status": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 100
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Visa Status",
-            "default": "H1-B / OPT"
+            "title": "Visa Status"
           },
           "start_date": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Start Date",
-            "default": "2026-09-01"
+            "type": "string",
+            "format": "date",
+            "title": "Start Date"
           },
-          "status": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Status",
-            "default": "In Progress"
+          "tickets": {
+            "items": {
+              "$ref": "#/components/schemas/OnboardingTicketPlanItem"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "minItems": 1,
+            "title": "Tickets"
           }
         },
         "type": "object",
         "required": [
           "employee_name",
-          "role",
-          "department"
+          "employee_email",
+          "job_title",
+          "employee_department",
+          "start_date",
+          "tickets"
         ],
-        "title": "OnboardingCreateRequest"
+        "title": "OnboardingStartRequest"
+      },
+      "OnboardingSuggestionRequest": {
+        "properties": {
+          "job_title": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Job Title"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Start Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_title",
+          "start_date"
+        ],
+        "title": "OnboardingSuggestionRequest"
+      },
+      "OnboardingTicketPlanItem": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 3,
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 10,
+            "title": "Description"
+          },
+          "department": {
+            "type": "string",
+            "enum": [
+              "HR Team",
+              "Accounting Team",
+              "Workplace Operations Team",
+              "IT Team",
+              "Upper Management"
+            ],
+            "title": "Department"
+          },
+          "category": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Category"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "Low",
+              "Medium",
+              "High",
+              "Critical"
+            ],
+            "title": "Priority",
+            "default": "Medium"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "description",
+          "department",
+          "category"
+        ],
+        "title": "OnboardingTicketPlanItem"
       },
       "OnboardingUpdateRequest": {
         "properties": {
           "status": {
             "type": "string",
+            "enum": [
+              "In Progress",
+              "Blocked",
+              "Cancelled"
+            ],
             "title": "Status"
           }
         },
@@ -3929,6 +4227,28 @@
               }
             ],
             "title": "Model Deployment"
+          },
+          "onboarding_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Onboarding Id"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
           }
         },
         "type": "object",
