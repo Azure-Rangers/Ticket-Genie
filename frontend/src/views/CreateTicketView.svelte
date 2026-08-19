@@ -6,12 +6,34 @@
 
   let activeFormTab = 'standard'; // 'standard' | 'leave' | 'anonymous'
 
+  // Backend leave categories (services/ticket_draft_service.py LEAVE_TYPES)
+  // don't share exact strings with this form's <select> options - map
+  // safely instead of assigning the raw category through and silently
+  // leaving the <select> on its default.
+  const LEAVE_CATEGORY_TO_FORM_TYPE = {
+    'Paid Time Off (PTO)': 'Paid Time Off (PTO)',
+    'Medical Leave': 'Sick Leave',
+    'Parental Leave': 'Parental Leave',
+    'Bereavement': 'Bereavement Leave',
+    'Unpaid Leave': 'Unpaid Leave'
+  };
+
   $: if ($genieDraftStore) {
     const draft = $genieDraftStore;
     if (draft.request_type === 'leave_management' || draft.request_type === 'leave') {
       activeFormTab = 'leave';
-      if (draft.title) leaveType = draft.title;
+      const mappedLeaveType = draft.category && LEAVE_CATEGORY_TO_FORM_TYPE[draft.category];
+      if (mappedLeaveType) leaveType = mappedLeaveType;
       if (draft.description) leaveNotes = draft.description;
+      if (draft.startDate) {
+        startDate = draft.startDate;
+      } else if (draft.preferredDate) {
+        // Backward-compat alias only, per models.chatbot.TicketDraft - a
+        // draft that only ever had preferredDate set still prefills the
+        // start date; endDate is never fabricated from it.
+        startDate = draft.preferredDate;
+      }
+      if (draft.endDate) endDate = draft.endDate;
     } else if (draft.request_type === 'anonymous') {
       activeFormTab = 'anonymous';
       if (draft.description) anonymousMessage = draft.description;
