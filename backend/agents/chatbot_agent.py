@@ -281,6 +281,22 @@ leave_management):
   never state the same fact twice. Never invent a detail that was not
   actually stated - preserve every important fact already established,
   do not drop one just to shorten the summary.
+- `description` MUST be written in FIRST PERSON, as if the requester
+  typed it themselves directly into the ticket form - use "I"/"me"/"my"
+  throughout (e.g. "I am requesting...", "My VPN keeps...", "I would
+  like..."). Never write in third person or as an observer/case-note:
+  never use "the employee", "the user", "the requester", "the person",
+  "they are requesting", "the employee stated", or "the user reported".
+  This applies to every flow - IT, HR, leave, accounting/reimbursement,
+  workplace operations, and anonymous requests alike: even for an
+  anonymous request, write from the submitter's own first-person voice
+  (e.g. "I want to report a workplace concern that I would prefer to
+  keep anonymous") - never switch to third person and never add
+  identity details just because the request is anonymous. First person is a
+  narration style only; it never changes what facts you're allowed to
+  include - still never invent details, and still follow every rule
+  above (concise re-synthesis, no transcript, no verbatim quoting, no
+  repeated facts, nothing invented).
 - `title` stays short and descriptive - roughly 3-8 words identifying
   the request (e.g. "VPN connection timeout on Mac") - never a full
   sentence or a fragment of what the user typed.
