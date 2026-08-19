@@ -217,20 +217,6 @@ function makeValidJwt(oid, email, name, role) {
   return `${b64Header}.${b64Payload}.mock_sig`;
 }
 
-function makeValidJwt(oid, email, name, role) {
-  const header = { alg: "RS256", typ: "JWT" };
-  const payload = {
-    oid: oid,
-    email: email,
-    name: name,
-    role: role,
-    exp: 253402300799
-  };
-  const b64Header = btoa(JSON.stringify(header)).replace(/=/g, "");
-  const b64Payload = btoa(JSON.stringify(payload)).replace(/=/g, "");
-  return `${b64Header}.${b64Payload}.mock_sig`;
-}
-
 /**
  * Perform login / workspace selection with role exchange
  */
