@@ -215,9 +215,8 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
-    height: 100%;
-    overflow-y: auto;
     width: 100%;
+    min-height: 100%;
     box-sizing: border-box;
   }
 
@@ -271,10 +270,8 @@
     border: 1px solid var(--border-color);
     border-radius: 14px;
     box-shadow: var(--shadow-sm);
-    overflow: hidden;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+    overflow-x: auto;
+    width: 100%;
   }
 
   .tickets-table {
