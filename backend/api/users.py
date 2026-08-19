@@ -30,15 +30,22 @@ def handle_get_profile(
     user_id: Optional[str] = None,
     current_user: dict = Depends(verify_azure_user),
 ):
-    from fastapi import HTTPException
-
     user_oid = current_user.get("oid")
     user_email = current_user.get("email")
+    role = (current_user.get("role") or "").lower()
+    can_select_user = "admin" in role or "manager" in role
+    scoped_user_id = user_id if can_select_user else None
 
-    profile = get_user_profile(user_id=user_id, azure_oid=user_oid, email=user_email)
+    profile = get_user_profile(
+        user_id=scoped_user_id, azure_oid=user_oid, email=user_email
+    )
     if not profile:
-        raise HTTPException(
-            status_code=404, detail="User profile not found in database"
+        profile = update_user_profile(
+            user_id=f"usr-admin-{user_oid[:8]}",
+            name=current_user.get("name")
+            or (user_email.split("@")[0] if user_email else user_oid),
+            email=user_email,
+            department=current_user.get("department") or "General",
         )
     return profile
 
@@ -49,11 +56,16 @@ def handle_update_profile(
     user_id: Optional[str] = None,
     current_user: dict = Depends(verify_azure_user),
 ):
-    target_user_id = user_id or "usr-1"
+    user_oid = current_user.get("oid")
+    role = (current_user.get("role") or "").lower()
+    can_select_user = "admin" in role or "manager" in role
+    target_user_id = (
+        user_id if user_id and can_select_user else f"usr-admin-{user_oid[:8]}"
+    )
     return update_user_profile(
         user_id=target_user_id,
         name=req.name,
-        email=req.email,
+        email=req.email or current_user.get("email"),
         phone=req.phone,
         department=req.department,
     )
