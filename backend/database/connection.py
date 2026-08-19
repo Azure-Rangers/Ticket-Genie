@@ -129,11 +129,15 @@ def init_db_schema():
                 # user_profiles column additions
                 profile_cols = [
                     r[1]
-                    for r in conn.execute(text("PRAGMA table_info(user_profiles)")).fetchall()
+                    for r in conn.execute(
+                        text("PRAGMA table_info(user_profiles)")
+                    ).fetchall()
                 ]
                 if "azure_object_id" not in profile_cols:
                     conn.execute(
-                        text("ALTER TABLE user_profiles ADD COLUMN azure_object_id VARCHAR(100)")
+                        text(
+                            "ALTER TABLE user_profiles ADD COLUMN azure_object_id VARCHAR(100)"
+                        )
                     )
 
                 conn.commit()

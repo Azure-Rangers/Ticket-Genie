@@ -36,7 +36,9 @@ def fetch_microsoft_jwks() -> Dict[str, Any]:
                 return _JWKS_CACHE["keys"]
     except Exception as e:
         logger.warning(f"Failed to fetch Microsoft JWKS keys: {e}")
-        _JWKS_CACHE["expires_at"] = now + 60  # Cache failure for 1 min to prevent stalling all subsequent requests
+        _JWKS_CACHE["expires_at"] = (
+            now + 60
+        )  # Cache failure for 1 min to prevent stalling all subsequent requests
     return _JWKS_CACHE.get("keys", {})
 
 

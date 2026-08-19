@@ -118,7 +118,9 @@ class AIServiceWrapper:
                     "it has required fields with no safe default."
                 ) from exc
 
-        endpoint = os.getenv("GROUP1OPENAIENDPOINT") or os.getenv("AZURE_OPENAI_ENDPOINT")
+        endpoint = os.getenv("GROUP1OPENAIENDPOINT") or os.getenv(
+            "AZURE_OPENAI_ENDPOINT"
+        )
         api_key = os.getenv("GROUP1OPENAIAPIKEY") or os.getenv("AZURE_OPENAI_API_KEY")
 
         if endpoint and api_key:
@@ -210,7 +212,10 @@ def generate_structured(
     except Exception as exc:
         try:
             from openai import AzureOpenAI
-            api_version = os.getenv("AZURE_OPENAI_API_VERSION", DEFAULT_AZURE_API_VERSION)
+
+            api_version = os.getenv(
+                "AZURE_OPENAI_API_VERSION", DEFAULT_AZURE_API_VERSION
+            )
             client = AzureOpenAI(
                 azure_endpoint=endpoint,
                 api_key=api_key,

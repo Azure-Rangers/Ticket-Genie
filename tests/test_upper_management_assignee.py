@@ -15,7 +15,9 @@ def test_get_upper_management_users() -> None:
     assert isinstance(data, list)
     assert len(data) > 0
     names = [u.get("name") for u in data]
-    assert any("Greg Davis" in n or "Sarah Jenkins" in n or "Alex Vance" in n for n in names)
+    assert any(
+        "Greg Davis" in n or "Sarah Jenkins" in n or "Alex Vance" in n for n in names
+    )
 
 
 def test_submit_leave_request_with_upper_management_assignee() -> None:

@@ -1,7 +1,7 @@
 """Announcement AI Severity Classification Service for TicketGenie."""
 
-from enum import Enum
 import logging
+from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -61,17 +61,49 @@ SEVERITY_MAPPING = {
 
 def _heuristic_fallback(title: str, content: str, category: str) -> str:
     combined = f"{category} {title} {content}".lower()
-    if any(k in combined for k in [
-        "critical", "emergency", "outage", "security", "breach", "incident",
-        "down", "ransomware", "p0", "sev-1", "strike", "striking", "union",
-        "walkout", "disaster", "evacuation", "fatal", "shutdown", "hazard",
-        "urgent", "alert"
-    ]):
+    if any(
+        k in combined
+        for k in [
+            "critical",
+            "emergency",
+            "outage",
+            "security",
+            "breach",
+            "incident",
+            "down",
+            "ransomware",
+            "p0",
+            "sev-1",
+            "strike",
+            "striking",
+            "union",
+            "walkout",
+            "disaster",
+            "evacuation",
+            "fatal",
+            "shutdown",
+            "hazard",
+            "urgent",
+            "alert",
+        ]
+    ):
         return "Critical"
-    if any(k in combined for k in [
-        "maintenance", "warning", "system alert", "downtime", "interruption",
-        "patch", "upgrade", "degradation", "reboot", "advisory", "delay"
-    ]):
+    if any(
+        k in combined
+        for k in [
+            "maintenance",
+            "warning",
+            "system alert",
+            "downtime",
+            "interruption",
+            "patch",
+            "upgrade",
+            "degradation",
+            "reboot",
+            "advisory",
+            "delay",
+        ]
+    ):
         return "Medium"
     return "Low"
 
@@ -108,6 +140,7 @@ Content: {content}
 
     try:
         import concurrent.futures
+
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         try:
             future = executor.submit(
@@ -119,13 +152,19 @@ Content: {content}
             )
             decision: AnnouncementSeverityDecision = future.result(timeout=1.5)
             if decision and decision.severity:
-                val = decision.severity.value if hasattr(decision.severity, "value") else str(decision.severity)
+                val = (
+                    decision.severity.value
+                    if hasattr(decision.severity, "value")
+                    else str(decision.severity)
+                )
                 severity_choice = val.strip()
                 reason = decision.reason
         finally:
             executor.shutdown(wait=False, cancel_futures=True)
     except Exception as exc:
-        logger.info(f"AI severity generation falling back to role-aware heuristic: {exc}")
+        logger.info(
+            f"AI severity generation falling back to role-aware heuristic: {exc}"
+        )
         severity_choice = _heuristic_fallback(title, content, category_str)
         reason = "Classified based on announcement operational scope."
 

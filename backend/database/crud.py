@@ -126,7 +126,9 @@ def _resolve_requester_name(requester_id: Optional[str], session: Session) -> st
         # Step A: find the user's email from department_users
         dept_u = (
             session.query(DepartmentUserDB)
-            .filter(func.lower(DepartmentUserDB.azure_object_id) == requester_id.lower())
+            .filter(
+                func.lower(DepartmentUserDB.azure_object_id) == requester_id.lower()
+            )
             .first()
         )
         if dept_u and dept_u.user_email:
@@ -144,6 +146,7 @@ def _resolve_requester_name(requester_id: Optional[str], session: Session) -> st
         pass
 
     return requester_id
+
 
 def _create_ticket_internal(ticket: TicketCreate, db: Optional[Session] = None) -> dict:
     session = db or SessionLocal()
@@ -1186,16 +1189,13 @@ def update_user_profile(
         user = None
         if user_id:
             user = (
-                session.query(UserProfileDB)
-                .filter(UserProfileDB.id == user_id)
-                .first()
+                session.query(UserProfileDB).filter(UserProfileDB.id == user_id).first()
             )
         if not user and azure_object_id:
             user = (
                 session.query(UserProfileDB)
                 .filter(
-                    func.lower(UserProfileDB.azure_object_id)
-                    == azure_object_id.lower()
+                    func.lower(UserProfileDB.azure_object_id) == azure_object_id.lower()
                 )
                 .first()
             )

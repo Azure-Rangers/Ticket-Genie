@@ -121,7 +121,11 @@ def get_upper_management_users(
             .all()
         )
         for du in dept_users:
-            name = du.user_email.split("@")[0] if du.user_email else "Upper Management Admin"
+            name = (
+                du.user_email.split("@")[0]
+                if du.user_email
+                else "Upper Management Admin"
+            )
             if name not in seen_names:
                 seen_names.add(name)
                 users.append(
@@ -135,9 +139,21 @@ def get_upper_management_users(
                 )
 
     defaults = [
-        {"name": "Greg Davis", "role": "Super Admin & VP Operations", "department": "Upper Executive Management"},
-        {"name": "Sarah Jenkins", "role": "Director of HR & Operations", "department": "Upper Management"},
-        {"name": "Alex Vance", "role": "Chief Operations Officer", "department": "Upper Management"},
+        {
+            "name": "Greg Davis",
+            "role": "Super Admin & VP Operations",
+            "department": "Upper Executive Management",
+        },
+        {
+            "name": "Sarah Jenkins",
+            "role": "Director of HR & Operations",
+            "department": "Upper Management",
+        },
+        {
+            "name": "Alex Vance",
+            "role": "Chief Operations Officer",
+            "department": "Upper Management",
+        },
     ]
     for d in defaults:
         if d["name"] not in seen_names:
@@ -187,9 +203,7 @@ def handle_azure_login(req: AzureLoginRequest):
         if not record and req.email:
             record = (
                 session.query(DepartmentUserDB)
-                .filter(
-                    func.lower(DepartmentUserDB.user_email) == req.email.lower()
-                )
+                .filter(func.lower(DepartmentUserDB.user_email) == req.email.lower())
                 .first()
             )
             if record:
@@ -238,9 +252,7 @@ def handle_azure_login(req: AzureLoginRequest):
 
         db_profile = (
             session.query(UserProfileDB)
-            .filter(
-                func.lower(UserProfileDB.azure_object_id) == verified_oid.lower()
-            )
+            .filter(func.lower(UserProfileDB.azure_object_id) == verified_oid.lower())
             .first()
         )
         if not db_profile and req.email:

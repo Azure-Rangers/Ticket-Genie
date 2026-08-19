@@ -85,7 +85,11 @@ def list_tickets(
 
     effective_assigned_to = assigned_to
     if assigned_to and assigned_to.lower() == "me":
-        effective_assigned_to = current_user.get("name") or current_user.get("email") or current_user.get("oid")
+        effective_assigned_to = (
+            current_user.get("name")
+            or current_user.get("email")
+            or current_user.get("oid")
+        )
 
     tickets_list = get_all_tickets(
         status=status,

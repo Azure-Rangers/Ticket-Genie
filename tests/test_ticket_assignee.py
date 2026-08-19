@@ -51,7 +51,11 @@ def test_ticket_assignee_workflow(monkeypatch) -> None:
     comments_res = client.get(f"/api/tickets/{ticket_id}/comments")
     assert comments_res.status_code == 200
     comments = comments_res.json()
-    system_comments = [c for c in comments if "[System] Ticket assigned to Alex Vance." in c.get("message", "")]
+    system_comments = [
+        c
+        for c in comments
+        if "[System] Ticket assigned to Alex Vance." in c.get("message", "")
+    ]
     assert len(system_comments) > 0
 
     # 4. Test listing with assignee filter = "Alex Vance"
