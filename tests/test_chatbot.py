@@ -97,19 +97,31 @@ def test_navigation_paraphrase_without_literal_keyword():
     )
     response, _ = ask("Where can I see the overview of my work?", decision=decision)
     assert response.intent == "navigation"
-    assert response.action.target == "index.html"
+    assert response.action.target == "dashboard"
 
 
-def test_navigation_routes_management_to_management_portal():
+def test_navigation_my_tickets_is_role_aware():
+    """
+    my_tickets resolves to the exact activeTab the live Sidebar shows for
+    that role: department ticketers/admins land on the Inbox queue,
+    everyone else lands on their own Dashboard (there's no separate "my
+    tickets" tab for a plain employee in the current Svelte SPA).
+    """
+
     decision = ChatbotDecision(
         scope=ChatScope.WORKPLACE,
         intent=ChatIntent.NAVIGATION,
         action=ChatActionType.NAVIGATE,
         message="Here's your dashboard.",
-        navigation_target=NavigationTarget.DASHBOARD,
+        navigation_target=NavigationTarget.MY_TICKETS,
     )
-    response, _ = ask("take me to my dashboard", decision=decision, role="Management")
-    assert response.action.target == "pages/management-portal.html"
+    response, _ = ask(
+        "take me to my tickets", decision=decision, role="Department Admin"
+    )
+    assert response.action.target == "inbox"
+
+    response, _ = ask("take me to my tickets", decision=decision, role="Employee")
+    assert response.action.target == "dashboard"
 
 
 # 2. Navigation never creates a ticket
@@ -522,7 +534,7 @@ def test_ticket_status_without_id_navigates_to_my_tickets():
         message="You can check My Tickets.",
     )
     response, _ = ask("What's the status of my ticket?", decision=decision)
-    assert response.action.target == "my-tickets.html"
+    assert response.action.target == "dashboard"
 
 
 # 17. GPT failure never falls back to unsafe keyword guessing
@@ -536,9 +548,16 @@ def test_gpt_failure_returns_safe_fallback_not_keyword_guessing():
     assert response.action is None
 
 
-# 19. Route target from the model is validated against the known route map
+# 19. Every navigation target resolves to a real activeTab for at least
+# one role (Super Admin passes every gate), and never to a legacy path.
 def test_every_navigation_target_has_a_deterministic_route():
-    assert set(NavigationTarget) == set(chatbot_service._ROUTE_MAP.keys())
+    for target in NavigationTarget:
+        tab = chatbot_service._resolve_active_tab(target, "Super Admin")
+        assert tab is not None, f"{target} has no route for any role"
+        assert ".html" not in tab
+        assert "employee_NM" not in tab
+        assert "management/" not in tab
+        assert "admin_AV" not in tab
 
 
 # Predefined buttons set intent directly - no GPT call needed

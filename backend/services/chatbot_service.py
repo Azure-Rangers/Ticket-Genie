@@ -34,7 +34,13 @@ from services.knowledge_service import (
     SearchUnavailableError,
     default_knowledge_retriever,
 )
-from services.role_service import EMPLOYEE_ASSIGNMENT_ROLES, get_allowed_scopes
+from services.role_service import (
+    EMPLOYEE_ASSIGNMENT_ROLES,
+    get_allowed_scopes,
+    is_admin_role,
+    is_department_ticketer,
+    is_super_admin,
+)
 from services.ticket_draft_service import merge_extracted_fields, validate_ticket_id
 
 PREDEFINED_SUGGESTIONS = [
@@ -102,22 +108,6 @@ def _gpt_unavailable_response() -> ChatResponse:
     )
 
 
-_MANAGEMENT_HOME = "pages/management-portal.html"
-
-
-def _route(employee_page: str, management_page: str = None) -> dict:
-    return {"employee": employee_page, "management": management_page or employee_page}
-
-
-_ROUTE_MAP = {
-    NavigationTarget.DASHBOARD: _route("index.html", _MANAGEMENT_HOME),
-    NavigationTarget.NEW_REQUEST: _route("new-request.html"),
-    NavigationTarget.MY_TICKETS: _route("my-tickets.html"),
-    NavigationTarget.KNOWLEDGE_BASE: _route("knowledge-base.html"),
-    NavigationTarget.NOTIFICATIONS: _route("notifications.html"),
-    NavigationTarget.CHAT_HISTORY: _route("chat-history.html"),
-}
-
 _TICKET_DRAFT_INTENTS = (
     ChatIntent.CREATE_TICKET,
     ChatIntent.SUPPORT_ISSUE,
@@ -131,17 +121,71 @@ _MANAGEMENT_ACTION_INTENTS = (
 )
 
 _KNOWLEDGE_BASE_ACTION = ChatAction(
-    type="navigate", target="knowledge-base.html", label="Browse Knowledge Base"
+    type="navigate", target="knowledge", label="Browse Knowledge Base"
 )
 
 
-def _resolve_route_target(target: NavigationTarget, role: Optional[str]) -> str:
-    routes = _ROUTE_MAP[target]
-    is_management = (role or "").strip().lower() == "management"
-    return routes["management"] if is_management else routes["employee"]
+def _my_tickets_tab(role: Optional[str]) -> str:
+    """The activeTab a "my tickets" reference resolves to for `role`.
+
+    Ticketers/admins/super-admins land on the department Inbox queue
+    (frontend/src/components/Sidebar.svelte's `inbox` item, DB InboxView);
+    everyone else lands on their own Dashboard, where DashboardView already
+    shows the signed-in user's own tickets - there's no separate "my
+    tickets" tab for plain employees in the live SPA.
+    """
+
+    return "inbox" if is_department_ticketer(role) else "dashboard"
 
 
-def _shortcut_for_intent(intent: ChatIntent) -> ChatResponse:
+def _resolve_active_tab(target: NavigationTarget, role: Optional[str]) -> Optional[str]:
+    """
+    Deterministically maps a semantic NavigationTarget to the EXACT
+    activeTab string frontend/src/App.svelte renders for it today, gating
+    role-restricted destinations the same way frontend/src/components/
+    Sidebar.svelte hides their nav entries (isDepartmentTicketer/isAdmin/
+    isSuperAdmin substring checks, mirrored in services.role_service).
+    GPT never sees or produces this string - it only ever picks the
+    semantic NavigationTarget.
+
+    Returns None when `role` isn't authorized for a gated target - callers
+    must treat that as "don't navigate" (a safe denial message instead),
+    never fall back to guessing a different destination.
+    """
+
+    if target == NavigationTarget.DASHBOARD:
+        return "dashboard"
+    if target == NavigationTarget.CREATE_TICKET:
+        return "create-ticket"
+    if target == NavigationTarget.MY_TICKETS:
+        return _my_tickets_tab(role)
+    if target == NavigationTarget.KNOWLEDGE_BASE:
+        return "knowledge"
+    if target == NavigationTarget.NOTIFICATIONS:
+        return "notifications"
+    if target == NavigationTarget.ANNOUNCEMENTS:
+        return "announcements"
+    if target == NavigationTarget.PROFILE:
+        return "profile"
+    if target == NavigationTarget.SETTINGS:
+        return "settings" if is_admin_role(role) else None
+    if target == NavigationTarget.ANALYTICS:
+        return "analytics" if is_department_ticketer(role) else None
+    if target == NavigationTarget.ONBOARDING:
+        return "onboarding" if is_super_admin(role) else None
+    if target == NavigationTarget.LEAVE_CALENDAR:
+        return "leave-calendar" if is_super_admin(role) else None
+    return None
+
+
+_ACCESS_DENIED_MESSAGE = (
+    "That section isn't available for your role, so I can't take you there."
+)
+
+
+def _shortcut_for_intent(
+    intent: ChatIntent, role: Optional[str] = None
+) -> ChatResponse:
     """A predefined button was clicked with no free-text yet - no GPT call needed."""
 
     if intent == ChatIntent.TICKET_STATUS:
@@ -152,7 +196,7 @@ def _shortcut_for_intent(intent: ChatIntent) -> ChatResponse:
             ),
             intent=intent,
             action=ChatAction(
-                type="navigate", target="my-tickets.html", label="My Tickets"
+                type="navigate", target=_my_tickets_tab(role), label="My Tickets"
             ),
             suggestions=PREDEFINED_SUGGESTIONS,
         )
@@ -182,7 +226,14 @@ def _handle_navigation(decision: ChatbotDecision, role: Optional[str]) -> ChatRe
             suggestions=PREDEFINED_SUGGESTIONS,
         )
 
-    target = _resolve_route_target(decision.navigation_target, role)
+    target = _resolve_active_tab(decision.navigation_target, role)
+    if target is None:
+        return ChatResponse(
+            message=_ACCESS_DENIED_MESSAGE,
+            intent=ChatIntent.HOW_TO,
+            suggestions=PREDEFINED_SUGGESTIONS,
+        )
+
     label = decision.navigation_target.value.replace("_", " ").title()
     return ChatResponse(
         message=decision.message,
@@ -192,11 +243,15 @@ def _handle_navigation(decision: ChatbotDecision, role: Optional[str]) -> ChatRe
     )
 
 
-def _handle_ticket_status(decision: ChatbotDecision, *, ticket_lookup) -> ChatResponse:
+def _handle_ticket_status(
+    decision: ChatbotDecision, *, ticket_lookup, role: Optional[str] = None
+) -> ChatResponse:
     ticket_id = None
     if decision.ticket_fields:
         # Validate the format BEFORE it ever reaches a database call.
         ticket_id = validate_ticket_id(decision.ticket_fields.ticket_id)
+
+    my_tickets_tab = _my_tickets_tab(role)
 
     if ticket_id:
         ticket = ticket_lookup(ticket_id)
@@ -208,7 +263,7 @@ def _handle_ticket_status(decision: ChatbotDecision, *, ticket_lookup) -> ChatRe
                 ),
                 intent=ChatIntent.TICKET_STATUS,
                 action=ChatAction(
-                    type="navigate", target="my-tickets.html", label="My Tickets"
+                    type="navigate", target=my_tickets_tab, label="My Tickets"
                 ),
                 suggestions=PREDEFINED_SUGGESTIONS,
             )
@@ -219,7 +274,7 @@ def _handle_ticket_status(decision: ChatbotDecision, *, ticket_lookup) -> ChatRe
             ),
             intent=ChatIntent.TICKET_STATUS,
             action=ChatAction(
-                type="lookup_ticket", target="my-tickets.html", ticket_id=ticket_id
+                type="lookup_ticket", target=my_tickets_tab, ticket_id=ticket_id
             ),
             suggestions=PREDEFINED_SUGGESTIONS,
         )
@@ -228,9 +283,7 @@ def _handle_ticket_status(decision: ChatbotDecision, *, ticket_lookup) -> ChatRe
     return ChatResponse(
         message=decision.message or fallback_message,
         intent=ChatIntent.TICKET_STATUS,
-        action=ChatAction(
-            type="navigate", target="my-tickets.html", label="My Tickets"
-        ),
+        action=ChatAction(type="navigate", target=my_tickets_tab, label="My Tickets"),
         suggestions=PREDEFINED_SUGGESTIONS,
     )
 
@@ -397,7 +450,7 @@ def handle_message(
 
     if not message:
         if request.active_intent:
-            return _shortcut_for_intent(request.active_intent)
+            return _shortcut_for_intent(request.active_intent, request.role)
         return ChatResponse(
             message="I'm Genie, your workplace assistant. What can I help you with?",
             intent=ChatIntent.GENERAL,
@@ -471,7 +524,9 @@ def handle_message(
         )
 
     if intent == ChatIntent.TICKET_STATUS:
-        return _handle_ticket_status(decision, ticket_lookup=ticket_lookup)
+        return _handle_ticket_status(
+            decision, ticket_lookup=ticket_lookup, role=request.role
+        )
 
     if intent == ChatIntent.NAVIGATION:
         return _handle_navigation(decision, request.role)
