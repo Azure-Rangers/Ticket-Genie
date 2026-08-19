@@ -1,12 +1,14 @@
 import os
 import sys
 
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend"))
 )
 
+from api.announcements import require_announcement_admin
 from main import app
 
 client = TestClient(app)
@@ -76,6 +78,17 @@ def test_announcements_crud():
 
     res = client.delete(f"/api/announcements/{anc['id']}")
     assert res.status_code == 200
+
+
+def test_announcement_creation_role_boundary():
+    assert require_announcement_admin({"role": "Admin", "oid": "admin-1"})["oid"] == "admin-1"
+    assert require_announcement_admin({"role": "Super Admin", "oid": "super-1"})["oid"] == "super-1"
+
+    try:
+        require_announcement_admin({"role": "Employee", "oid": "employee-1"})
+        assert False, "Employee must not be allowed to create announcements"
+    except HTTPException as exc:
+        assert exc.status_code == 403
 
 
 def test_notifications_crud():

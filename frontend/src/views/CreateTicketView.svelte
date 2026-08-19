@@ -1,6 +1,7 @@
 <script>
   import { activeTab, submitNewTicket, genieDraftStore } from '../lib/stores/tickets.js';
   import { userStore } from '../lib/stores/auth.js';
+  import { apiCheckAnnouncementMatch } from '../lib/api.js';
 
   let activeFormTab = 'standard'; // 'standard' | 'leave' | 'anonymous'
 
@@ -46,6 +47,9 @@
   let errorMsg = '';
   let successMsg = '';
   let attachedFiles = [];
+  let announcementMatch = null;
+  let checkingAnnouncements = false;
+  let bypassAnnouncementCheck = false;
 
   function handleFileSelect(e) {
     if (e.target.files) {
@@ -59,9 +63,27 @@
       return;
     }
 
-    submitting = true;
     errorMsg = '';
     successMsg = '';
+
+    if (!bypassAnnouncementCheck) {
+      checkingAnnouncements = true;
+      try {
+        const result = await apiCheckAnnouncementMatch(title.trim(), description.trim());
+        if (result.matched) {
+          announcementMatch = result;
+          return;
+        }
+      } catch (error) {
+        console.warn('Announcement check unavailable:', error.message);
+      } finally {
+        checkingAnnouncements = false;
+      }
+    }
+
+    bypassAnnouncementCheck = false;
+    announcementMatch = null;
+    submitting = true;
 
     let textCheck = `${title} ${description} ${category} ${departmentSelect}`.toLowerCase();
     let isLeave = textCheck.includes('leave') || textCheck.includes('pto') || textCheck.includes('vacation') || textCheck.includes('time off') || textCheck.includes('bereavement') || textCheck.includes('parental');
@@ -99,6 +121,11 @@
     } finally {
       submitting = false;
     }
+  }
+
+  function submitDespiteAnnouncement() {
+    bypassAnnouncementCheck = true;
+    handleSubmitStandard();
   }
 
   async function handleSubmitLeave() {
@@ -239,6 +266,7 @@
                 type="text" 
                 placeholder="e.g. VPN Connection Issue / Account Provisioning" 
                 bind:value={title} 
+                on:input={() => announcementMatch = null}
                 required 
               />
             </div>
@@ -261,9 +289,25 @@
                 rows="6" 
                 placeholder="Provide complete specifications or error details..." 
                 bind:value={description} 
+                on:input={() => announcementMatch = null}
                 required
               ></textarea>
             </div>
+
+            {#if announcementMatch}
+              <div class="announcement-notice" role="status">
+                <div class="notice-icon"><i class="ph-bold ph-megaphone"></i></div>
+                <div class="notice-body">
+                  <strong>This issue may already be addressed</strong>
+                  <p>“{announcementMatch.announcement.title}”</p>
+                  <span>{announcementMatch.announcement.content}</span>
+                  <div class="notice-actions">
+                    <button type="button" class="notice-link" on:click={() => $activeTab = 'announcements'}>View announcement</button>
+                    <button type="button" class="notice-submit" on:click={submitDespiteAnnouncement}>Submit anyway</button>
+                  </div>
+                </div>
+              </div>
+            {/if}
 
             <!-- Upload Box -->
             <div class="upload-box">
@@ -285,8 +329,10 @@
 
             <div class="form-footer">
               <button type="button" class="btn-cancel" on:click={handleCancel}>Cancel</button>
-              <button type="submit" class="btn-submit blue-btn" disabled={submitting}>
-                {#if submitting}
+              <button type="submit" class="btn-submit blue-btn" disabled={submitting || checkingAnnouncements}>
+                {#if checkingAnnouncements}
+                  <i class="ph-bold ph-spinner animate-spin"></i> Checking announcements...
+                {:else if submitting}
                   <i class="ph-bold ph-spinner animate-spin"></i> Submitting...
                 {:else}
                   <i class="ph-bold ph-paper-plane-right"></i> Submit Standard Ticket
@@ -754,6 +800,26 @@
 
   .dark-btn { background: #475569; }
   .dark-btn:hover { background: #334155; }
+
+  .announcement-notice {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid #fbbf24;
+    border-radius: 12px;
+    background: #fffbeb;
+    color: #78350f;
+  }
+
+  .notice-icon { font-size: 1.25rem; color: #d97706; }
+  .notice-body { flex: 1; }
+  .notice-body strong { font-size: 0.9rem; }
+  .notice-body p { margin: 4px 0; font-weight: 700; color: #92400e; }
+  .notice-body span { display: block; font-size: 0.8rem; line-height: 1.45; color: #78350f; }
+  .notice-actions { display: flex; gap: 9px; margin-top: 12px; }
+  .notice-actions button { border-radius: 8px; padding: 7px 11px; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+  .notice-link { border: 1px solid #f59e0b; background: white; color: #92400e; }
+  .notice-submit { border: 0; background: #d97706; color: white; }
 
   .info-sidebar {
     display: flex;

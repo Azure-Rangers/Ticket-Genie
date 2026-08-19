@@ -329,6 +329,33 @@ export async function apiFetchAnnouncements() {
   return [];
 }
 
+export async function apiCreateAnnouncement(payload) {
+  const res = await fetch(`${API_BASE_URL}/announcements`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    let detail = `Unable to create announcement (${res.status})`;
+    try {
+      const body = await res.json();
+      if (body.detail) detail = body.detail;
+    } catch (e) {}
+    throw new Error(detail);
+  }
+  return await res.json();
+}
+
+export async function apiCheckAnnouncementMatch(title, description = "") {
+  const res = await fetch(`${API_BASE_URL}/announcements/match`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ title, description })
+  });
+  if (!res.ok) throw new Error(`Announcement check failed (${res.status})`);
+  return await res.json();
+}
+
 export async function apiFetchUserProfile() {
   try {
     const res = await fetch(`${API_BASE_URL}/users/profile`, { headers: getAuthHeaders() });

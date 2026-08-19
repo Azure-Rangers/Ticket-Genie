@@ -1,6 +1,7 @@
 <script>
-  import { isCreateModalOpen, submitNewTicket } from '../lib/stores/tickets.js';
+  import { activeTab, isCreateModalOpen, submitNewTicket } from '../lib/stores/tickets.js';
   import { userStore } from '../lib/stores/auth.js';
+  import { apiCheckAnnouncementMatch } from '../lib/api.js';
 
   let title = '';
   let departmentSelect = 'Auto';
@@ -9,6 +10,9 @@
   let description = '';
   let submitting = false;
   let errorMsg = '';
+  let announcementMatch = null;
+  let checkingAnnouncements = false;
+  let bypassAnnouncementCheck = false;
 
   async function handleSubmit() {
     if (!title.trim()) {
@@ -16,6 +20,24 @@
       return;
     }
 
+    errorMsg = '';
+    if (!bypassAnnouncementCheck) {
+      checkingAnnouncements = true;
+      try {
+        const result = await apiCheckAnnouncementMatch(title.trim(), description.trim());
+        if (result.matched) {
+          announcementMatch = result;
+          return;
+        }
+      } catch (error) {
+        console.warn('Announcement check unavailable:', error.message);
+      } finally {
+        checkingAnnouncements = false;
+      }
+    }
+
+    bypassAnnouncementCheck = false;
+    announcementMatch = null;
     submitting = true;
     let textCheck = `${title} ${description} ${departmentSelect}`.toLowerCase();
     let isLeave = textCheck.includes('leave') || textCheck.includes('pto') || textCheck.includes('vacation') || textCheck.includes('time off') || textCheck.includes('bereavement') || textCheck.includes('parental');
@@ -54,6 +76,18 @@
 
   function closeModal() {
     $isCreateModalOpen = false;
+    announcementMatch = null;
+  }
+
+  function submitDespiteAnnouncement() {
+    bypassAnnouncementCheck = true;
+    handleSubmit();
+  }
+
+  function viewAnnouncement() {
+    $isCreateModalOpen = false;
+    $activeTab = 'announcements';
+    announcementMatch = null;
   }
 </script>
 
@@ -91,6 +125,7 @@
             type="text" 
             placeholder="e.g. VPN Access Token Renewal Failed" 
             bind:value={title} 
+            on:input={() => announcementMatch = null}
             required 
           />
         </div>
@@ -124,13 +159,31 @@
             rows="4" 
             placeholder="Provide specific details, error codes, or steps to reproduce..." 
             bind:value={description}
+            on:input={() => announcementMatch = null}
           ></textarea>
         </div>
 
+        {#if announcementMatch}
+          <div class="announcement-notice" role="status">
+            <i class="ph-bold ph-megaphone"></i>
+            <div>
+              <strong>This issue may already be addressed</strong>
+              <p>“{announcementMatch.announcement.title}”</p>
+              <span>{announcementMatch.announcement.content}</span>
+              <div class="notice-actions">
+                <button type="button" class="notice-link" on:click={viewAnnouncement}>View announcement</button>
+                <button type="button" class="notice-submit" on:click={submitDespiteAnnouncement}>Submit anyway</button>
+              </div>
+            </div>
+          </div>
+        {/if}
+
         <div class="modal-footer">
           <button type="button" class="btn-cancel" on:click={closeModal}>Cancel</button>
-          <button type="submit" class="btn-submit" disabled={submitting}>
-            {#if submitting}
+          <button type="submit" class="btn-submit" disabled={submitting || checkingAnnouncements}>
+            {#if checkingAnnouncements}
+              <i class="ph-bold ph-spinner animate-spin"></i> Checking announcements...
+            {:else if submitting}
               <i class="ph-bold ph-spinner animate-spin"></i> Submitting...
             {:else}
               <i class="ph-bold ph-paper-plane-right"></i> Submit Ticket
@@ -270,6 +323,25 @@
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
   }
+
+  .announcement-notice {
+    display: flex;
+    gap: 11px;
+    padding: 14px;
+    border: 1px solid #fbbf24;
+    border-radius: 11px;
+    background: #fffbeb;
+    color: #78350f;
+  }
+
+  .announcement-notice > i { margin-top: 2px; color: #d97706; font-size: 1.15rem; }
+  .announcement-notice strong { font-size: 0.86rem; }
+  .announcement-notice p { margin: 4px 0; color: #92400e; font-size: 0.84rem; font-weight: 700; }
+  .announcement-notice span { display: block; color: #78350f; font-size: 0.77rem; line-height: 1.4; }
+  .notice-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .notice-actions button { border-radius: 7px; padding: 6px 9px; font-size: 0.74rem; font-weight: 700; cursor: pointer; }
+  .notice-link { border: 1px solid #f59e0b; background: white; color: #92400e; }
+  .notice-submit { border: 0; background: #d97706; color: white; }
 
   .modal-footer {
     display: flex;
