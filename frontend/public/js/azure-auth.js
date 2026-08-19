@@ -180,10 +180,30 @@
     /**
      * Process Azure AD Account authentication and update role & UI
      */
-    async function handleAuthenticatedAccount(account, idToken, source = "MSAL Redirect / Silent") {
+    async function handleAuthenticatedAccount(account, idToken, source = "MSAL Redirect / Silent", accessToken = "") {
         const objectId = account?.idTokenClaims?.oid || account?.localAccountId || account?.homeAccountId;
         const userEmail = account?.username || account?.name || "user@company.com";
-        const userName = account?.name || userEmail;
+        let userName = account?.name || userEmail;
+
+        if (accessToken) {
+            try {
+                const graphRes = await fetch("https://graph.microsoft.com/v1.0/me", {
+                    headers: { "Authorization": `Bearer ${accessToken}` }
+                });
+                if (graphRes.ok) {
+                    const graphData = await graphRes.json();
+                    if (graphData.givenName && graphData.surname) {
+                        userName = `${graphData.givenName} ${graphData.surname}`.trim();
+                    } else if (graphData.displayName) {
+                        userName = graphData.displayName;
+                    }
+                    console.log("ℹ️ [Azure Auth] Retrieved real user name from Microsoft Graph API:", userName);
+                }
+            } catch (e) {
+                console.warn("⚠️ [Azure Auth] Failed to fetch name from MS Graph API:", e.message);
+            }
+        }
+
         const rawToken = idToken || account?.idToken || account?.idTokenClaims?.rawIdToken || "";
 
         if (rawToken && isTokenExpired(rawToken)) {
@@ -199,6 +219,7 @@
 
         let isAdmin = false;
         let role = "Employee";
+        let department = "";
         let verifiedByBackend = false;
 
         // Query backend for role authorization based on Object ID & verify JWT signature
@@ -217,6 +238,7 @@
                 const data = await apiRes.json();
                 isAdmin = data.is_admin;
                 role = data.role;
+                department = data.department || "";
                 verifiedByBackend = true;
             } else {
                 console.warn(`⚠️ [Azure Auth API] Backend rejected cached authentication (HTTP ${apiRes.status}). Purging session.`);
@@ -239,6 +261,7 @@
             name: userName,
             role: role,
             isAdmin: isAdmin,
+            department: department,
             idToken: rawToken,
             timestamp: new Date().toISOString()
         };
@@ -248,6 +271,7 @@
             role: role,
             name: userName,
             objectId: objectId,
+            department: department,
             idToken: rawToken
         }));
 
@@ -355,7 +379,7 @@
                     const redirectResult = await msalInstance.handleRedirectPromise();
                     if (redirectResult && redirectResult.account) {
                         console.log("🔍 [Auth Check] Verified account from cache source: MSAL Redirect Result");
-                        const user = await handleAuthenticatedAccount(redirectResult.account, redirectResult.idToken, "MSAL Redirect Result");
+                        const user = await handleAuthenticatedAccount(redirectResult.account, redirectResult.idToken, "MSAL Redirect Result", redirectResult.accessToken);
                         if (user) return user;
                     }
 
@@ -369,7 +393,7 @@
                             });
                             if (silentResult && silentResult.account) {
                                 console.log("🔍 [Auth Check] Verified account from cache source: MSAL Silent Token (Browser Cache)");
-                                const user = await handleAuthenticatedAccount(silentResult.account, silentResult.idToken, "MSAL Silent Token");
+                                const user = await handleAuthenticatedAccount(silentResult.account, silentResult.idToken, "MSAL Silent Token", silentResult.accessToken);
                                 if (user) return user;
                             }
                         } catch (silentErr) {
