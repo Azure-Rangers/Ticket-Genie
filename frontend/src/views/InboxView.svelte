@@ -41,6 +41,59 @@
     return 'Employee User';
   }
 
+  let sortColumn = 'createdAt';
+  let sortDirection = 'desc'; // 'asc' | 'desc'
+
+  function handleSort(col) {
+    if (sortColumn === col) {
+      sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortColumn = col;
+      sortDirection = 'asc';
+    }
+  }
+
+  const priorityOrder = { 'High': 3, 'Medium': 2, 'Low': 1 };
+
+  $: sortedTickets = [...$filteredTickets].sort((a, b) => {
+    let valA = '';
+    let valB = '';
+
+    if (sortColumn === 'id') {
+      valA = (a.id || '').toLowerCase();
+      valB = (b.id || '').toLowerCase();
+    } else if (sortColumn === 'title') {
+      valA = (a.title || '').toLowerCase();
+      valB = (b.title || '').toLowerCase();
+    } else if (sortColumn === 'requester') {
+      valA = getRequesterName(a).toLowerCase();
+      valB = getRequesterName(b).toLowerCase();
+    } else if (sortColumn === 'department') {
+      valA = (a.department || '').toLowerCase();
+      valB = (b.department || '').toLowerCase();
+    } else if (sortColumn === 'assigned_to') {
+      valA = (a.assigned_to || '').toLowerCase();
+      valB = (b.assigned_to || '').toLowerCase();
+    } else if (sortColumn === 'priority') {
+      const pA = priorityOrder[a.priority] || 0;
+      const pB = priorityOrder[b.priority] || 0;
+      return sortDirection === 'asc' ? pA - pB : pB - pA;
+    } else if (sortColumn === 'status') {
+      valA = (a.status || '').toLowerCase();
+      valB = (b.status || '').toLowerCase();
+    } else if (sortColumn === 'createdAt') {
+      valA = a.createdAt || a.date || '';
+      valB = b.createdAt || b.date || '';
+    } else {
+      valA = (a[sortColumn] || '').toString().toLowerCase();
+      valB = (b[sortColumn] || '').toString().toLowerCase();
+    }
+
+    if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+    if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   $: isEmployeeRole = $userStore?.role === 'Employee';
 
   $: queueTitle = $activeTab === 'queue-it' ? 'IT Department Queue'
@@ -97,7 +150,7 @@
 
   <!-- Tabular Queue Container -->
   <div class="table-container">
-    {#if $filteredTickets.length === 0}
+    {#if sortedTickets.length === 0}
       <div class="empty-inbox">
         <i class="ph-duotone ph-tray"></i>
         <h3>No tickets found</h3>
@@ -107,19 +160,107 @@
       <table class="tickets-table">
         <thead>
           <tr>
-            <th>Ticket ID</th>
-            <th>Title & Description</th>
-            <th>Requester</th>
-            <th>Department</th>
-            <th>Assignee</th>
-            <th>Priority</th>
-            <th>Status</th>
-            <th>Created</th>
+            <th on:click={() => handleSort('id')} class="sortable-th" title="Sort by Ticket ID">
+              <div class="th-content">
+                <span>Ticket ID</span>
+                <span class="sort-icon">
+                  {#if sortColumn === 'id'}
+                    <i class="ph-bold {sortDirection === 'asc' ? 'ph-caret-up' : 'ph-caret-down'} text-primary"></i>
+                  {:else}
+                    <i class="ph-bold ph-caret-up-down text-muted"></i>
+                  {/if}
+                </span>
+              </div>
+            </th>
+            <th on:click={() => handleSort('title')} class="sortable-th" title="Sort by Title">
+              <div class="th-content">
+                <span>Title & Description</span>
+                <span class="sort-icon">
+                  {#if sortColumn === 'title'}
+                    <i class="ph-bold {sortDirection === 'asc' ? 'ph-caret-up' : 'ph-caret-down'} text-primary"></i>
+                  {:else}
+                    <i class="ph-bold ph-caret-up-down text-muted"></i>
+                  {/if}
+                </span>
+              </div>
+            </th>
+            <th on:click={() => handleSort('requester')} class="sortable-th" title="Sort by Requester">
+              <div class="th-content">
+                <span>Requester</span>
+                <span class="sort-icon">
+                  {#if sortColumn === 'requester'}
+                    <i class="ph-bold {sortDirection === 'asc' ? 'ph-caret-up' : 'ph-caret-down'} text-primary"></i>
+                  {:else}
+                    <i class="ph-bold ph-caret-up-down text-muted"></i>
+                  {/if}
+                </span>
+              </div>
+            </th>
+            <th on:click={() => handleSort('department')} class="sortable-th" title="Sort by Department">
+              <div class="th-content">
+                <span>Department</span>
+                <span class="sort-icon">
+                  {#if sortColumn === 'department'}
+                    <i class="ph-bold {sortDirection === 'asc' ? 'ph-caret-up' : 'ph-caret-down'} text-primary"></i>
+                  {:else}
+                    <i class="ph-bold ph-caret-up-down text-muted"></i>
+                  {/if}
+                </span>
+              </div>
+            </th>
+            <th on:click={() => handleSort('assigned_to')} class="sortable-th" title="Sort by Assignee">
+              <div class="th-content">
+                <span>Assignee</span>
+                <span class="sort-icon">
+                  {#if sortColumn === 'assigned_to'}
+                    <i class="ph-bold {sortDirection === 'asc' ? 'ph-caret-up' : 'ph-caret-down'} text-primary"></i>
+                  {:else}
+                    <i class="ph-bold ph-caret-up-down text-muted"></i>
+                  {/if}
+                </span>
+              </div>
+            </th>
+            <th on:click={() => handleSort('priority')} class="sortable-th" title="Sort by Priority">
+              <div class="th-content">
+                <span>Priority</span>
+                <span class="sort-icon">
+                  {#if sortColumn === 'priority'}
+                    <i class="ph-bold {sortDirection === 'asc' ? 'ph-caret-up' : 'ph-caret-down'} text-primary"></i>
+                  {:else}
+                    <i class="ph-bold ph-caret-up-down text-muted"></i>
+                  {/if}
+                </span>
+              </div>
+            </th>
+            <th on:click={() => handleSort('status')} class="sortable-th" title="Sort by Status">
+              <div class="th-content">
+                <span>Status</span>
+                <span class="sort-icon">
+                  {#if sortColumn === 'status'}
+                    <i class="ph-bold {sortDirection === 'asc' ? 'ph-caret-up' : 'ph-caret-down'} text-primary"></i>
+                  {:else}
+                    <i class="ph-bold ph-caret-up-down text-muted"></i>
+                  {/if}
+                </span>
+              </div>
+            </th>
+            <th on:click={() => handleSort('createdAt')} class="sortable-th" title="Sort by Creation Date">
+              <div class="th-content">
+                <span>Created</span>
+                <span class="sort-icon">
+                  {#if sortColumn === 'createdAt'}
+                    <i class="ph-bold {sortDirection === 'asc' ? 'ph-caret-up' : 'ph-caret-down'} text-primary"></i>
+                  {:else}
+                    <i class="ph-bold ph-caret-up-down text-muted"></i>
+                  {/if}
+                </span>
+              </div>
+            </th>
             <th class="text-right">Chat / Action</th>
           </tr>
         </thead>
         <tbody>
-          {#each $filteredTickets as ticket}
+          {#each sortedTickets as ticket}
             <!-- svelte-ignore a11y-click-events-have-key-events a11y-interactive-supports-focus -->
             <tr 
               class="ticket-row" 
@@ -290,6 +431,38 @@
     text-transform: uppercase;
     letter-spacing: 0.04em;
     border-bottom: 1px solid var(--border-color);
+  }
+
+  .sortable-th {
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .sortable-th:hover {
+    background: #f1f5f9;
+    color: var(--text-main);
+  }
+
+  .th-content {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .sort-icon {
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .sort-icon .text-primary {
+    color: var(--primary);
+  }
+
+  .sort-icon .text-muted {
+    color: #94a3b8;
+    opacity: 0.5;
   }
 
   .tickets-table td {
