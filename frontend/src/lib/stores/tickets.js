@@ -1,21 +1,108 @@
 import { writable, derived, get } from 'svelte/store';
-import { apiFetchTickets, apiCreateTicket, apiUpdateTicket } from '../api.js';
-import { userStore } from './auth.js';
+import { apiFetchTickets, apiCreateTicket, apiUpdateTicket, apiPostComment } from '../api.js';
+import { userStore, isSuperAdmin } from './auth.js';
 
 export const tickets = writable([]);
 export const loading = writable(false);
 export const searchQuery = writable('');
 export const statusFilter = writable('all');
 export const priorityFilter = writable('all');
-export const activeTab = writable('dashboard');
-export const selectedTicket = writable(null);
+export const assigneeFilter = writable('all');
+const savedTab = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('activeTab') : null;
+const savedPrevTab = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('previousTab') : null;
+let savedSelectedTicket = null;
+try {
+  const storedTicket = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('selectedTicket') : null;
+  if (storedTicket) savedSelectedTicket = JSON.parse(storedTicket);
+} catch (e) {}
+
+export const activeTab = writable(savedTab || 'dashboard');
+export const previousTab = writable(savedPrevTab || 'dashboard');
+export const selectedTicket = writable(savedSelectedTicket);
 export const isCreateModalOpen = writable(false);
 export const sidebarCollapsed = writable(false);
 export const genieDraftStore = writable(null);
 
+activeTab.subscribe((current) => {
+  if (typeof sessionStorage !== 'undefined' && current) {
+    sessionStorage.setItem('activeTab', current);
+  }
+  if (current !== 'ticket-detail' && current !== 'ticket-thread') {
+    previousTab.set(current);
+    if (typeof sessionStorage !== 'undefined' && current) {
+      sessionStorage.setItem('previousTab', current);
+    }
+    const currentUser = get(userStore);
+    if (currentUser) {
+      loadTickets();
+    }
+  }
+});
+
+selectedTicket.subscribe((ticket) => {
+  if (typeof sessionStorage !== 'undefined') {
+    if (ticket) {
+      sessionStorage.setItem('selectedTicket', JSON.stringify(ticket));
+    } else {
+      sessionStorage.removeItem('selectedTicket');
+    }
+  }
+});
+
+export async function loadTickets(adminView = null) {
+  loading.set(true);
+  try {
+    const currentTab = get(activeTab);
+    const currentUser = get(userStore);
+    const isEmployeeRole = currentUser?.role === 'Employee';
+    const isMyTicketsTab = currentTab === 'dashboard' || currentTab === 'my-tickets';
+
+    const effectiveAdminView = adminView !== null 
+      ? adminView 
+      : (!isEmployeeRole && !isMyTicketsTab);
+
+    let deptParam = null;
+    if (effectiveAdminView) {
+      if (currentTab === 'queue-it') {
+        deptParam = 'IT';
+      } else if (currentTab === 'queue-hr') {
+        deptParam = 'HR';
+      } else if (currentTab === 'queue-finance') {
+        deptParam = 'Accounting';
+      } else if (currentTab === 'inbox' && currentUser?.department) {
+        deptParam = currentUser.department.includes('Upper') ? 'Upper' : currentUser.department;
+      }
+    }
+
+    const data = await apiFetchTickets({ adminView: effectiveAdminView, department: deptParam });
+    tickets.set(data || []);
+  } catch (err) {
+    console.error("Failed to load tickets from backend API:", err);
+    tickets.set([]);
+  } finally {
+    loading.set(false);
+  }
+}
+
+export function isSameDepartment(userDeptRaw, ticketDeptRaw) {
+  if (!userDeptRaw || !ticketDeptRaw) return false;
+  const d1 = userDeptRaw.toLowerCase().trim();
+  const d2 = ticketDeptRaw.toLowerCase().trim();
+
+  if (d1 === d2 || d1.includes(d2) || d2.includes(d1)) return true;
+
+  // Department name alias matching (e.g. "Upper Executive Management" in user profile vs "Upper Management" in DB)
+  if (d1.includes('upper') && d2.includes('upper')) return true;
+  if (d1.includes('it') && d2.includes('it')) return true;
+  if (d1.includes('hr') && d2.includes('hr')) return true;
+  if ((d1.includes('account') || d1.includes('fin')) && (d2.includes('account') || d2.includes('fin'))) return true;
+
+  return false;
+}
+
 export const filteredTickets = derived(
-  [tickets, searchQuery, statusFilter, priorityFilter, activeTab, userStore],
-  ([$tickets, $search, $status, $priority, $tab, $user]) => {
+  [tickets, searchQuery, statusFilter, priorityFilter, assigneeFilter, activeTab, userStore],
+  ([$tickets, $search, $status, $priority, $assignee, $tab, $user]) => {
     const isEmployeeView = $tab === 'dashboard' || $tab === 'my-tickets';
     const userEmail = ($user?.email || '').toLowerCase().trim();
     const userOid = ($user?.objectId || $user?.azure_object_id || $user?.oid || '').toLowerCase().trim();
@@ -41,15 +128,21 @@ export const filteredTickets = derived(
       }
 
       // 2. Department Queue Filtering (Admin / Management View)
-      if ($tab === 'queue-it') {
-        const dept = (t.department || t.category || '').toLowerCase();
-        if (!dept.includes('it') && !dept.includes('infra') && !dept.includes('tech')) return false;
+      if ($tab === 'inbox') {
+        const userDept = $user?.department || (isSuperAdmin($user) ? 'Upper Executive Management' : 'IT Team');
+        const ticketDept = t.department || '';
+        if (userDept && ticketDept && !isSameDepartment(userDept, ticketDept)) {
+          return false;
+        }
+      } else if ($tab === 'queue-it') {
+        const dept = (t.department || '').toLowerCase().trim();
+        if (!dept.includes('it')) return false;
       } else if ($tab === 'queue-hr') {
-        const dept = (t.department || t.category || '').toLowerCase();
-        if (!dept.includes('hr') && !dept.includes('benefit') && !dept.includes('people')) return false;
+        const dept = (t.department || '').toLowerCase().trim();
+        if (!dept.includes('hr')) return false;
       } else if ($tab === 'queue-finance') {
-        const dept = (t.department || t.category || '').toLowerCase();
-        if (!dept.includes('fin') && !dept.includes('op') && !dept.includes('account')) return false;
+        const dept = (t.department || '').toLowerCase().trim();
+        if (!dept.includes('account') && !dept.includes('fin')) return false;
       }
 
       // 3. Search & Filter Matching
@@ -57,12 +150,26 @@ export const filteredTickets = derived(
         (t.title && t.title.toLowerCase().includes($search.toLowerCase())) ||
         (t.id && t.id.toLowerCase().includes($search.toLowerCase())) ||
         (t.category && t.category.toLowerCase().includes($search.toLowerCase())) ||
-        (t.description && t.description.toLowerCase().includes($search.toLowerCase()));
+        (t.description && t.description.toLowerCase().includes($search.toLowerCase())) ||
+        (t.assigned_to && t.assigned_to.toLowerCase().includes($search.toLowerCase()));
 
       const matchStatus = $status === 'all' || t.status?.toLowerCase() === $status.toLowerCase();
       const matchPriority = $priority === 'all' || t.priority?.toLowerCase() === $priority.toLowerCase();
 
-      return matchSearch && matchStatus && matchPriority;
+      const assignedStr = (t.assigned_to || '').toLowerCase().trim();
+      const matchAssignee = $assignee === 'all'
+        ? true
+        : $assignee === 'unassigned'
+        ? (!assignedStr)
+        : $assignee === 'me'
+        ? (assignedStr && (
+            (userName && assignedStr.includes(userName)) ||
+            (userEmail && assignedStr.includes(userEmail)) ||
+            (userOid && assignedStr.includes(userOid))
+          ))
+        : true;
+
+      return matchSearch && matchStatus && matchPriority && matchAssignee;
     });
   }
 );
@@ -86,29 +193,6 @@ export const ticketMetrics = derived(filteredTickets, ($tickets) => {
   };
 });
 
-export async function loadTickets(adminView = null) {
-  loading.set(true);
-  try {
-    const currentTab = get(activeTab);
-    const currentUser = get(userStore);
-    const isEmployeeRole = currentUser?.role === 'Employee';
-    const isMyTicketsTab = currentTab === 'dashboard' || currentTab === 'my-tickets';
-
-    // If adminView is not explicitly set, Employee page defaults to adminView = false (user-created tickets only)
-    const effectiveAdminView = adminView !== null 
-      ? adminView 
-      : (!isEmployeeRole && !isMyTicketsTab);
-
-    const data = await apiFetchTickets({ adminView: effectiveAdminView });
-    tickets.set(data || []);
-  } catch (err) {
-    console.error("Failed to load tickets from backend API:", err);
-    tickets.set([]);
-  } finally {
-    loading.set(false);
-  }
-}
-
 export async function submitNewTicket(payload) {
   loading.set(true);
   try {
@@ -129,6 +213,47 @@ export async function changeTicketStatus(ticketId, newStatus) {
     tickets.update(all => all.map(t => t.id === ticketId ? { ...t, status: newStatus } : t));
   } catch (err) {
     console.error("changeTicketStatus failed:", err);
+    throw err;
+  }
+}
+
+export async function transferTicketDepartment(ticketId, newDepartment) {
+  try {
+    const updated = await apiUpdateTicket(ticketId, { department: newDepartment });
+    tickets.update(all => all.map(t => t.id === ticketId ? { ...t, department: newDepartment } : t));
+    selectedTicket.update(st => (st && st.id === ticketId ? { ...st, department: newDepartment } : st));
+    try {
+      await apiPostComment(ticketId, `[System] Ticket transferred and re-routed to ${newDepartment}.`);
+    } catch (e) {}
+    return updated;
+  } catch (err) {
+    console.error("transferTicketDepartment failed:", err);
+    throw err;
+  }
+}
+
+export async function assignTicketToSelf(ticketId, assigneeName = null) {
+  try {
+    const user = get(userStore);
+    const name = assigneeName || user?.name || user?.email?.split('@')[0] || 'Support Agent';
+    const updated = await apiUpdateTicket(ticketId, { assigned_to: name });
+    tickets.update(all => all.map(t => t.id === ticketId ? { ...t, assigned_to: name } : t));
+    selectedTicket.update(st => (st && st.id === ticketId ? { ...st, assigned_to: name } : st));
+    return updated;
+  } catch (err) {
+    console.error("assignTicketToSelf failed:", err);
+    throw err;
+  }
+}
+
+export async function unassignTicket(ticketId) {
+  try {
+    const updated = await apiUpdateTicket(ticketId, { assigned_to: '' });
+    tickets.update(all => all.map(t => t.id === ticketId ? { ...t, assigned_to: null } : t));
+    selectedTicket.update(st => (st && st.id === ticketId ? { ...st, assigned_to: null } : st));
+    return updated;
+  } catch (err) {
+    console.error("unassignTicket failed:", err);
     throw err;
   }
 }

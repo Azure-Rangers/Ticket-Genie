@@ -50,6 +50,7 @@
   <div class="card-footer">
     <div class="meta-info">
       <span class="meta-item"><i class="ph-bold ph-user"></i> {ticket.requester || ticket.department || 'Employee'}</span>
+      <span class="meta-item"><i class="ph-bold ph-user-check"></i> {ticket.assigned_to || 'Unassigned'}</span>
       <span class="meta-item"><i class="ph-bold ph-tag"></i> {ticket.category || 'General'}</span>
     </div>
 

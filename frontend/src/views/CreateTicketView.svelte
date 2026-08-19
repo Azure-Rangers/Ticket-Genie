@@ -1,7 +1,8 @@
 <script>
+  import { onMount } from 'svelte';
   import { activeTab, submitNewTicket, genieDraftStore } from '../lib/stores/tickets.js';
   import { userStore } from '../lib/stores/auth.js';
-  import { apiCheckAnnouncementMatch } from '../lib/api.js';
+  import { apiCheckAnnouncementMatch, apiFetchUpperManagementUsers } from '../lib/api.js';
 
   let activeFormTab = 'standard'; // 'standard' | 'leave' | 'anonymous'
 
@@ -30,6 +31,7 @@
   let category = 'Auto';
   let priority = 'Medium';
   let description = '';
+  let selectedStdApprover = '';
 
   // Leave Request Fields
   let leaveType = 'Paid Time Off (PTO)';
@@ -37,6 +39,18 @@
   let startDate = '';
   let endDate = '';
   let leaveNotes = '';
+  let selectedApprover = '';
+
+  // Upper Management Users
+  let upperManagementUsers = [];
+
+  onMount(async () => {
+    try {
+      upperManagementUsers = await apiFetchUpperManagementUsers();
+    } catch (err) {
+      console.warn("Failed to load upper management users:", err);
+    }
+  });
 
   // Anonymous Request Fields
   let anonymousCategory = 'Workplace Feedback & Improvements';
@@ -107,6 +121,7 @@
         priority,
         department: backendDept,
         department_override: backendDept,
+        assigned_to: backendDept === 'Upper Management' ? (selectedStdApprover || null) : null,
         requester: $userStore?.name || 'Employee User',
         status: 'Open'
       });
@@ -146,6 +161,7 @@
         priority: 'Medium',
         department: 'Upper Management',
         department_override: 'Upper Management',
+        assigned_to: selectedApprover || null,
         requester: $userStore?.name || 'Employee User',
         status: 'Open'
       });
@@ -282,6 +298,18 @@
               </select>
             </div>
 
+            {#if departmentSelect.includes('Upper') || departmentSelect.includes('Admin')}
+              <div class="form-group animate-fade">
+                <label for="std-approver"><i class="ph-bold ph-user-check"></i> Assign Upper Management Approver</label>
+                <select id="std-approver" bind:value={selectedStdApprover}>
+                  <option value="">✨ Upper Management Pool (Unassigned)</option>
+                  {#each upperManagementUsers as user}
+                    <option value={user.name}>{user.name} ({user.role || 'Upper Management'})</option>
+                  {/each}
+                </select>
+              </div>
+            {/if}
+
             <div class="form-group">
               <label for="std-desc">Description & Specifications *</label>
               <textarea 
@@ -357,6 +385,16 @@
               <div class="autofill-badge">
                 <i class="ph-bold ph-shield-check text-success"></i> <strong>Upper Management</strong> (Autofilled for Leave & PTO Approval)
               </div>
+            </div>
+
+            <div class="form-group">
+              <label for="leave-approver"><i class="ph-bold ph-user-check"></i> Assign Upper Management Approver</label>
+              <select id="leave-approver" bind:value={selectedApprover}>
+                <option value="">✨ Upper Management Pool (Unassigned)</option>
+                {#each upperManagementUsers as user}
+                  <option value={user.name}>{user.name} ({user.role || 'Upper Management'})</option>
+                {/each}
+              </select>
             </div>
 
             <div class="form-group">

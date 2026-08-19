@@ -1,20 +1,62 @@
 <script>
-  import { searchQuery, isCreateModalOpen } from '../lib/stores/tickets.js';
-  import { userStore, logout } from '../lib/stores/auth.js';
+  import { onMount, onDestroy } from 'svelte';
+  import { activeTab } from '../lib/stores/tickets.js';
+  import { userStore } from '../lib/stores/auth.js';
+  import { apiFetchLatestAnnouncementWithSeverity } from '../lib/api.js';
 
-  function handleLogout() {
-    logout();
-  }
+  let latestAnnouncement = null;
+  let severity = { level: 'info', label: 'ANNOUNCEMENT', icon: 'ph-megaphone', color_class: 'severity-info' };
+  let abortController = null;
+
+  onMount(async () => {
+    abortController = new AbortController();
+    try {
+      const data = await apiFetchLatestAnnouncementWithSeverity(abortController.signal);
+      if (data && data.announcement) {
+        latestAnnouncement = data.announcement;
+        if (data.severity) {
+          severity = data.severity;
+        }
+      }
+    } catch (err) {
+      if (err?.name !== 'AbortError') {
+        console.warn("Failed to load header announcement with AI severity from backend:", err);
+      }
+    }
+  });
+
+  onDestroy(() => {
+    if (abortController) {
+      abortController.abort();
+    }
+  });
 </script>
 
 <header class="header">
-  <div class="search-bar">
-    <i class="ph-bold ph-magnifying-glass search-icon"></i>
-    <input 
-      type="text" 
-      placeholder="Search tickets by ID, category, or title..." 
-      bind:value={$searchQuery}
-    />
+  <div class="header-left">
+    {#if latestAnnouncement}
+      <!-- svelte-ignore a11y-click-events-have-key-events a11y-interactive-supports-focus -->
+      <div 
+        class="announcement-banner {severity.color_class || severity.colorClass || 'severity-info'} animate-fade"
+        on:click={() => $activeTab = 'announcements'}
+        role="button"
+        tabindex="0"
+        title="Click to view all company announcements"
+      >
+        <span class="severity-pill">
+          <i class="ph-bold {severity.icon || 'ph-megaphone'}"></i> {severity.label || 'ANNOUNCEMENT'}
+        </span>
+        <span class="banner-title">{latestAnnouncement.title}</span>
+        {#if latestAnnouncement.content}
+          <span class="banner-snippet">— {latestAnnouncement.content}</span>
+        {/if}
+        <i class="ph-bold ph-arrow-right banner-arrow"></i>
+      </div>
+    {:else}
+      <div class="header-branding">
+        <span class="portal-tag">TicketGenie Service Portal</span>
+      </div>
+    {/if}
   </div>
 
   <div class="header-actions">
@@ -23,12 +65,6 @@
       <i class="ph-bold ph-shield-check icon"></i>
       <span>Azure AD: <code>Bearer Token</code></span>
     </div>
-
-    <!-- Quick Create Ticket Button -->
-    <button class="btn-create" on:click={() => $isCreateModalOpen = true}>
-      <i class="ph-bold ph-plus"></i>
-      <span>Create Ticket</span>
-    </button>
 
     <!-- Authenticated User Profile Badge -->
     <div class="user-profile-badge">
@@ -47,45 +83,118 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 28px;
+    gap: 20px;
     z-index: 10;
   }
 
-  .search-bar {
-    position: relative;
-    width: 380px;
+  .header-left {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
   }
 
-  .search-icon {
-    position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-    font-size: 1.05rem;
+  .header-branding {
+    display: flex;
+    align-items: center;
   }
 
-  .search-bar input {
-    width: 100%;
-    padding: 10px 14px 10px 40px;
-    border-radius: 10px;
-    border: 1px solid var(--border-color);
-    background: #f8fafc;
-    font-size: 0.85rem;
+  .portal-tag {
+    font-size: 0.9rem;
+    font-weight: 700;
     color: var(--text-main);
-    transition: all 0.2s;
+    letter-spacing: -0.01em;
   }
 
-  .search-bar input:focus {
-    outline: none;
-    border-color: var(--primary);
-    background: #ffffff;
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  .announcement-banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    max-width: 680px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+  }
+
+  .announcement-banner:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+  }
+
+  .severity-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+  }
+
+  .banner-title {
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .banner-snippet {
+    color: inherit;
+    opacity: 0.85;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .banner-arrow {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    margin-left: 2px;
+    flex-shrink: 0;
+  }
+
+  /* Severity Color Schemes */
+  .severity-critical {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+  }
+  .severity-critical .severity-pill {
+    background: #dc2626;
+    color: #ffffff;
+  }
+
+  .severity-warning {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #92400e;
+  }
+  .severity-warning .severity-pill {
+    background: #d97706;
+    color: #ffffff;
+  }
+
+  .severity-info {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1e40af;
+  }
+  .severity-info .severity-pill {
+    background: #3b82f6;
+    color: #ffffff;
   }
 
   .header-actions {
     display: flex;
     align-items: center;
     gap: 16px;
+    flex-shrink: 0;
   }
 
   .azure-badge {
@@ -111,28 +220,6 @@
     border-radius: 4px;
     font-family: monospace;
     font-weight: 600;
-  }
-
-  .btn-create {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--primary);
-    color: #ffffff;
-    border: none;
-    padding: 9px 16px;
-    border-radius: 10px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
-  }
-
-  .btn-create:hover {
-    background: var(--primary-hover);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
   }
 
   .user-profile-badge {

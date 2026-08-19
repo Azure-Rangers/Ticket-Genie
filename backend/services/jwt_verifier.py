@@ -27,7 +27,7 @@ def fetch_microsoft_jwks() -> Dict[str, Any]:
         req = urllib.request.Request(
             JWKS_URL, headers={"User-Agent": "TicketGenie-Backend"}
         )
-        with urllib.request.urlopen(req, timeout=5) as response:
+        with urllib.request.urlopen(req, timeout=3) as response:
             if response.status == 200:
                 data = json.loads(response.read().decode("utf-8"))
                 _JWKS_CACHE["keys"] = {key["kid"]: key for key in data.get("keys", [])}
@@ -36,6 +36,9 @@ def fetch_microsoft_jwks() -> Dict[str, Any]:
                 return _JWKS_CACHE["keys"]
     except Exception as e:
         logger.warning(f"Failed to fetch Microsoft JWKS keys: {e}")
+        _JWKS_CACHE["expires_at"] = (
+            now + 60
+        )  # Cache failure for 1 min to prevent stalling all subsequent requests
     return _JWKS_CACHE.get("keys", {})
 
 

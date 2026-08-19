@@ -101,6 +101,22 @@ export async function apiPostComment(ticketId, message) {
   return await res.json();
 }
 
+export async function apiSuggestResponse(ticketId) {
+  const res = await fetch(`${API_BASE_URL}/tickets/${encodeURIComponent(ticketId)}/suggested-response`, {
+    method: "POST",
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    let detail = `Failed to generate AI response (${res.status})`;
+    try {
+      const body = await res.json();
+      if (body.detail) detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
+    } catch (e) {}
+    throw new Error(detail);
+  }
+  return await res.json();
+}
+
 /** ==================== EXPORT & CALENDAR API ==================== */
 
 export async function apiExportTicketPDF(ticketId) {
@@ -380,4 +396,60 @@ export async function apiFetchUserProfile() {
     console.error("apiFetchUserProfile failed:", err);
   }
   return { name: "User", email: "user@ticketgenie.com", role: "Employee", department: "Operations" };
+}
+
+export async function apiFetchUpperManagementUsers() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/users/upper-management`, { headers: getAuthHeaders() });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) return data;
+    }
+  } catch (err) {
+    console.warn("apiFetchUpperManagementUsers failed:", err);
+  }
+  return [
+    { name: "Greg Davis", role: "Super Admin & VP Operations", department: "Upper Executive Management" },
+    { name: "Sarah Jenkins", role: "Director of HR & Operations", department: "Upper Management" },
+    { name: "Alex Vance", role: "Chief Operations Officer", department: "Upper Management" }
+  ];
+}
+
+export async function apiFetchLatestAnnouncementWithSeverity(signal = null) {
+  try {
+    const options = { headers: getAuthHeaders() };
+    if (signal) {
+      options.signal = signal;
+    }
+    const res = await fetch(`${API_BASE_URL}/announcements/latest`, options);
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    if (err?.name !== "AbortError") {
+      console.warn("apiFetchLatestAnnouncementWithSeverity failed:", err);
+    }
+  }
+  return { announcement: null, severity: null };
+}
+
+export async function apiClassifyAnnouncementSeverity(payload) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/announcements/severity`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn("apiClassifyAnnouncementSeverity failed:", err);
+  }
+  return {
+    level: "info",
+    label: "ANNOUNCEMENT",
+    color_class: "severity-info",
+    icon: "ph-megaphone"
+  };
 }

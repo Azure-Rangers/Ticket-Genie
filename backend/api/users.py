@@ -71,6 +71,98 @@ def handle_update_profile(
     )
 
 
+@router.get("/upper-management")
+def get_upper_management_users(
+    current_user: dict = Depends(verify_azure_user),
+):
+    from sqlalchemy import func, or_
+
+    from database.connection import SessionLocal
+    from database.models_db import DepartmentUserDB, UserProfileDB
+
+    users = []
+    seen_names = set()
+
+    with SessionLocal() as session:
+        profiles = (
+            session.query(UserProfileDB)
+            .filter(
+                or_(
+                    func.lower(UserProfileDB.department).contains("upper"),
+                    func.lower(UserProfileDB.department).contains("executive"),
+                    func.lower(UserProfileDB.role).contains("super"),
+                    func.lower(UserProfileDB.role).contains("management"),
+                    func.lower(UserProfileDB.role).contains("executive"),
+                )
+            )
+            .all()
+        )
+        for p in profiles:
+            if p.name and p.name not in seen_names:
+                seen_names.add(p.name)
+                users.append(
+                    {
+                        "id": p.id,
+                        "name": p.name,
+                        "email": p.email,
+                        "role": p.role,
+                        "department": p.department,
+                    }
+                )
+
+        dept_users = (
+            session.query(DepartmentUserDB)
+            .filter(
+                or_(
+                    func.lower(DepartmentUserDB.department_name).contains("upper"),
+                    func.lower(DepartmentUserDB.department_name).contains("executive"),
+                )
+            )
+            .all()
+        )
+        for du in dept_users:
+            name = (
+                du.user_email.split("@")[0]
+                if du.user_email
+                else "Upper Management Admin"
+            )
+            if name not in seen_names:
+                seen_names.add(name)
+                users.append(
+                    {
+                        "id": du.id,
+                        "name": name,
+                        "email": du.user_email,
+                        "role": du.role,
+                        "department": du.department_name,
+                    }
+                )
+
+    defaults = [
+        {
+            "name": "Greg Davis",
+            "role": "Super Admin & VP Operations",
+            "department": "Upper Executive Management",
+        },
+        {
+            "name": "Sarah Jenkins",
+            "role": "Director of HR & Operations",
+            "department": "Upper Management",
+        },
+        {
+            "name": "Alex Vance",
+            "role": "Chief Operations Officer",
+            "department": "Upper Management",
+        },
+    ]
+    for d in defaults:
+        if d["name"] not in seen_names:
+            seen_names.add(d["name"])
+            users.append(d)
+
+    return users
+
+
 @router.post("/azure-login")
 def handle_azure_login(req: AzureLoginRequest):
     from services.jwt_verifier import verify_azure_jwt
@@ -93,6 +185,8 @@ def handle_azure_login(req: AzureLoginRequest):
         except Exception as err:
             print(f"⚠️ [Azure Auth API] JWT verification warning: {err}")
 
+    from sqlalchemy import func
+
     from database.connection import SessionLocal
     from database.models_db import DepartmentUserDB
 
@@ -106,6 +200,15 @@ def handle_azure_login(req: AzureLoginRequest):
             .filter(DepartmentUserDB.azure_object_id == verified_oid)
             .first()
         )
+        if not record and req.email:
+            record = (
+                session.query(DepartmentUserDB)
+                .filter(func.lower(DepartmentUserDB.user_email) == req.email.lower())
+                .first()
+            )
+            if record:
+                record.azure_object_id = verified_oid
+                session.commit()
         if record:
             if record.role.lower() in ["admin", "super admin", "operations admin"]:
                 is_admin = True
@@ -117,34 +220,60 @@ def handle_azure_login(req: AzureLoginRequest):
                 record.user_email = req.email
                 session.commit()
 
+    PLACEHOLDER_NAMES = {"Admin1", "Employee1", "Azure User", "User", ""}
+
+    # Resolution order:
+    # 1. req.name from frontend (MSAL fetches this from Graph API — most accurate)
+    # 2. JWT given_name + family_name claims
+    # 3. JWT name claim (raw Azure AD display name — may be a placeholder)
+    # 4. Email prefix as last resort
     displayName = None
-    if claims:
-        given_name = claims.get("given_name")
-        family_name = claims.get("family_name")
+
+    if req.name and req.name.strip() not in PLACEHOLDER_NAMES:
+        displayName = req.name.strip()
+
+    if not displayName and claims:
+        given_name = claims.get("given_name", "").strip()
+        family_name = claims.get("family_name", "").strip()
         if given_name and family_name:
-            displayName = f"{given_name} {family_name}".strip()
+            displayName = f"{given_name} {family_name}"
         else:
-            displayName = claims.get("name")
+            jwt_name = (claims.get("name") or "").strip()
+            if jwt_name and jwt_name not in PLACEHOLDER_NAMES:
+                displayName = jwt_name
 
     if not displayName:
-        displayName = req.name or (
-            req.email.split("@")[0] if req.email else "Azure User"
-        )
+        displayName = req.email.split("@")[0] if req.email else "Azure User"
 
+    # If a manually-set real name already exists in the DB, keep it
+    profile_id = f"usr-admin-{verified_oid[:8]}"
     with SessionLocal() as session:
         from database.models_db import UserProfileDB
 
-        profile_id = f"usr-admin-{verified_oid[:8]}"
         db_profile = (
-            session.query(UserProfileDB).filter(UserProfileDB.id == profile_id).first()
+            session.query(UserProfileDB)
+            .filter(func.lower(UserProfileDB.azure_object_id) == verified_oid.lower())
+            .first()
         )
-        if db_profile and db_profile.name:
-            if displayName in [
-                "Admin1",
-                "Employee1",
-                "Azure User",
-                "User",
-            ] or db_profile.name not in ["Admin1", "Employee1", "Azure User", "User"]:
+        if not db_profile and req.email:
+            db_profile = (
+                session.query(UserProfileDB)
+                .filter(func.lower(UserProfileDB.email) == req.email.lower())
+                .first()
+            )
+        if not db_profile:
+            db_profile = (
+                session.query(UserProfileDB)
+                .filter(UserProfileDB.id == profile_id)
+                .first()
+            )
+        if db_profile:
+            profile_id = db_profile.id
+            if (
+                db_profile.name
+                and db_profile.name.strip() not in PLACEHOLDER_NAMES
+                and displayName in PLACEHOLDER_NAMES
+            ):
                 displayName = db_profile.name
 
     # Synchronize user_profiles table from JWT claims upon login
@@ -152,12 +281,12 @@ def handle_azure_login(req: AzureLoginRequest):
         try:
             from database.crud import update_user_profile
 
-            profile_id = f"usr-admin-{verified_oid[:8]}"
             update_user_profile(
                 user_id=profile_id,
                 name=displayName,
                 email=req.email,
                 department=department,
+                azure_object_id=verified_oid,
             )
         except Exception as err:
             print(f"Notice: profile sync during login: {err}")

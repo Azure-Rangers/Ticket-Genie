@@ -239,6 +239,9 @@
                 isAdmin = data.is_admin;
                 role = data.role;
                 department = data.department || "";
+                if (data.name && data.name.trim()) {
+                    userName = data.name.trim();
+                }
                 verifiedByBackend = true;
             } else {
                 console.warn(`⚠️ [Azure Auth API] Backend rejected cached authentication (HTTP ${apiRes.status}). Purging session.`);
