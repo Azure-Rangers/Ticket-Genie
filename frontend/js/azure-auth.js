@@ -257,75 +257,140 @@
     }
 
     /**
+     * Clears stuck interaction_in_progress state from browser storage if MSAL gets locked
+     */
+    function clearStuckMsalInteraction() {
+        try {
+            [sessionStorage, localStorage].forEach(storage => {
+                for (let i = storage.length - 1; i >= 0; i--) {
+                    const key = storage.key(i);
+                    if (key && (key.includes("msal") || key.includes("interaction"))) {
+                        if (key.includes("interaction.status") || key.includes("interaction_status") || storage.getItem(key) === "interaction_in_progress") {
+                            console.log(`🧹 [Azure Auth] Clearing stuck MSAL interaction key: ${key}`);
+                            storage.removeItem(key);
+                        }
+                    }
+                }
+            });
+        } catch (e) {
+            console.warn("⚠️ [Azure Auth] Error clearing stuck interaction storage:", e);
+        }
+    }
+
+    let loginInProgress = false;
+
+    /**
      * Trigger Azure AD Login Redirect
      */
     async function loginWithAzure() {
-        const clientId = await initMsalConfig();
-
-        if (msalInstance && clientId) {
-            try {
-                console.log("🚀 [Auth Check] Triggering Azure AD redirect login...");
-                await msalInstance.loginRedirect({
-                    scopes: ["User.Read", "openid", "profile"]
-                });
-                return;
-            } catch (err) {
-                console.warn("⚠️ [Azure Auth] Azure AD redirect error:", err.message);
-            }
+        if (loginInProgress) {
+            console.warn("⚠️ [Azure Auth] Azure AD login redirect already in progress. Skipping redundant request.");
+            return null;
         }
-        
-        console.log("ℹ️ User is unauthenticated. Prompting workspace portal selection...");
-        return null;
+
+        loginInProgress = true;
+        try {
+            if (autoLoginPromise) {
+                try {
+                    await autoLoginPromise;
+                } catch (e) { }
+            }
+
+            const clientId = await initMsalConfig();
+
+            if (msalInstance && clientId) {
+                try {
+                    console.log("🚀 [Auth Check] Triggering Azure AD redirect login...");
+                    await msalInstance.loginRedirect({
+                        scopes: ["User.Read", "openid", "profile"]
+                    });
+                    return;
+                } catch (err) {
+                    console.warn("⚠️ [Azure Auth] Azure AD redirect error:", err.message);
+                    if (err.message && err.message.includes("interaction_in_progress")) {
+                        console.warn("⚠️ [Azure Auth] Interaction in progress detected. Clearing stuck MSAL state and retrying...");
+                        clearStuckMsalInteraction();
+                        try {
+                            await msalInstance.loginRedirect({
+                                scopes: ["User.Read", "openid", "profile"]
+                            });
+                            return;
+                        } catch (retryErr) {
+                            console.error("❌ [Azure Auth] Retry Azure AD redirect failed:", retryErr.message);
+                        }
+                    }
+                }
+            }
+            
+            console.log("ℹ️ User is unauthenticated. Prompting workspace portal selection...");
+            return null;
+        } finally {
+            loginInProgress = false;
+        }
     }
+
+    let autoLoginPromise = null;
 
     /**
      * Session Check on Page Load: Uses existing cached token/cookie if available ("nvm, already signed in!")
      */
     async function autoLoginAzure() {
-        const clientId = await initMsalConfig();
-
-        // 1. Check local session storage cache first
-        const storedUser = getAzureUser();
-        if (storedUser) {
-            console.log("🔑 [Auth Check] Using active cached session for Azure Object ID:", storedUser.objectId);
-            checkAdminPortalVisibility(storedUser);
-            return storedUser;
+        if (autoLoginPromise) {
+            return autoLoginPromise;
         }
 
-        // 2. Check MSAL redirect response or active MSAL account
-        if (msalInstance && clientId) {
-            try {
-                const redirectResult = await msalInstance.handleRedirectPromise();
-                if (redirectResult && redirectResult.account) {
-                    console.log("🔍 [Auth Check] Verified account from cache source: MSAL Redirect Result");
-                    const user = await handleAuthenticatedAccount(redirectResult.account, redirectResult.idToken, "MSAL Redirect Result");
-                    if (user) return user;
-                }
+        autoLoginPromise = (async () => {
+            const clientId = await initMsalConfig();
 
-                const accounts = msalInstance.getAllAccounts();
-                console.log(`🔍 [Auth Check] MSAL cache account count: ${accounts.length}`);
-                if (accounts.length > 0) {
-                    try {
-                        const silentResult = await msalInstance.acquireTokenSilent({
-                            scopes: ["User.Read", "openid", "profile"],
-                            account: accounts[0]
-                        });
-                        if (silentResult && silentResult.account) {
-                            console.log("🔍 [Auth Check] Verified account from cache source: MSAL Silent Token (Browser Cache)");
-                            const user = await handleAuthenticatedAccount(silentResult.account, silentResult.idToken, "MSAL Silent Token");
-                            if (user) return user;
+            // 1. Check local session storage cache first
+            const storedUser = getAzureUser();
+            if (storedUser) {
+                console.log("🔑 [Auth Check] Using active cached session for Azure Object ID:", storedUser.objectId);
+                checkAdminPortalVisibility(storedUser);
+                return storedUser;
+            }
+
+            // 2. Check MSAL redirect response or active MSAL account
+            if (msalInstance && clientId) {
+                try {
+                    const redirectResult = await msalInstance.handleRedirectPromise();
+                    if (redirectResult && redirectResult.account) {
+                        console.log("🔍 [Auth Check] Verified account from cache source: MSAL Redirect Result");
+                        const user = await handleAuthenticatedAccount(redirectResult.account, redirectResult.idToken, "MSAL Redirect Result");
+                        if (user) return user;
+                    }
+
+                    const accounts = msalInstance.getAllAccounts();
+                    console.log(`🔍 [Auth Check] MSAL cache account count: ${accounts.length}`);
+                    if (accounts.length > 0) {
+                        try {
+                            const silentResult = await msalInstance.acquireTokenSilent({
+                                scopes: ["User.Read", "openid", "profile"],
+                                account: accounts[0]
+                            });
+                            if (silentResult && silentResult.account) {
+                                console.log("🔍 [Auth Check] Verified account from cache source: MSAL Silent Token (Browser Cache)");
+                                const user = await handleAuthenticatedAccount(silentResult.account, silentResult.idToken, "MSAL Silent Token");
+                                if (user) return user;
+                            }
+                        } catch (silentErr) {
+                            console.warn("⚠️ [Auth Check] MSAL Silent token acquisition failed:", silentErr.message);
                         }
-                    } catch (silentErr) {
-                        console.warn("⚠️ [Auth Check] MSAL Silent token acquisition failed:", silentErr.message);
+                    }
+                } catch (err) {
+                    console.warn("⚠️ [Azure Auth] Session check notice:", err.message);
+                    if (err.message && err.message.includes("interaction_in_progress")) {
+                        console.warn("⚠️ [Azure Auth] Clearing stuck interaction status during session check...");
+                        clearStuckMsalInteraction();
                     }
                 }
-            } catch (err) {
-                console.warn("⚠️ [Azure Auth] Session check notice:", err.message);
             }
-        }
 
-        console.log("🔍 [Auth Check] No valid session or MSAL account found. User is unauthenticated.");
-        return null;
+            console.log("🔍 [Auth Check] No valid session or MSAL account found. User is unauthenticated.");
+            return null;
+        })();
+
+        return autoLoginPromise;
     }
 
     /**
