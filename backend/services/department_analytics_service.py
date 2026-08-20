@@ -11,7 +11,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database.models_db import TicketDB
-from services.role_service import is_super_admin
+from services.role_service import is_admin
 
 SLA_HOURS = {"critical": 4, "high": 8, "medium": 24, "low": 72}
 OPEN_STATUSES = {"open", "pending", "in progress", "in_progress"}
@@ -35,18 +35,15 @@ def resolve_analytics_department(
 ) -> Optional[str]:
     """Resolve analytics scope exclusively from the verified identity."""
     role = (current_user.get("role") or "").strip()
-    super_admin = is_super_admin(role)
-    if "admin" not in role.lower() and not super_admin:
+    if not is_admin(role, current_user.get("is_dev", False)):
         raise AnalyticsAccessError(
             "Admin privileges are required for department analytics."
         )
 
     requested_department = normalize_department(requested_department)
     user_department = normalize_department(current_user.get("department"))
-    if super_admin:
+    if not user_department or user_department == "Upper Management":
         return requested_department
-    if not user_department:
-        raise AnalyticsAccessError("A verified department assignment is required.")
     if requested_department and requested_department != user_department:
         raise AnalyticsAccessError(
             "Admins may only view analytics for their assigned department."

@@ -40,12 +40,12 @@ class AnnouncementSeverityRequest(BaseModel):
 def require_announcement_admin(
     current_user: dict = Depends(verify_azure_user),
 ) -> dict:
-    """Allow announcement mutations only for verified Admin/Super Admin roles."""
+    """Allow announcement mutations only for verified Admin role."""
     role = (current_user.get("role") or "").strip().lower().replace("_", " ")
-    if role not in {"admin", "super admin", "superadmin"}:
+    if "admin" not in role:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Forbidden: Only Admin or Super Admin can manage announcements.",
+            detail="Forbidden: Only Admin can manage announcements.",
         )
     return current_user
 

@@ -188,7 +188,7 @@ CREATE TABLE dbo.TicketMessages (
         CHECK (
             sender_type IN (
                 'EMPLOYEE',
-                'SUPPORT_AGENT',
+                'TICKETER',
                 'AI',
                 'SYSTEM'
             )

@@ -80,7 +80,7 @@ def validate_and_sanitize_sql(
 
 
 def execute_sql_query(
-    sql: str, role: str = "Super Admin", user_id: str = "user"
+    sql: str, role: str = "Admin", user_id: str = "user"
 ) -> Dict[str, Any]:
     """Execute a validated SQL query against the database and return results as dictionary."""
     try:

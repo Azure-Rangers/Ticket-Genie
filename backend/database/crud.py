@@ -622,6 +622,10 @@ def list_departments(db: Optional[Session] = None) -> List[dict]:
                     "name": "Upper Executive Management",
                     "queue_name": "Upper Management - Leave Approval",
                 },
+                {
+                    "name": "Workplace Operations Team",
+                    "queue_name": "Workplace Operations - Facilities",
+                },
             ]
             return defaults
         return [d.to_dict() for d in depts]
@@ -633,7 +637,7 @@ def list_departments(db: Optional[Session] = None) -> List[dict]:
 def add_department_user(
     department_name: str,
     azure_object_id: str,
-    role: str = "Member",
+    role: str = "Employee",
     user_email: Optional[str] = None,
     db: Optional[Session] = None,
 ) -> dict:

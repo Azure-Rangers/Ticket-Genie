@@ -55,43 +55,31 @@ export function getAzureUser() {
 
 /**
  * Shared Dynamic RBAC & Permission Verification Helpers
+ * System roles: Employee, Ticketer, Admin
  */
 export function isEmployee(user) {
   return !!user;
 }
 
-export function isTicketer(user) {
-  if (!user || !user.role) return false;
-  const role = user.role.toLowerCase();
-  return (
-    role.includes('admin') ||
-    role.includes('ticketer') ||
-    role.includes('manager') ||
-    role.includes('super') ||
-    role.includes('operations')
-  );
-}
-
 export function isAdmin(user) {
   if (!user || !user.role) return false;
   const role = user.role.toLowerCase();
-  return (
-    role.includes('admin') ||
-    role.includes('manager') ||
-    role.includes('super') ||
-    role.includes('operations')
-  );
+  return role.includes('admin') || role.includes('manager') || role.includes('operations') || role.includes('super');
+}
+
+export function isTicketer(user) {
+  if (!user || !user.role) return false;
+  const role = user.role.toLowerCase();
+  return role.includes('ticketer') || role.includes('support') || role.includes('agent') || isAdmin(user);
 }
 
 export function isSuperAdmin(user) {
-  if (!user || !user.role) return false;
-  const role = user.role.toLowerCase();
-  return role.includes('super') || role.includes('executive') || role.includes('upper management');
+  return isAdmin(user);
 }
 
 export function hasDepartmentAccess(user, departmentName) {
   if (!user) return false;
-  if (isSuperAdmin(user)) return true;
+  if (isAdmin(user)) return true;
   if (!user.department) return true;
   const userDept = user.department.toLowerCase().trim();
   const targetDept = (departmentName || '').toLowerCase().trim();
@@ -126,10 +114,10 @@ export function checkAuthGuard(requiredRole = null) {
 
   if (req === 'employee') {
     allowed = isEmployee(user);
-  } else if (req === 'ticketer' || req === 'admin') {
+  } else if (req === 'ticketer') {
     allowed = isTicketer(user);
-  } else if (req === 'superadmin') {
-    allowed = isSuperAdmin(user);
+  } else if (req === 'admin' || req === 'superadmin') {
+    allowed = isAdmin(user);
   } else {
     allowed = requireRole(user, [req]);
   }

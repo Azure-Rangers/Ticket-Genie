@@ -118,34 +118,60 @@ class TestDatabaseRBACSafety(unittest.TestCase):
 
 
 class TestSuperAdminRoleManagement(unittest.TestCase):
-    """Test suite for SuperAdmin role management & 403 Forbidden enforcement."""
+    """Test suite for Admin role management & 403 Forbidden enforcement."""
 
     def test_require_super_admin_enforcement(self):
         from fastapi import HTTPException
 
         from api.admin import require_super_admin
 
-        # Non-SuperAdmin roles must raise HTTP 403 Forbidden
-        non_super_roles = [
+        # Non-Admin roles (Employee, Ticketer, Member) must raise HTTP 403 Forbidden for admin routes
+        non_admin_roles = [
             {"role": "Employee", "is_dev": False},
-            {"role": "Admin", "is_dev": False},
-            {"role": "Operations Admin", "is_dev": False},
-            {"role": "Department Admin", "is_dev": False},
+            {"role": "Ticketer", "is_dev": False},
+            {"role": "Member", "is_dev": False},
         ]
-        for user_ctx in non_super_roles:
+        for user_ctx in non_admin_roles:
             with self.assertRaises(HTTPException) as ctx:
                 require_super_admin(user_ctx)
             self.assertEqual(ctx.exception.status_code, 403)
             self.assertIn("forbidden", ctx.exception.detail.lower())
 
-        # SuperAdmin role must pass without raising exception
-        super_ctx = {"role": "Super Admin", "is_dev": False}
+        # Admin role must pass without raising exception
+        admin_ctx = {"role": "Admin", "is_dev": False}
         try:
-            require_super_admin(super_ctx)
+            require_super_admin(admin_ctx)
         except Exception:
-            self.fail(
-                "require_super_admin raised exception for valid Super Admin role!"
-            )
+            self.fail("require_super_admin raised exception for valid Admin role!")
+
+    def test_canonical_three_roles_helpers(self):
+        from services.role_service import (
+            EMPLOYEE_ASSIGNMENT_ROLES,
+            is_admin,
+            is_employee,
+            is_ticket_mutation_authorized,
+            is_ticketer,
+        )
+
+        self.assertIn("Employee", EMPLOYEE_ASSIGNMENT_ROLES)
+        self.assertIn("Ticketer", EMPLOYEE_ASSIGNMENT_ROLES)
+        self.assertIn("Admin", EMPLOYEE_ASSIGNMENT_ROLES)
+
+        # Admin permissions
+        self.assertTrue(is_admin("Admin"))
+        self.assertTrue(is_ticketer("Admin"))
+        self.assertTrue(is_ticket_mutation_authorized("Admin"))
+
+        # Ticketer permissions
+        self.assertFalse(is_admin("Ticketer"))
+        self.assertTrue(is_ticketer("Ticketer"))
+        self.assertTrue(is_ticket_mutation_authorized("Ticketer"))
+
+        # Employee permissions
+        self.assertFalse(is_admin("Employee"))
+        self.assertFalse(is_ticketer("Employee"))
+        self.assertTrue(is_employee("Employee"))
+        self.assertFalse(is_ticket_mutation_authorized("Employee"))
 
     def test_department_user_role_crud(self):
         from database.crud import (

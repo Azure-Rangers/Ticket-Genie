@@ -49,11 +49,11 @@ def test_data_analyst_template_adds_role_specific_tickets():
     assert all(item["selected"] is True for item in suggestions)
 
 
-def test_onboarding_management_is_super_admin_only():
-    assert require_onboarding_admin({"role": "Super Admin"})["role"] == "Super Admin"
+def test_onboarding_management_is_admin_only():
+    assert require_onboarding_admin({"role": "Admin"})["role"] == "Admin"
 
     with pytest.raises(HTTPException) as exc:
-        require_onboarding_admin({"role": "HR Admin"})
+        require_onboarding_admin({"role": "Employee"})
 
     assert exc.value.status_code == 403
 

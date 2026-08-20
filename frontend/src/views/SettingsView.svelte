@@ -38,7 +38,7 @@
       ];
       const usersData = await apiFetchDepartmentUsers();
       departmentUsers = Array.isArray(usersData) && usersData.length > 0 ? usersData : [
-        { id: 'usr-101', user_email: 'Admin1@vigneshquadrantoutlook.onmicrosoft.com', azure_object_id: 'dc3b56e9-9280-40dc-8d73-98bfd81fdd6a', role: 'Super Admin', department_name: 'Upper Executive Management' },
+        { id: 'usr-101', user_email: 'Admin1@vigneshquadrantoutlook.onmicrosoft.com', azure_object_id: 'dc3b56e9-9280-40dc-8d73-98bfd81fdd6a', role: 'Admin', department_name: 'Upper Executive Management' },
         { id: 'usr-102', user_email: 'Employee1@vigneshquadrantoutlook.onmicrosoft.com', azure_object_id: 'b6a4c5f9-08b7-4b72-b375-b64dd60f7ed8', role: 'Employee', department_name: 'IT Operations' }
       ];
     } catch (e) {
@@ -230,10 +230,9 @@
                 {/each}
               </select>
               <select bind:value={rbacAssignRole}>
-                <option value="Employee">Employee</option>
-                <option value="Ticketer">Ticketer</option>
                 <option value="Admin">Admin</option>
-                <option value="SuperAdmin">SuperAdmin</option>
+                <option value="Ticketer">Ticketer</option>
+                <option value="Employee">Employee</option>
               </select>
               <button class="btn-assign" on:click={handleAssignUserRole}>
                 <i class="ph-bold ph-plus"></i> Assign Role

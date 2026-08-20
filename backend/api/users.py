@@ -118,7 +118,7 @@ def get_upper_management_users(
                     else "Upper Management Admin"
                 )
             )
-            role = du.role or (profile.role if profile else "Super Admin")
+            role = du.role or (profile.role if profile else "Admin")
             email = du.user_email or (profile.email if profile else None)
 
             if name not in seen_names:
@@ -157,7 +157,7 @@ def get_upper_management_users(
     defaults = [
         {
             "name": "Greg Davis",
-            "role": "Super Admin & VP Operations",
+            "role": "Admin & VP Operations",
             "department": "Upper Executive Management",
         },
         {
@@ -230,7 +230,7 @@ def handle_azure_login(req: AzureLoginRequest):
                 record.azure_object_id = verified_oid
                 session.commit()
         if record:
-            if record.role.lower() in ["admin", "super admin", "operations admin"]:
+            if "admin" in record.role.lower():
                 is_admin = True
             if record.role:
                 role = record.role

@@ -2025,7 +2025,7 @@ components:
           - type: string
           - type: 'null'
           title: Role
-          default: Member
+          default: Employee
         name:
           anyOf:
           - type: string
