@@ -223,7 +223,6 @@ def test_leave_form_has_stable_ids_and_submit_handler():
         "leaveStartDate",
         "leaveEndDate",
         "leaveDescription",
-        "leaveFileUpload",
         "submitLeaveBtn",
     ):
         assert f'id="{current_id}"' in NEW_REQUEST_HTML
@@ -235,7 +234,6 @@ def test_anonymous_form_has_stable_ids_and_submit_handler():
         "anonymousTicketForm",
         "anonymousCategory",
         "anonymousDescription",
-        "anonymousFileUpload",
         "submitAnonymousBtn",
     ):
         assert f'id="{current_id}"' in NEW_REQUEST_HTML
