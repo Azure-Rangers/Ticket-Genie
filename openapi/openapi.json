@@ -3474,7 +3474,7 @@
               }
             ],
             "title": "Role",
-            "default": "Member"
+            "default": "Employee"
           },
           "name": {
             "anyOf": [
