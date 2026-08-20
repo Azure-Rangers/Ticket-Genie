@@ -155,6 +155,12 @@ class ChatRequest(BaseModel):
     # in-progress management write action across turns (see
     # PendingManagementAction). Employee-portal requests never set this.
     pending_action: Optional[PendingManagementAction] = None
+    # Id of a persisted Genie AI page conversation (services/conversation_service.py)
+    # this turn belongs to. None for a brand-new chat - the backend then
+    # lazily creates the conversation on the first turn instead of an
+    # empty/junk row up front. Ownership is always re-verified server-side
+    # against the authenticated user, never trusted from this field alone.
+    conversation_id: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
@@ -179,3 +185,7 @@ class ChatResponse(BaseModel):
     # the frontend can render the exact candidates the user is choosing
     # between (id + title + priority + status, never a raw SQL/DB dump).
     ticket_candidates: List[TicketCandidate] = Field(default_factory=list)
+    # Id of the persisted Genie AI page conversation this turn was saved
+    # under (see api/chatbot.py::chatbot_message). Set by the route layer
+    # after handle_message() returns, not by handle_message() itself.
+    conversation_id: Optional[str] = None

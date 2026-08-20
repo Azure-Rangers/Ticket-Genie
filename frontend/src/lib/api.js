@@ -270,7 +270,9 @@ export async function apiGenieChat(message, state = {}) {
       history: state.history || [],
       draft: state.draft || null,
       active_intent: state.active_intent || state.activeIntent || null,
-      active_request_type: state.active_request_type || state.activeRequestType || null
+      active_request_type: state.active_request_type || state.activeRequestType || null,
+      pending_action: state.pending_action || state.pendingAction || null,
+      conversation_id: state.conversation_id || state.conversationId || null
     };
 
     const res = await fetch("/api/chatbot/message", {
@@ -289,7 +291,10 @@ export async function apiGenieChat(message, state = {}) {
         request_type: data.request_type || null,
         missing_fields: data.missing_fields || [],
         ready_for_review: data.ready_for_review || false,
-        intent: data.intent || null
+        intent: data.intent || null,
+        pending_action: data.pending_action || null,
+        ticket_candidates: data.ticket_candidates || [],
+        conversation_id: data.conversation_id || null
       };
     }
   } catch (e) {
@@ -313,7 +318,10 @@ export async function apiGenieChat(message, state = {}) {
         request_type: data.request_type || null,
         missing_fields: data.missing_fields || [],
         ready_for_review: data.ready_for_review || false,
-        intent: data.intent || null
+        intent: data.intent || null,
+        pending_action: null,
+        ticket_candidates: [],
+        conversation_id: null
       };
     }
   } catch (err) {
@@ -329,8 +337,40 @@ export async function apiGenieChat(message, state = {}) {
     request_type: null,
     missing_fields: [],
     ready_for_review: false,
-    intent: null
+    intent: null,
+    pending_action: null,
+    ticket_candidates: [],
+    conversation_id: null
   };
+}
+
+export async function apiFetchGenieConversations() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/chatbot/conversations`, {
+      headers: getAuthHeaders()
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) return data;
+    }
+  } catch (err) {
+    console.warn("apiFetchGenieConversations failed:", err);
+  }
+  return [];
+}
+
+export async function apiFetchGenieConversation(conversationId) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/chatbot/conversations/${encodeURIComponent(conversationId)}`, {
+      headers: getAuthHeaders()
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn("apiFetchGenieConversation failed:", err);
+  }
+  return null;
 }
 
 /** ==================== USER PROFILE & ANNOUNCEMENTS ==================== */

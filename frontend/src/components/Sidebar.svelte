@@ -92,9 +92,19 @@
           <span class="menu-text">Notifications</span>
         </button>
 
-        <button 
-          class="nav-link" 
-          class:active={$activeTab === 'profile'} 
+        <button
+          class="nav-link"
+          class:active={$activeTab === 'genie-ai'}
+          on:click={() => setTab('genie-ai')}
+          title="Genie AI"
+        >
+          <span class="menu-icon"><i class="ph-duotone ph-sparkle"></i></span>
+          <span class="menu-text">Genie AI</span>
+        </button>
+
+        <button
+          class="nav-link"
+          class:active={$activeTab === 'profile'}
           on:click={() => setTab('profile')}
           title="Profile & Credentials"
         >

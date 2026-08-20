@@ -222,6 +222,44 @@ class OnboardingDB(Base):
         }
 
 
+class ChatConversationDB(Base):
+    __tablename__ = "chat_conversations"
+
+    id = Column(String(50), primary_key=True, index=True)
+    user_id = Column(String(150), nullable=False, index=True)
+    title = Column(String(200), nullable=False)
+    createdAt = Column(String(50), nullable=False)
+    updatedAt = Column(String(50), nullable=False)
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "title": self.title,
+            "createdAt": self.createdAt,
+            "updatedAt": self.updatedAt,
+        }
+
+
+class ChatMessageDB(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(String(50), primary_key=True, index=True)
+    conversation_id = Column(String(50), nullable=False, index=True)
+    role = Column(String(20), nullable=False)
+    content = Column(Text, nullable=False)
+    createdAt = Column(String(50), nullable=False)
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "conversation_id": self.conversation_id,
+            "role": self.role,
+            "content": self.content,
+            "createdAt": self.createdAt,
+        }
+
+
 class UserProfileDB(Base):
     __tablename__ = "user_profiles"
 
