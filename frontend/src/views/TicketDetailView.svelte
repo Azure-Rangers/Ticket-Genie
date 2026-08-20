@@ -3,7 +3,7 @@
   import { selectedTicket, activeTab, previousTab, changeTicketStatus, transferTicketDepartment, assignTicketToSelf, unassignTicket } from '../lib/stores/tickets.js';
   import { userStore, isTicketer } from '../lib/stores/auth.js';
   import StatusBadge from '../components/StatusBadge.svelte';
-  import { apiFetchComments, apiPostComment, apiSuggestResponse, apiExportTicketPDF, apiExportTicketDOCX, apiExportCalendar } from '../lib/api.js';
+  import { apiFetchComments, apiPostComment, apiSuggestResponse, apiExportTicketPDF } from '../lib/api.js';
 
   let comments = [];
   let loadingComments = false;
@@ -297,12 +297,6 @@
           <div class="export-actions">
             <button class="btn-export pdf" on:click={() => apiExportTicketPDF(ticket.id)}>
               <i class="ph-bold ph-file-pdf"></i> Export PDF
-            </button>
-            <button class="btn-export docx" on:click={() => apiExportTicketDOCX(ticket.id)}>
-              <i class="ph-bold ph-file-doc"></i> Export DOCX
-            </button>
-            <button class="btn-export ical" on:click={() => apiExportCalendar()}>
-              <i class="ph-bold ph-calendar-plus"></i> iCal
             </button>
           </div>
         </div>
@@ -692,12 +686,6 @@
 
   .btn-export.pdf { color: #dc2626; border-color: #fca5a5; background: #fef2f2; }
   .btn-export.pdf:hover { background: #dc2626; color: white; }
-
-  .btn-export.docx { color: #2563eb; border-color: #bfdbfe; background: #eff6ff; }
-  .btn-export.docx:hover { background: #2563eb; color: white; }
-
-  .btn-export.ical { color: #059669; border-color: #a7f3d0; background: #ecfdf5; }
-  .btn-export.ical:hover { background: #059669; color: white; }
 
   .meta-strip {
     display: grid;
