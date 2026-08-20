@@ -152,7 +152,9 @@ def test_genie_draft_is_consumed_after_prefill_so_fields_remain_editable():
     prefill_block = CREATE_TICKET_VIEW_SVELTE[prefill_start:prefill_end]
 
     assert "genieDraftStore.set(null)" in prefill_block
-    assert '<select id="leave-type" bind:value={leaveType}>' in CREATE_TICKET_VIEW_SVELTE
+    assert (
+        '<select id="leave-type" bind:value={leaveType}>' in CREATE_TICKET_VIEW_SVELTE
+    )
     assert 'type="date" bind:value={startDate}' in CREATE_TICKET_VIEW_SVELTE
     assert 'type="date" bind:value={endDate}' in CREATE_TICKET_VIEW_SVELTE
     assert "bind:value={leaveNotes}" in CREATE_TICKET_VIEW_SVELTE
