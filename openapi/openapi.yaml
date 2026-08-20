@@ -880,6 +880,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/analytics/ai-usage:
+    get:
+      tags:
+      - analytics
+      summary: Get Ai Usage
+      description: Return Azure-backed LLM usage to verified Admin/Super Admin users.
+      operationId: get_ai_usage_api_analytics_ai_usage_get
+      parameters:
+      - name: days
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 90
+          minimum: 1
+          default: 30
+          title: Days
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/calendar/leave-events:
     get:
       tags:
