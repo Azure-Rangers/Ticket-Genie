@@ -1195,14 +1195,6 @@ paths:
       summary: List Notifications
       operationId: list_notifications_api_notifications_get
       parameters:
-      - name: user_id
-        in: query
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: User Id
       - name: authorization
         in: header
         required: false
@@ -2148,15 +2140,13 @@ components:
           type: string
           title: Message
         user_id:
-          anyOf:
-          - type: string
-          - type: 'null'
+          type: string
           title: User Id
-          default: all
       type: object
       required:
       - title
       - message
+      - user_id
       title: NotificationCreateRequest
     OnboardingStartRequest:
       properties:

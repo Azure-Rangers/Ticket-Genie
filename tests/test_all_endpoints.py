@@ -103,7 +103,11 @@ def test_notifications_crud():
 
     res = client.post(
         "/api/notifications",
-        json={"title": "Test Notif", "message": "Notification message body"},
+        json={
+            "title": "Test Notif",
+            "message": "Notification message body",
+            "user_id": "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a",
+        },
     )
     assert res.status_code == 201
     notif = res.json()

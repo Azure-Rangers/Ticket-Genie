@@ -394,6 +394,23 @@ export async function apiExportGenieConversationPDF(conversationId) {
 
 /** ==================== USER PROFILE & ANNOUNCEMENTS ==================== */
 
+export async function apiFetchNotifications() {
+  const res = await fetch(`${API_BASE_URL}/notifications`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Unable to load notifications (${res.status})`);
+  return await res.json();
+}
+
+export async function apiMarkNotificationRead(notificationId) {
+  const res = await fetch(
+    `${API_BASE_URL}/notifications/${encodeURIComponent(notificationId)}/read`,
+    { method: "PUT", headers: getAuthHeaders() }
+  );
+  if (!res.ok) throw new Error(`Unable to mark notification as read (${res.status})`);
+  return await res.json();
+}
+
 export async function apiFetchAnnouncements() {
   try {
     const res = await fetch(`${API_BASE_URL}/announcements`, { headers: getAuthHeaders() });

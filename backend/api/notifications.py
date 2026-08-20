@@ -1,10 +1,10 @@
 """Notifications API Router for TicketGenie."""
 
-from typing import Optional
-
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
+from database.connection import get_db
 from database.crud import (
     create_notification,
     get_notifications,
@@ -18,36 +18,45 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 class NotificationCreateRequest(BaseModel):
     title: str
     message: str
-    user_id: Optional[str] = "all"
+    user_id: str
+
+
+def _notification_identities(current_user: dict) -> list[str]:
+    return list(
+        dict.fromkeys(
+            value
+            for value in (current_user.get("oid"), current_user.get("email"))
+            if value
+        )
+    )
 
 
 @router.get("")
 def list_notifications(
-    user_id: Optional[str] = None,
     current_user: dict = Depends(verify_azure_user),
+    db: Session = Depends(get_db),
 ):
-    user_role = (current_user.get("role") or "").lower()
-    is_admin = any(
-        r in user_role for r in ["admin", "super", "operations"]
-    ) or current_user.get("is_dev", False)
-
-    target_user_id = (
-        user_id
-        if (is_admin and user_id)
-        else (current_user.get("oid") or current_user.get("email") or "user")
-    )
-    return get_notifications(user_id=target_user_id)
+    return get_notifications(_notification_identities(current_user), db=db)
 
 
 @router.post("", status_code=201)
 def handle_create_notification(
     req: NotificationCreateRequest,
     current_user: dict = Depends(verify_azure_user),
+    db: Session = Depends(get_db),
 ):
+    role = (current_user.get("role") or "").lower()
+    if not any(value in role for value in ("admin", "super", "operations")):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    if req.user_id.strip().lower() in {"all", "user"}:
+        raise HTTPException(
+            status_code=422, detail="A specific user identity is required"
+        )
     return create_notification(
         title=req.title,
         message=req.message,
-        user_id=req.user_id or "all",
+        user_id=req.user_id,
+        db=db,
     )
 
 
@@ -55,8 +64,11 @@ def handle_create_notification(
 def handle_mark_notification_read(
     notif_id: str,
     current_user: dict = Depends(verify_azure_user),
+    db: Session = Depends(get_db),
 ):
-    success = mark_notification_read(notif_id)
+    success = mark_notification_read(
+        notif_id, _notification_identities(current_user), db=db
+    )
     if not success:
         raise HTTPException(status_code=404, detail="Notification not found")
     return {"message": f"Marked notification {notif_id} as read"}
