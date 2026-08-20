@@ -637,7 +637,7 @@ def list_departments(db: Optional[Session] = None) -> List[dict]:
 def add_department_user(
     department_name: str,
     azure_object_id: str,
-    role: str = "Member",
+    role: str = "Employee",
     user_email: Optional[str] = None,
     db: Optional[Session] = None,
 ) -> dict:

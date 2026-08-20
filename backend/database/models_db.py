@@ -111,7 +111,7 @@ class DepartmentUserDB(Base):
     id = Column(String(50), primary_key=True, index=True)
     department_name = Column(String(100), index=True, nullable=False)
     azure_object_id = Column(String(100), index=True, nullable=False)
-    role = Column(String(50), nullable=False, default="Member")
+    role = Column(String(50), nullable=False, default="Employee")
     user_email = Column(String(150), nullable=True)
     createdAt = Column(String(50), nullable=False)
 

@@ -71,6 +71,22 @@ DEFAULT_DEPARTMENT_USERS = [
         "user_email": "Admin1@vigneshquadrantoutlook.onmicrosoft.com",
         "createdAt": "2026-08-16T12:00:00",
     },
+    {
+        "id": "uobj-ticketer-it-01",
+        "department_name": "IT Team",
+        "azure_object_id": "it-ticketer-oid-1001",
+        "role": "Ticketer",
+        "user_email": "it.agent@ticketgenie.test",
+        "createdAt": "2026-08-16T12:00:00",
+    },
+    {
+        "id": "uobj-employee-01",
+        "department_name": "IT Team",
+        "azure_object_id": "employee-demo-oid-2001",
+        "role": "Employee",
+        "user_email": "employee.demo@ticketgenie.test",
+        "createdAt": "2026-08-16T12:00:00",
+    },
 ]
 
 DEFAULT_USER_PROFILES = [
@@ -83,6 +99,26 @@ DEFAULT_USER_PROFILES = [
         "phone": "+1 (555) 019-9999",
         "avatar": "GD",
         "azure_object_id": "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a",
+    },
+    {
+        "id": "usr-ticketer-it-01",
+        "name": "Ethan Brooks",
+        "email": "it.agent@ticketgenie.test",
+        "role": "Ticketer",
+        "department": "IT Team",
+        "phone": "+1 (555) 019-2222",
+        "avatar": "EB",
+        "azure_object_id": "it-ticketer-oid-1001",
+    },
+    {
+        "id": "usr-employee-01",
+        "name": "Maya Patel",
+        "email": "employee.demo@ticketgenie.test",
+        "role": "Employee",
+        "department": "IT Team",
+        "phone": "+1 (555) 019-1111",
+        "avatar": "MP",
+        "azure_object_id": "employee-demo-oid-2001",
     },
 ]
 

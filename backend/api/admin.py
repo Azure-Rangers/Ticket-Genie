@@ -45,7 +45,7 @@ class DepartmentUserRequest(BaseModel):
     department: Optional[str] = None
     azure_object_id: Optional[str] = None
     object_id: Optional[str] = None
-    role: Optional[str] = "Member"
+    role: Optional[str] = "Employee"
     name: Optional[str] = None
     email: Optional[str] = None
     user_email: Optional[str] = None
@@ -97,7 +97,7 @@ def assign_department_user(
     return add_department_user(
         department_name=dept,
         azure_object_id=oid,
-        role=req.role or "Member",
+        role=req.role or "Employee",
         user_email=user_email,
     )
 
