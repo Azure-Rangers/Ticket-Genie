@@ -45,6 +45,12 @@
       if (draft.category) category = draft.category;
       if (draft.priority) priority = draft.priority;
     }
+
+    // A Genie draft is a one-time prefill, not a permanent source of truth.
+    // Clear the shared handoff after copying it into local form state so later
+    // edits (leave type, dates, descriptions, etc.) are never overwritten by
+    // another reactive render of this view.
+    genieDraftStore.set(null);
   }
 
   // Standard Request Fields
