@@ -53,6 +53,13 @@ DEFAULT_DEPARTMENTS = [
         "description": "Executive leadership and leave approval escalations",
         "createdAt": "2026-08-16T12:00:00",
     },
+    {
+        "id": "dept-wop-005",
+        "name": "Workplace Operations Team",
+        "queue_name": "Workplace Operations - Facilities",
+        "description": "Workplace operations, facilities, and logistics queue",
+        "createdAt": "2026-08-16T12:00:00",
+    },
 ]
 
 DEFAULT_DEPARTMENT_USERS = [
@@ -60,7 +67,7 @@ DEFAULT_DEPARTMENT_USERS = [
         "id": "uobj-admin-dc3b56e9",
         "department_name": "Upper Executive Management",
         "azure_object_id": "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a",
-        "role": "Super Admin",
+        "role": "Admin",
         "user_email": "Admin1@vigneshquadrantoutlook.onmicrosoft.com",
         "createdAt": "2026-08-16T12:00:00",
     },
@@ -71,7 +78,7 @@ DEFAULT_USER_PROFILES = [
         "id": "usr-admin-dc3b56e9",
         "name": "Greg Davis",
         "email": "Admin1@vigneshquadrantoutlook.onmicrosoft.com",
-        "role": "Super Admin",
+        "role": "Admin",
         "department": "Upper Executive Management",
         "phone": "+1 (555) 019-9999",
         "avatar": "GD",

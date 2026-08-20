@@ -16,19 +16,22 @@ from database.crud import (
     remove_department_user,
 )
 from services.jwt_verifier import verify_azure_user
-from services.role_service import is_super_admin
+from services.role_service import is_admin, is_super_admin
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-def require_super_admin(current_user: dict = Depends(verify_azure_user)):
-    """Enforce that only SuperAdmin can create/modify roles and department assignments."""
-    if not is_super_admin(current_user.get("role"), current_user.get("is_dev", False)):
+def require_admin(current_user: dict = Depends(verify_azure_user)):
+    """Enforce that only Admin can create/modify roles and department assignments."""
+    if not is_admin(current_user.get("role"), current_user.get("is_dev", False)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Forbidden: Only Super Admin can manage department role assignments.",
+            detail="Forbidden: Only Admin can manage department role assignments.",
         )
     return current_user
+
+
+require_super_admin = require_admin
 
 
 class DepartmentCreateRequest(BaseModel):
@@ -64,7 +67,7 @@ def handle_create_department(
     req: DepartmentCreateRequest,
     current_user: dict = Depends(verify_azure_user),
 ):
-    require_super_admin(current_user)
+    require_admin(current_user)
     return create_department(req.name, req.queue_name, req.description)
 
 
@@ -105,7 +108,7 @@ def handle_remove_department_user(
     azure_object_id: str,
     current_user: dict = Depends(verify_azure_user),
 ):
-    require_super_admin(current_user)
+    require_admin(current_user)
     removed = remove_department_user(department_name, azure_object_id)
     if not removed:
         raise HTTPException(status_code=404, detail="Department user mapping not found")
@@ -122,7 +125,7 @@ def get_admin_leave_queue(current_user: dict = Depends(verify_azure_user)):
 @router.post("/trigger-daily-digest")
 def handle_trigger_daily_digest(current_user: dict = Depends(verify_azure_user)):
     """Trigger daily summary email digest on demand for IT Admins."""
-    require_super_admin(current_user)
+    require_admin(current_user)
     from services.daily_digest_service import send_daily_admin_digest
 
     result = send_daily_admin_digest()

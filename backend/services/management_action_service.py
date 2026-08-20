@@ -32,6 +32,7 @@ from models.ticket import TICKET_DEPARTMENTS, TICKET_PRIORITIES
 from services.role_service import (
     EMPLOYEE_ASSIGNMENT_ROLES,
     VisibilityScope,
+    is_admin,
     is_super_admin,
     is_ticket_mutation_authorized,
     resolve_visibility_scope,
@@ -585,7 +586,7 @@ def handle_turn(
         if not is_ticket_mutation_authorized(role):
             return _denied(intent, "reassign or reprioritize tickets")
     elif intent == ChatIntent.CREATE_PORTAL_EMPLOYEE:
-        if not is_super_admin(role, (current_user or {}).get("is_dev", False)):
+        if not is_admin(role, (current_user or {}).get("is_dev", False)):
             return _denied(intent, "create new portal employees")
     else:  # pragma: no cover - defensive, chatbot_service only routes the 3 above
         return ChatResponse(

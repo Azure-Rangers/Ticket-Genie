@@ -485,7 +485,7 @@ export async function apiFetchUpperManagementUsers() {
     console.warn("apiFetchUpperManagementUsers failed:", err);
   }
   return [
-    { name: "Greg Davis", role: "Super Admin & VP Operations", department: "Upper Executive Management" },
+    { name: "Greg Davis", role: "Admin & VP Operations", department: "Upper Executive Management" },
     { name: "Sarah Jenkins", role: "Director of HR & Operations", department: "Upper Management" },
     { name: "Alex Vance", role: "Chief Operations Officer", department: "Upper Management" }
   ];

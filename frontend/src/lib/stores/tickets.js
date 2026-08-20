@@ -75,11 +75,13 @@ export async function loadTickets(adminView = null) {
     let deptParam = null;
     if (effectiveAdminView) {
       if (currentTab === 'queue-it') {
-        deptParam = 'IT';
+        deptParam = 'IT Team';
       } else if (currentTab === 'queue-hr') {
-        deptParam = 'HR';
+        deptParam = 'HR Team';
       } else if (currentTab === 'queue-finance') {
-        deptParam = 'Accounting';
+        deptParam = 'Accounting Team';
+      } else if (currentTab === 'queue-operations') {
+        deptParam = 'Workplace Operations Team';
       } else if (currentTab === 'inbox' && currentUser?.department) {
         deptParam = currentUser.department.includes('Upper') ? 'Upper' : currentUser.department;
       }
@@ -115,6 +117,7 @@ export function isSameDepartment(userDeptRaw, ticketDeptRaw) {
   if (d1.includes('it') && d2.includes('it')) return true;
   if (d1.includes('hr') && d2.includes('hr')) return true;
   if ((d1.includes('account') || d1.includes('fin')) && (d2.includes('account') || d2.includes('fin'))) return true;
+  if ((d1.includes('workplace') || d1.includes('facility') || d1.includes('operation')) && (d2.includes('workplace') || d2.includes('facility') || d2.includes('operation'))) return true;
 
   return false;
 }
@@ -162,6 +165,9 @@ export const filteredTickets = derived(
       } else if ($tab === 'queue-finance') {
         const dept = (t.department || '').toLowerCase().trim();
         if (!dept.includes('account') && !dept.includes('fin')) return false;
+      } else if ($tab === 'queue-operations') {
+        const dept = (t.department || '').toLowerCase().trim();
+        if (!dept.includes('workplace') && !dept.includes('facility') && !dept.includes('operation')) return false;
       }
 
       // 3. Search & Filter Matching

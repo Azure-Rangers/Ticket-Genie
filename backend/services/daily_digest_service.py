@@ -28,7 +28,7 @@ def resolve_admin_recipients(session: Optional[Session] = None) -> List[Dict[str
     [
         {"email": "HR1@tenant.com", "role": "HR Admin", "department": "HR Team"},
         {"email": "IT1@tenant.com", "role": "IT Admin", "department": "IT Team"},
-        {"email": "Admin1@tenant.com", "role": "Super Admin", "department": None} # None = Organization-wide
+        {"email": "Admin1@tenant.com", "role": "Admin", "department": None} # None = Organization-wide
     ]
     """
     env_emails = os.getenv("ADMIN_DIGEST_EMAILS", "").strip()
@@ -49,7 +49,7 @@ def resolve_admin_recipients(session: Optional[Session] = None) -> List[Dict[str
                 )
             elif "@" in part:
                 recipients.append(
-                    {"email": part, "role": "Super Admin", "department": None}
+                    {"email": part, "role": "Admin", "department": None}
                 )
         if recipients:
             return recipients
@@ -138,7 +138,7 @@ def resolve_admin_recipients(session: Optional[Session] = None) -> List[Dict[str
         fallback = smtp_cfg.get("from_email") or smtp_cfg.get("user")
         if fallback and "@" in fallback:
             result.append(
-                {"email": fallback, "role": "Super Admin", "department": None}
+                {"email": fallback, "role": "Admin", "department": None}
             )
 
     return result

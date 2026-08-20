@@ -113,13 +113,26 @@ def test_completed_ticket_is_saved_and_retrievable_with_ai_fields() -> None:
     assert fetched["priority"] == created["priority"]
 
 
-def test_client_supplied_department_is_overridden_by_ai() -> None:
+def test_client_supplied_department_is_persisted_when_specified() -> None:
     response = client.post(
         "/api/tickets",
         json={
-            "title": "Login issue",
-            "description": "My account is locked and I cannot log in.",
+            "title": "Explicit department login issue",
+            "description": "My account is locked and I explicitly chose Upper Management.",
             "department": "Upper Management",
+        },
+    )
+    assert response.status_code == 201
+    ticket = response.json()
+    assert ticket["department"] == "Upper Management"
+
+
+def test_unspecified_department_uses_ai_classification() -> None:
+    response = client.post(
+        "/api/tickets",
+        json={
+            "title": "Auto triage login issue",
+            "description": "My account is locked and I cannot log into internal VPN.",
         },
     )
     assert response.status_code == 201

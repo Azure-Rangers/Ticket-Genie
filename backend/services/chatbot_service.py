@@ -40,7 +40,9 @@ from services.knowledge_service import (
 )
 from services.role_service import (
     EMPLOYEE_ASSIGNMENT_ROLES,
+    GENERAL_SCOPE,
     get_allowed_scopes,
+    is_admin,
     is_admin_role,
     is_department_ticketer,
     is_super_admin,
@@ -177,9 +179,9 @@ def _resolve_active_tab(target: NavigationTarget, role: Optional[str]) -> Option
     if target == NavigationTarget.ANALYTICS:
         return "analytics" if is_department_ticketer(role) else None
     if target == NavigationTarget.ONBOARDING:
-        return "onboarding" if is_super_admin(role) else None
+        return "onboarding" if is_admin_role(role) else None
     if target == NavigationTarget.LEAVE_CALENDAR:
-        return "leave-calendar" if is_super_admin(role) else None
+        return "leave-calendar" if is_admin_role(role) else None
     return None
 
 
@@ -307,7 +309,7 @@ def _can_view_ticket(
     unresolvable scope fails closed, same as management actions.
     """
     effective_role = (current_user or {}).get("role") or role
-    if is_super_admin(effective_role, (current_user or {}).get("is_dev", False)):
+    if is_admin(effective_role, (current_user or {}).get("is_dev", False)):
         return True
     if _is_ticket_owner(ticket, current_user):
         return True

@@ -198,10 +198,11 @@
                             <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">Department / Team</label>
                             <select id="standardDepartment" style="width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; color: #1e293b; box-sizing: border-box;">
                                 <option value="Auto" selected>Auto (AI Classification)</option>
-                                <option value="IT & Technology">IT & Technology</option>
-                                <option value="HR & Workplace Operations">HR & Workplace Operations</option>
-                                <option value="Account Management">Account Management</option>
-                                <option value="Upper Management/Administration">Upper Management/Administration</option>
+                                <option value="IT Team">IT Team</option>
+                                <option value="HR Team">HR Team</option>
+                                <option value="Accounting Team">Accounting Team</option>
+                                <option value="Workplace Operations Team">Workplace Operations Team</option>
+                                <option value="Upper Management">Upper Management</option>
                             </select>
                         </div>
 
@@ -442,11 +443,12 @@ async function submitEmployeeStandardTicket(event) {
 
     let backendDept = null;
     if (department && department !== 'Auto') {
-        if (department.includes('HR')) backendDept = 'HR Team';
-        else if (department.includes('Account')) backendDept = 'Accounting Team';
-        else if (department.includes('Upper') || department.includes('Admin')) backendDept = 'Upper Management';
-        else if (department.includes('Workplace')) backendDept = 'Workplace Operations Team';
-        else backendDept = 'IT Team';
+        if (department.includes('Workplace') || department.includes('Facility')) backendDept = 'Workplace Operations Team';
+        else if (department.includes('HR') || department.includes('People')) backendDept = 'HR Team';
+        else if (department.includes('Account') || department.includes('Fin')) backendDept = 'Accounting Team';
+        else if (department.includes('Upper') || department.includes('Admin') || department.includes('Executive')) backendDept = 'Upper Management';
+        else if (department.includes('IT') || department.includes('Tech')) backendDept = 'IT Team';
+        else backendDept = department;
     }
 
     const payload = {

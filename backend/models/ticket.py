@@ -12,6 +12,7 @@ TICKET_DEPARTMENTS: tuple[str, ...] = (
     "Workplace Operations Team",
     "IT Team",
     "Upper Management",
+    "Upper Executive Management",
 )
 TICKET_PRIORITIES: tuple[str, ...] = ("Low", "Medium", "High", "Critical")
 

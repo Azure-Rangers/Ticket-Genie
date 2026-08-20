@@ -425,9 +425,8 @@
 
     /**
      * Check if user is authenticated and display permitted portal options on index.html:
-     * - Super Admin: sees Employee (NM) and SuperAdmin (SS) pages. (Ticketer hidden)
-     * - Manager / Ticketer / Admin: sees Employee (NM) and Ticketer/Admin (AV) pages. (SuperAdmin hidden)
-     * - Employee: sees ONLY Employee (NM) page. (Ticketer & SuperAdmin hidden)
+     * - Admin: sees Employee (NM) and Admin (AV/SS) portal buttons.
+     * - Employee: sees ONLY Employee (NM) button.
      */
     function checkAdminPortalVisibility(user) {
         const azureUser = user !== undefined ? user : getAzureUser();
@@ -442,29 +441,21 @@
         if (employeeBtn) employeeBtn.style.display = "none";
         if (adminBtn) adminBtn.style.display = "none";
 
-        const isSuper = normalizedRole.includes("super");
-        const isManager = !isSuper && (
+        const isAdmin = normalizedRole.includes("admin") || 
             normalizedRole.includes("manager") || 
-            normalizedRole.includes("admin") || 
-            normalizedRole.includes("ticketer") || 
             normalizedRole.includes("operations") || 
-            normalizedRole.includes("lead") ||
-            normalizedRole.includes("dept")
-        );
+            normalizedRole.includes("super") || 
+            normalizedRole.includes("lead");
 
         if (azureUser) {
             // 1. Employee button is visible to all authenticated users
             if (employeeBtn) employeeBtn.style.display = "flex";
 
-            // 2. Super Admin sees SuperAdmin (SS) button and Employee button
-            if (isSuper) {
+            // 2. Admin sees Admin (AV/SS) buttons and Employee button
+            if (isAdmin) {
+                if (adminBtn) adminBtn.style.display = "flex";
                 if (superAdminBtn) superAdminBtn.style.display = "flex";
             }
-            // 3. Manager / Ticketer sees Ticketer/Admin (AV) button and Employee button
-            else if (isManager) {
-                if (adminBtn) adminBtn.style.display = "flex";
-            }
-            // 4. Employee sees ONLY Employee button (adminBtn and superAdminBtn remain hidden)
         }
 
         const azureStatusBadge = document.getElementById("azureStatusBadge");
@@ -481,9 +472,9 @@
 
     /**
      * Page Route Guard: Protect sub-directories strictly based on user role:
-     * - /management/*  -> Requires Super Admin role ONLY.
-     * - /admin_AV/*     -> Requires Manager / Ticketer / Admin role (or Super Admin).
-     * - /employee_NM/* -> Allowed for Employee, Manager, and Super Admin.
+     * - /management/*  -> Requires Admin role.
+     * - /admin_AV/*     -> Requires Admin role.
+     * - /employee_NM/* -> Allowed for Employee and Admin.
      */
     function enforcePageAccessControl() {
         const path = window.location.pathname;
@@ -503,30 +494,26 @@
         }
 
         const role = (azureUser.role || "Employee").trim().toLowerCase();
-        const isSuperAdmin = role.includes("super");
-        const isManager = isSuperAdmin || (
+        const isAdmin = role.includes("admin") || 
             role.includes("manager") || 
-            role.includes("admin") || 
-            role.includes("ticketer") || 
             role.includes("operations") || 
-            role.includes("lead") ||
-            role.includes("dept")
-        );
+            role.includes("super") || 
+            role.includes("lead");
 
-        // 1. Restrict /management/ (Super Admin Governance Portal)
+        // 1. Restrict /management/ (Admin Governance Portal)
         if (path.includes("/management/")) {
-            if (!isSuperAdmin) {
+            if (!isAdmin) {
                 console.warn(`⛔ Access Denied: Role '${azureUser.role}' is not authorized for /management/ portal.`);
-                alert(`Access Denied: Your role ('${azureUser.role}') does not have permission to access the SuperAdmin Governance Portal.`);
+                alert(`Access Denied: Your role ('${azureUser.role}') does not have permission to access the Governance Portal.`);
                 window.location.href = "../employee_NM/index.html";
                 return false;
             }
         } 
-        // 2. Restrict /admin_AV/ (Ticketer / Operations Admin Portal)
+        // 2. Restrict /admin_AV/ (Admin / Operations Portal)
         else if (path.includes("/admin_AV/")) {
-            if (!isManager) {
+            if (!isAdmin) {
                 console.warn(`⛔ Access Denied: Employee role '${azureUser.role}' cannot access /admin_AV/ portal.`);
-                alert(`Access Denied: Employee accounts cannot access the Ticketer / Operations Portal.`);
+                alert(`Access Denied: Employee accounts cannot access the Admin Portal.`);
                 window.location.href = "../employee_NM/index.html";
                 return false;
             }

@@ -622,6 +622,10 @@ def list_departments(db: Optional[Session] = None) -> List[dict]:
                     "name": "Upper Executive Management",
                     "queue_name": "Upper Management - Leave Approval",
                 },
+                {
+                    "name": "Workplace Operations Team",
+                    "queue_name": "Workplace Operations - Facilities",
+                },
             ]
             return defaults
         return [d.to_dict() for d in depts]

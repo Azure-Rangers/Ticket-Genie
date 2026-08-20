@@ -86,9 +86,9 @@ DESTINATIONS = [
     (NavigationTarget.ANNOUNCEMENTS, "Employee", "announcements"),
     (NavigationTarget.PROFILE, "Employee", "profile"),
     (NavigationTarget.SETTINGS, "Admin", "settings"),
-    (NavigationTarget.ANALYTICS, "Department Admin", "analytics"),
-    (NavigationTarget.ONBOARDING, "Super Admin", "onboarding"),
-    (NavigationTarget.LEAVE_CALENDAR, "Super Admin", "leave-calendar"),
+    (NavigationTarget.ANALYTICS, "Admin", "analytics"),
+    (NavigationTarget.ONBOARDING, "Admin", "onboarding"),
+    (NavigationTarget.LEAVE_CALENDAR, "Admin", "leave-calendar"),
 ]
 
 
@@ -131,23 +131,6 @@ def test_plain_employee_is_denied_gated_destinations_not_redirected():
         response = ask("take me there", decision=_nav_decision(target), role="Employee")
         assert response.action is None, f"{target} should not navigate for Employee"
         assert "role" in response.message.lower()
-
-
-def test_department_ticketer_still_denied_admin_only_destinations():
-    # A department ticketer/admin can reach Analytics but not Settings,
-    # Onboarding, or Leave Calendar (Sidebar's UPPER MANAGEMENT / super-admin
-    # only section) - "Department Admin" matches is_department_ticketer AND
-    # is_admin_role, so this exercises the settings gate specifically.
-    for target in (
-        NavigationTarget.ONBOARDING,
-        NavigationTarget.LEAVE_CALENDAR,
-    ):
-        response = ask(
-            "take me there", decision=_nav_decision(target), role="Department Admin"
-        )
-        assert response.action is None, (
-            f"{target} should not navigate for Department Admin"
-        )
 
 
 # --- ready_for_review / leave handoff is unaffected by navigation changes ---

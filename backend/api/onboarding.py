@@ -19,7 +19,7 @@ from services.onboarding_service import (
     start_onboarding_case,
 )
 from services.onboarding_template_service import generate_onboarding_suggestions
-from services.role_service import is_super_admin
+from services.role_service import is_admin, is_super_admin
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
 
@@ -27,10 +27,10 @@ router = APIRouter(prefix="/onboarding", tags=["onboarding"])
 def require_onboarding_admin(
     current_user: dict = Depends(verify_azure_user),
 ) -> dict:
-    if not is_super_admin(current_user.get("role"), current_user.get("is_dev", False)):
+    if not is_admin(current_user.get("role"), current_user.get("is_dev", False)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Forbidden: Only Super Admin can manage onboarding.",
+            detail="Forbidden: Only Admin can manage onboarding.",
         )
     return current_user
 

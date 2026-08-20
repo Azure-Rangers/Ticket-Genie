@@ -62,10 +62,7 @@ def list_tickets(
     current_user: dict = Depends(verify_azure_user),
 ):
     user_role = (current_user.get("role") or "").lower()
-    is_super = any(
-        r in user_role for r in ["super", "operations", "upper management", "executive"]
-    ) or current_user.get("is_dev", False)
-    is_admin = is_super or ("admin" in user_role)
+    is_admin = ("admin" in user_role) or current_user.get("is_dev", False)
 
     if admin_view:
         if not is_admin:
@@ -74,10 +71,11 @@ def list_tickets(
                 detail="Admin privileges required for admin_view access.",
             )
         effective_requester = requester_id
-        if is_super:
+        user_dept = current_user.get("department")
+        if not user_dept or "upper" in user_dept.lower() or "executive" in user_dept.lower() or department:
             effective_department = department
         else:
-            effective_department = current_user.get("department") or department
+            effective_department = user_dept
     else:
         # Employee view: Every user (including admins) ONLY sees their own created tickets.
         effective_requester = current_user.get("oid") or current_user.get("email")

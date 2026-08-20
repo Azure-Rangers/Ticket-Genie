@@ -45,11 +45,12 @@ function getCurrentRequesterId() {
 function mapDepartmentName(val) {
     if (!val || val === "Auto") return null;
     const lower = val.toLowerCase();
-    if (lower.includes("hr") || lower.includes("workplace") || lower.includes("benefit")) return "HR Team";
+    if (lower.includes("workplace") || lower.includes("facility") || lower.includes("maintenance")) return "Workplace Operations Team";
+    if (lower.includes("hr") || lower.includes("people") || lower.includes("benefit")) return "HR Team";
+    if (lower.includes("account") || lower.includes("finance") || lower.includes("payroll")) return "Accounting Team";
+    if (lower.includes("upper") || lower.includes("admin") || lower.includes("executive")) return "Upper Management";
     if (/\bit\b/.test(lower) || lower.includes("hardware") || lower.includes("software") || lower.includes("vpn") || lower.includes("tech")) return "IT Team";
-    if (lower.includes("account")) return "Accounting Team";
-    if (lower.includes("upper") || lower.includes("admin")) return "Upper Management";
-    return "IT Team";
+    return val;
 }
 
 async function loadDashboardTickets() {

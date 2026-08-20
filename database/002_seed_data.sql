@@ -6,7 +6,6 @@
 INSERT INTO dbo.Roles (role_name, description)
 VALUES
     ('EMPLOYEE', 'Can create tickets and view their own ticket history'),
-    ('SUPPORT_AGENT', 'Can manage HR or IT tickets and use the internal chatbot'),
     ('ADMIN', 'Can manage users and access all system features');
 GO
 
