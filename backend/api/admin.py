@@ -16,7 +16,7 @@ from database.crud import (
     remove_department_user,
 )
 from services.jwt_verifier import verify_azure_user
-from services.role_service import is_admin, is_super_admin
+from services.role_service import is_admin
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 

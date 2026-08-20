@@ -33,7 +33,6 @@ from services.role_service import (
     EMPLOYEE_ASSIGNMENT_ROLES,
     VisibilityScope,
     is_admin,
-    is_super_admin,
     is_ticket_mutation_authorized,
     resolve_visibility_scope,
 )

@@ -40,12 +40,10 @@ from services.knowledge_service import (
 )
 from services.role_service import (
     EMPLOYEE_ASSIGNMENT_ROLES,
-    GENERAL_SCOPE,
     get_allowed_scopes,
     is_admin,
     is_admin_role,
     is_department_ticketer,
-    is_super_admin,
     resolve_visibility_scope,
 )
 from services.ticket_draft_service import merge_extracted_fields, validate_ticket_id

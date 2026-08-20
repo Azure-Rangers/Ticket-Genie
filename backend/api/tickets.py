@@ -72,7 +72,12 @@ def list_tickets(
             )
         effective_requester = requester_id
         user_dept = current_user.get("department")
-        if not user_dept or "upper" in user_dept.lower() or "executive" in user_dept.lower() or department:
+        if (
+            not user_dept
+            or "upper" in user_dept.lower()
+            or "executive" in user_dept.lower()
+            or department
+        ):
             effective_department = department
         else:
             effective_department = user_dept

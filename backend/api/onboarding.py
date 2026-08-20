@@ -19,7 +19,7 @@ from services.onboarding_service import (
     start_onboarding_case,
 )
 from services.onboarding_template_service import generate_onboarding_suggestions
-from services.role_service import is_admin, is_super_admin
+from services.role_service import is_admin
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
 

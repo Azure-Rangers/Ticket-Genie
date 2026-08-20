@@ -11,7 +11,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database.models_db import TicketDB
-from services.role_service import is_admin, is_super_admin
+from services.role_service import is_admin
 
 SLA_HOURS = {"critical": 4, "high": 8, "medium": 24, "low": 72}
 OPEN_STATUSES = {"open", "pending", "in progress", "in_progress"}

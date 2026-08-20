@@ -142,9 +142,7 @@ class TestSuperAdminRoleManagement(unittest.TestCase):
         try:
             require_super_admin(admin_ctx)
         except Exception:
-            self.fail(
-                "require_super_admin raised exception for valid Admin role!"
-            )
+            self.fail("require_super_admin raised exception for valid Admin role!")
 
     def test_canonical_three_roles_helpers(self):
         from services.role_service import (
