@@ -19,7 +19,7 @@ from services.sql_context_service import execute_sql_query
 logger = logging.getLogger(__name__)
 
 
-def sql_query_tool(query: str, role: str = "Super Admin", user_id: str = "user") -> str:
+def sql_query_tool(query: str, role: str = "Admin", user_id: str = "user") -> str:
     """Execute a role-scoped SELECT or controlled UPDATE query on the database."""
     res = execute_sql_query(query, role=role, user_id=user_id)
     return json.dumps(res, default=str)
@@ -147,7 +147,7 @@ TOOL_DEFINITIONS = [
 def execute_tool(
     tool_name: str,
     arguments: Dict[str, Any],
-    role: str = "Super Admin",
+    role: str = "Admin",
     user_id: str = "user",
 ) -> str:
     """Dispatch execution to the matching tool handler."""
@@ -161,8 +161,7 @@ def execute_tool(
         if not is_ticket_mutation_authorized(role):
             return (
                 f"Error: Forbidden. Role '{role}' is not authorized to update tickets. "
-                "Ticket mutations require Admin, Operations Admin, Department Admin, "
-                "Upper Executive Lead, or Super Admin."
+                "Ticket mutations require Admin."
             )
         ticket_id = arguments.get("ticket_id", "")
         field = arguments.get("field", "")

@@ -26,12 +26,26 @@ class ChatActionType(str, Enum):
 
 
 class NavigationTarget(str, Enum):
+    """
+    Semantic-only destinations GPT may choose from. Deliberately named for
+    WHAT the user wants, not a page/tab identifier - services.chatbot_service
+    is the single place that deterministically maps each of these to the
+    current live Svelte SPA's activeTab value (frontend/src/App.svelte),
+    applying role gating along the way. GPT must never see or produce a raw
+    tab name/URL.
+    """
+
     DASHBOARD = "dashboard"
-    NEW_REQUEST = "new_request"
+    CREATE_TICKET = "create_ticket"
     MY_TICKETS = "my_tickets"
     KNOWLEDGE_BASE = "knowledge_base"
     NOTIFICATIONS = "notifications"
-    CHAT_HISTORY = "chat_history"
+    ANNOUNCEMENTS = "announcements"
+    PROFILE = "profile"
+    SETTINGS = "settings"
+    ANALYTICS = "analytics"
+    ONBOARDING = "onboarding"
+    LEAVE_CALENDAR = "leave_calendar"
 
 
 class ExtractedTicketFields(BaseModel):
@@ -235,11 +249,17 @@ create_portal_employee only - populate `management_fields`, leave
 
 NAVIGATION RULES:
 - Only choose from these exact navigation targets: dashboard,
-  new_request, my_tickets, knowledge_base, notifications, chat_history.
-  Never invent a target or a URL - the backend maps the target to a
-  real page.
+  create_ticket, my_tickets, knowledge_base, notifications,
+  announcements, profile, settings, analytics, onboarding,
+  leave_calendar. Never invent a target or a URL - the backend maps the
+  target to the real page and independently checks whether the user's
+  role is allowed to see it.
 - If the message doesn't clearly match one of those targets, treat it
   as how_to instead of guessing a navigation target.
+- Use create_ticket only for "take me to the create ticket page" style
+  navigation requests, not for "I want to report/request X" - that is
+  create_ticket/support_issue/leave_management INTENT with a ticket
+  draft instead (see INTENTS above), never plain navigation.
 
 TICKET FIELD EXTRACTION RULES (support_issue / create_ticket /
 leave_management):
@@ -281,6 +301,22 @@ leave_management):
   never state the same fact twice. Never invent a detail that was not
   actually stated - preserve every important fact already established,
   do not drop one just to shorten the summary.
+- `description` MUST be written in FIRST PERSON, as if the requester
+  typed it themselves directly into the ticket form - use "I"/"me"/"my"
+  throughout (e.g. "I am requesting...", "My VPN keeps...", "I would
+  like..."). Never write in third person or as an observer/case-note:
+  never use "the employee", "the user", "the requester", "the person",
+  "they are requesting", "the employee stated", or "the user reported".
+  This applies to every flow - IT, HR, leave, accounting/reimbursement,
+  workplace operations, and anonymous requests alike: even for an
+  anonymous request, write from the submitter's own first-person voice
+  (e.g. "I want to report a workplace concern that I would prefer to
+  keep anonymous") - never switch to third person and never add
+  identity details just because the request is anonymous. First person is a
+  narration style only; it never changes what facts you're allowed to
+  include - still never invent details, and still follow every rule
+  above (concise re-synthesis, no transcript, no verbatim quoting, no
+  repeated facts, nothing invented).
 - `title` stays short and descriptive - roughly 3-8 words identifying
   the request (e.g. "VPN connection timeout on Mac") - never a full
   sentence or a fragment of what the user typed.
@@ -291,8 +327,19 @@ leave_management):
   gave you.
 
 TICKET STATUS:
-- If the user gives a ticket number (e.g. "HD-1024", "ticket 1024"),
-  put it in ticket_fields.ticket_id exactly as given.
+- If the user gives a ticket number in any form (e.g. "HD-1024",
+  "HD 1024", "ticket 1024", "1024"), put it in ticket_fields.ticket_id
+  exactly as given - the backend normalizes the format. This is a direct,
+  same-turn lookup: never respond with only an acknowledgement like "I'll
+  check that" or "let me look that up" - `message` should be empty or a
+  brief neutral note, since the backend replaces it with the actual
+  ticket details it retrieves.
+- If the current message has no ticket number but is clearly still about
+  a specific ticket already named earlier in the conversation (e.g. "who
+  is assigned to it?", "when was it last updated?", "please do"), leave
+  ticket_fields.ticket_id null rather than guessing - the backend
+  resolves it from the most recently mentioned ticket number in the
+  conversation history shown above.
 
 REQUEST TYPE (only meaningful for create_ticket / support_issue /
 leave_management - leave it null for every other intent):

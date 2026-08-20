@@ -24,104 +24,95 @@ GENERAL_SCOPE = "General"
 DEPARTMENT_SCOPES = {"HR", "IT", "Accounting", "WorkplaceOperations"}
 MANAGEMENT_SCOPE = "UpperManagement"
 
-# Roles (from the live department-user assignment vocabulary in
-# frontend/management/departments.html's #userRoleSelect) authorized to
-# reassign/reprioritize tickets via Genie. Deliberately an exact-match
-# allowlist, not a substring check like is_super_admin() below - these are
-# fixed, known role strings, not a free-text prefix family. Plain "Member"
-# and "Employee" are intentionally excluded.
+# Roles authorized to reassign/reprioritize tickets via Genie.
 TICKET_MUTATION_ROLES = {
     "admin",
+    "ticketer",
+    "support",
+    "agent",
     "operations admin",
     "department admin",
     "upper executive lead",
     "super admin",
 }
 
-# Canonical role vocabulary for the portal employee-assignment flow (Feature
-# 3 / create_portal_employee). Deliberately separate from TICKET_MUTATION_ROLES
-# above and from models.ticket's department vocabulary - this is the exact
-# option set in frontend/management/departments.html's #userRoleSelect, the
-# only currently-live UI for assigning a department user. The select also
-# offers a free-text "__custom__" role; Genie intentionally does not support
-# that path (see final report), only these fixed options.
+# Canonical role vocabulary for the portal employee-assignment flow.
 EMPLOYEE_ASSIGNMENT_ROLES: tuple[str, ...] = (
     "Admin",
-    "Super Admin",
-    "Operations Admin",
-    "Department Admin",
-    "Upper Executive Lead",
+    "Ticketer",
     "Employee",
-    "Member",
 )
 
 
+def is_admin(role: Optional[str], is_dev: bool = False) -> bool:
+    """Check if the user has Admin privileges."""
+    return "admin" in (role or "").lower() or is_dev
+
+
+def is_ticketer(role: Optional[str], is_dev: bool = False) -> bool:
+    """Check if user has Ticketer or Admin privileges."""
+    normalized = (role or "").lower()
+    return (
+        "ticketer" in normalized
+        or "admin" in normalized
+        or "support" in normalized
+        or "agent" in normalized
+        or "super" in normalized
+        or is_dev
+    )
+
+
+def is_employee(role: Optional[str]) -> bool:
+    """Check if user has Employee role."""
+    normalized = (role or "").lower()
+    return "employee" in normalized or normalized == ""
+
+
 def is_super_admin(role: Optional[str], is_dev: bool = False) -> bool:
-    """The exact rule backend/api/admin.py's require_super_admin enforces.
+    """Check if user has admin or is_dev privileges."""
+    return "admin" in (role or "").lower() or "super" in (role or "").lower() or is_dev
 
-    Factored out here so every caller that needs the "may manage
-    department/role assignments" check (the admin API dependency, and the
-    Genie employee-creation flow) shares one definition instead of two
-    copies that could drift apart.
+
+def is_department_ticketer(role: Optional[str]) -> bool:
+    """Whether `role` sees department-ticketer-tier navigation (Inbox,
+    Analytics) in the live UI.
     """
+    normalized = (role or "").lower()
+    return (
+        "admin" in normalized
+        or "ticketer" in normalized
+        or "support" in normalized
+        or "operations" in normalized
+        or "super" in normalized
+    )
 
-    return "super" in (role or "").lower() or is_dev
+
+def is_admin_role(role: Optional[str]) -> bool:
+    """Whether `role` sees admin-tier navigation (Settings) in the live UI."""
+    normalized = (role or "").lower()
+    return "admin" in normalized or "super" in normalized
 
 
 def is_ticket_mutation_authorized(role: Optional[str]) -> bool:
     """Whether `role` may reassign a ticket's department or priority.
 
-    Deterministic, backend-only check against TICKET_MUTATION_ROLES. Never
-    trust a role from the request body - callers must pass the verified
-    role resolved by services.jwt_verifier.verify_azure_user.
-
-    NOTE: this only says whether the role may attempt a mutation at all -
-    it says nothing about WHICH tickets. That's a separate question,
-    answered by resolve_visibility_scope() below - a role can pass this
-    check and still be unable to see/manage a specific ticket.
+    Deterministic, backend-only check against TICKET_MUTATION_ROLES.
     """
-
     return (role or "").strip().lower() in TICKET_MUTATION_ROLES
 
 
-# Compatibility mapping: portal/RBAC department names (as stored on
-# DepartmentUserDB.department_name, assigned via the live
-# frontend/management/departments.html UI - the same vocabulary as
-# EMPLOYEE_ASSIGNMENT_ROLES above) -> canonical ticket department names
-# (models.ticket.TICKET_DEPARTMENTS). ONLY includes pairs that are
-# genuinely the same department under both vocabularies, verified against
-# the actual current department lists - not inferred from name
-# similarity:
-#   - "IT Team" / "HR Team" / "Accounting Team" are spelled identically in
-#     both vocabularies, so the mapping is exact and safe.
-#   - "Upper Executive Management" (assignment vocab) is deliberately NOT
-#     mapped to "Upper Management" (ticket vocab) even though the names
-#     look related - nothing in the existing codebase (JWT claims,
-#     DepartmentUserDB, sql_context_service's role-based SQL scoping)
-#     establishes them as the same department. Treating them as
-#     equivalent would be an invented mapping, not a verified one.
-#   - "Workplace Operations Team" (ticket vocab) has no counterpart in the
-#     assignment vocab at all - the live department-assignment UI
-#     (#deptSelect) never offers it, so no user can even be assigned
-#     there today.
-# A department that isn't in this map has no safe ticket-visibility
-# scope. Callers MUST fail closed (deny) rather than defaulting to
-# unrestricted access - see resolve_visibility_scope().
 ASSIGNMENT_TO_TICKET_DEPARTMENT = {
     "IT Team": "IT Team",
     "HR Team": "HR Team",
     "Accounting Team": "Accounting Team",
+    "Workplace Operations Team": "Workplace Operations Team",
 }
 
 
 class VisibilityScope(NamedTuple):
     """
-    Result of resolve_visibility_scope(): either genuinely unrestricted
-    (Super Admin only) or scoped to exactly one canonical ticket
-    department. This type deliberately has no "unknown"/"everything"
-    state - that case is represented by resolve_visibility_scope()
-    returning None, and every caller must treat None as "deny", never as
-    "show everything".
+    Result of resolve_visibility_scope(): either unrestricted
+    (Super Admin / is_dev) or scoped to exactly one canonical ticket department.
     """
 
     unrestricted: bool
@@ -133,35 +124,20 @@ def resolve_visibility_scope(current_user: Optional[dict]) -> Optional[Visibilit
     Determine which tickets an authenticated user may see/manage through
     Genie's management actions (reassign_ticket / change_priority).
 
-    Three easily-conflated things this deliberately keeps distinct:
-    - "Super Admin" (a current_user role) - the only role with existing,
-      explicit org-wide authorization in this codebase (require_super_admin
-      already treats any role containing "super" this way for
-      portal-employee management; reused here via is_super_admin() for
-      ticket visibility too).
-    - "Upper Executive Lead" (a TICKET_MUTATION_ROLES role) - authorized to
-      ATTEMPT a mutation like Admin/Operations Admin/Department Admin, but
-      has no special visibility of its own: its ticket visibility is
-      scoped by its assigned department exactly like any other
-      non-Super-Admin mutation-authorized role, and fails closed if that
-      department doesn't appear in ASSIGNMENT_TO_TICKET_DEPARTMENT.
-    - "Upper Management" (a canonical TICKET department, models.ticket) -
-      unrelated to either role above; distinct from the "Upper Executive
-      Management" ASSIGNMENT department (see ASSIGNMENT_TO_TICKET_DEPARTMENT's
-      docstring for why they're not treated as the same thing).
-
-    Returns None when the scope cannot be safely determined. Callers must
-    treat None as "deny" - never fall back to showing every ticket.
+    - If user has a department mapped in ASSIGNMENT_TO_TICKET_DEPARTMENT,
+      visibility is scoped to that department.
+    - If user has super admin or is_dev privilege, visibility is unrestricted.
+    - Otherwise returns None (fail-closed).
     """
-
-    role = (current_user or {}).get("role") or ""
-    if is_super_admin(role):
-        return VisibilityScope(unrestricted=True, department=None)
-
     assignment_department = (current_user or {}).get("department") or ""
     ticket_department = ASSIGNMENT_TO_TICKET_DEPARTMENT.get(assignment_department)
     if ticket_department:
         return VisibilityScope(unrestricted=False, department=ticket_department)
+
+    role = (current_user or {}).get("role") or ""
+    is_dev = bool((current_user or {}).get("is_dev", False))
+    if "super" in role.lower() or is_dev:
+        return VisibilityScope(unrestricted=True, department=None)
 
     return None
 

@@ -6,7 +6,7 @@
 INSERT INTO dbo.Roles (role_name, description)
 VALUES
     ('EMPLOYEE', 'Can create tickets and view their own ticket history'),
-    ('SUPPORT_AGENT', 'Can manage HR or IT tickets and use the internal chatbot'),
+    ('TICKETER', 'Can triage and resolve department tickets'),
     ('ADMIN', 'Can manage users and access all system features');
 GO
 
@@ -39,7 +39,7 @@ VALUES
         'REPLACE_WITH_REAL_HASH',
         'Olivia',
         'Chen',
-        (SELECT role_id FROM dbo.Roles WHERE role_name = 'SUPPORT_AGENT'),
+        (SELECT role_id FROM dbo.Roles WHERE role_name = 'TICKETER'),
         'HR'
     ),
     (
@@ -48,7 +48,7 @@ VALUES
         'REPLACE_WITH_REAL_HASH',
         'Ethan',
         'Brooks',
-        (SELECT role_id FROM dbo.Roles WHERE role_name = 'SUPPORT_AGENT'),
+        (SELECT role_id FROM dbo.Roles WHERE role_name = 'TICKETER'),
         'IT'
     ),
     (

@@ -270,7 +270,9 @@ export async function apiGenieChat(message, state = {}) {
       history: state.history || [],
       draft: state.draft || null,
       active_intent: state.active_intent || state.activeIntent || null,
-      active_request_type: state.active_request_type || state.activeRequestType || null
+      active_request_type: state.active_request_type || state.activeRequestType || null,
+      pending_action: state.pending_action || state.pendingAction || null,
+      conversation_id: state.conversation_id || state.conversationId || null
     };
 
     const res = await fetch("/api/chatbot/message", {
@@ -289,7 +291,10 @@ export async function apiGenieChat(message, state = {}) {
         request_type: data.request_type || null,
         missing_fields: data.missing_fields || [],
         ready_for_review: data.ready_for_review || false,
-        intent: data.intent || null
+        intent: data.intent || null,
+        pending_action: data.pending_action || null,
+        ticket_candidates: data.ticket_candidates || [],
+        conversation_id: data.conversation_id || null
       };
     }
   } catch (e) {
@@ -313,7 +318,10 @@ export async function apiGenieChat(message, state = {}) {
         request_type: data.request_type || null,
         missing_fields: data.missing_fields || [],
         ready_for_review: data.ready_for_review || false,
-        intent: data.intent || null
+        intent: data.intent || null,
+        pending_action: null,
+        ticket_candidates: [],
+        conversation_id: null
       };
     }
   } catch (err) {
@@ -329,11 +337,79 @@ export async function apiGenieChat(message, state = {}) {
     request_type: null,
     missing_fields: [],
     ready_for_review: false,
-    intent: null
+    intent: null,
+    pending_action: null,
+    ticket_candidates: [],
+    conversation_id: null
   };
 }
 
+export async function apiFetchGenieConversations() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/chatbot/conversations`, {
+      headers: getAuthHeaders()
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) return data;
+    }
+  } catch (err) {
+    console.warn("apiFetchGenieConversations failed:", err);
+  }
+  return [];
+}
+
+export async function apiFetchGenieConversation(conversationId) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/chatbot/conversations/${encodeURIComponent(conversationId)}`, {
+      headers: getAuthHeaders()
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn("apiFetchGenieConversation failed:", err);
+  }
+  return null;
+}
+
+export async function apiExportGenieConversationPDF(conversationId) {
+  if (!conversationId) throw new Error("Select a saved conversation first.");
+  const res = await fetch(
+    `${API_BASE_URL}/chatbot/conversations/${encodeURIComponent(conversationId)}/export`,
+    { headers: getAuthHeaders() }
+  );
+  if (!res.ok) throw new Error(`Failed to export conversation PDF (${res.status})`);
+
+  const blob = await res.blob();
+  const blobUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = `Genie_Conversation_${conversationId}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
+}
+
 /** ==================== USER PROFILE & ANNOUNCEMENTS ==================== */
+
+export async function apiFetchNotifications() {
+  const res = await fetch(`${API_BASE_URL}/notifications`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Unable to load notifications (${res.status})`);
+  return await res.json();
+}
+
+export async function apiMarkNotificationRead(notificationId) {
+  const res = await fetch(
+    `${API_BASE_URL}/notifications/${encodeURIComponent(notificationId)}/read`,
+    { method: "PUT", headers: getAuthHeaders() }
+  );
+  if (!res.ok) throw new Error(`Unable to mark notification as read (${res.status})`);
+  return await res.json();
+}
 
 export async function apiFetchAnnouncements() {
   try {
@@ -409,10 +485,57 @@ export async function apiFetchUpperManagementUsers() {
     console.warn("apiFetchUpperManagementUsers failed:", err);
   }
   return [
-    { name: "Greg Davis", role: "Super Admin & VP Operations", department: "Upper Executive Management" },
+    { name: "Greg Davis", role: "Admin & VP Operations", department: "Upper Executive Management" },
     { name: "Sarah Jenkins", role: "Director of HR & Operations", department: "Upper Management" },
     { name: "Alex Vance", role: "Chief Operations Officer", department: "Upper Management" }
   ];
+}
+
+/** ==================== ONBOARDING PIPELINE ==================== */
+
+async function onboardingRequest(path = "", options = {}) {
+  const res = await fetch(`${API_BASE_URL}/onboarding${path}`, {
+    ...options,
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    let detail = `Onboarding request failed (${res.status})`;
+    try {
+      const body = await res.json();
+      if (body.detail) detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
+    } catch (e) {}
+    throw new Error(detail);
+  }
+  return await res.json();
+}
+
+export function apiFetchOnboardingCases() {
+  return onboardingRequest();
+}
+
+export function apiFetchOnboardingCase(onboardingId) {
+  return onboardingRequest(`/${encodeURIComponent(onboardingId)}`);
+}
+
+export function apiSuggestOnboardingPlan(jobTitle, startDate) {
+  return onboardingRequest("/suggest", {
+    method: "POST",
+    body: JSON.stringify({ job_title: jobTitle, start_date: startDate })
+  });
+}
+
+export function apiStartOnboarding(payload) {
+  return onboardingRequest("/start", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function apiAddOnboardingTicket(onboardingId, payload) {
+  return onboardingRequest(`/${encodeURIComponent(onboardingId)}/tickets`, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
 }
 
 export async function apiFetchLatestAnnouncementWithSeverity(signal = null) {

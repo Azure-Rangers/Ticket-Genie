@@ -160,6 +160,8 @@ def test_reassign_ticket_unambiguous_updates_real_ticket():
     assert response.pending_action is None
     assert "Done." in response.message
     assert "HR Team" in response.message
+    assert response.action.type == "refresh_ticket"
+    assert response.action.ticket_id == ticket_id
     assert get_ticket_by_id(ticket_id)["department"] == "HR Team"
 
 
@@ -313,6 +315,8 @@ def test_change_priority_unambiguous_updates_real_ticket():
     assert response.pending_action is None
     assert "Done." in response.message
     assert "Low" in response.message
+    assert response.action.type == "refresh_ticket"
+    assert response.action.ticket_id == ticket_id
     assert get_ticket_by_id(ticket_id)["priority"] == "Low"
 
 
@@ -533,7 +537,7 @@ def test_create_employee_unauthorized_role_denied(monkeypatch):
     )
     decision = _decision(ChatIntent.CREATE_PORTAL_EMPLOYEE)
     response = ask_mgmt(
-        "Create a new employee", decision=decision, current_user=ADMIN_USER
+        "Create a new employee", decision=decision, current_user=EMPLOYEE_USER
     )
     assert not called
     assert response.pending_action is None
@@ -541,10 +545,7 @@ def test_create_employee_unauthorized_role_denied(monkeypatch):
 
 
 def test_create_employee_never_bypasses_super_admin_requirement(monkeypatch):
-    """Mirrors tests/test_security_and_rbac.py::test_require_super_admin_enforcement:
-    only a role containing "super" (or is_dev) may create a portal employee -
-    Admin/Operations Admin/Department Admin/Upper Executive Lead all fail here
-    even though they ARE authorized for ticket mutation."""
+    """Only an Admin role (or is_dev) may create a portal employee - Employee and Member fail here."""
     _patch_departments(monkeypatch)
     called = []
     monkeypatch.setattr(
@@ -552,10 +553,8 @@ def test_create_employee_never_bypasses_super_admin_requirement(monkeypatch):
     )
     decision = _decision(ChatIntent.CREATE_PORTAL_EMPLOYEE)
     for role in (
-        "Admin",
-        "Operations Admin",
-        "Department Admin",
-        "Upper Executive Lead",
+        "Employee",
+        "Member",
     ):
         response = ask_mgmt(
             "Create a new employee",

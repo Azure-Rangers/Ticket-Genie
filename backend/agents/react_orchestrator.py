@@ -91,7 +91,7 @@ Final Response: Successfully approved 3 pending leave requests (HD-1002, HD-1004
 
 def run_react_agent_loop(
     user_prompt: str,
-    role: str = "Super Admin",
+    role: str = "Admin",
     user_id: str = "user",
     context: Optional[Dict[str, Any]] = None,
 ) -> ReActResult:

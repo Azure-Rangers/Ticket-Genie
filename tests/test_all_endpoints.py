@@ -103,7 +103,11 @@ def test_notifications_crud():
 
     res = client.post(
         "/api/notifications",
-        json={"title": "Test Notif", "message": "Notification message body"},
+        json={
+            "title": "Test Notif",
+            "message": "Notification message body",
+            "user_id": "dc3b56e9-9280-40dc-8d73-98bfd81fdd6a",
+        },
     )
     assert res.status_code == 201
     notif = res.json()
@@ -112,26 +116,22 @@ def test_notifications_crud():
     assert res.status_code == 200
 
 
-def test_onboarding_crud():
+def test_onboarding_pipeline_endpoints():
     res = client.get("/api/onboarding")
     assert res.status_code == 200
     assert isinstance(res.json(), list)
 
     res = client.post(
-        "/api/onboarding",
+        "/api/onboarding/suggest",
         json={
-            "employee_name": "Test Candidate",
-            "role": "QA Engineer",
-            "department": "QA",
-            "visa_status": "H-1B",
+            "job_title": "Data Analyst",
+            "start_date": "2026-09-08",
         },
     )
-    assert res.status_code == 201
-    rec = res.json()
-
-    res = client.put(f"/api/onboarding/{rec['id']}", json={"status": "Completed"})
     assert res.status_code == 200
-    assert res.json()["status"] == "Completed"
+    suggestions = res.json()["tickets"]
+    assert any(ticket["title"] == "Provision company laptop" for ticket in suggestions)
+    assert any("Power BI" in ticket["title"] for ticket in suggestions)
 
 
 def test_user_profile():

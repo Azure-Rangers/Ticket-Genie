@@ -13,7 +13,7 @@
   let content = '';
 
   $: normalizedRole = ($userStore?.role || '').trim().toLowerCase().replace('_', ' ');
-  $: canCreate = ['admin', 'super admin', 'superadmin'].includes(normalizedRole);
+  $: canCreate = normalizedRole.includes('admin');
 
   onMount(loadAnnouncements);
 

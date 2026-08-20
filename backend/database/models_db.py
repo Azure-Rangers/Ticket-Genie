@@ -30,6 +30,8 @@ class TicketDB(Base):
     auto_resolved = Column(Boolean, default=False, nullable=False)
     is_synthetic = Column(Boolean, default=False, nullable=False, index=True)
     assigned_to = Column(String(150), nullable=True, index=True)
+    onboarding_id = Column(String(50), nullable=True, index=True)
+    due_date = Column(String(50), nullable=True)
 
     def to_dict(self) -> dict:
         return {
@@ -58,6 +60,8 @@ class TicketDB(Base):
             "parent_ticket_id": self.parent_ticket_id,
             "auto_resolved": self.auto_resolved,
             "is_synthetic": self.is_synthetic,
+            "onboarding_id": self.onboarding_id,
+            "due_date": self.due_date,
         }
 
 
@@ -107,7 +111,7 @@ class DepartmentUserDB(Base):
     id = Column(String(50), primary_key=True, index=True)
     department_name = Column(String(100), index=True, nullable=False)
     azure_object_id = Column(String(100), index=True, nullable=False)
-    role = Column(String(50), nullable=False, default="Member")
+    role = Column(String(50), nullable=False, default="Employee")
     user_email = Column(String(150), nullable=True)
     createdAt = Column(String(50), nullable=False)
 
@@ -190,22 +194,68 @@ class OnboardingDB(Base):
 
     id = Column(String(50), primary_key=True, index=True)
     employee_name = Column(String(150), nullable=False)
+    employee_email = Column(String(150), nullable=True)
     role = Column(String(100), nullable=False)
     department = Column(String(100), nullable=False)
+    manager = Column(String(150), nullable=True)
+    location = Column(String(150), nullable=True)
     visa_status = Column(String(100), nullable=False, default="H1-B / OPT")
     start_date = Column(String(50), nullable=False)
     status = Column(String(50), nullable=False, default="In Progress")
     createdAt = Column(String(50), nullable=False)
+    created_by = Column(String(150), nullable=True)
 
     def to_dict(self) -> dict:
         return {
             "id": self.id,
             "employee_name": self.employee_name,
+            "employee_email": self.employee_email,
             "role": self.role,
             "department": self.department,
+            "manager": self.manager,
+            "location": self.location,
             "visa_status": self.visa_status,
             "start_date": self.start_date,
             "status": self.status,
+            "createdAt": self.createdAt,
+            "created_by": self.created_by,
+        }
+
+
+class ChatConversationDB(Base):
+    __tablename__ = "chat_conversations"
+
+    id = Column(String(50), primary_key=True, index=True)
+    user_id = Column(String(150), nullable=False, index=True)
+    title = Column(String(200), nullable=False)
+    createdAt = Column(String(50), nullable=False)
+    updatedAt = Column(String(50), nullable=False)
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "title": self.title,
+            "createdAt": self.createdAt,
+            "updatedAt": self.updatedAt,
+        }
+
+
+class ChatMessageDB(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(String(50), primary_key=True, index=True)
+    conversation_id = Column(String(50), nullable=False, index=True)
+    role = Column(String(20), nullable=False)
+    content = Column(Text, nullable=False)
+    createdAt = Column(String(50), nullable=False)
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "conversation_id": self.conversation_id,
+            "role": self.role,
+            "content": self.content,
             "createdAt": self.createdAt,
         }
 

@@ -215,13 +215,13 @@ def _create_ticket_internal(ticket: TicketCreate, db: Optional[Session] = None) 
 
         # Trigger in-app notification & confirmation email
         try:
-            target_user = db_ticket.requester_id or "all"
-            create_notification(
-                title=f"Ticket Submitted - #{db_ticket.id}",
-                message=f"Your ticket '{db_ticket.title}' was submitted successfully.",
-                user_id=target_user,
-                db=session,
-            )
+            if db_ticket.requester_id:
+                create_notification(
+                    title=f"Ticket Submitted - #{db_ticket.id}",
+                    message=f"Your ticket '{db_ticket.title}' was submitted successfully.",
+                    user_id=db_ticket.requester_id,
+                    db=session,
+                )
             recipient_email = _resolve_user_email(db_ticket.requester_id, session)
             if recipient_email:
                 from services.email_service import send_ticket_created_email
@@ -396,7 +396,8 @@ def update_ticket(
         if ticket is None:
             return None
 
-        old_status = ticket.status
+        tracked_fields = ("status", "priority", "category", "assigned_to")
+        old_values = {field: getattr(ticket, field) for field in tracked_fields}
         update_data = ticket_update.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             if hasattr(ticket, field):
@@ -410,19 +411,35 @@ def update_ticket(
         session.refresh(ticket)
         result_dict = ticket.to_dict()
         new_status = ticket.status
+        changed_fields = [
+            field
+            for field in tracked_fields
+            if field in update_data and old_values[field] != getattr(ticket, field)
+        ]
 
-        # Trigger in-app notification & email if status changed
-        if old_status and new_status and old_status.lower() != new_status.lower():
+        # Notify the requester when a user-visible ticket field changes.
+        old_status = old_values["status"]
+        if ticket.requester_id and changed_fields:
             try:
-                target_user = ticket.requester_id or "all"
-                create_notification(
-                    title=f"Ticket #{ticket.id} Status Updated",
-                    message=f"Your ticket '{ticket.title}' status changed from '{old_status}' to '{new_status}'.",
-                    user_id=target_user,
-                    db=session,
-                )
+                if "status" in changed_fields:
+                    title = f"Ticket #{ticket.id} Status Updated"
+                    message = (
+                        f"Your ticket '{ticket.title}' status changed from "
+                        f"'{old_status}' to '{new_status}'."
+                    )
+                else:
+                    labels = {
+                        "priority": "priority",
+                        "category": "department",
+                        "assigned_to": "assignee",
+                    }
+                    details = ", ".join(labels[field] for field in changed_fields)
+                    title = f"Ticket #{ticket.id} Updated"
+                    message = f"Your ticket '{ticket.title}' had its {details} updated."
+                create_notification(title, message, ticket.requester_id, db=session)
+
                 recipient_email = _resolve_user_email(ticket.requester_id, session)
-                if recipient_email:
+                if recipient_email and "status" in changed_fields:
                     from services.email_service import send_ticket_status_updated_email
 
                     send_ticket_status_updated_email(
@@ -481,7 +498,7 @@ def add_ticket_comment(
                 .filter(func.lower(TicketDB.id) == ticket_id.lower())
                 .first()
             )
-            if ticket_obj:
+            if ticket_obj and sender_role.lower() not in {"private", "system"}:
                 ticket_dict = ticket_obj.to_dict()
                 req_id = ticket_obj.requester_id
 
@@ -490,19 +507,20 @@ def add_ticket_comment(
                     and req_id
                     and sender_id.lower().strip() == req_id.lower().strip()
                 ):
-                    target_user = "all"
-                    target_email = _resolve_user_email(req_id, session)
+                    target_user = ticket_obj.assigned_to
+                    target_email = _resolve_user_email(target_user, session)
                 else:
-                    target_user = req_id or "all"
+                    target_user = req_id
                     target_email = _resolve_user_email(req_id, session)
 
                 short_msg = message[:90] + "..." if len(message) > 90 else message
-                create_notification(
-                    title=f"New Comment on #{ticket_id}",
-                    message=f'{sender_role} replied: "{short_msg}"',
-                    user_id=target_user,
-                    db=session,
-                )
+                if target_user:
+                    create_notification(
+                        title=f"New Comment on #{ticket_id}",
+                        message=f'{sender_role} replied: "{short_msg}"',
+                        user_id=target_user,
+                        db=session,
+                    )
 
                 if target_email:
                     from services.email_service import send_ticket_comment_email
@@ -604,6 +622,10 @@ def list_departments(db: Optional[Session] = None) -> List[dict]:
                     "name": "Upper Executive Management",
                     "queue_name": "Upper Management - Leave Approval",
                 },
+                {
+                    "name": "Workplace Operations Team",
+                    "queue_name": "Workplace Operations - Facilities",
+                },
             ]
             return defaults
         return [d.to_dict() for d in depts]
@@ -615,7 +637,7 @@ def list_departments(db: Optional[Session] = None) -> List[dict]:
 def add_department_user(
     department_name: str,
     azure_object_id: str,
-    role: str = "Member",
+    role: str = "Employee",
     user_email: Optional[str] = None,
     db: Optional[Session] = None,
 ) -> dict:
@@ -879,22 +901,18 @@ def delete_announcement(anc_id: str, db: Optional[Session] = None) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def get_notifications(
-    user_id: str = "user", db: Optional[Session] = None
-) -> List[dict]:
+def get_notifications(user_ids: List[str], db: Optional[Session] = None) -> List[dict]:
     session = db or SessionLocal()
     should_close = db is None
 
     try:
         from database.models_db import NotificationDB
 
-        target_ids = {user_id.lower().strip(), "all", "user"}
-        try:
-            resolved_email = _resolve_user_email(user_id, session)
-            if resolved_email:
-                target_ids.add(resolved_email.lower().strip())
-        except Exception:
-            pass
+        target_ids = {
+            str(user_id).lower().strip() for user_id in user_ids if str(user_id).strip()
+        }
+        if not target_ids:
+            return []
 
         records = (
             session.query(NotificationDB)
@@ -903,43 +921,6 @@ def get_notifications(
             .all()
         )
 
-        if not records:
-            now_str = datetime.now().isoformat()
-            defaults = [
-                NotificationDB(
-                    id="notif-1",
-                    user_id="all",
-                    title="Ticket Updated",
-                    message="Your ticket HD-1025 status has been updated to In Progress.",
-                    is_read=False,
-                    createdAt=now_str,
-                ),
-                NotificationDB(
-                    id="notif-2",
-                    user_id="all",
-                    title="New Announcement",
-                    message="System Maintenance Notice has been published.",
-                    is_read=False,
-                    createdAt=now_str,
-                ),
-                NotificationDB(
-                    id="notif-3",
-                    user_id="all",
-                    title="Leave Request Approved",
-                    message="Your PTO request for next Friday was approved.",
-                    is_read=True,
-                    createdAt=now_str,
-                ),
-            ]
-            for d in defaults:
-                session.add(d)
-            session.commit()
-            records = (
-                session.query(NotificationDB)
-                .order_by(NotificationDB.createdAt.desc())
-                .all()
-            )
-
         return [r.to_dict() for r in records]
     finally:
         if should_close:
@@ -947,7 +928,7 @@ def get_notifications(
 
 
 def create_notification(
-    title: str, message: str, user_id: str = "all", db: Optional[Session] = None
+    title: str, message: str, user_id: str, db: Optional[Session] = None
 ) -> dict:
     session = db or SessionLocal()
     should_close = db is None
@@ -977,15 +958,27 @@ def create_notification(
             session.close()
 
 
-def mark_notification_read(notif_id: str, db: Optional[Session] = None) -> bool:
+def mark_notification_read(
+    notif_id: str, user_ids: List[str], db: Optional[Session] = None
+) -> bool:
     session = db or SessionLocal()
     should_close = db is None
 
     try:
         from database.models_db import NotificationDB
 
+        target_ids = {
+            str(user_id).lower().strip() for user_id in user_ids if str(user_id).strip()
+        }
+        if not target_ids:
+            return False
         notif = (
-            session.query(NotificationDB).filter(NotificationDB.id == notif_id).first()
+            session.query(NotificationDB)
+            .filter(
+                NotificationDB.id == notif_id,
+                func.lower(NotificationDB.user_id).in_(list(target_ids)),
+            )
+            .first()
         )
         if notif:
             notif.is_read = True
@@ -1238,6 +1231,132 @@ def update_user_profile(
         session.commit()
         session.refresh(user)
         return user.to_dict()
+    finally:
+        if should_close:
+            session.close()
+
+
+def create_conversation(user_id: str, title: str, db: Optional[Session] = None) -> dict:
+    session = db or SessionLocal()
+    should_close = db is None
+
+    try:
+        import uuid
+
+        from database.models_db import ChatConversationDB
+
+        now_str = datetime.now().isoformat()
+        conv = ChatConversationDB(
+            id=f"chatconv-{uuid.uuid4().hex[:8]}",
+            user_id=user_id,
+            title=title,
+            createdAt=now_str,
+            updatedAt=now_str,
+        )
+        session.add(conv)
+        session.commit()
+        session.refresh(conv)
+        return conv.to_dict()
+    finally:
+        if should_close:
+            session.close()
+
+
+def list_conversations(user_id: str, db: Optional[Session] = None) -> List[dict]:
+    session = db or SessionLocal()
+    should_close = db is None
+
+    try:
+        from database.models_db import ChatConversationDB
+
+        records = (
+            session.query(ChatConversationDB)
+            .filter(func.lower(ChatConversationDB.user_id) == user_id.lower().strip())
+            .order_by(ChatConversationDB.updatedAt.desc())
+            .all()
+        )
+        return [r.to_dict() for r in records]
+    finally:
+        if should_close:
+            session.close()
+
+
+def get_conversation(
+    conversation_id: str, user_id: str, db: Optional[Session] = None
+) -> Optional[dict]:
+    session = db or SessionLocal()
+    should_close = db is None
+
+    try:
+        from database.models_db import ChatConversationDB
+
+        record = (
+            session.query(ChatConversationDB)
+            .filter(
+                ChatConversationDB.id == conversation_id,
+                func.lower(ChatConversationDB.user_id) == user_id.lower().strip(),
+            )
+            .first()
+        )
+        return record.to_dict() if record else None
+    finally:
+        if should_close:
+            session.close()
+
+
+def get_conversation_messages(
+    conversation_id: str, db: Optional[Session] = None
+) -> List[dict]:
+    session = db or SessionLocal()
+    should_close = db is None
+
+    try:
+        from database.models_db import ChatMessageDB
+
+        records = (
+            session.query(ChatMessageDB)
+            .filter(ChatMessageDB.conversation_id == conversation_id)
+            .order_by(ChatMessageDB.createdAt.asc())
+            .all()
+        )
+        return [r.to_dict() for r in records]
+    finally:
+        if should_close:
+            session.close()
+
+
+def add_conversation_message(
+    conversation_id: str, role: str, content: str, db: Optional[Session] = None
+) -> dict:
+    session = db or SessionLocal()
+    should_close = db is None
+
+    try:
+        import uuid
+
+        from database.models_db import ChatConversationDB, ChatMessageDB
+
+        now_str = datetime.now().isoformat()
+        msg = ChatMessageDB(
+            id=f"chatmsg-{uuid.uuid4().hex[:8]}",
+            conversation_id=conversation_id,
+            role=role,
+            content=content,
+            createdAt=now_str,
+        )
+        session.add(msg)
+
+        conv = (
+            session.query(ChatConversationDB)
+            .filter(ChatConversationDB.id == conversation_id)
+            .first()
+        )
+        if conv:
+            conv.updatedAt = now_str
+
+        session.commit()
+        session.refresh(msg)
+        return msg.to_dict()
     finally:
         if should_close:
             session.close()

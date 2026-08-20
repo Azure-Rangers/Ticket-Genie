@@ -50,6 +50,14 @@ SRC_API_JS = (FRONTEND_DIR / "src" / "lib" / "api.js").read_text()
 GENIE_WIDGET_SVELTE = (
     FRONTEND_DIR / "src" / "components" / "GenieAgentWidget.svelte"
 ).read_text()
+# GenieAgentWidget.svelte is now just a floating launcher that switches
+# activeTab to 'genie-ai' - it no longer calls apiGenieChat itself. That
+# call, and the conversation-state tracking below, now live in the
+# dedicated Genie AI page's store (see tests/test_genie_ai_page_wiring.py's
+# module docstring for the full rationale).
+GENIE_CHAT_STORE_JS = (
+    FRONTEND_DIR / "src" / "lib" / "stores" / "genieChat.js"
+).read_text()
 
 OLD_STALE_IDS = (
     "newTicketForm",
@@ -84,12 +92,12 @@ def test_conversation_state_fields_are_sent_to_the_backend():
         assert field in SRC_API_JS
 
 
-def test_svelte_widget_tracks_and_sends_conversation_state():
-    assert "apiGenieChat(text, state)" in GENIE_WIDGET_SVELTE
-    assert "history" in GENIE_WIDGET_SVELTE
-    assert "draft" in GENIE_WIDGET_SVELTE
-    assert "active_intent" in GENIE_WIDGET_SVELTE
-    assert "active_request_type" in GENIE_WIDGET_SVELTE
+def test_genie_chat_store_tracks_and_sends_conversation_state():
+    assert "apiGenieChat(trimmed" in GENIE_CHAT_STORE_JS
+    assert "history" in GENIE_CHAT_STORE_JS
+    assert "draft" in GENIE_CHAT_STORE_JS
+    assert "active_intent" in GENIE_CHAT_STORE_JS
+    assert "active_request_type" in GENIE_CHAT_STORE_JS
 
 
 # ---------------------------------------------------------------------------
@@ -115,10 +123,10 @@ def test_live_api_js_chatbot_call_is_the_primary_send_path():
     assert "/api/chatbot/message" in primary_region
 
 
-def test_genie_widget_imports_and_uses_the_live_api_module():
-    assert "from '../lib/api.js'" in GENIE_WIDGET_SVELTE
-    assert "apiGenieChat" in GENIE_WIDGET_SVELTE
-    assert "apiGenieChat(text, state)" in GENIE_WIDGET_SVELTE
+def test_genie_chat_store_imports_and_uses_the_live_api_module():
+    assert "from '../api.js'" in GENIE_CHAT_STORE_JS
+    assert "apiGenieChat" in GENIE_CHAT_STORE_JS
+    assert "apiGenieChat(trimmed" in GENIE_CHAT_STORE_JS
 
 
 def test_genie_widget_does_not_depend_on_dead_legacy_script_js():
@@ -215,7 +223,6 @@ def test_leave_form_has_stable_ids_and_submit_handler():
         "leaveStartDate",
         "leaveEndDate",
         "leaveDescription",
-        "leaveFileUpload",
         "submitLeaveBtn",
     ):
         assert f'id="{current_id}"' in NEW_REQUEST_HTML
@@ -227,7 +234,6 @@ def test_anonymous_form_has_stable_ids_and_submit_handler():
         "anonymousTicketForm",
         "anonymousCategory",
         "anonymousDescription",
-        "anonymousFileUpload",
         "submitAnonymousBtn",
     ):
         assert f'id="{current_id}"' in NEW_REQUEST_HTML

@@ -14,6 +14,51 @@ def test_employee_request_page_uses_its_page_specific_submit_handler():
     assert 'onclick="event.preventDefault();' not in page
 
 
+def test_every_standard_ticket_surface_sends_manual_department_as_override():
+    pages = (
+        ROOT / "frontend/src/views/CreateTicketView.svelte",
+        ROOT / "frontend/src/components/CreateTicketModal.svelte",
+        ROOT / "frontend/employee_NM/new-request.html",
+    )
+
+    for path in pages:
+        page = path.read_text(encoding="utf-8")
+        assert "department_override" in page
+
+    create_view = pages[0].read_text(encoding="utf-8")
+    modal = pages[1].read_text(encoding="utf-8")
+    for page in (create_view, modal):
+        explicit = page.index("if (departmentSelect !== 'Auto')")
+        leave_fallback = page.index("else if (isLeave)", explicit)
+        assert explicit < leave_fallback
+        assert "AI department routing will be skipped" in page
+
+
+def test_create_ticket_surfaces_do_not_offer_document_attachments():
+    pages = (
+        ROOT / "frontend/src/views/CreateTicketView.svelte",
+        ROOT / "frontend/src/components/CreateTicketModal.svelte",
+        ROOT / "frontend/employee_NM/new-request.html",
+        ROOT / "frontend/admin_AV/submit-ticket.html",
+    )
+
+    for path in pages:
+        page = path.read_text(encoding="utf-8")
+        assert 'type="file"' not in page
+
+
+def test_admin_ticket_detail_only_offers_pdf_export():
+    page = (ROOT / "frontend/src/views/TicketDetailView.svelte").read_text(
+        encoding="utf-8"
+    )
+
+    assert "Export PDF" in page
+    assert "Export DOCX" not in page
+    assert "> iCal" not in page
+    assert "apiExportTicketDOCX" not in page
+    assert "apiExportCalendar" not in page
+
+
 def test_shared_api_client_uses_backend_api_prefix():
     api_client = (ROOT / "frontend/js/api.js").read_text(encoding="utf-8")
 

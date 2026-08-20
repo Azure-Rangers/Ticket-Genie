@@ -205,6 +205,48 @@ requests
 | render timechart
 
 
+// Route: GET /api/chatbot/conversations (chatbot)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/chatbot/conversations"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: GET /api/chatbot/conversations/{conversation_id} (chatbot)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/chatbot/conversations/{conversation_id}"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: GET /api/chatbot/conversations/{conversation_id}/export (chatbot)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/chatbot/conversations/{conversation_id}/export"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
 // Route: GET /api/admin/departments (admin)
 
 requests
@@ -541,10 +583,10 @@ requests
 | render timechart
 
 
-// Route: POST /api/onboarding (onboarding)
+// Route: POST /api/onboarding/suggest (onboarding)
 
 requests
-| where timestamp > ago(1h) and name == "POST /api/onboarding"
+| where timestamp > ago(1h) and name == "POST /api/onboarding/suggest"
 | summarize
     RequestVolume = count(),
     AvgDurationMs = avg(duration),
@@ -555,10 +597,52 @@ requests
 | render timechart
 
 
-// Route: PUT /api/onboarding/{record_id} (onboarding)
+// Route: POST /api/onboarding/start (onboarding)
 
 requests
-| where timestamp > ago(1h) and name == "PUT /api/onboarding/{record_id}"
+| where timestamp > ago(1h) and name == "POST /api/onboarding/start"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: GET /api/onboarding/{onboarding_id} (onboarding)
+
+requests
+| where timestamp > ago(1h) and name == "GET /api/onboarding/{onboarding_id}"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: PATCH /api/onboarding/{onboarding_id} (onboarding)
+
+requests
+| where timestamp > ago(1h) and name == "PATCH /api/onboarding/{onboarding_id}"
+| summarize
+    RequestVolume = count(),
+    AvgDurationMs = avg(duration),
+    P95DurationMs = percentiles(duration, 95)[0],
+    ServerError5xx = countif(toint(resultCode) >= 500),
+    ClientError4xx = countif(toint(resultCode) >= 400 and toint(resultCode) < 500)
+  by bin(timestamp, 5m)
+| render timechart
+
+
+// Route: POST /api/onboarding/{onboarding_id}/tickets (onboarding)
+
+requests
+| where timestamp > ago(1h) and name == "POST /api/onboarding/{onboarding_id}/tickets"
 | summarize
     RequestVolume = count(),
     AvgDurationMs = avg(duration),

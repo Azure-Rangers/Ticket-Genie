@@ -19,7 +19,10 @@ def process_new_ticket(ticket: TicketCreate, db: Optional[Session] = None):
         span.set_attribute("service.method", "process_new_ticket")
         span.set_attribute("ticket.title", ticket.title)
 
-        # Leave Management deterministic routing override
+        # A valid explicit department override is authoritative. This covers
+        # both deterministic workflow routing (for example Leave Management)
+        # and a department the requester deliberately selected in the form.
+        # In either case AI classification must not replace that choice.
         if ticket.department_override and is_valid_department(
             ticket.department_override
         ):
@@ -33,7 +36,10 @@ def process_new_ticket(ticket: TicketCreate, db: Optional[Session] = None):
                 category=ticket.category or "Other",
                 priority=ticket.priority or "Medium",
                 confidence=1.0,
-                reason="Deterministic routing rule: Leave Management always routes to Upper Management.",
+                reason=(
+                    "User-selected department override; AI routing and "
+                    "classification were skipped."
+                ),
                 needs_human_review=False,
             )
 

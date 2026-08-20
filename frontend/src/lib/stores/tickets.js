@@ -10,15 +10,23 @@ export const priorityFilter = writable('all');
 export const assigneeFilter = writable('all');
 const savedTab = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('activeTab') : null;
 const savedPrevTab = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('previousTab') : null;
-let savedSelectedTicket = null;
+let savedSelectedTicketId = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('selectedTicketId') : null;
 try {
+  // One-time migration from the old serialized ticket snapshot. Keeping an
+  // entire ticket in sessionStorage made a normal refresh restore stale
+  // priority/department values after Genie changed the database record.
   const storedTicket = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('selectedTicket') : null;
-  if (storedTicket) savedSelectedTicket = JSON.parse(storedTicket);
+  if (!savedSelectedTicketId && storedTicket) {
+    savedSelectedTicketId = JSON.parse(storedTicket)?.id || null;
+  }
+  if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('selectedTicket');
 } catch (e) {}
 
 export const activeTab = writable(savedTab || 'dashboard');
 export const previousTab = writable(savedPrevTab || 'dashboard');
-export const selectedTicket = writable(savedSelectedTicket);
+export const selectedTicket = writable(
+  savedSelectedTicketId ? { id: savedSelectedTicketId, _loading: true } : null
+);
 export const isCreateModalOpen = writable(false);
 export const sidebarCollapsed = writable(false);
 export const genieDraftStore = writable(null);
@@ -41,11 +49,14 @@ activeTab.subscribe((current) => {
 
 selectedTicket.subscribe((ticket) => {
   if (typeof sessionStorage !== 'undefined') {
-    if (ticket) {
-      sessionStorage.setItem('selectedTicket', JSON.stringify(ticket));
+    if (ticket?.id) {
+      savedSelectedTicketId = ticket.id;
+      sessionStorage.setItem('selectedTicketId', ticket.id);
     } else {
-      sessionStorage.removeItem('selectedTicket');
+      savedSelectedTicketId = null;
+      sessionStorage.removeItem('selectedTicketId');
     }
+    sessionStorage.removeItem('selectedTicket');
   }
 });
 
@@ -76,12 +87,20 @@ export async function loadTickets(adminView = null) {
 
     const data = await apiFetchTickets({ adminView: effectiveAdminView, department: deptParam });
     tickets.set(data || []);
+    const selectedId = get(selectedTicket)?.id || savedSelectedTicketId;
+    if (selectedId) {
+      selectedTicket.set((data || []).find((ticket) => ticket.id === selectedId) || null);
+    }
   } catch (err) {
     console.error("Failed to load tickets from backend API:", err);
     tickets.set([]);
   } finally {
     loading.set(false);
   }
+}
+
+export async function refreshTicketState(ticketId = null) {
+  await loadTickets();
 }
 
 export function isSameDepartment(userDeptRaw, ticketDeptRaw) {

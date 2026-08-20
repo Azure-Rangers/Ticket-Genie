@@ -92,9 +92,19 @@
           <span class="menu-text">Notifications</span>
         </button>
 
-        <button 
-          class="nav-link" 
-          class:active={$activeTab === 'profile'} 
+        <button
+          class="nav-link"
+          class:active={$activeTab === 'genie-ai'}
+          on:click={() => setTab('genie-ai')}
+          title="Genie AI"
+        >
+          <span class="menu-icon"><i class="ph-duotone ph-sparkle"></i></span>
+          <span class="menu-text">Genie AI</span>
+        </button>
+
+        <button
+          class="nav-link"
+          class:active={$activeTab === 'profile'}
           on:click={() => setTab('profile')}
           title="Profile & Credentials"
         >
@@ -165,14 +175,24 @@
             <span class="menu-text">HR Department Queue</span>
           </button>
 
-          <button 
-            class="nav-link" 
-            class:active={$activeTab === 'queue-finance'} 
+          <button
+            class="nav-link"
+            class:active={$activeTab === 'queue-finance'}
             on:click={() => setTab('queue-finance')}
             title="Finance & Ops Queue"
           >
             <span class="menu-icon"><i class="ph-duotone ph-currency-circle-dollar"></i></span>
             <span class="menu-text">Finance & Ops Queue</span>
+          </button>
+
+          <button
+            class="nav-link"
+            class:active={$activeTab === 'leave-calendar'}
+            on:click={() => setTab('leave-calendar')}
+            title="Leave Calendar"
+          >
+            <span class="menu-icon"><i class="ph-duotone ph-calendar-blank"></i></span>
+            <span class="menu-text">Leave Calendar</span>
           </button>
         </div>
       {/if}

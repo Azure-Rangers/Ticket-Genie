@@ -6,12 +6,34 @@
 
   let activeFormTab = 'standard'; // 'standard' | 'leave' | 'anonymous'
 
+  // Backend leave categories (services/ticket_draft_service.py LEAVE_TYPES)
+  // don't share exact strings with this form's <select> options - map
+  // safely instead of assigning the raw category through and silently
+  // leaving the <select> on its default.
+  const LEAVE_CATEGORY_TO_FORM_TYPE = {
+    'Paid Time Off (PTO)': 'Paid Time Off (PTO)',
+    'Medical Leave': 'Sick Leave',
+    'Parental Leave': 'Parental Leave',
+    'Bereavement': 'Bereavement Leave',
+    'Unpaid Leave': 'Unpaid Leave'
+  };
+
   $: if ($genieDraftStore) {
     const draft = $genieDraftStore;
     if (draft.request_type === 'leave_management' || draft.request_type === 'leave') {
       activeFormTab = 'leave';
-      if (draft.title) leaveType = draft.title;
+      const mappedLeaveType = draft.category && LEAVE_CATEGORY_TO_FORM_TYPE[draft.category];
+      if (mappedLeaveType) leaveType = mappedLeaveType;
       if (draft.description) leaveNotes = draft.description;
+      if (draft.startDate) {
+        startDate = draft.startDate;
+      } else if (draft.preferredDate) {
+        // Backward-compat alias only, per models.chatbot.TicketDraft - a
+        // draft that only ever had preferredDate set still prefills the
+        // start date; endDate is never fabricated from it.
+        startDate = draft.preferredDate;
+      }
+      if (draft.endDate) endDate = draft.endDate;
     } else if (draft.request_type === 'anonymous') {
       activeFormTab = 'anonymous';
       if (draft.description) anonymousMessage = draft.description;
@@ -60,16 +82,9 @@
   let submitting = false;
   let errorMsg = '';
   let successMsg = '';
-  let attachedFiles = [];
   let announcementMatch = null;
   let checkingAnnouncements = false;
   let bypassAnnouncementCheck = false;
-
-  function handleFileSelect(e) {
-    if (e.target.files) {
-      attachedFiles = Array.from(e.target.files);
-    }
-  }
 
   async function handleSubmitStandard() {
     if (!title.trim() || !description.trim()) {
@@ -103,14 +118,14 @@
     let isLeave = textCheck.includes('leave') || textCheck.includes('pto') || textCheck.includes('vacation') || textCheck.includes('time off') || textCheck.includes('bereavement') || textCheck.includes('parental');
 
     let backendDept = null;
-    if (isLeave) {
-      backendDept = 'Upper Management';
-    } else if (departmentSelect !== 'Auto') {
+    if (departmentSelect !== 'Auto') {
       if (departmentSelect.includes('HR')) backendDept = 'HR Team';
       else if (departmentSelect.includes('Account')) backendDept = 'Accounting Team';
       else if (departmentSelect.includes('Upper') || departmentSelect.includes('Admin')) backendDept = 'Upper Management';
       else if (departmentSelect.includes('Workplace')) backendDept = 'Workplace Operations Team';
       else backendDept = 'IT Team';
+    } else if (isLeave) {
+      backendDept = 'Upper Management';
     }
 
     try {
@@ -129,7 +144,6 @@
       successMsg = '🎉 Support request submitted successfully! Redirecting to My Tickets...';
       title = '';
       description = '';
-      attachedFiles = [];
       setTimeout(() => { $activeTab = 'dashboard'; }, 1200);
     } catch (err) {
       errorMsg = err.message || 'Failed to submit ticket.';
@@ -169,7 +183,6 @@
       successMsg = '📅 Leave management request submitted! Redirecting to My Tickets...';
       leaveNotes = '';
       handoverLead = '';
-      attachedFiles = [];
       setTimeout(() => { $activeTab = 'dashboard'; }, 1200);
     } catch (err) {
       errorMsg = err.message || 'Failed to submit leave request.';
@@ -202,7 +215,6 @@
 
       successMsg = '🕵️ Anonymous report submitted confidentially! Redirecting...';
       anonymousMessage = '';
-      attachedFiles = [];
       setTimeout(() => { $activeTab = 'dashboard'; }, 1200);
     } catch (err) {
       errorMsg = err.message || 'Failed to submit anonymous report.';
@@ -296,6 +308,9 @@
                 <option value="Account Management">Account Management</option>
                 <option value="Upper Management/Administration">Upper Management/Administration</option>
               </select>
+              {#if departmentSelect !== 'Auto'}
+                <small class="routing-note"><i class="ph-bold ph-check-circle"></i> Your selection will be used directly; AI department routing will be skipped.</small>
+              {/if}
             </div>
 
             {#if departmentSelect.includes('Upper') || departmentSelect.includes('Admin')}
@@ -336,24 +351,6 @@
                 </div>
               </div>
             {/if}
-
-            <!-- Upload Box -->
-            <div class="upload-box">
-              <label for="std-files">Attach Documents / Screenshots</label>
-              <div class="drop-zone">
-                <i class="ph-duotone ph-cloud-arrow-up upload-icon"></i>
-                <span>Drag and drop files here, or <span class="browse-link">browse</span></span>
-                <span class="sub-text">Supports PDF, PNG, JPG, DOCX (Max 25MB)</span>
-                <input id="std-files" type="file" multiple on:change={handleFileSelect} />
-              </div>
-              {#if attachedFiles.length > 0}
-                <div class="file-list">
-                  {#each attachedFiles as f}
-                    <div class="file-chip"><i class="ph-bold ph-paperclip"></i> {f.name}</div>
-                  {/each}
-                </div>
-              {/if}
-            </div>
 
             <div class="form-footer">
               <button type="button" class="btn-cancel" on:click={handleCancel}>Cancel</button>
@@ -430,17 +427,6 @@
               ></textarea>
             </div>
 
-            <!-- Upload Box -->
-            <div class="upload-box">
-              <label for="leave-files">Attach Doctor Notes / Documents</label>
-              <div class="drop-zone green-zone">
-                <i class="ph-duotone ph-cloud-arrow-up upload-icon"></i>
-                <span>Drag and drop files here, or <span class="browse-link">browse</span></span>
-                <span class="sub-text">Supports PDF, PNG, JPG, DOCX (Max 25MB)</span>
-                <input id="leave-files" type="file" multiple on:change={handleFileSelect} />
-              </div>
-            </div>
-
             <div class="form-footer">
               <button type="button" class="btn-cancel" on:click={handleCancel}>Cancel</button>
               <button type="submit" class="btn-submit green-btn" disabled={submitting}>
@@ -482,17 +468,6 @@
                 bind:value={anonymousMessage} 
                 required
               ></textarea>
-            </div>
-
-            <!-- Upload Box -->
-            <div class="upload-box">
-              <label for="anon-files">Attach Evidence (Optional & Anonymized)</label>
-              <div class="drop-zone dark-zone">
-                <i class="ph-duotone ph-cloud-arrow-up upload-icon"></i>
-                <span>Drag and drop files here, or <span class="browse-link">browse</span></span>
-                <span class="sub-text">Metadata scrubbed for total confidentiality</span>
-                <input id="anon-files" type="file" multiple on:change={handleFileSelect} />
-              </div>
             </div>
 
             <div class="form-footer">
@@ -693,6 +668,12 @@
     gap: 6px;
   }
 
+  .routing-note {
+    color: #047857;
+    font-size: 0.72rem;
+    line-height: 1.35;
+  }
+
   .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -719,57 +700,6 @@
     border-color: var(--primary);
   }
 
-  .upload-box {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .drop-zone {
-    border: 2px dashed #cbd5e1;
-    border-radius: 10px;
-    padding: 24px;
-    text-align: center;
-    background: #f8fafc;
-    position: relative;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.15s;
-  }
-
-  .drop-zone:hover {
-    border-color: var(--primary);
-  }
-
-  .drop-zone input {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
-  }
-
-  .upload-icon {
-    font-size: 1.8rem;
-    color: #64748b;
-  }
-
-  .browse-link {
-    color: var(--primary);
-    text-decoration: underline;
-    font-weight: 600;
-  }
-
-  .sub-text {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-  }
-
   .autofill-badge {
     background: #ecfdf5;
     border: 1px solid #a7f3d0;
@@ -780,22 +710,6 @@
     display: flex;
     align-items: center;
     gap: 8px;
-  }
-
-  .file-list {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 8px;
-  }
-
-  .file-chip {
-    background: #e0e7ff;
-    color: #3730a3;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 0.78rem;
-    font-weight: 600;
   }
 
   .form-footer {

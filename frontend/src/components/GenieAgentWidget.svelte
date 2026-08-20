@@ -1,106 +1,31 @@
 <script>
-  import { activeTab, genieDraftStore } from '../lib/stores/tickets.js';
-  import { userStore } from '../lib/stores/auth.js';
-  import { apiGenieChat } from '../lib/api.js';
+  // Compact popup drawer over the SAME conversation the full Genie AI page
+  // (views/GenieAIView.svelte) shows - both read/write the shared
+  // lib/stores/genieChat.js store (conversationMessages, sendingMessage,
+  // sendMessage, applyGenieResponseActions), so a message sent here is
+  // immediately visible on the page and vice versa. This popup never keeps
+  // its own history array, never calls the chatbot API directly, and never
+  // re-implements navigation/ticket-draft handling - see genieChat.js.
+  import { conversationMessages, sendingMessage, suggestions, sendMessage, applyGenieResponseActions } from '../lib/stores/genieChat.js';
 
   let isOpen = false;
   let userMessage = '';
-  let isSending = false;
-
-  let history = [];
-  let draft = null;
-  let activeIntent = null;
-  let activeRequestType = null;
-
-  const GENIE_DRAFTING_INTENTS = ['create_ticket', 'support_issue', 'leave_management'];
-
-  let messages = [
-    {
-      sender: 'Genie AI',
-      isBot: true,
-      text: 'Hi there! I am Genie, your AI support agent. How can I help you today?'
-    }
-  ];
-
-  let suggestions = ['Check my tickets', 'VPN Setup Guide', 'Leave Balance Policy', 'IT Support Request'];
 
   function toggleChat() {
     isOpen = !isOpen;
   }
 
-  async function sendMessage(textToSend = null) {
+  async function handleSend(textToSend = null) {
     const text = textToSend || userMessage.trim();
-    if (!text || isSending) return;
-
-    // Add User Message
-    messages = [...messages, { sender: $userStore?.name || 'You', isBot: false, text }];
+    if (!text || $sendingMessage) return;
     userMessage = '';
-    isSending = true;
 
     try {
-      const state = {
-        role: $userStore?.role || 'Employee',
-        history,
-        draft,
-        active_intent: activeIntent,
-        active_request_type: activeRequestType
-      };
-
-      const res = await apiGenieChat(text, state);
-
-      // Advance chat turn history
-      history = [
-        ...history,
-        { role: 'user', message: text },
-        { role: 'assistant', message: res.reply || res.message || '' }
-      ];
-
-      // Update active drafting state
-      const stillDrafting = res.intent && GENIE_DRAFTING_INTENTS.includes(res.intent) && !res.ready_for_review;
-      activeIntent = stillDrafting ? res.intent : null;
-      activeRequestType = stillDrafting ? res.request_type : null;
-      draft = stillDrafting ? (res.ticket_draft || null) : null;
-
-      messages = [
-        ...messages,
-        { sender: 'Genie AI', isBot: true, text: res.reply || 'Request triaged successfully.' }
-      ];
-      if (res.suggestions && res.suggestions.length > 0) {
-        suggestions = res.suggestions;
-      }
-
-      // 1. Automatic Navigation Handling
-      if (res.action && res.action.type === 'navigate') {
-        const target = (res.action.target || '').toLowerCase();
-        if (target.includes('my-tickets') || target.includes('inbox')) {
-          $activeTab = 'inbox';
-        } else if (target.includes('new-request') || target.includes('submit-ticket')) {
-          $activeTab = 'create-ticket';
-        } else if (target.includes('knowledge')) {
-          $activeTab = 'knowledge';
-        } else if (target.includes('analytics')) {
-          $activeTab = 'analytics';
-        } else if (target.includes('settings') || target.includes('rbac')) {
-          $activeTab = 'settings';
-        }
-      }
-
-      // 2. Automatic Ticket Autofill & Review Handling
-      if (res.ticket_draft || res.ready_for_review) {
-        if (res.ticket_draft) {
-          genieDraftStore.set(res.ticket_draft);
-        }
-        if (res.ready_for_review) {
-          $activeTab = 'create-ticket';
-        }
-      }
+      const res = await sendMessage(text);
+      if (res) applyGenieResponseActions(res);
     } catch (err) {
-      messages = [
-        ...messages,
-        { sender: 'Genie AI', isBot: true, text: 'I am experiencing network trouble connecting to the AI engine.' }
-      ];
-    } finally {
-      isSending = false;
+      // conversationMessages already carries an error bubble via the
+      // shared store - nothing else to do here.
     }
   }
 </script>
@@ -131,16 +56,23 @@
 
     <!-- Messages Container -->
     <div class="genie-messages">
-      {#each messages as msg}
-        <div class="genie-message" class:genie-message-user={!msg.isBot}>
-          {#if msg.isBot}
-            <div class="genie-message-avatar"><i class="ph-fill ph-ticket"></i></div>
-          {/if}
-          <div class="genie-bubble">{msg.text}</div>
+      {#if $conversationMessages.length === 0}
+        <div class="genie-message">
+          <div class="genie-message-avatar"><i class="ph-fill ph-ticket"></i></div>
+          <div class="genie-bubble">Hi there! I am Genie, your AI support agent. How can I help you today?</div>
         </div>
-      {/each}
+      {:else}
+        {#each $conversationMessages as msg}
+          <div class="genie-message" class:genie-message-user={msg.role === 'user'}>
+            {#if msg.role !== 'user'}
+              <div class="genie-message-avatar"><i class="ph-fill ph-ticket"></i></div>
+            {/if}
+            <div class="genie-bubble" class:genie-bubble-error={msg.isError}>{msg.content}</div>
+          </div>
+        {/each}
+      {/if}
 
-      {#if isSending}
+      {#if $sendingMessage}
         <div class="genie-message">
           <div class="genie-message-avatar"><i class="ph-fill ph-ticket"></i></div>
           <div class="genie-bubble typing"><i class="ph-bold ph-spinner animate-spin"></i> Genie is thinking...</div>
@@ -149,29 +81,30 @@
     </div>
 
     <!-- Suggestions Bar -->
-    {#if suggestions.length > 0 && !isSending}
+    {#if $suggestions.length > 0 && !$sendingMessage}
       <div class="genie-suggestions">
-        {#each suggestions as sug}
-          <button class="genie-suggestion" on:click={() => sendMessage(sug)}>{sug}</button>
+        {#each $suggestions as sug}
+          <button class="genie-suggestion" on:click={() => handleSend(sug)}>{sug}</button>
         {/each}
       </div>
     {/if}
 
     <!-- Input Bar -->
     <div class="genie-input-area">
-      <input 
-        type="text" 
-        placeholder="Ask Genie AI a question..." 
-        bind:value={userMessage} 
-        on:keydown={(e) => e.key === 'Enter' && sendMessage()}
+      <input
+        type="text"
+        placeholder="Ask Genie AI a question..."
+        bind:value={userMessage}
+        on:keydown={(e) => e.key === 'Enter' && handleSend()}
+        disabled={$sendingMessage}
       />
-      <button on:click={() => sendMessage()} disabled={isSending}>
+      <button on:click={() => handleSend()} disabled={$sendingMessage}>
         <i class="ph-bold ph-paper-plane-right"></i>
       </button>
     </div>
 
-    <div class="genie-disclaimer">
-      Powered by Azure OpenAI & ReAct Agent Loop
+    <div class="genie-disclaimer" role="note">
+      Genie uses artificial intelligence and may provide inaccurate or incomplete information. Verify important details before acting.
     </div>
   </div>
 {/if}
@@ -336,11 +269,21 @@
     font-size: 0.85rem;
     line-height: 1.45;
     box-shadow: var(--shadow-sm);
+    /* Ticket status replies are multi-line (id/status/priority/etc, one
+       per line) - preserve those line breaks instead of collapsing them
+       into a single run-on line, while still wrapping long lines. */
+    white-space: pre-line;
   }
 
   .genie-bubble.typing {
     color: var(--text-muted);
     font-style: italic;
+  }
+
+  .genie-bubble-error {
+    border-color: #fecaca;
+    background: #fef2f2;
+    color: #b91c1c;
   }
 
   .genie-message-user {

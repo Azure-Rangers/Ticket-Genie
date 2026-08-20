@@ -57,6 +57,28 @@ def test_department_override_routes_to_upper_management_without_classification(
     assert ticket["needs_human_review"] is False
 
 
+def test_user_selected_department_override_is_authoritative(monkeypatch):
+    monkeypatch.setattr(ticket_service, "classify_ticket", _boom)
+    response = client.post(
+        "/api/tickets",
+        json={
+            "title": "Laptop request mentioning payroll access",
+            "description": "The requester explicitly selected IT despite mixed wording.",
+            "category": "IT Support",
+            "priority": "Medium",
+            "department_override": "IT Team",
+        },
+    )
+
+    assert response.status_code == 201
+    ticket = response.json()
+    assert ticket["department"] == "IT Team"
+    assert ticket["classification_reason"] == (
+        "User-selected department override; AI routing and classification were skipped."
+    )
+    assert ticket["classification_confidence"] == 1.0
+
+
 def test_department_override_absent_still_uses_normal_classification():
     # No override supplied - the normal AI classification path must still
     # run exactly as before this change (regression safety).

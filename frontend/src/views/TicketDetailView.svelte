@@ -1,19 +1,22 @@
 <script>
-  import { onMount } from 'svelte';
   import { selectedTicket, activeTab, previousTab, changeTicketStatus, transferTicketDepartment, assignTicketToSelf, unassignTicket } from '../lib/stores/tickets.js';
   import { userStore, isTicketer } from '../lib/stores/auth.js';
   import StatusBadge from '../components/StatusBadge.svelte';
-  import { apiFetchComments, apiPostComment, apiSuggestResponse, apiExportTicketPDF, apiExportTicketDOCX, apiExportCalendar } from '../lib/api.js';
+  import { apiFetchComments, apiPostComment, apiSuggestResponse, apiExportTicketPDF } from '../lib/api.js';
 
   let comments = [];
   let loadingComments = false;
   let replyMessage = '';
   let sendingReply = false;
   let generatingAiResponse = false;
+  let aiSuggestedActions = [];
+  let aiSafetyNoticeRequired = false;
+  let showingAiGuidance = false;
   let targetTransferDept = '';
   let transferring = false;
   let assigning = false;
   let errorMsg = '';
+  let commentsTicketId = null;
 
   $: if (ticket && ticket.department && !targetTransferDept) {
     targetTransferDept = ticket.department;
@@ -90,10 +93,14 @@
   async function handleAutoGenerateResponse() {
     if (!ticket || !ticket.id) return;
     generatingAiResponse = true;
+    showingAiGuidance = false;
     try {
       const res = await apiSuggestResponse(ticket.id);
       if (res && (res.message || res.suggested_response || res.reply)) {
         replyMessage = res.message || res.suggested_response || res.reply;
+        aiSuggestedActions = Array.isArray(res.suggested_actions) ? res.suggested_actions : [];
+        aiSafetyNoticeRequired = Boolean(res.safety_notice_required);
+        showingAiGuidance = true;
       }
     } catch (err) {
       console.error("Failed to generate AI response:", err);
@@ -154,10 +161,14 @@
                : $previousTab === 'dashboard' || $previousTab === 'my-tickets' ? 'My Tickets'
                : 'Previous View';
 
-  $: systemAiMessage = (ticket?.classification_reason || ticket?.reason) ? {
+  $: classificationReason = ticket?.classification_reason || ticket?.reason || '';
+  $: isManualDepartmentRouting = classificationReason.startsWith('User-selected department override');
+  $: systemAiMessage = classificationReason ? {
     sender_id: 'AI Genie',
     sender_role: 'System',
-    message: `AI Auto-Classification (${Math.round((ticket.classification_confidence || ticket.confidence || 0.94) * 100)}% confidence): ${ticket.classification_reason || ticket.reason}`,
+    message: isManualDepartmentRouting
+      ? `Manual Department Routing: ${classificationReason}`
+      : `AI Auto-Classification (${Math.round((ticket.classification_confidence || ticket.confidence || 0.94) * 100)}% confidence): ${classificationReason}`,
     createdAt: 'Auto-Triaged'
   } : null;
 
@@ -173,11 +184,10 @@
     ? [systemAiMessage, ...comments.filter(c => c.sender_role !== 'System')] 
     : comments;
 
-  onMount(async () => {
-    if (ticket && ticket.id) {
-      await loadComments();
-    }
-  });
+  $: if (ticket?.id && ticket.id !== commentsTicketId) {
+    commentsTicketId = ticket.id;
+    loadComments();
+  }
 
   async function loadComments() {
     if (!ticket || !ticket.id) return;
@@ -203,6 +213,9 @@
     try {
       const createdComment = await apiPostComment(ticket.id, text);
       replyMessage = '';
+      aiSuggestedActions = [];
+      aiSafetyNoticeRequired = false;
+      showingAiGuidance = false;
       if (createdComment && createdComment.id) {
         comments = [...comments, createdComment];
       } else {
@@ -287,12 +300,6 @@
           <div class="export-actions">
             <button class="btn-export pdf" on:click={() => apiExportTicketPDF(ticket.id)}>
               <i class="ph-bold ph-file-pdf"></i> Export PDF
-            </button>
-            <button class="btn-export docx" on:click={() => apiExportTicketDOCX(ticket.id)}>
-              <i class="ph-bold ph-file-doc"></i> Export DOCX
-            </button>
-            <button class="btn-export ical" on:click={() => apiExportCalendar()}>
-              <i class="ph-bold ph-calendar-plus"></i> iCal
             </button>
           </div>
         </div>
@@ -479,6 +486,30 @@
             on:keydown={handleKeydown}
             rows="4"
           ></textarea>
+          {#if showingAiGuidance}
+            <div class="ai-guidance" role="status">
+              <div class="ai-guidance-heading">
+                <i class="ph-fill ph-sparkle"></i>
+                <strong>AI-generated draft — review before sending</strong>
+              </div>
+              {#if aiSuggestedActions.length > 0}
+                <div class="ai-next-steps">
+                  <strong>What to do next</strong>
+                  <ul>
+                    {#each aiSuggestedActions as action}
+                      <li>{action}</li>
+                    {/each}
+                  </ul>
+                </div>
+              {/if}
+              {#if aiSafetyNoticeRequired}
+                <div class="ai-safety-notice">
+                  <i class="ph-bold ph-warning-circle"></i>
+                  <span><strong>Sensitive case:</strong> verify the wording and any escalation requirements before sending.</span>
+                </div>
+              {/if}
+            </div>
+          {/if}
           <div class="reply-actions">
             <button class="btn-send" on:click={handleSendReply} disabled={sendingReply || !replyMessage.trim()}>
               {#if sendingReply}
@@ -524,6 +555,47 @@
     align-items: center;
     gap: 8px;
     transition: all 0.15s;
+  }
+
+  .ai-guidance {
+    margin-top: 10px;
+    padding: 14px 16px;
+    border: 1px solid #ddd6fe;
+    border-left: 4px solid #7c3aed;
+    border-radius: 10px;
+    background: #f5f3ff;
+    color: #4c1d95;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  .ai-guidance-heading {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .ai-next-steps {
+    margin-top: 10px;
+  }
+
+  .ai-next-steps ul {
+    margin: 6px 0 0 20px;
+    padding: 0;
+  }
+
+  .ai-next-steps li + li {
+    margin-top: 4px;
+  }
+
+  .ai-safety-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #ddd6fe;
+    color: #9f1239;
   }
 
   .btn-back:hover {
@@ -617,12 +689,6 @@
 
   .btn-export.pdf { color: #dc2626; border-color: #fca5a5; background: #fef2f2; }
   .btn-export.pdf:hover { background: #dc2626; color: white; }
-
-  .btn-export.docx { color: #2563eb; border-color: #bfdbfe; background: #eff6ff; }
-  .btn-export.docx:hover { background: #2563eb; color: white; }
-
-  .btn-export.ical { color: #059669; border-color: #a7f3d0; background: #ecfdf5; }
-  .btn-export.ical:hover { background: #059669; color: white; }
 
   .meta-strip {
     display: grid;
@@ -809,8 +875,8 @@
     width: 100%;
     border: 1.5px solid #d1d5db;
     border-radius: 8px;
-    min-height: 110px;
-    padding: 14px;
+    min-height: 155px;
+    padding: 16px;
     font-size: 0.9rem;
     line-height: 1.5;
     outline: none;

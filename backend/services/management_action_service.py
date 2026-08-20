@@ -22,6 +22,7 @@ from agents.chatbot_agent import ManagementActionFields
 from agents.tool_registry import execute_tool
 from database.crud import add_department_user, get_all_tickets, list_departments
 from models.chatbot import (
+    ChatAction,
     ChatIntent,
     ChatResponse,
     PendingManagementAction,
@@ -31,7 +32,7 @@ from models.ticket import TICKET_DEPARTMENTS, TICKET_PRIORITIES
 from services.role_service import (
     EMPLOYEE_ASSIGNMENT_ROLES,
     VisibilityScope,
-    is_super_admin,
+    is_admin,
     is_ticket_mutation_authorized,
     resolve_visibility_scope,
 )
@@ -426,6 +427,7 @@ def _execute_ticket_mutation(
     return ChatResponse(
         message=f"Done. {label} {verb} from {before} to {value}.",
         intent=intent,
+        action=ChatAction(type="refresh_ticket", ticket_id=pending.ticket_id),
         pending_action=None,
     )
 
@@ -549,8 +551,13 @@ def _apply_extracted_fields(
     if fields.employee_object_id and not pending.employee_object_id:
         pending.employee_object_id = fields.employee_object_id.strip()
     if fields.employee_role and not pending.employee_role:
-        if fields.employee_role in EMPLOYEE_ASSIGNMENT_ROLES:
-            pending.employee_role = fields.employee_role
+        norm_role = fields.employee_role.strip()
+        if norm_role.lower() == "member":
+            norm_role = "Employee"
+        elif norm_role.lower() in ("agent", "support"):
+            norm_role = "Ticketer"
+        if norm_role in EMPLOYEE_ASSIGNMENT_ROLES:
+            pending.employee_role = norm_role
     if fields.employee_department and not pending.employee_department:
         if fields.employee_department in _live_employee_departments():
             pending.employee_department = fields.employee_department
@@ -583,7 +590,7 @@ def handle_turn(
         if not is_ticket_mutation_authorized(role):
             return _denied(intent, "reassign or reprioritize tickets")
     elif intent == ChatIntent.CREATE_PORTAL_EMPLOYEE:
-        if not is_super_admin(role, (current_user or {}).get("is_dev", False)):
+        if not is_admin(role, (current_user or {}).get("is_dev", False)):
             return _denied(intent, "create new portal employees")
     else:  # pragma: no cover - defensive, chatbot_service only routes the 3 above
         return ChatResponse(
