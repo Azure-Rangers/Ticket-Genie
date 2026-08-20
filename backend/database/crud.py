@@ -1241,3 +1241,129 @@ def update_user_profile(
     finally:
         if should_close:
             session.close()
+
+
+def create_conversation(user_id: str, title: str, db: Optional[Session] = None) -> dict:
+    session = db or SessionLocal()
+    should_close = db is None
+
+    try:
+        import uuid
+
+        from database.models_db import ChatConversationDB
+
+        now_str = datetime.now().isoformat()
+        conv = ChatConversationDB(
+            id=f"chatconv-{uuid.uuid4().hex[:8]}",
+            user_id=user_id,
+            title=title,
+            createdAt=now_str,
+            updatedAt=now_str,
+        )
+        session.add(conv)
+        session.commit()
+        session.refresh(conv)
+        return conv.to_dict()
+    finally:
+        if should_close:
+            session.close()
+
+
+def list_conversations(user_id: str, db: Optional[Session] = None) -> List[dict]:
+    session = db or SessionLocal()
+    should_close = db is None
+
+    try:
+        from database.models_db import ChatConversationDB
+
+        records = (
+            session.query(ChatConversationDB)
+            .filter(func.lower(ChatConversationDB.user_id) == user_id.lower().strip())
+            .order_by(ChatConversationDB.updatedAt.desc())
+            .all()
+        )
+        return [r.to_dict() for r in records]
+    finally:
+        if should_close:
+            session.close()
+
+
+def get_conversation(
+    conversation_id: str, user_id: str, db: Optional[Session] = None
+) -> Optional[dict]:
+    session = db or SessionLocal()
+    should_close = db is None
+
+    try:
+        from database.models_db import ChatConversationDB
+
+        record = (
+            session.query(ChatConversationDB)
+            .filter(
+                ChatConversationDB.id == conversation_id,
+                func.lower(ChatConversationDB.user_id) == user_id.lower().strip(),
+            )
+            .first()
+        )
+        return record.to_dict() if record else None
+    finally:
+        if should_close:
+            session.close()
+
+
+def get_conversation_messages(
+    conversation_id: str, db: Optional[Session] = None
+) -> List[dict]:
+    session = db or SessionLocal()
+    should_close = db is None
+
+    try:
+        from database.models_db import ChatMessageDB
+
+        records = (
+            session.query(ChatMessageDB)
+            .filter(ChatMessageDB.conversation_id == conversation_id)
+            .order_by(ChatMessageDB.createdAt.asc())
+            .all()
+        )
+        return [r.to_dict() for r in records]
+    finally:
+        if should_close:
+            session.close()
+
+
+def add_conversation_message(
+    conversation_id: str, role: str, content: str, db: Optional[Session] = None
+) -> dict:
+    session = db or SessionLocal()
+    should_close = db is None
+
+    try:
+        import uuid
+
+        from database.models_db import ChatConversationDB, ChatMessageDB
+
+        now_str = datetime.now().isoformat()
+        msg = ChatMessageDB(
+            id=f"chatmsg-{uuid.uuid4().hex[:8]}",
+            conversation_id=conversation_id,
+            role=role,
+            content=content,
+            createdAt=now_str,
+        )
+        session.add(msg)
+
+        conv = (
+            session.query(ChatConversationDB)
+            .filter(ChatConversationDB.id == conversation_id)
+            .first()
+        )
+        if conv:
+            conv.updatedAt = now_str
+
+        session.commit()
+        session.refresh(msg)
+        return msg.to_dict()
+    finally:
+        if should_close:
+            session.close()

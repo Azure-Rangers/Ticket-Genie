@@ -21,6 +21,12 @@ SIDEBAR_SVELTE = (FRONTEND_SRC / "components" / "Sidebar.svelte").read_text()
 GENIE_WIDGET_SVELTE = (
     FRONTEND_SRC / "components" / "GenieAgentWidget.svelte"
 ).read_text()
+# GenieAgentWidget.svelte (the floating popup) and views/GenieAIView.svelte
+# (the full page) both share ONE conversation via lib/stores/genieChat.js -
+# the nav-tab whitelist + role-gate re-check lives there once, not
+# duplicated into either surface (see tests/test_genie_ai_page_wiring.py's
+# module docstring for the full rationale).
+GENIE_CHAT_STORE_JS = (FRONTEND_SRC / "lib" / "stores" / "genieChat.js").read_text()
 
 # Every activeTab value Genie may navigate to today, per
 # services/chatbot_service.py's _resolve_active_tab (the backend's
@@ -65,33 +71,34 @@ def test_leave_calendar_is_reachable_from_the_sidebar():
     assert "setTab('leave-calendar')" in SIDEBAR_SVELTE
 
 
-def test_genie_widget_whitelists_every_live_nav_tab():
+def test_genie_chat_store_whitelists_every_live_nav_tab():
     # Gated tabs appear as bare object keys (e.g. `inbox: isTicketer`), not
     # quoted strings, so match the raw tab name rather than requiring quotes.
     for tab in GENIE_NAV_TABS:
-        assert tab in GENIE_WIDGET_SVELTE, (
-            f"GenieAgentWidget.svelte never references nav tab {tab!r}"
+        assert tab in GENIE_CHAT_STORE_JS, (
+            f"genieChat.js never references nav tab {tab!r}"
         )
 
 
-def test_genie_widget_shares_the_sidebar_activetab_store():
-    # Genie navigation and Sidebar navigation must drive the SAME view
-    # state, not a second navigation mechanism.
-    assert "from '../lib/stores/tickets.js'" in GENIE_WIDGET_SVELTE
-    assert "activeTab" in GENIE_WIDGET_SVELTE
+def test_genie_chat_store_shares_the_sidebar_activetab_store():
+    # Genie navigation (from either surface) and Sidebar navigation must
+    # drive the SAME view state, not a second navigation mechanism.
+    assert "from './tickets.js'" in GENIE_CHAT_STORE_JS
+    assert "activeTab" in GENIE_CHAT_STORE_JS
     assert "from '../lib/stores/tickets.js'" in SIDEBAR_SVELTE
     assert "activeTab" in SIDEBAR_SVELTE
     assert "window.location" not in GENIE_WIDGET_SVELTE
+    assert "window.location" not in GENIE_CHAT_STORE_JS
 
 
-def test_genie_widget_reuses_the_existing_role_predicates_for_gated_tabs():
+def test_genie_chat_store_reuses_the_existing_role_predicates_for_gated_tabs():
     # RBAC gating reuses the same isTicketer/isAdmin/isSuperAdmin
     # predicates Sidebar.svelte uses to hide its own nav items - not an
     # invented, independently-drifting role system.
     for predicate in ("isTicketer", "isAdmin", "isSuperAdmin"):
-        assert predicate in GENIE_WIDGET_SVELTE
+        assert predicate in GENIE_CHAT_STORE_JS
         assert predicate in SIDEBAR_SVELTE
-    assert "../lib/stores/auth.js" in GENIE_WIDGET_SVELTE
+    assert "from './auth.js'" in GENIE_CHAT_STORE_JS
 
 
 def test_genie_widget_contains_no_stale_legacy_path_fragments():

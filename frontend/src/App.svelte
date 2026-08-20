@@ -17,6 +17,7 @@
   import ProfileView from './views/ProfileView.svelte';
   import OnboardingView from './views/OnboardingView.svelte';
   import TicketDetailView from './views/TicketDetailView.svelte';
+  import GenieAIView from './views/GenieAIView.svelte';
 
   import { activeTab, loadTickets } from './lib/stores/tickets.js';
   import { userStore, authLoading, initAuthCheck } from './lib/stores/auth.js';
@@ -62,6 +63,8 @@
           <AnnouncementsView />
         {:else if $activeTab === 'notifications'}
           <NotificationsView />
+        {:else if $activeTab === 'genie-ai'}
+          <GenieAIView />
         {:else if $activeTab === 'profile'}
           <ProfileView />
         {:else if $activeTab === 'onboarding'}
@@ -83,7 +86,9 @@
     </div>
 
     <CreateTicketModal />
-    <GenieAgentWidget />
+    {#if $activeTab !== 'genie-ai'}
+      <GenieAgentWidget />
+    {/if}
   </div>
 {/if}
 

@@ -30,6 +30,14 @@ FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
 GENIE_WIDGET_SVELTE = (
     FRONTEND_DIR / "src" / "components" / "GenieAgentWidget.svelte"
 ).read_text()
+# Both the floating popup (GenieAgentWidget.svelte) and the full page
+# (GenieAIView.svelte) call the SAME applyGenieResponseActions() in
+# lib/stores/genieChat.js for the ticket_draft/request_type merge and the
+# ready_for_review handoff - neither surface owns this logic itself (see
+# tests/test_genie_ai_page_wiring.py's module docstring).
+GENIE_CHAT_STORE_JS = (
+    FRONTEND_DIR / "src" / "lib" / "stores" / "genieChat.js"
+).read_text()
 CREATE_TICKET_VIEW_SVELTE = (
     FRONTEND_DIR / "src" / "views" / "CreateTicketView.svelte"
 ).read_text()
@@ -64,16 +72,16 @@ def _leave_decision(**fields):
 # ---------------------------------------------------------------------------
 
 
-def test_genie_widget_merges_request_type_into_the_draft_store():
+def test_genie_chat_store_merges_request_type_into_the_draft_store():
     # The exact bug: genieDraftStore.set(res.ticket_draft) alone drops
     # res.request_type, since TicketDraft has no such field of its own.
-    assert "genieDraftStore.set(res.ticket_draft)" not in GENIE_WIDGET_SVELTE
-    assert "request_type: res.request_type" in GENIE_WIDGET_SVELTE
+    assert "genieDraftStore.set(res.ticket_draft)" not in GENIE_CHAT_STORE_JS
+    assert "request_type: res.request_type" in GENIE_CHAT_STORE_JS
 
 
-def test_genie_widget_still_navigates_to_create_ticket_on_ready_for_review():
-    assert "res.ready_for_review" in GENIE_WIDGET_SVELTE
-    assert "$activeTab = 'create-ticket'" in GENIE_WIDGET_SVELTE
+def test_genie_chat_store_still_navigates_to_create_ticket_on_ready_for_review():
+    assert "res.ready_for_review" in GENIE_CHAT_STORE_JS
+    assert "activeTab.set('create-ticket')" in GENIE_CHAT_STORE_JS
 
 
 # ---------------------------------------------------------------------------
