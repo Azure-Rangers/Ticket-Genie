@@ -118,14 +118,14 @@
     let isLeave = textCheck.includes('leave') || textCheck.includes('pto') || textCheck.includes('vacation') || textCheck.includes('time off') || textCheck.includes('bereavement') || textCheck.includes('parental');
 
     let backendDept = null;
-    if (isLeave) {
-      backendDept = 'Upper Management';
-    } else if (departmentSelect !== 'Auto') {
+    if (departmentSelect !== 'Auto') {
       if (departmentSelect.includes('HR')) backendDept = 'HR Team';
       else if (departmentSelect.includes('Account')) backendDept = 'Accounting Team';
       else if (departmentSelect.includes('Upper') || departmentSelect.includes('Admin')) backendDept = 'Upper Management';
       else if (departmentSelect.includes('Workplace')) backendDept = 'Workplace Operations Team';
       else backendDept = 'IT Team';
+    } else if (isLeave) {
+      backendDept = 'Upper Management';
     }
 
     try {
@@ -308,6 +308,9 @@
                 <option value="Account Management">Account Management</option>
                 <option value="Upper Management/Administration">Upper Management/Administration</option>
               </select>
+              {#if departmentSelect !== 'Auto'}
+                <small class="routing-note"><i class="ph-bold ph-check-circle"></i> Your selection will be used directly; AI department routing will be skipped.</small>
+              {/if}
             </div>
 
             {#if departmentSelect.includes('Upper') || departmentSelect.includes('Admin')}
@@ -663,6 +666,12 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+  }
+
+  .routing-note {
+    color: #047857;
+    font-size: 0.72rem;
+    line-height: 1.35;
   }
 
   .form-row {

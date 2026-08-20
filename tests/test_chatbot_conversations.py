@@ -201,6 +201,73 @@ def test_unknown_conversation_id_returns_404_not_500():
     assert resp2.status_code == 404
 
 
+def test_owner_can_export_conversation_as_pdf():
+    client = _client_for(USER_A_TOKEN)
+    conv_id = client.post(
+        "/api/chatbot/message", json={"message": "Please help with my VPN"}
+    ).json()["conversation_id"]
+
+    resp = client.get(f"/api/chatbot/conversations/{conv_id}/export")
+
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] == "application/pdf"
+    assert "attachment" in resp.headers["content-disposition"]
+    assert resp.content.startswith(b"%PDF")
+
+
+def test_other_user_cannot_export_conversation_pdf():
+    client_a = _client_for(USER_A_TOKEN)
+    client_b = _client_for(USER_B_TOKEN)
+    conv_id = client_a.post(
+        "/api/chatbot/message", json={"message": "Private VPN conversation"}
+    ).json()["conversation_id"]
+
+    resp = client_b.get(f"/api/chatbot/conversations/{conv_id}/export")
+
+    assert resp.status_code == 404
+    assert "Private VPN conversation" not in resp.text
+
+
+def test_natural_language_pdf_request_returns_download_action_without_ai_call(
+    monkeypatch,
+):
+    client = _client_for(USER_A_TOKEN)
+    conv_id = client.post(
+        "/api/chatbot/message", json={"message": "Start a saved conversation"}
+    ).json()["conversation_id"]
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("Explicit PDF export requests must not call GPT")
+
+    monkeypatch.setattr(ai_service_module.ai_service, "generate", fail_if_called)
+    resp = client.post(
+        "/api/chatbot/message",
+        json={
+            "message": "Generate a PDF of this conversation",
+            "conversation_id": conv_id,
+        },
+    )
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["conversation_id"] == conv_id
+    assert body["action"]["type"] == "export_conversation_pdf"
+    assert "PDF" in body["message"]
+
+
+def test_pdf_request_without_saved_conversation_does_not_offer_download_action():
+    client = _client_for(USER_A_TOKEN)
+    resp = client.post(
+        "/api/chatbot/message",
+        json={"message": "Download this conversation as a PDF"},
+    )
+
+    assert resp.status_code == 200
+    assert resp.json()["action"] is None
+    assert resp.json()["conversation_id"] is None
+    assert "no saved conversation" in resp.json()["message"].lower()
+
+
 def test_title_derivation_truncates_long_first_message():
     from services.conversation_service import derive_title
 

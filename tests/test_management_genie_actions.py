@@ -160,6 +160,8 @@ def test_reassign_ticket_unambiguous_updates_real_ticket():
     assert response.pending_action is None
     assert "Done." in response.message
     assert "HR Team" in response.message
+    assert response.action.type == "refresh_ticket"
+    assert response.action.ticket_id == ticket_id
     assert get_ticket_by_id(ticket_id)["department"] == "HR Team"
 
 
@@ -313,6 +315,8 @@ def test_change_priority_unambiguous_updates_real_ticket():
     assert response.pending_action is None
     assert "Done." in response.message
     assert "Low" in response.message
+    assert response.action.type == "refresh_ticket"
+    assert response.action.ticket_id == ticket_id
     assert get_ticket_by_id(ticket_id)["priority"] == "Low"
 
 

@@ -1,5 +1,4 @@
 <script>
-  import { onMount } from 'svelte';
   import { selectedTicket, activeTab, previousTab, changeTicketStatus, transferTicketDepartment, assignTicketToSelf, unassignTicket } from '../lib/stores/tickets.js';
   import { userStore, isTicketer } from '../lib/stores/auth.js';
   import StatusBadge from '../components/StatusBadge.svelte';
@@ -17,6 +16,7 @@
   let transferring = false;
   let assigning = false;
   let errorMsg = '';
+  let commentsTicketId = null;
 
   $: if (ticket && ticket.department && !targetTransferDept) {
     targetTransferDept = ticket.department;
@@ -161,10 +161,14 @@
                : $previousTab === 'dashboard' || $previousTab === 'my-tickets' ? 'My Tickets'
                : 'Previous View';
 
-  $: systemAiMessage = (ticket?.classification_reason || ticket?.reason) ? {
+  $: classificationReason = ticket?.classification_reason || ticket?.reason || '';
+  $: isManualDepartmentRouting = classificationReason.startsWith('User-selected department override');
+  $: systemAiMessage = classificationReason ? {
     sender_id: 'AI Genie',
     sender_role: 'System',
-    message: `AI Auto-Classification (${Math.round((ticket.classification_confidence || ticket.confidence || 0.94) * 100)}% confidence): ${ticket.classification_reason || ticket.reason}`,
+    message: isManualDepartmentRouting
+      ? `Manual Department Routing: ${classificationReason}`
+      : `AI Auto-Classification (${Math.round((ticket.classification_confidence || ticket.confidence || 0.94) * 100)}% confidence): ${classificationReason}`,
     createdAt: 'Auto-Triaged'
   } : null;
 
@@ -180,11 +184,10 @@
     ? [systemAiMessage, ...comments.filter(c => c.sender_role !== 'System')] 
     : comments;
 
-  onMount(async () => {
-    if (ticket && ticket.id) {
-      await loadComments();
-    }
-  });
+  $: if (ticket?.id && ticket.id !== commentsTicketId) {
+    commentsTicketId = ticket.id;
+    loadComments();
+  }
 
   async function loadComments() {
     if (!ticket || !ticket.id) return;

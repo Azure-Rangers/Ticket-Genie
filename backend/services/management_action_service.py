@@ -22,6 +22,7 @@ from agents.chatbot_agent import ManagementActionFields
 from agents.tool_registry import execute_tool
 from database.crud import add_department_user, get_all_tickets, list_departments
 from models.chatbot import (
+    ChatAction,
     ChatIntent,
     ChatResponse,
     PendingManagementAction,
@@ -426,6 +427,7 @@ def _execute_ticket_mutation(
     return ChatResponse(
         message=f"Done. {label} {verb} from {before} to {value}.",
         intent=intent,
+        action=ChatAction(type="refresh_ticket", ticket_id=pending.ticket_id),
         pending_action=None,
     )
 

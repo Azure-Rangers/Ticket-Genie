@@ -103,8 +103,8 @@
       </button>
     </div>
 
-    <div class="genie-disclaimer">
-      Powered by Azure OpenAI & ReAct Agent Loop
+    <div class="genie-disclaimer" role="note">
+      Genie uses artificial intelligence and may provide inaccurate or incomplete information. Verify important details before acting.
     </div>
   </div>
 {/if}

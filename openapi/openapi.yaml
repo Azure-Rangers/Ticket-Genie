@@ -567,6 +567,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/chatbot/conversations/{conversation_id}/export:
+    get:
+      tags:
+      - chatbot
+      summary: Export Conversation Pdf
+      operationId: export_conversation_pdf_api_chatbot_conversations__conversation_id__export_get
+      parameters:
+      - name: conversation_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Conversation Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/admin/departments:
     get:
       tags:

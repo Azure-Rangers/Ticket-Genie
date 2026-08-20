@@ -12,6 +12,7 @@ oid, falling back to email) - never trusted from the request body - mirroring
 the pattern already used for ticket ownership in api/tickets.py.
 """
 
+import re
 from typing import Any, Dict, Optional
 
 from sqlalchemy.orm import Session
@@ -21,6 +22,12 @@ from database import crud
 DEFAULT_TITLE = "New conversation"
 MAX_TITLE_LENGTH = 48
 MAX_TITLE_WORDS = 8
+
+_PDF_EXPORT_REQUEST = re.compile(
+    r"\b(?:pdf|portable document format)\b.*\b(?:conversation|chat|transcript)\b"
+    r"|\b(?:conversation|chat|transcript)\b.*\b(?:pdf|portable document format)\b",
+    re.IGNORECASE,
+)
 
 
 def get_owner_id(current_user: Optional[Dict[str, Any]]) -> Optional[str]:
@@ -46,6 +53,11 @@ def derive_title(message: str) -> str:
 
 class ConversationNotFoundError(Exception):
     """Raised when a conversation_id doesn't exist or isn't owned by the caller."""
+
+
+def is_pdf_export_request(message: str) -> bool:
+    """Recognize explicit requests to export the current Genie chat as PDF."""
+    return bool(_PDF_EXPORT_REQUEST.search((message or "").strip()))
 
 
 def persist_turn(

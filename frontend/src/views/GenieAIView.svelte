@@ -14,9 +14,11 @@
     sendMessage,
     applyGenieResponseActions
   } from '../lib/stores/genieChat.js';
+  import { apiExportGenieConversationPDF } from '../lib/api.js';
 
   let composerText = '';
   let loadError = '';
+  let exportingPdf = false;
 
   onMount(() => {
     // Only refresh the history rail - never force a fresh New Chat here.
@@ -85,6 +87,19 @@
       handleSend();
     }
   }
+
+  async function handleExportPdf() {
+    if (!$selectedConversationId || exportingPdf) return;
+    exportingPdf = true;
+    loadError = '';
+    try {
+      await apiExportGenieConversationPDF($selectedConversationId);
+    } catch (err) {
+      loadError = err.message || 'Could not export this conversation.';
+    } finally {
+      exportingPdf = false;
+    }
+  }
 </script>
 
 <div class="genie-ai-view animate-fade">
@@ -132,6 +147,17 @@
   </aside>
 
   <section class="genie-conversation-panel">
+    <div class="conversation-toolbar">
+      <button
+        class="export-pdf-btn"
+        on:click={handleExportPdf}
+        disabled={!$selectedConversationId || exportingPdf}
+        title="Download this conversation as PDF"
+      >
+        <i class="ph-bold {exportingPdf ? 'ph-spinner animate-spin' : 'ph-file-pdf'}"></i>
+        <span>{exportingPdf ? 'Generating…' : 'Download PDF'}</span>
+      </button>
+    </div>
     {#if loadError}
       <div class="inline-error">{loadError}</div>
     {/if}
@@ -178,6 +204,9 @@
       <button class="send-btn" on:click={handleSend} disabled={$sendingMessage || !composerText.trim()}>
         <i class="ph-bold ph-paper-plane-right"></i>
       </button>
+    </div>
+    <div class="ai-disclaimer" role="note">
+      Genie uses artificial intelligence and may provide inaccurate or incomplete information. Verify important details before acting.
     </div>
   </section>
 </div>
@@ -319,6 +348,44 @@
     height: 100%;
   }
 
+  .conversation-toolbar {
+    min-height: 58px;
+    padding: 10px 24px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    background: #fff;
+    box-sizing: border-box;
+    flex-shrink: 0;
+  }
+
+  .export-pdf-btn {
+    border: 1px solid #fca5a5;
+    border-radius: 9px;
+    padding: 9px 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: #fef2f2;
+    color: #b91c1c;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .export-pdf-btn:hover:not(:disabled) {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #fff;
+  }
+
+  .export-pdf-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
   .inline-error {
     margin: 12px 24px 0;
     padding: 10px 14px;
@@ -434,10 +501,20 @@
     display: flex;
     align-items: flex-end;
     gap: 10px;
-    padding: 16px 24px 22px;
+    padding: 16px 24px 10px;
     border-top: 1px solid var(--border-color);
     flex-shrink: 0;
     background: white;
+  }
+
+  .ai-disclaimer {
+    padding: 0 24px 14px;
+    background: #fff;
+    color: var(--text-muted);
+    text-align: center;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    flex-shrink: 0;
   }
 
   .composer textarea {

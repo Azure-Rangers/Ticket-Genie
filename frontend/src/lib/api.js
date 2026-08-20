@@ -373,6 +373,25 @@ export async function apiFetchGenieConversation(conversationId) {
   return null;
 }
 
+export async function apiExportGenieConversationPDF(conversationId) {
+  if (!conversationId) throw new Error("Select a saved conversation first.");
+  const res = await fetch(
+    `${API_BASE_URL}/chatbot/conversations/${encodeURIComponent(conversationId)}/export`,
+    { headers: getAuthHeaders() }
+  );
+  if (!res.ok) throw new Error(`Failed to export conversation PDF (${res.status})`);
+
+  const blob = await res.blob();
+  const blobUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = `Genie_Conversation_${conversationId}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
+}
+
 /** ==================== USER PROFILE & ANNOUNCEMENTS ==================== */
 
 export async function apiFetchAnnouncements() {

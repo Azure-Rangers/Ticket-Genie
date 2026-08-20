@@ -1,7 +1,7 @@
 import { writable, get } from 'svelte/store';
-import { apiFetchGenieConversations, apiFetchGenieConversation, apiGenieChat } from '../api.js';
+import { apiExportGenieConversationPDF, apiFetchGenieConversations, apiFetchGenieConversation, apiGenieChat } from '../api.js';
 import { userStore, isTicketer, isAdmin, isSuperAdmin } from './auth.js';
-import { activeTab, genieDraftStore } from './tickets.js';
+import { activeTab, genieDraftStore, refreshTicketState } from './tickets.js';
 
 // Backend (services/conversation_service.py) is the source of truth - these
 // stores mirror what's already persisted, they are never treated as the
@@ -186,6 +186,21 @@ export function applyGenieResponseActions(res) {
     if (NAV_TABS.has(target) && (!roleGate || roleGate(get(userStore)))) {
       activeTab.set(target);
     }
+  }
+
+  if (res.action && res.action.type === 'export_conversation_pdf') {
+    const conversationId = get(selectedConversationId);
+    if (conversationId) {
+      apiExportGenieConversationPDF(conversationId).catch((err) => {
+        console.error('Failed to export Genie conversation:', err);
+      });
+    }
+  }
+
+  if (res.action && res.action.type === 'refresh_ticket') {
+    refreshTicketState(res.action.ticket_id || null).catch((err) => {
+      console.error('Failed to refresh tickets after Genie update:', err);
+    });
   }
 
   if (res.ticket_draft || res.ready_for_review) {

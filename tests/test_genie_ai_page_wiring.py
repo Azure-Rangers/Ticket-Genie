@@ -31,6 +31,7 @@ SRC_API_JS = (FRONTEND_DIR / "src" / "lib" / "api.js").read_text()
 GENIE_CHAT_STORE_JS = (
     FRONTEND_DIR / "src" / "lib" / "stores" / "genieChat.js"
 ).read_text()
+TICKET_STORE_JS = (FRONTEND_DIR / "src" / "lib" / "stores" / "tickets.js").read_text()
 
 
 # ---------------------------------------------------------------------------
@@ -170,6 +171,8 @@ def test_genie_chat_store_owns_structured_action_handling():
     assert "res.action.type === 'navigate'" in GENIE_CHAT_STORE_JS
     assert "NAV_TAB_ROLE_GATE" in GENIE_CHAT_STORE_JS
     assert "NAV_TABS" in GENIE_CHAT_STORE_JS
+    assert "res.action.type === 'refresh_ticket'" in GENIE_CHAT_STORE_JS
+    assert "refreshTicketState" in GENIE_CHAT_STORE_JS
 
 
 def test_genie_chat_store_whitelists_every_nav_tab_with_role_predicates():
@@ -177,10 +180,26 @@ def test_genie_chat_store_whitelists_every_nav_tab_with_role_predicates():
         assert predicate in GENIE_CHAT_STORE_JS
 
 
+def test_ticket_selection_persists_id_and_reconciles_from_fresh_api_data():
+    assert "sessionStorage.setItem('selectedTicketId', ticket.id)" in TICKET_STORE_JS
+    assert "sessionStorage.setItem('selectedTicket', JSON.stringify(ticket))" not in TICKET_STORE_JS
+    assert "find((ticket) => ticket.id === selectedId)" in TICKET_STORE_JS
+    assert "export async function refreshTicketState" in TICKET_STORE_JS
+
+
 def test_conversation_endpoints_exist_in_api_js():
     assert "apiFetchGenieConversations" in SRC_API_JS
     assert "apiFetchGenieConversation" in SRC_API_JS
     assert "/chatbot/conversations" in SRC_API_JS
+
+
+def test_genie_conversation_pdf_export_is_wired_to_both_request_paths():
+    assert "apiExportGenieConversationPDF" in SRC_API_JS
+    assert "/export" in SRC_API_JS
+    assert "Download PDF" in GENIE_AI_VIEW
+    assert "handleExportPdf" in GENIE_AI_VIEW
+    assert "export_conversation_pdf" in GENIE_CHAT_STORE_JS
+    assert "apiExportGenieConversationPDF" in GENIE_CHAT_STORE_JS
 
 
 def test_api_js_still_sends_conversation_state_fields():
@@ -278,6 +297,17 @@ def test_floating_widget_has_compact_drawer_markup_not_history_rail():
 
 def test_floating_widget_renders_suggestions_from_the_shared_store():
     assert "$suggestions" in GENIE_WIDGET_SVELTE
+
+
+def test_both_genie_surfaces_show_the_professional_ai_disclaimer():
+    disclaimer = (
+        "Genie uses artificial intelligence and may provide inaccurate or incomplete "
+        "information. Verify important details before acting."
+    )
+    assert disclaimer in GENIE_AI_VIEW
+    assert disclaimer in GENIE_WIDGET_SVELTE
+    assert 'role="note"' in GENIE_AI_VIEW
+    assert 'role="note"' in GENIE_WIDGET_SVELTE
 
 
 def test_floating_launcher_renders_on_normal_pages_but_not_on_genie_ai_page():

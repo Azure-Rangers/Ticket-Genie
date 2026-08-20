@@ -1,11 +1,11 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from database import crud
 from database.connection import get_db
-from models.chatbot import ChatRequest, ChatResponse
+from models.chatbot import ChatAction, ChatIntent, ChatRequest, ChatResponse
 from models.conversation import ConversationDetail, ConversationSummary, MessageOut
 from services import conversation_service
 from services.chatbot_service import handle_message
@@ -27,9 +27,30 @@ def chatbot_message(
     ):
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-    response = handle_message(request, current_user=current_user)
+    is_pdf_export_request = conversation_service.is_pdf_export_request(request.message)
+    if is_pdf_export_request:
+        if request.conversation_id:
+            response = ChatResponse(
+                message="I generated a PDF transcript of this conversation.",
+                intent=ChatIntent.GENERAL,
+                action=ChatAction(type="export_conversation_pdf"),
+            )
+        else:
+            response = ChatResponse(
+                message=(
+                    "There is no saved conversation to export yet. Start a chat, "
+                    "then ask me to generate its PDF transcript."
+                ),
+                intent=ChatIntent.GENERAL,
+            )
+    else:
+        response = handle_message(request, current_user=current_user)
 
-    if request.message and request.message.strip():
+    if (
+        request.message
+        and request.message.strip()
+        and not (is_pdf_export_request and not request.conversation_id)
+    ):
         try:
             conversation = conversation_service.persist_turn(
                 db,
@@ -86,4 +107,30 @@ def get_conversation(
             MessageOut(role=m["role"], content=m["content"], created_at=m["createdAt"])
             for m in messages
         ],
+    )
+
+
+@router.get("/conversations/{conversation_id}/export", response_class=Response)
+def export_conversation_pdf(
+    conversation_id: str,
+    current_user: dict = Depends(verify_azure_user),
+    db: Session = Depends(get_db),
+):
+    from services.document_service import generate_conversation_pdf
+
+    owner_id = conversation_service.get_owner_id(current_user)
+    conversation = crud.get_conversation(conversation_id, owner_id, db=db)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    messages = crud.get_conversation_messages(conversation_id, db=db)
+    pdf_bytes = generate_conversation_pdf(conversation, messages)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="genie_conversation_{conversation_id}.pdf"'
+            )
+        },
     )
