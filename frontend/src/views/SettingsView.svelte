@@ -231,6 +231,7 @@
               </select>
               <select bind:value={rbacAssignRole}>
                 <option value="Admin">Admin</option>
+                <option value="Ticketer">Ticketer</option>
                 <option value="Employee">Employee</option>
               </select>
               <button class="btn-assign" on:click={handleAssignUserRole}>

@@ -125,9 +125,10 @@ class TestSuperAdminRoleManagement(unittest.TestCase):
 
         from api.admin import require_super_admin
 
-        # Non-Admin roles must raise HTTP 403 Forbidden
+        # Non-Admin roles (Employee, Ticketer, Member) must raise HTTP 403 Forbidden for admin routes
         non_admin_roles = [
             {"role": "Employee", "is_dev": False},
+            {"role": "Ticketer", "is_dev": False},
             {"role": "Member", "is_dev": False},
         ]
         for user_ctx in non_admin_roles:
@@ -144,6 +145,35 @@ class TestSuperAdminRoleManagement(unittest.TestCase):
             self.fail(
                 "require_super_admin raised exception for valid Admin role!"
             )
+
+    def test_canonical_three_roles_helpers(self):
+        from services.role_service import (
+            EMPLOYEE_ASSIGNMENT_ROLES,
+            is_admin,
+            is_employee,
+            is_ticket_mutation_authorized,
+            is_ticketer,
+        )
+
+        self.assertIn("Employee", EMPLOYEE_ASSIGNMENT_ROLES)
+        self.assertIn("Ticketer", EMPLOYEE_ASSIGNMENT_ROLES)
+        self.assertIn("Admin", EMPLOYEE_ASSIGNMENT_ROLES)
+
+        # Admin permissions
+        self.assertTrue(is_admin("Admin"))
+        self.assertTrue(is_ticketer("Admin"))
+        self.assertTrue(is_ticket_mutation_authorized("Admin"))
+
+        # Ticketer permissions
+        self.assertFalse(is_admin("Ticketer"))
+        self.assertTrue(is_ticketer("Ticketer"))
+        self.assertTrue(is_ticket_mutation_authorized("Ticketer"))
+
+        # Employee permissions
+        self.assertFalse(is_admin("Employee"))
+        self.assertFalse(is_ticketer("Employee"))
+        self.assertTrue(is_employee("Employee"))
+        self.assertFalse(is_ticket_mutation_authorized("Employee"))
 
     def test_department_user_role_crud(self):
         from database.crud import (

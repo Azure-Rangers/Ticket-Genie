@@ -446,14 +446,20 @@
             normalizedRole.includes("operations") || 
             normalizedRole.includes("super") || 
             normalizedRole.includes("lead");
+        const isTicketer = normalizedRole.includes("ticketer") ||
+            normalizedRole.includes("support") ||
+            normalizedRole.includes("agent") ||
+            isAdmin;
 
         if (azureUser) {
             // 1. Employee button is visible to all authenticated users
             if (employeeBtn) employeeBtn.style.display = "flex";
 
-            // 2. Admin sees Admin (AV/SS) buttons and Employee button
-            if (isAdmin) {
+            // 2. Ticketer & Admin see Admin/Support portal button
+            if (isTicketer) {
                 if (adminBtn) adminBtn.style.display = "flex";
+            }
+            if (isAdmin) {
                 if (superAdminBtn) superAdminBtn.style.display = "flex";
             }
         }
@@ -473,8 +479,8 @@
     /**
      * Page Route Guard: Protect sub-directories strictly based on user role:
      * - /management/*  -> Requires Admin role.
-     * - /admin_AV/*     -> Requires Admin role.
-     * - /employee_NM/* -> Allowed for Employee and Admin.
+     * - /admin_AV/*     -> Requires Ticketer or Admin role.
+     * - /employee_NM/* -> Allowed for Employee, Ticketer, and Admin.
      */
     function enforcePageAccessControl() {
         const path = window.location.pathname;
@@ -499,6 +505,10 @@
             role.includes("operations") || 
             role.includes("super") || 
             role.includes("lead");
+        const isTicketer = role.includes("ticketer") ||
+            role.includes("support") ||
+            role.includes("agent") ||
+            isAdmin;
 
         // 1. Restrict /management/ (Admin Governance Portal)
         if (path.includes("/management/")) {
@@ -509,11 +519,11 @@
                 return false;
             }
         } 
-        // 2. Restrict /admin_AV/ (Admin / Operations Portal)
+        // 2. Restrict /admin_AV/ (Admin / Support Portal)
         else if (path.includes("/admin_AV/")) {
-            if (!isAdmin) {
+            if (!isTicketer) {
                 console.warn(`⛔ Access Denied: Employee role '${azureUser.role}' cannot access /admin_AV/ portal.`);
-                alert(`Access Denied: Employee accounts cannot access the Admin Portal.`);
+                alert(`Access Denied: Employee accounts cannot access the Support/Admin Portal.`);
                 window.location.href = "../employee_NM/index.html";
                 return false;
             }

@@ -552,8 +552,13 @@ def _apply_extracted_fields(
     if fields.employee_object_id and not pending.employee_object_id:
         pending.employee_object_id = fields.employee_object_id.strip()
     if fields.employee_role and not pending.employee_role:
-        if fields.employee_role in EMPLOYEE_ASSIGNMENT_ROLES:
-            pending.employee_role = fields.employee_role
+        norm_role = fields.employee_role.strip()
+        if norm_role.lower() == "member":
+            norm_role = "Employee"
+        elif norm_role.lower() in ("agent", "support"):
+            norm_role = "Ticketer"
+        if norm_role in EMPLOYEE_ASSIGNMENT_ROLES:
+            pending.employee_role = norm_role
     if fields.employee_department and not pending.employee_department:
         if fields.employee_department in _live_employee_departments():
             pending.employee_department = fields.employee_department

@@ -27,6 +27,9 @@ MANAGEMENT_SCOPE = "UpperManagement"
 # Roles authorized to reassign/reprioritize tickets via Genie.
 TICKET_MUTATION_ROLES = {
     "admin",
+    "ticketer",
+    "support",
+    "agent",
     "operations admin",
     "department admin",
     "upper executive lead",
@@ -36,8 +39,8 @@ TICKET_MUTATION_ROLES = {
 # Canonical role vocabulary for the portal employee-assignment flow.
 EMPLOYEE_ASSIGNMENT_ROLES: tuple[str, ...] = (
     "Admin",
+    "Ticketer",
     "Employee",
-    "Member",
 )
 
 
@@ -46,9 +49,28 @@ def is_admin(role: Optional[str], is_dev: bool = False) -> bool:
     return "admin" in (role or "").lower() or is_dev
 
 
+def is_ticketer(role: Optional[str], is_dev: bool = False) -> bool:
+    """Check if user has Ticketer or Admin privileges."""
+    normalized = (role or "").lower()
+    return (
+        "ticketer" in normalized
+        or "admin" in normalized
+        or "support" in normalized
+        or "agent" in normalized
+        or "super" in normalized
+        or is_dev
+    )
+
+
+def is_employee(role: Optional[str]) -> bool:
+    """Check if user has Employee role."""
+    normalized = (role or "").lower()
+    return "employee" in normalized or normalized == ""
+
+
 def is_super_admin(role: Optional[str], is_dev: bool = False) -> bool:
-    """Check if user has super admin or is_dev privileges."""
-    return "super" in (role or "").lower() or "admin" in (role or "").lower() or is_dev
+    """Check if user has admin or is_dev privileges."""
+    return "admin" in (role or "").lower() or "super" in (role or "").lower() or is_dev
 
 
 def is_department_ticketer(role: Optional[str]) -> bool:
@@ -59,6 +81,7 @@ def is_department_ticketer(role: Optional[str]) -> bool:
     return (
         "admin" in normalized
         or "ticketer" in normalized
+        or "support" in normalized
         or "operations" in normalized
         or "super" in normalized
     )

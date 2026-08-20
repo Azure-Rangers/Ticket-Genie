@@ -55,7 +55,7 @@ export function getAzureUser() {
 
 /**
  * Shared Dynamic RBAC & Permission Verification Helpers
- * System roles: Employee and Admin
+ * System roles: Employee, Ticketer, Admin
  */
 export function isEmployee(user) {
   return !!user;
@@ -64,11 +64,13 @@ export function isEmployee(user) {
 export function isAdmin(user) {
   if (!user || !user.role) return false;
   const role = user.role.toLowerCase();
-  return role.includes('admin') || role.includes('manager') || role.includes('operations');
+  return role.includes('admin') || role.includes('manager') || role.includes('operations') || role.includes('super');
 }
 
 export function isTicketer(user) {
-  return isAdmin(user);
+  if (!user || !user.role) return false;
+  const role = user.role.toLowerCase();
+  return role.includes('ticketer') || role.includes('support') || role.includes('agent') || isAdmin(user);
 }
 
 export function isSuperAdmin(user) {
@@ -112,10 +114,10 @@ export function checkAuthGuard(requiredRole = null) {
 
   if (req === 'employee') {
     allowed = isEmployee(user);
-  } else if (req === 'ticketer' || req === 'admin') {
+  } else if (req === 'ticketer') {
     allowed = isTicketer(user);
-  } else if (req === 'superadmin') {
-    allowed = isSuperAdmin(user);
+  } else if (req === 'admin' || req === 'superadmin') {
+    allowed = isAdmin(user);
   } else {
     allowed = requireRole(user, [req]);
   }
