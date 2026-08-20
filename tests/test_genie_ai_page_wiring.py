@@ -182,7 +182,10 @@ def test_genie_chat_store_whitelists_every_nav_tab_with_role_predicates():
 
 def test_ticket_selection_persists_id_and_reconciles_from_fresh_api_data():
     assert "sessionStorage.setItem('selectedTicketId', ticket.id)" in TICKET_STORE_JS
-    assert "sessionStorage.setItem('selectedTicket', JSON.stringify(ticket))" not in TICKET_STORE_JS
+    assert (
+        "sessionStorage.setItem('selectedTicket', JSON.stringify(ticket))"
+        not in TICKET_STORE_JS
+    )
     assert "find((ticket) => ticket.id === selectedId)" in TICKET_STORE_JS
     assert "export async function refreshTicketState" in TICKET_STORE_JS
 
