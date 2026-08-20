@@ -158,6 +158,44 @@ def use_mock_ai() -> bool:
     }
 
 
+def _record_structured_usage(usage: Any, *, model: str, agent_name: str) -> None:
+    """Record token usage from either Responses or Chat Completions payloads."""
+    if not usage:
+        return
+
+    def usage_value(*names: str) -> int:
+        for field in names:
+            value = (
+                usage.get(field)
+                if isinstance(usage, dict)
+                else getattr(usage, field, None)
+            )
+            if value is not None:
+                try:
+                    return int(value)
+                except (TypeError, ValueError):
+                    continue
+        return 0
+
+    prompt_tokens = usage_value("input_tokens", "prompt_tokens")
+    completion_tokens = usage_value("output_tokens", "completion_tokens")
+    if not prompt_tokens and not completion_tokens:
+        return
+
+    try:
+        from telemetry import record_llm_metrics
+
+        record_llm_metrics(
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            model=model,
+            agent_name=agent_name,
+        )
+    except Exception as exc:
+        # Observability must never make an otherwise valid AI response fail.
+        logger.debug("Could not record structured LLM token metrics: %s", exc)
+
+
 def generate_structured(
     *,
     prompt: str,
@@ -204,6 +242,9 @@ def generate_structured(
         )
         response.raise_for_status()
         payload = response.json()
+        _record_structured_usage(
+            payload.get("usage"), model=model, agent_name=f"structured_{name}"
+        )
         output_text = payload.get("output_text")
         if not output_text:
             for item in payload.get("output", []):
@@ -245,6 +286,11 @@ def generate_structured(
                 messages=[
                     {"role": "user", "content": prompt},
                 ],
+            )
+            _record_structured_usage(
+                getattr(resp, "usage", None),
+                model=model,
+                agent_name=f"structured_{name}",
             )
             content = resp.choices[0].message.content
             if content:

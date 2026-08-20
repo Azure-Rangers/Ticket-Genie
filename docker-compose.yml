@@ -11,6 +11,7 @@ services:
       - DATABASE_URL=sqlite:////data/ticketgenie.db
       - USE_MOCK_AI=false
       - AZURE_OPENAI_DEPLOYMENT=gpt-5.2
+      - LOG_ANALYTICS_WORKSPACE_ID=${LOG_ANALYTICS_WORKSPACE_ID:-000a40b1-4089-4e36-840b-fff92c998bf5}
       - ENABLE_SYNTHETIC_ANALYTICS=true
     env_file:
       - .env

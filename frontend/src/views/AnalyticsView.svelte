@@ -2,11 +2,13 @@
   import { onMount } from 'svelte';
   import { checkAuthGuard, userStore, isSuperAdmin } from '../lib/stores/auth.js';
   import { activeTab, selectedTicket } from '../lib/stores/tickets.js';
-  import { apiFetchDepartmentHealth } from '../lib/api.js';
+  import { apiFetchAIUsage, apiFetchDepartmentHealth } from '../lib/api.js';
 
   let analytics = null;
   let loading = true;
   let errorMessage = '';
+  let aiUsage = null;
+  let aiUsageError = '';
   let mounted = false;
   let loadedKey = Symbol('initial');
 
@@ -32,8 +34,25 @@
     loadedKey = key;
     loading = true;
     errorMessage = '';
+    aiUsageError = '';
     try {
-      analytics = await apiFetchDepartmentHealth(requestedDepartment);
+      if (isDeptView) {
+        analytics = await apiFetchDepartmentHealth(requestedDepartment);
+        aiUsage = null;
+      } else {
+        const [healthResult, usageResult] = await Promise.allSettled([
+          apiFetchDepartmentHealth(requestedDepartment),
+          apiFetchAIUsage(30)
+        ]);
+        if (healthResult.status === 'rejected') throw healthResult.reason;
+        analytics = healthResult.value;
+        if (usageResult.status === 'fulfilled') {
+          aiUsage = usageResult.value;
+        } else {
+          aiUsage = null;
+          aiUsageError = usageResult.reason?.message || 'Azure AI usage is unavailable.';
+        }
+      }
     } catch (error) {
       errorMessage = error.message || 'Unable to load department analytics.';
       analytics = null;
@@ -54,6 +73,10 @@
   function trendText(value) {
     if (value === 0) return 'No change';
     return `${value > 0 ? '+' : ''}${value}% vs prior 30d`;
+  }
+
+  function formatNumber(value) {
+    return Number(value || 0).toLocaleString();
   }
 
   function openTicket(ticket) {
@@ -108,6 +131,43 @@
         <div class="kpi-caption">Submission to verified resolution</div>
       </article>
     </section>
+
+    {#if !isDeptView}
+      <section class="panel ai-usage-panel">
+        <div class="panel-header ai-usage-header">
+          <div>
+            <span class="section-label">AZURE APPLICATION INSIGHTS</span>
+            <h2>AI model usage · last 30 days</h2>
+            <p>Historical Genie and classifier consumption queried directly from Azure Monitor.</p>
+          </div>
+          {#if aiUsage}<span class="azure-source-badge"><i class="ph-bold ph-cloud-check"></i> Azure data</span>{/if}
+        </div>
+        {#if aiUsageError}
+          <div class="ai-usage-error"><i class="ph-bold ph-warning-circle"></i><span>{aiUsageError}</span></div>
+        {:else if aiUsage}
+          <div class="ai-usage-grid">
+            <div><span>Model calls</span><strong>{formatNumber(aiUsage.totals.calls)}</strong></div>
+            <div><span>Prompt tokens</span><strong>{formatNumber(aiUsage.totals.prompt_tokens)}</strong></div>
+            <div><span>Completion tokens</span><strong>{formatNumber(aiUsage.totals.completion_tokens)}</strong></div>
+            <div><span>Total tokens</span><strong>{formatNumber(aiUsage.totals.total_tokens)}</strong></div>
+            <div><span>Estimated cost</span><strong>${Number(aiUsage.totals.estimated_cost_usd || 0).toFixed(6)}</strong></div>
+          </div>
+          {#if aiUsage.daily.length}
+            <div class="usage-days">
+              {#each aiUsage.daily.slice(-14) as day}
+                <div class="usage-day">
+                  <span>{day.day}</span>
+                  <div class="usage-track"><i style={`width:${Math.max(3, (day.total_tokens / Math.max(...aiUsage.daily.map(item => item.total_tokens), 1)) * 100)}%`}></i></div>
+                  <strong>{formatNumber(day.total_tokens)} tokens</strong>
+                </div>
+              {/each}
+            </div>
+          {:else}
+            <div class="empty-panel">Azure has no AI usage traces for this period yet.</div>
+          {/if}
+        {/if}
+      </section>
+    {/if}
 
     <section class="brief-card">
       <div class="brief-orb"><i class="ph-fill ph-sparkle"></i></div>
@@ -219,6 +279,19 @@
   .issues-panel > .panel-header > i { color: #6d5bd0; font-size: 1.5rem; }.issue-list { display: flex; flex-direction: column; margin-top: 14px; }.issue-row { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-top: 1px solid #f0f0f4; }.issue-rank { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 7px; color: #6d5bd0; background: #f0edff; font-size: 0.68rem; font-weight: 800; }.issue-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; }.issue-copy strong { overflow: hidden; color: var(--text-main); font-size: 0.78rem; text-overflow: ellipsis; white-space: nowrap; }.issue-copy span { margin-top: 2px; color: var(--text-muted); font-size: 0.65rem; }.signal-pill { padding: 4px 7px; border-radius: 7px; color: #b45309; background: #fffbeb; font-size: 0.65rem; font-weight: 800; }.signal-pill.rising { color: #b91c1c; background: #fef2f2; }
   .attention-icon { color: #dc5a5a; font-size: 1.7rem; }.attention-list { display: flex; flex-direction: column; margin-top: 13px; }.attention-row { width: 100%; display: grid; grid-template-columns: 30px minmax(220px, 1.3fr) 76px minmax(210px, 1fr) 55px 18px; align-items: center; gap: 12px; padding: 12px 8px; border: 0; border-top: 1px solid #eeeef3; color: inherit; background: transparent; text-align: left; cursor: pointer; }.attention-row:hover { border-radius: 9px; background: #faf9ff; }.attention-rank { color: #9a9ca8; font-size: 0.75rem; font-weight: 800; }.ticket-main { min-width: 0; display: flex; flex-direction: column; }.ticket-main strong { overflow: hidden; color: var(--text-main); font-size: 0.78rem; text-overflow: ellipsis; white-space: nowrap; }.ticket-main small { margin-top: 3px; color: var(--text-muted); font-size: 0.65rem; }.priority { justify-self: start; padding: 4px 8px; border-radius: 7px; color: #475569; background: #f1f5f9; font-size: 0.64rem; font-weight: 800; text-transform: uppercase; }.priority.high { color: #b45309; background: #fffbeb; }.priority.critical { color: #b91c1c; background: #fee2e2; }.attention-reason { color: #666978; font-size: 0.68rem; line-height: 1.35; }.attention-score { color: #6d5bd0; font-size: 1rem; font-weight: 800; text-align: center; }.attention-score small { display: block; color: #9a9ca8; font-size: 0.55rem; font-weight: 600; }.attention-row > i { color: #aaa5bb; }
   .empty-panel { padding: 34px 10px; color: var(--text-muted); font-size: 0.78rem; text-align: center; }
-  @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); }.main-grid { grid-template-columns: 1fr; }.recommendations { grid-template-columns: 1fr; }.attention-row { grid-template-columns: 28px 1fr 70px 50px 16px; }.attention-reason { display: none; } }
-  @media (max-width: 700px) { .analytics-view { padding: 18px; }.view-header { align-items: flex-start; flex-direction: column; }.header-actions { width: 100%; flex-wrap: wrap; }.kpi-grid { grid-template-columns: repeat(2, 1fr); }.health-card { grid-column: span 2; }.brief-card { flex-direction: column; }.attention-row { grid-template-columns: 24px 1fr 60px 16px; }.attention-score { display: none; } }
+  .ai-usage-panel { display: flex; flex-direction: column; gap: 18px; }
+  .ai-usage-header { align-items: center; }
+  .azure-source-badge { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1px solid #bae6fd; border-radius: 20px; color: #0369a1; background: #f0f9ff; font-size: .68rem; font-weight: 800; }
+  .ai-usage-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .ai-usage-grid > div { padding: 14px; border: 1px solid #ececf2; border-radius: 11px; background: #fafaff; }
+  .ai-usage-grid span { display: block; color: var(--text-muted); font-size: .67rem; font-weight: 700; }
+  .ai-usage-grid strong { display: block; margin-top: 7px; color: var(--text-main); font-size: 1.12rem; }
+  .ai-usage-error { display: flex; align-items: center; gap: 8px; padding: 13px; border: 1px solid #fed7aa; border-radius: 10px; color: #9a3412; background: #fff7ed; font-size: .76rem; }
+  .usage-days { display: flex; flex-direction: column; gap: 8px; }
+  .usage-day { display: grid; grid-template-columns: 92px 1fr 110px; align-items: center; gap: 12px; color: var(--text-muted); font-size: .68rem; }
+  .usage-day strong { color: var(--text-main); text-align: right; }
+  .usage-track { height: 7px; overflow: hidden; border-radius: 7px; background: #eeeaf9; }
+  .usage-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #6d5bd0, #18a999); }
+  @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); }.ai-usage-grid { grid-template-columns: repeat(3, 1fr); }.main-grid { grid-template-columns: 1fr; }.recommendations { grid-template-columns: 1fr; }.attention-row { grid-template-columns: 28px 1fr 70px 50px 16px; }.attention-reason { display: none; } }
+  @media (max-width: 700px) { .analytics-view { padding: 18px; }.view-header { align-items: flex-start; flex-direction: column; }.header-actions { width: 100%; flex-wrap: wrap; }.kpi-grid, .ai-usage-grid { grid-template-columns: repeat(2, 1fr); }.health-card { grid-column: span 2; }.usage-day { grid-template-columns: 78px 1fr; }.usage-day strong { grid-column: 2; }.brief-card { flex-direction: column; }.attention-row { grid-template-columns: 24px 1fr 60px 16px; }.attention-score { display: none; } }
 </style>

@@ -437,6 +437,21 @@ export async function apiFetchDepartmentHealth(department = null) {
   return await res.json();
 }
 
+export async function apiFetchAIUsage(days = 30) {
+  const res = await fetch(`${API_BASE_URL}/analytics/ai-usage?days=${encodeURIComponent(days)}`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    let detail = `Unable to load Azure AI usage (${res.status})`;
+    try {
+      const body = await res.json();
+      if (body.detail) detail = body.detail;
+    } catch (e) {}
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
 export async function apiCreateAnnouncement(payload) {
   const res = await fetch(`${API_BASE_URL}/announcements`, {
     method: "POST",

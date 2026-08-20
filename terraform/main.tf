@@ -84,6 +84,7 @@ resource "azurerm_linux_web_app" "backend" {
     "WEBSITES_PORT"                              = "8000"
     "WEBSITES_ENABLE_APP_SERVICE_STORAGE"        = "false"
     "APPLICATIONINSIGHTS_CONNECTION_STRING"      = azurerm_application_insights.appi.connection_string
+    "LOG_ANALYTICS_WORKSPACE_ID"                 = azurerm_log_analytics_workspace.law.workspace_id
     "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
     "OTEL_TRACES_SAMPLER"                        = "always_on"
     "AZURE_CLIENT_ID"                            = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-client-id)"

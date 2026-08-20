@@ -33,6 +33,11 @@ from models.chatbot import (
 from models.ticket import TICKET_DEPARTMENTS, TICKET_PRIORITIES
 from services import management_action_service, ticket_draft_service
 from services.ai_service import ai_service as default_ai_service
+from services.azure_ai_usage_service import (
+    AzureAIUsageUnavailableError,
+    get_azure_ai_usage,
+    is_ai_usage_admin,
+)
 from services.knowledge_service import (
     KnowledgeRetriever,
     SearchUnavailableError,
@@ -74,6 +79,59 @@ OUT_OF_SCOPE_MESSAGE = (
     "Please ask me about company policies, HR, IT, accounting, workplace "
     "operations, tickets, leave, or other work-related support."
 )
+AI_USAGE_ADMIN_ONLY_MESSAGE = (
+    "AI usage statistics are available only to verified Admins and Super Admins."
+)
+
+_AI_USAGE_QUERY_PATTERNS = (
+    r"\b(?:ai|llm|genie)\s+(?:token\s+)?usage\b",
+    r"\btoken\s+(?:count|counts|usage|metrics|statistics|stats)\b",
+    r"\b(?:ai|llm|genie)\s+(?:cost|costs|metrics|statistics|stats)\b",
+)
+
+
+def _is_ai_usage_query(message: str) -> bool:
+    return any(
+        re.search(pattern, message, re.IGNORECASE)
+        for pattern in _AI_USAGE_QUERY_PATTERNS
+    )
+
+
+def _handle_ai_usage_query(current_user: Optional[dict]) -> ChatResponse:
+    if not is_ai_usage_admin(current_user):
+        return ChatResponse(
+            message=AI_USAGE_ADMIN_ONLY_MESSAGE,
+            intent=ChatIntent.GENERAL,
+            suggestions=PREDEFINED_SUGGESTIONS,
+        )
+
+    try:
+        usage = get_azure_ai_usage()
+    except AzureAIUsageUnavailableError:
+        return ChatResponse(
+            message=(
+                "I couldn't retrieve AI usage from Azure Application Insights "
+                "right now. Please try again shortly."
+            ),
+            intent=ChatIntent.GENERAL,
+            suggestions=PREDEFINED_SUGGESTIONS,
+        )
+
+    totals = usage["totals"]
+    message = (
+        f"AI usage from Azure Application Insights for the last {usage['period_days']} days:\n"
+        f"- Model calls: {totals['calls']:,}\n"
+        f"- Prompt tokens: {totals['prompt_tokens']:,}\n"
+        f"- Completion tokens: {totals['completion_tokens']:,}\n"
+        f"- Total tokens: {totals['total_tokens']:,}\n"
+        f"- Estimated cost: ${totals['estimated_cost_usd']:.6f}\n\n"
+        "You can see the daily and model breakdown on General Analytics."
+    )
+    return ChatResponse(
+        message=message,
+        intent=ChatIntent.GENERAL,
+        suggestions=PREDEFINED_SUGGESTIONS,
+    )
 
 
 def _out_of_scope_response() -> ChatResponse:
@@ -682,6 +740,11 @@ def handle_message(
             intent=ChatIntent.GENERAL,
             suggestions=PREDEFINED_SUGGESTIONS,
         )
+
+    # Deterministic and authorization-gated before GPT: the verified Bearer
+    # identity is the only role source, and asking for stats consumes no AI call.
+    if _is_ai_usage_query(message):
+        return _handle_ai_usage_query(current_user)
 
     try:
         decision = chatbot_agent.decide(
