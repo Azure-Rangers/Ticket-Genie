@@ -303,11 +303,10 @@
               <label for="std-dept">Target Department Queue</label>
               <select id="std-dept" bind:value={departmentSelect}>
                 <option value="Auto">✨ Auto (AI Routing & Triage)</option>
-                <option value="IT Team">IT Team</option>
-                <option value="HR Team">HR Team</option>
-                <option value="Accounting Team">Accounting Team</option>
-                <option value="Workplace Operations Team">Workplace Operations Team</option>
-                <option value="Upper Management">Upper Management</option>
+                <option value="IT & Technology">IT & Technology</option>
+                <option value="HR & Workplace Operations">HR & Workplace Operations</option>
+                <option value="Account Management">Account Management</option>
+                <option value="Upper Management/Administration">Upper Management/Administration</option>
               </select>
               {#if departmentSelect !== 'Auto'}
                 <small class="routing-note"><i class="ph-bold ph-check-circle"></i> Your selection will be used directly; AI department routing will be skipped.</small>

@@ -405,9 +405,8 @@
             <select class="transfer-select" bind:value={targetTransferDept}>
               <option value="IT Team">IT Team Queue</option>
               <option value="HR Team">HR Team Queue</option>
-              <option value="Accounting Team">Accounting Team Queue</option>
-              <option value="Workplace Operations Team">Workplace Operations Queue</option>
-              <option value="Upper Management">Upper Management Queue</option>
+              <option value="Accounting">Finance & Ops Queue</option>
+              <option value="Upper Executive Management">Upper Management Queue</option>
             </select>
             <button 
               class="btn-transfer" 

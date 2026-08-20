@@ -13,8 +13,6 @@ _EXCLUDED_FIELDS = {"department", "category", "priority", "department_override"}
 tracer = trace.get_tracer("ticketgenie.services.ticket")
 
 
-
-
 def process_new_ticket(ticket: TicketCreate, db: Optional[Session] = None):
     with tracer.start_as_current_span("ticket_service.process_new_ticket") as span:
         span.set_attribute("service.name", "ticket_service")

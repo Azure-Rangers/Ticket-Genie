@@ -175,11 +175,9 @@
             <label>Category & Routing</label>
             <select id="category" required>
               <option value="" disabled selected>Select category...</option>
-              <optgroup label="IT Team"><option>Laptop Requests</option><option>Software Licensing</option><option>Identity and Access Management</option></optgroup>
-              <optgroup label="HR Team"><option>Employee Relationships</option><option>Benefits Inquiries</option><option>Onboarding and Offboarding</option></optgroup>
-              <optgroup label="Accounting Team"><option>Reimbursement Requests</option><option>Company Card Management</option></optgroup>
-              <optgroup label="Workplace Operations Team"><option>Maintenance</option><option>Badge Registration</option><option>Office Equipment Issues</option></optgroup>
-              <optgroup label="Upper Management"><option>High-Impact Company Conflict</option><option>Executive Review</option></optgroup>
+              <optgroup label="IT"><option>Hardware Issues</option><option>IAM</option></optgroup>
+              <optgroup label="HR"><option>Employee Relations</option><option>Leave Requests</option></optgroup>
+              <optgroup label="Finance"><option>Expense Report</option></optgroup>
             </select>
           </div>
           <div class="input-group">
@@ -311,27 +309,13 @@
 
         bypassAnnouncementCheck = false;
         announcementWarning.classList.remove('show');
-        
-        let mappedDept = "IT Team";
-        if (category === "Laptop Requests" || category === "Software Licensing" || category === "Identity and Access Management" || category === "Hardware Issues" || category === "IAM") {
-          mappedDept = "IT Team";
-        } else if (category === "Employee Relationships" || category === "Benefits Inquiries" || category === "Onboarding and Offboarding" || category === "Employee Relations" || category === "Leave Requests") {
-          mappedDept = "HR Team";
-        } else if (category === "Reimbursement Requests" || category === "Company Card Management" || category === "Expense Report") {
-          mappedDept = "Accounting Team";
-        } else if (category === "Maintenance" || category === "Badge Registration" || category === "Office Equipment Issues") {
-          mappedDept = "Workplace Operations Team";
-        } else if (category === "High-Impact Company Conflict" || category === "Executive Review") {
-          mappedDept = "Upper Management";
-        }
-
         const createFn = window.apiCreateTicket || (async () => null);
         const newTicket = await createFn({
           category,
           title,
           priority,
           description,
-          department: mappedDept
+          department: category || "General"
         });
 
         if (!newTicket) {
