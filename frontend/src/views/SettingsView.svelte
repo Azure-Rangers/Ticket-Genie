@@ -13,7 +13,7 @@
 
   let newDeptName = '';
   let newQueueName = '';
-  let rbacAssignEmail = '';
+  let rbacAssignObjectId = '';
   let rbacAssignRole = 'Admin';
   let rbacAssignDept = 'IT Operations';
   let rbacMessage = '';
@@ -49,29 +49,23 @@
   }
 
   async function handleAssignUserRole() {
-    if (!rbacAssignEmail.trim()) return;
+    const azureObjectId = rbacAssignObjectId.trim();
+    if (!azureObjectId) {
+      rbacMessage = 'Enter the user’s Azure Object ID.';
+      return;
+    }
     try {
       await apiAssignDepartmentUser({
-        user_email: rbacAssignEmail,
         department_name: rbacAssignDept,
-        azure_object_id: `uobj-${Date.now().toString().slice(-6)}`,
+        azure_object_id: azureObjectId,
         role: rbacAssignRole
       });
-      rbacMessage = `✅ Assigned role '${rbacAssignRole}' to ${rbacAssignEmail}`;
-      rbacAssignEmail = '';
+      rbacMessage = `✅ Assigned role '${rbacAssignRole}' to Azure Object ID ${azureObjectId}`;
+      rbacAssignObjectId = '';
       await loadAdminData();
       setTimeout(() => rbacMessage = '', 3000);
     } catch (e) {
-      // Fallback local UI update if backend call succeeds or dev session
-      departmentUsers = [...departmentUsers, {
-        id: `uobj-${Date.now().toString().slice(-6)}`,
-        user_email: rbacAssignEmail,
-        azure_object_id: `uobj-${Date.now().toString().slice(-6)}`,
-        role: rbacAssignRole,
-        department_name: rbacAssignDept
-      }];
-      rbacMessage = `✅ Assigned role '${rbacAssignRole}' to ${rbacAssignEmail}`;
-      rbacAssignEmail = '';
+      rbacMessage = e.message || 'Unable to assign the role. Verify the Azure Object ID and try again.';
       setTimeout(() => rbacMessage = '', 3000);
     }
   }
@@ -94,18 +88,22 @@
   }
 
   async function handleAddDepartment() {
-    if (!newDeptName.trim()) return;
+    const departmentName = newDeptName.trim();
+    const queueName = newQueueName.trim() || `${departmentName} Queue`;
+    if (!departmentName) {
+      rbacMessage = 'Enter a department name.';
+      return;
+    }
     try {
-      await apiCreateDepartment(newDeptName, newQueueName || `${newDeptName} Queue`);
-      rbacMessage = `✅ Department '${newDeptName}' created successfully!`;
-    } catch (e) {
-      rbacMessage = `✅ Department '${newDeptName}' created!`;
-    } finally {
-      departments = [...departments, { name: newDeptName, queue_name: newQueueName || `${newDeptName} Queue` }];
+      await apiCreateDepartment(departmentName, queueName);
+      rbacMessage = `✅ Department '${departmentName}' created successfully!`;
       newDeptName = '';
       newQueueName = '';
-      setTimeout(() => rbacMessage = '', 3000);
+      await loadAdminData();
+    } catch (e) {
+      rbacMessage = e.message || `Unable to create department '${departmentName}'. Please try again.`;
     }
+    setTimeout(() => rbacMessage = '', 3000);
   }
 
   async function handleRemoveDepartment(d) {
@@ -223,7 +221,13 @@
 
           <div class="rbac-assign-box">
             <div class="rbac-form-row">
-              <input type="email" placeholder="user@company.com" bind:value={rbacAssignEmail} />
+              <input
+                type="text"
+                aria-label="Azure Object ID"
+                placeholder="Azure Object ID (GUID)"
+                autocomplete="off"
+                bind:value={rbacAssignObjectId}
+              />
               <select bind:value={rbacAssignDept}>
                 {#each departments as dep}
                   <option value={dep.name || dep.department_name}>{dep.name || dep.department_name}</option>
