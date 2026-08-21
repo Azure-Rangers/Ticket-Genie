@@ -99,10 +99,28 @@ stages:
                     inlineScript: |
                       set -euo pipefail
 
-                      # Identity, Key Vault policies, storage data, and RBAC are
-                      # provisioned outside this deployment job. This step only
-                      # deploys containers and updates Web App configuration.
-                      echo "=== 1. Updating Backend Web App (FastAPI REST API on Port 8000) ==="
+                      echo "=== 1. Ensuring Backend Managed Identity and Key Vault Access ==="
+                      # Enable System-Assigned Managed Identity on Backend Web App (idempotent)
+                      az webapp identity assign \
+                        --resource-group "$(resourceGroupName)" \
+                        --name "$(backendWebAppName)" >/dev/null || true
+
+                      BACKEND_PRINCIPAL_ID=$(az webapp identity show \
+                        --resource-group "$(resourceGroupName)" \
+                        --name "$(backendWebAppName)" \
+                        --query principalId -o tsv 2>/dev/null || echo "")
+
+                      if [ -n "$BACKEND_PRINCIPAL_ID" ]; then
+                        echo "Configuring Key Vault access policy for Principal ID: $BACKEND_PRINCIPAL_ID..."
+                        az keyvault set-policy \
+                          --name "$(keyVaultName)" \
+                          --object-id "$BACKEND_PRINCIPAL_ID" \
+                          --secret-permissions get list >/dev/null || true
+                      fi
+
+                      # Storage data and storage RBAC are intentionally not
+                      # changed by this deployment job.
+                      echo "=== 2. Updating Backend Web App (FastAPI REST API on Port 8000) ==="
                       az webapp config container set \
                         --resource-group "$(resourceGroupName)" \
                         --name "$(backendWebAppName)" \
@@ -140,7 +158,7 @@ stages:
                         --resource-group "$(resourceGroupName)" \
                         --name "$(backendWebAppName)"
 
-                      echo "=== 2. Updating Frontend Web App (Nginx UI on Port 80) ==="
+                      echo "=== 3. Updating Frontend Web App (Nginx UI on Port 80) ==="
                       az webapp config container set \
                         --resource-group "$(resourceGroupName)" \
                         --name "$(frontendWebAppName)" \
