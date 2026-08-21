@@ -13,45 +13,15 @@
   let saveSuccessMessage = '';
   let savingSettings = false;
 
-  // Fallback / Initial Data matching Application Insights Telemetry schema
-  const defaultUsageData = {
+  const emptyUsageData = {
     source: "Azure Application Insights",
-    period_days: 30,
-    period_start: "2026-07-22T02:07:45.835340+00:00",
-    period_end: "2026-08-21T02:07:45.835340+00:00",
-    last_updated: "2026-08-21T02:05:16.353567+00:00",
-    totals: {
-      calls: 6,
-      prompt_tokens: 23039,
-      completion_tokens: 761,
-      total_tokens: 23800,
-      estimated_cost_usd: 0.12661
-    },
-    daily: [
-      { day: "2026-08-21", calls: 6, total_tokens: 23800, estimated_cost_usd: 0.12661 }
-    ],
-    breakdown: [
-      {
-        day: "2026-08-21",
-        agent: "structured_ChatbotDecision",
-        model: "gpt-5.2",
-        calls: 4,
-        prompt_tokens: 19312,
-        completion_tokens: 324,
-        total_tokens: 19636,
-        estimated_cost_usd: 0.10142
-      },
-      {
-        day: "2026-08-21",
-        agent: "structured_GroundedAnswer",
-        model: "gpt-5.2",
-        calls: 2,
-        prompt_tokens: 3727,
-        completion_tokens: 437,
-        total_tokens: 4164,
-        estimated_cost_usd: 0.02519
-      }
-    ]
+    period_days: selectedDays,
+    period_start: null,
+    period_end: null,
+    last_updated: null,
+    totals: { calls: 0, prompt_tokens: 0, completion_tokens: 0, total_tokens: 0, estimated_cost_usd: 0 },
+    daily: [],
+    breakdown: []
   };
 
   // AI Settings State & Toggles
@@ -95,7 +65,7 @@
   let sortBy = 'estimated_cost_usd';
   let sortAsc = false;
 
-  $: currentUsage = aiUsage || defaultUsageData;
+  $: currentUsage = aiUsage || emptyUsageData;
   $: totals = currentUsage.totals || { calls: 0, prompt_tokens: 0, completion_tokens: 0, total_tokens: 0, estimated_cost_usd: 0 };
   $: breakdown = currentUsage.breakdown || [];
   $: daily = currentUsage.daily || [];
@@ -158,12 +128,13 @@
       if (data && data.totals && data.totals.calls > 0) {
         aiUsage = data;
       } else {
-        // Fallback to sample Azure telemetry dataset if live table has 0 traces in dev
-        aiUsage = defaultUsageData;
+        aiUsage = { ...emptyUsageData, period_days: selectedDays };
+        error = 'No AI usage was recorded for this period.';
       }
     } catch (err) {
-      console.warn("Using sample Azure Application Insights telemetry data:", err.message);
-      aiUsage = defaultUsageData;
+      console.warn("Azure Application Insights telemetry is unavailable:", err.message);
+      aiUsage = { ...emptyUsageData, period_days: selectedDays };
+      error = err.message || 'Azure Application Insights telemetry is unavailable.';
     } finally {
       loading = false;
     }
@@ -384,6 +355,13 @@
     <div class="banner success animate-fade">
       <i class="ph-bold ph-check-circle"></i>
       <span>{saveSuccessMessage}</span>
+    </div>
+  {/if}
+
+  {#if error}
+    <div class="banner warning animate-fade" role="status">
+      <i class="ph-bold ph-warning-circle"></i>
+      <span>{error} The figures below are empty rather than sample data.</span>
     </div>
   {/if}
 
@@ -1202,6 +1180,12 @@
     background: #ecfdf5;
     color: #047857;
     border: 1px solid #a7f3d0;
+  }
+
+  .banner.warning {
+    background: #fff7ed;
+    color: #9a3412;
+    border: 1px solid #fed7aa;
   }
 
   /* KPI Grid */

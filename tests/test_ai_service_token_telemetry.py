@@ -36,6 +36,7 @@ def test_generate_structured_records_responses_api_token_usage(monkeypatch):
         completion_tokens=45,
         model="test-deployment",
         agent_name="structured_ChatbotDecision",
+        cached_tokens=0,
     )
 
 
@@ -54,6 +55,7 @@ def test_structured_usage_supports_chat_completions_field_names(monkeypatch):
         completion_tokens=20,
         model="fallback-deployment",
         agent_name="structured_KnowledgeDecision",
+        cached_tokens=0,
     )
 
 

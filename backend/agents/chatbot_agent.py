@@ -375,10 +375,101 @@ ask_followup, `message` IS the follow-up question to show the user).
 """
 
 
+_PROMPT_COMMON = """You route messages for TicketGenie's workplace assistant.
+Return one ChatbotDecision matching the schema. Extract only facts supplied by
+the user; never invent policy, ticket data, values, dates, or URLs.
+
+SCOPE: workplace covers company policy, HR, IT, accounting, operations,
+tickets, leave, payroll, benefits, and company devices/software, including a
+short reply continuing such a conversation. out_of_scope covers unrelated
+trivia, entertainment, sports, politics, weather, recipes, and creative
+requests. Judge the latest message by meaning. An unrelated new topic stays
+out_of_scope during an active workflow; a short relevant answer stays
+workplace. When genuinely unsure, prefer workplace.
+
+INTENTS: navigation=open a page; how_to=use an existing feature;
+knowledge=company policy/process fact; support_issue/create_ticket=new support
+request; leave_management=personal request to take/change leave;
+ticket_status=existing ticket status; reassign_ticket/change_priority=modify
+an existing ticket; create_portal_employee=add a portal user; general=greeting
+or other workplace chat. A general leave-policy question is knowledge, but a
+personal leave request is always leave_management.
+
+ACTIONS: navigation->navigate, knowledge->search_knowledge,
+ticket_status->check_ticket_status, management intents->management_action,
+incomplete ticket/leave->ask_followup, complete ticket/leave->show_ticket_draft
+or start_ticket_draft, otherwise respond. Keep message short. The backend
+validates authorization and all extracted values."""
+
+_PROMPT_NAVIGATION = """NAVIGATION: navigation_target must be one of dashboard,
+create_ticket, my_tickets, knowledge_base, notifications, announcements,
+profile, settings, analytics, onboarding, leave_calendar. Never emit a URL.
+Use create_ticket only when asked to open that page; a request to report an
+issue is a ticket intent. If no target clearly fits, use how_to."""
+
+_PROMPT_MANAGEMENT = """MANAGEMENT: populate management_fields only for
+reassign_ticket, change_priority, or create_portal_employee; otherwise null.
+Extract ticket_id only when explicitly supplied. Match department, priority,
+employee role, and employee department only to the allowed values. Extract
+employee identity fields only when stated. Leave ambiguous/missing values null;
+the backend will ask for them."""
+
+_PROMPT_TICKET = """TICKET/LEAVE: populate ticket_fields only for ticket,
+leave, or ticket-status work. Match category only to the relevant allowed list.
+For support tickets, preferred_date is ISO YYYY-MM-DD when confidently known.
+For leave, preferred_date is null and start_date/end_date hold the stated ISO
+range; do not invent an end date. Resolve relative dates using today's date.
+
+For a ticket draft, title is descriptive and 3-8 words. Description must be a
+concise 3-4 sentence full re-synthesis of all known facts, replacing the
+previous description. Write in FIRST PERSON using "I"/"me"/"my", including
+anonymous requests; never use "the employee", "the user", "the requester", or
+"the person". Never quote verbatim, never state the same fact twice, and
+preserve every important fact. missing_fields contains only genuinely required
+information not already known.
+
+Request type: leave_management for leave; standard for ordinary support;
+anonymous only when the user explicitly requests anonymity, in which case
+anonymity_requested=true. Sensitive subject matter alone does not imply
+anonymity. Keep sensitive descriptions neutral and factual."""
+
+_PROMPT_STATUS = """TICKET STATUS: copy an explicit ticket number into
+ticket_fields.ticket_id exactly as written. If the latest message refers to a
+ticket mentioned earlier without repeating its number, leave ticket_id null so
+the backend resolves it. Do not merely promise to look it up."""
+
+
+def _build_decision_prompt(known_intent: Optional[ChatIntent]) -> str:
+    """Return the smallest safe instruction set for the current workflow."""
+    sections = [_PROMPT_COMMON]
+    if known_intent is None:
+        sections.extend(
+            [_PROMPT_NAVIGATION, _PROMPT_MANAGEMENT, _PROMPT_TICKET, _PROMPT_STATUS]
+        )
+    elif known_intent == ChatIntent.NAVIGATION:
+        sections.append(_PROMPT_NAVIGATION)
+    elif known_intent in {
+        ChatIntent.REASSIGN_TICKET,
+        ChatIntent.CHANGE_PRIORITY,
+        ChatIntent.CREATE_PORTAL_EMPLOYEE,
+    }:
+        sections.append(_PROMPT_MANAGEMENT)
+    elif known_intent in {
+        ChatIntent.SUPPORT_ISSUE,
+        ChatIntent.CREATE_TICKET,
+        ChatIntent.LEAVE_MANAGEMENT,
+    }:
+        sections.append(_PROMPT_TICKET)
+    elif known_intent == ChatIntent.TICKET_STATUS:
+        sections.append(_PROMPT_STATUS)
+    return "\n\n".join(sections)
+
+
 def _format_history(history: List[ChatTurn]) -> str:
     if not history:
         return "(none)"
-    lines = [f"{turn.role}: {turn.message}" for turn in history]
+    recent_history = history[-6:]
+    lines = [f"{turn.role}: {turn.message[:400]}" for turn in recent_history]
     return "\n".join(lines)
 
 
@@ -446,7 +537,7 @@ Latest user message:
 """
 
     return ai_service.generate(
-        system_prompt=CHATBOT_DECISION_PROMPT,
+        system_prompt=_build_decision_prompt(known_intent),
         user_content=user_content,
         response_model=ChatbotDecision,
     )

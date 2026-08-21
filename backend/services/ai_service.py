@@ -129,6 +129,10 @@ class AIServiceWrapper:
         temperature: float = 0.0,
     ) -> Any:
         model_name = getattr(response_model, "__name__", "response")
+        # Keep semantic-router responses compact without changing the caller's
+        # stable interface (important for injected test and local AI services).
+        if max_tokens is None and model_name == "ChatbotDecision":
+            max_tokens = 400
 
         if use_mock_ai():
             try:
