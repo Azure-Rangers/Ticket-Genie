@@ -100,9 +100,7 @@ def get_onboarding_case(onboarding_id: str, db: Session) -> dict | None:
     return _serialize_case(record, tickets)
 
 
-def _create_linked_ticket(
-    record: OnboardingDB, item, db: Session
-) -> dict:
+def _create_linked_ticket(record: OnboardingDB, item, db: Session) -> dict:
     employee_context = "\n".join(
         [
             "Employee being onboarded:",

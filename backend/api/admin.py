@@ -234,45 +234,79 @@ def warmup_prompt_cache(current_user: dict = Depends(verify_azure_user)):
     # 1. ticket_classifier — 4 calls (1 miss + 3 hits)
     try:
         from services.ai_service import get_ai_classification
+
         inputs = [
-            ("Outlook not loading after Windows 11 update", "Outlook freezes on startup."),
-            ("VPN Connection Fails with Error 800", "Cannot connect to AnyConnect VPN."),
-            ("Printer offline on Floor 3", "HP LaserJet shows offline after switch replacement."),
+            (
+                "Outlook not loading after Windows 11 update",
+                "Outlook freezes on startup.",
+            ),
+            (
+                "VPN Connection Fails with Error 800",
+                "Cannot connect to AnyConnect VPN.",
+            ),
+            (
+                "Printer offline on Floor 3",
+                "HP LaserJet shows offline after switch replacement.",
+            ),
         ]
         for title, desc in inputs:
             get_ai_classification(title, desc)
             get_ai_classification(title, desc)  # second call = cache hit
         results.append({"agent": "ticket_classifier", "calls": 6, "status": "ok"})
     except Exception as e:
-        results.append({"agent": "ticket_classifier", "status": "error", "detail": str(e)})
+        results.append(
+            {"agent": "ticket_classifier", "status": "error", "detail": str(e)}
+        )
 
     # 2. announcement_severity — 4 calls (2 misses + 2 hits)
     try:
         from services.announcement_service import classify_announcement_severity
+
         ann_inputs = [
-            ("Office 365 Email Outage", "Microsoft 365 email services experiencing degradation.", "IT Infrastructure"),
-            ("VPN Gateway Certificate Renewal", "Global VPN gateway cert renewal requires restart.", "Network"),
+            (
+                "Office 365 Email Outage",
+                "Microsoft 365 email services experiencing degradation.",
+                "IT Infrastructure",
+            ),
+            (
+                "VPN Gateway Certificate Renewal",
+                "Global VPN gateway cert renewal requires restart.",
+                "Network",
+            ),
         ]
         for title, body, cat in ann_inputs:
             classify_announcement_severity(title, body, category=cat)
             classify_announcement_severity(title, body, category=cat)  # hit
         results.append({"agent": "announcement_severity", "calls": 4, "status": "ok"})
     except Exception as e:
-        results.append({"agent": "announcement_severity", "status": "error", "detail": str(e)})
+        results.append(
+            {"agent": "announcement_severity", "status": "error", "detail": str(e)}
+        )
 
     # 3. structured_TicketSummary — 4 calls (2 misses + 2 hits)
     try:
         from agents.summary_agent import summarize_ticket
+
         sum_inputs = [
-            ("Printer Offline Floor 3", "HP LaserJet shows offline error after network switch was replaced."),
-            ("Dell 4K Monitor Flickering", "Green vertical stripes appear after power surge event."),
+            (
+                "Printer Offline Floor 3",
+                "HP LaserJet shows offline error after network switch was replaced.",
+            ),
+            (
+                "Dell 4K Monitor Flickering",
+                "Green vertical stripes appear after power surge event.",
+            ),
         ]
         for title, desc in sum_inputs:
             summarize_ticket(title, desc)
             summarize_ticket(title, desc)  # hit
-        results.append({"agent": "structured_TicketSummary", "calls": 4, "status": "ok"})
+        results.append(
+            {"agent": "structured_TicketSummary", "calls": 4, "status": "ok"}
+        )
     except Exception as e:
-        results.append({"agent": "structured_TicketSummary", "status": "error", "detail": str(e)})
+        results.append(
+            {"agent": "structured_TicketSummary", "status": "error", "detail": str(e)}
+        )
 
     return {
         "status": "warmup_complete",

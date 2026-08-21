@@ -14,9 +14,7 @@ def test_only_canonical_management_roles_are_allowed(role):
     assert ingestion.require_knowledge_manager(user) is user
 
 
-@pytest.mark.parametrize(
-    "role", ["Employee", "Manager", "Support", "", None]
-)
+@pytest.mark.parametrize("role", ["Employee", "Manager", "Support", "", None])
 def test_employee_and_legacy_roles_cannot_manage_knowledge(role):
     with pytest.raises(HTTPException) as exc:
         ingestion.require_knowledge_manager({"role": role, "oid": "oid-1"})

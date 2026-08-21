@@ -81,6 +81,7 @@ def _pydantic_to_strict_schema(response_model: Any) -> dict[str, Any]:
     schema = response_model.model_json_schema()
     defs = schema.pop("$defs", {})
     if defs:
+
         def _resolve(node: Any) -> Any:
             if isinstance(node, dict):
                 if "$ref" in node:
@@ -95,6 +96,7 @@ def _pydantic_to_strict_schema(response_model: Any) -> dict[str, Any]:
             elif isinstance(node, list):
                 return [_resolve(item) for item in node]
             return node
+
         schema = _resolve(schema)
 
     _strictify_json_schema(schema)
@@ -140,7 +142,9 @@ class AIServiceWrapper:
                 try:
                     from telemetry import record_llm_metrics
 
-                    prompt_tok = max(15, len((system_prompt + " " + user_content).split()) * 2)
+                    prompt_tok = max(
+                        15, len((system_prompt + " " + user_content).split()) * 2
+                    )
                     record_llm_metrics(
                         prompt_tokens=prompt_tok,
                         completion_tokens=25,
@@ -280,7 +284,11 @@ def generate_structured(
     if cached_result is not None:
         est_tokens = estimate_prompt_tokens(prompt)
         _record_structured_usage(
-            {"prompt_tokens": est_tokens, "completion_tokens": 0, "cached_tokens": est_tokens},
+            {
+                "prompt_tokens": est_tokens,
+                "completion_tokens": 0,
+                "cached_tokens": est_tokens,
+            },
             model=model,
             agent_name=agent_label,
         )
@@ -330,7 +338,13 @@ def generate_structured(
         if not output_text:
             raise AIServiceError("Azure OpenAI returned no structured output.")
         result = json.loads(output_text)
-        prompt_cache.set(cache_key, result, est_tokens=estimate_prompt_tokens(prompt), ttl_seconds=3600, agent_name=agent_label)
+        prompt_cache.set(
+            cache_key,
+            result,
+            est_tokens=estimate_prompt_tokens(prompt),
+            ttl_seconds=3600,
+            agent_name=agent_label,
+        )
         return result
     except AIServiceError:
         raise
@@ -372,7 +386,13 @@ def generate_structured(
             content = resp.choices[0].message.content
             if content:
                 result = json.loads(content)
-                prompt_cache.set(cache_key, result, est_tokens=estimate_prompt_tokens(prompt), ttl_seconds=3600, agent_name=agent_label)
+                prompt_cache.set(
+                    cache_key,
+                    result,
+                    est_tokens=estimate_prompt_tokens(prompt),
+                    ttl_seconds=3600,
+                    agent_name=agent_label,
+                )
                 return result
         except Exception:
             pass
@@ -480,20 +500,10 @@ def _call_azure_openai(
     description: str,
     context: Optional[dict[str, Any]],
 ) -> dict[str, Any]:
-    endpoint = _require_env("AZURE_OPENAI_ENDPOINT")
-    api_key = _require_env("AZURE_OPENAI_API_KEY")
     deployment = _require_env("AZURE_OPENAI_DEPLOYMENT")
-    api_version = os.getenv("AZURE_OPENAI_API_VERSION", DEFAULT_AZURE_API_VERSION)
 
     try:
-        from openai import (
-            APIConnectionError,
-            AuthenticationError,
-            AzureOpenAI,
-            NotFoundError,
-            OpenAIError,
-            RateLimitError,
-        )
+        import openai  # noqa: F401
     except ImportError as exc:
         raise AIServiceError(
             "The 'openai' package is required for real AI mode but is not installed."
@@ -503,12 +513,6 @@ def _call_azure_openai(
     if context:
         user_content += f"\nAdditional context: {json.dumps(context, default=str)}"
 
-    timeout_raw = os.getenv("AZURE_OPENAI_TIMEOUT", str(DEFAULT_AI_TIMEOUT))
-    try:
-        timeout = float(timeout_raw)
-    except ValueError:
-        timeout = DEFAULT_AI_TIMEOUT
-
     from services.prompt_cache_service import estimate_prompt_tokens, prompt_cache
 
     cache_key = prompt_cache.make_key("ticket_classifier", f"{title}|{description}")
@@ -516,7 +520,11 @@ def _call_azure_openai(
     if cached_result is not None:
         est_tokens = estimate_prompt_tokens(f"{title} {description}")
         _record_structured_usage(
-            {"prompt_tokens": est_tokens, "completion_tokens": 0, "cached_tokens": est_tokens},
+            {
+                "prompt_tokens": est_tokens,
+                "completion_tokens": 0,
+                "cached_tokens": est_tokens,
+            },
             model=deployment,
             agent_name="ticket_classifier",
         )
@@ -524,8 +532,13 @@ def _call_azure_openai(
 
     class TicketClassificationDecision(BaseModel):
         category: str = Field(default="IT Support", description="Ticket category")
-        priority: str = Field(default="Medium", description="Ticket priority (Low, Medium, High, Critical)")
-        confidence: float = Field(default=0.85, description="Confidence score from 0.0 to 1.0")
+        priority: str = Field(
+            default="Medium",
+            description="Ticket priority (Low, Medium, High, Critical)",
+        )
+        confidence: float = Field(
+            default=0.85, description="Confidence score from 0.0 to 1.0"
+        )
         reasoning: str = Field(default="", description="Reasoning for classification")
 
     try:
@@ -536,7 +549,11 @@ def _call_azure_openai(
             max_tokens=250,
         )
         if decision:
-            val = decision.model_dump() if hasattr(decision, "model_dump") else dict(decision)
+            val = (
+                decision.model_dump()
+                if hasattr(decision, "model_dump")
+                else dict(decision)
+            )
             prompt_cache.set(
                 cache_key,
                 val,

@@ -28,7 +28,10 @@ def test_known_workflow_receives_only_relevant_rules():
 
 
 def test_history_is_limited_by_turn_count_and_message_length():
-    history = [ChatTurn(role="user", message=f"turn-{index} " + "x" * 600) for index in range(10)]
+    history = [
+        ChatTurn(role="user", message=f"turn-{index} " + "x" * 600)
+        for index in range(10)
+    ]
     formatted = _format_history(history)
     lines = formatted.splitlines()
 

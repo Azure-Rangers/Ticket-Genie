@@ -145,6 +145,7 @@ def find_matching_announcement(
 
     try:
         import os
+
         from telemetry import record_llm_metrics
 
         prompt_tokens = max(15, len(ticket_terms) * 4 + 30)

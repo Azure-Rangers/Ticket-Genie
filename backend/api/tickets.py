@@ -40,8 +40,7 @@ def _admin_can_access_ticket(current_user: dict, ticket: dict) -> bool:
         user_department
         and ticket_department
         and (
-            user_department in ticket_department
-            or ticket_department in user_department
+            user_department in ticket_department or ticket_department in user_department
         )
     )
 
@@ -309,9 +308,7 @@ def suggest_response_for_ticket(
     from services.ai_service import AIServiceError
 
     if not _is_admin_user(current_user):
-        raise HTTPException(
-            status_code=403, detail="Admin or Ticketer access required"
-        )
+        raise HTTPException(status_code=403, detail="Admin or Ticketer access required")
 
     ticket = get_ticket_by_id(ticket_id, db=db)
     if ticket is None:

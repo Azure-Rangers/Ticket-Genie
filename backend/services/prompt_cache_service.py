@@ -86,7 +86,6 @@ CACHE_POLICY: dict[str, dict[str, Any]] = {
         "ttl_seconds": 7200,
         "note": "Summary of static ticket content. Safe to cache.",
     },
-
     # SCOPE-GATED — output is filtered by user's authorized document scopes.
     # The retrieved RAG chunks are already scope-filtered before the prompt is
     # built, so different scope sets produce different prompts → different keys.
@@ -96,7 +95,7 @@ CACHE_POLICY: dict[str, dict[str, Any]] = {
         "scope_required": True,
         "ttl_seconds": 1800,
         "note": "RAG response. Scope-filtered chunks already differ per user scope, "
-                "but scope_hash is required in the key to make the boundary explicit.",
+        "but scope_hash is required in the key to make the boundary explicit.",
     },
     "structured_EmployeeResponse": {
         "enabled": True,
@@ -104,14 +103,13 @@ CACHE_POLICY: dict[str, dict[str, Any]] = {
         "ttl_seconds": 1800,
         "note": "Suggested reply grounded in policy docs. Same scope concern as RAG.",
     },
-
     # NEVER CACHE — stateful, conversation-dependent, or high churn
     "structured_ChatbotDecision": {
         "enabled": False,
         "scope_required": False,
         "ttl_seconds": 0,
         "note": "Multi-turn conversation history shifts prompt every turn. "
-                "Near-zero hit rate and risks replaying stale intent decisions.",
+        "Near-zero hit rate and risks replaying stale intent decisions.",
     },
     "structured_ConversationSummary": {
         "enabled": False,
@@ -124,7 +122,9 @@ CACHE_POLICY: dict[str, dict[str, Any]] = {
 
 def _policy(agent_name: str) -> dict[str, Any]:
     """Return the effective cache policy for an agent."""
-    return CACHE_POLICY.get(agent_name, {"enabled": True, "scope_required": False, "ttl_seconds": 3600})
+    return CACHE_POLICY.get(
+        agent_name, {"enabled": True, "scope_required": False, "ttl_seconds": 3600}
+    )
 
 
 class PromptCache:
@@ -178,6 +178,7 @@ class PromptCache:
             )
             # Append a random nonce so this key can never hit
             import os
+
             scope_hash = f"__noscope_{os.urandom(8).hex()}"
 
         normalized_agent = self._normalize_string(agent_name)
@@ -268,7 +269,8 @@ class PromptCache:
         count = 0
         with self._lock:
             keys_to_delete = [
-                k for k, v in list(self._cache.items())
+                k
+                for k, v in list(self._cache.items())
                 if normalized_agent.lower() in (v[3] or "").lower()
             ]
             for k in keys_to_delete:
@@ -285,7 +287,9 @@ class PromptCache:
         with self._lock:
             cleared_count = len(self._cache)
             self._cache.clear()
-            logger.info(f"[Prompt Cache PURGED] Cleared {cleared_count} cached prompt entries.")
+            logger.info(
+                f"[Prompt Cache PURGED] Cleared {cleared_count} cached prompt entries."
+            )
             return {
                 "status": "success",
                 "cleared_items": cleared_count,
@@ -299,7 +303,9 @@ class PromptCache:
         with self._lock:
             total_lookups = self._hits + self._misses
             hit_rate_pct = (
-                round((self._hits / total_lookups * 100), 1) if total_lookups > 0 else 0.0
+                round((self._hits / total_lookups * 100), 1)
+                if total_lookups > 0
+                else 0.0
             )
 
             per_agent = {}
@@ -310,7 +316,9 @@ class PromptCache:
                     "misses": rec["misses"],
                     "total_lookups": agent_total,
                     "hit_rate_pct": (
-                        round((rec["hits"] / agent_total * 100), 1) if agent_total > 0 else 0.0
+                        round((rec["hits"] / agent_total * 100), 1)
+                        if agent_total > 0
+                        else 0.0
                     ),
                     "tokens_saved": rec["tokens_saved"],
                 }
@@ -394,6 +402,8 @@ def seed_warm_cache() -> None:
     ]
     for agent, prompt, result, tok, hit_count in items:
         key = prompt_cache.make_key(agent, prompt)
-        prompt_cache.set(key, result, est_tokens=tok, ttl_seconds=86400, agent_name=agent)
+        prompt_cache.set(
+            key, result, est_tokens=tok, ttl_seconds=86400, agent_name=agent
+        )
         for _ in range(hit_count):
             prompt_cache.get(key, agent_name=agent)

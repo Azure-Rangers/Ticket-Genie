@@ -83,6 +83,7 @@ def test_analytics_endpoint():
     assert "total_tickets" in data
     assert "auto_resolution_rate_pct" in data
 
+
 def test_genie_react_endpoint():
     res = client.post("/api/genie/react", json={"message": "Show count of tickets"})
     assert res.status_code == 200

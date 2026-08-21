@@ -45,9 +45,12 @@ def process_new_ticket(ticket: TicketCreate, db: Optional[Session] = None):
 
             try:
                 import os
+
                 from telemetry import record_llm_metrics
 
-                prompt_tok = max(20, len(f"{ticket.title} {ticket.description}".split()) * 3)
+                prompt_tok = max(
+                    20, len(f"{ticket.title} {ticket.description}".split()) * 3
+                )
                 record_llm_metrics(
                     prompt_tokens=prompt_tok,
                     completion_tokens=25,

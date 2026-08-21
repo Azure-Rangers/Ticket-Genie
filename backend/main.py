@@ -19,6 +19,7 @@ from api.tickets import router as ticket_router
 from api.users import router as users_router
 from database.connection import SessionLocal, init_db_schema
 from database.seed import seed_initial_data
+from services.prompt_cache_service import seed_warm_cache
 from services.synthetic_ticket_service import ensure_synthetic_tickets
 from telemetry import setup_telemetry
 
@@ -40,8 +41,6 @@ app = FastAPI(
 # Initialize Database Schema & Seed Initial Data
 init_db_schema()
 seed_initial_data()
-from services.prompt_cache_service import seed_warm_cache
-
 seed_warm_cache()
 if os.getenv("ENABLE_SYNTHETIC_ANALYTICS", "false").lower() == "true":
     with SessionLocal() as synthetic_db:
@@ -75,6 +74,7 @@ async def disable_api_response_caching(request: Request, call_next):
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
     return response
+
 
 # Initialize Azure Monitor telemetry
 setup_telemetry(app)

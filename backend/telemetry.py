@@ -159,7 +159,9 @@ def record_llm_metrics(
     active_prompt_tokens = max(0, prompt_tokens - cached_tokens)
 
     # Approximate pricing per 1k tokens (GPT-4o rates: $0.005 prompt, cached prompt $0.0025, $0.015 completion)
-    prompt_cost = (active_prompt_tokens / 1000.0) * 0.005 + (cached_tokens / 1000.0) * 0.0025
+    prompt_cost = (active_prompt_tokens / 1000.0) * 0.005 + (
+        cached_tokens / 1000.0
+    ) * 0.0025
     completion_cost = (completion_tokens / 1000.0) * 0.015
     estimated_cost_usd = round(prompt_cost + completion_cost, 6)
 
@@ -181,4 +183,3 @@ def record_llm_metrics(
             _estimated_cost_counter.add(estimated_cost_usd, attributes)
         except Exception as exc:
             logger.warning(f"Failed to record LLM metrics to OpenTelemetry: {exc}")
-

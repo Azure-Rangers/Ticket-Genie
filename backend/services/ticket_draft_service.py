@@ -80,7 +80,9 @@ _MISSING_DATE_MARKERS = ("date",)
 _EXPLICIT_LEAVE_TYPES = (
     (re.compile(r"\bunpaid(?:\s+leave)?\b", re.IGNORECASE), "Unpaid Leave"),
     (
-        re.compile(r"\b(?:paid\s+time\s+off|pto|vacation)(?:\s+leave)?\b", re.IGNORECASE),
+        re.compile(
+            r"\b(?:paid\s+time\s+off|pto|vacation)(?:\s+leave)?\b", re.IGNORECASE
+        ),
         "Paid Time Off (PTO)",
     ),
     (re.compile(r"\b(?:medical|sick)(?:\s+leave)?\b", re.IGNORECASE), "Medical Leave"),

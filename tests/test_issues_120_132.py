@@ -10,7 +10,6 @@ from agents.chatbot_agent import (
 from models.chatbot import ChatIntent, ChatRequest, ChatScope
 from services.chatbot_service import _handle_onboarding_drafting
 
-
 ROOT = Path(__file__).resolve().parents[1]
 SIDEBAR = (ROOT / "frontend/src/components/Sidebar.svelte").read_text()
 TICKET_STORE = (ROOT / "frontend/src/lib/stores/tickets.js").read_text()
@@ -36,9 +35,10 @@ def test_123_auto_department_does_not_override_ai_routing():
 
 def test_124_announcement_genie_check_remains_integrated_with_new_requests():
     assert "apiCheckAnnouncementMatch" in CREATE_VIEW
-    assert "viewAnnouncement" in (
-        ROOT / "frontend/src/components/CreateTicketModal.svelte"
-    ).read_text()
+    assert (
+        "viewAnnouncement"
+        in (ROOT / "frontend/src/components/CreateTicketModal.svelte").read_text()
+    )
 
 
 def test_125_onboarding_completion_is_explicit():

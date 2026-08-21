@@ -6,7 +6,14 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from models.chatbot import ChatIntent, ChatScope, ChatTurn, OnboardingDraft, RequestType, TicketDraft
+from models.chatbot import (
+    ChatIntent,
+    ChatScope,
+    ChatTurn,
+    OnboardingDraft,
+    RequestType,
+    TicketDraft,
+)
 from services.ai_service import ai_service as default_ai_service
 
 
@@ -456,7 +463,13 @@ def _build_decision_prompt(known_intent: Optional[ChatIntent]) -> str:
     sections = [_PROMPT_COMMON]
     if known_intent is None:
         sections.extend(
-            [_PROMPT_NAVIGATION, _PROMPT_MANAGEMENT, _PROMPT_ONBOARDING, _PROMPT_TICKET, _PROMPT_STATUS]
+            [
+                _PROMPT_NAVIGATION,
+                _PROMPT_MANAGEMENT,
+                _PROMPT_ONBOARDING,
+                _PROMPT_TICKET,
+                _PROMPT_STATUS,
+            ]
         )
     elif known_intent == ChatIntent.NAVIGATION:
         sections.append(_PROMPT_NAVIGATION)

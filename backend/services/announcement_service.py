@@ -182,6 +182,7 @@ Content: {content}
         reason = "Classified based on announcement operational scope."
         try:
             import os
+
             from telemetry import record_llm_metrics
 
             prompt_tok = max(10, len((system_prompt + " " + user_content).split()) * 2)
@@ -192,7 +193,9 @@ Content: {content}
                 agent_name=agent_name,
             )
         except Exception as tel_exc:
-            logger.debug("Could not record fallback announcement severity telemetry: %s", tel_exc)
+            logger.debug(
+                "Could not record fallback announcement severity telemetry: %s", tel_exc
+            )
 
     normalized_choice = severity_choice.lower()
     meta = SEVERITY_MAPPING.get(normalized_choice, SEVERITY_MAPPING["medium"])
@@ -240,4 +243,3 @@ def get_latest_announcement_with_severity(
         "announcement": latest,
         "severity": severity,
     }
-

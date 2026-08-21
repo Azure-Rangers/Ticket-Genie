@@ -32,7 +32,11 @@ from models.chatbot import (
     RequestType,
 )
 from models.ticket import TICKET_DEPARTMENTS, TICKET_PRIORITIES
-from services import announcement_action_service, management_action_service, ticket_draft_service
+from services import (
+    announcement_action_service,
+    management_action_service,
+    ticket_draft_service,
+)
 from services.ai_service import ai_service as default_ai_service
 from services.azure_ai_usage_service import (
     AzureAIUsageUnavailableError,
@@ -615,7 +619,6 @@ def _handle_ticket_drafting(
         user_message=request.message,
     )
 
-
     if (
         not missing
         and request_type != RequestType.LEAVE_MANAGEMENT
@@ -667,7 +670,9 @@ def _handle_onboarding_drafting(
     existing = request.onboarding_draft or OnboardingDraft()
     merged = existing.model_copy()
     if decision.onboarding_fields:
-        for field, value in decision.onboarding_fields.model_dump(exclude_none=True).items():
+        for field, value in decision.onboarding_fields.model_dump(
+            exclude_none=True
+        ).items():
             if isinstance(value, str) and value.strip():
                 setattr(merged, field, value.strip())
 
@@ -689,7 +694,9 @@ def _handle_onboarding_drafting(
     return ChatResponse(
         message=decision.message or "I filled the onboarding form for your review.",
         intent=ChatIntent.START_ONBOARDING,
-        action=ChatAction(type="navigate", target="onboarding", label="Review onboarding"),
+        action=ChatAction(
+            type="navigate", target="onboarding", label="Review onboarding"
+        ),
         onboarding_draft=merged,
         ready_for_review=True,
     )
@@ -788,11 +795,15 @@ def handle_message(
 
     announcement_intent = (
         request.pending_action.action_type
-        if request.pending_action and request.pending_action.action_type in announcement_action_service.ANNOUNCEMENT_INTENTS
+        if request.pending_action
+        and request.pending_action.action_type
+        in announcement_action_service.ANNOUNCEMENT_INTENTS
         else announcement_action_service.detect_intent(message)
     )
     if announcement_intent:
-        return announcement_action_service.handle_turn(request, announcement_intent, current_user)
+        return announcement_action_service.handle_turn(
+            request, announcement_intent, current_user
+        )
 
     try:
         decision = chatbot_agent.decide(

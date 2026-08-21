@@ -31,7 +31,9 @@ ALLOWED_CATEGORIES = {
 
 def _has_azure_identity_configuration() -> bool:
     """Whether DefaultAzureCredential has a configured non-interactive identity."""
-    has_managed_identity = bool(os.getenv("IDENTITY_ENDPOINT") or os.getenv("MSI_ENDPOINT"))
+    has_managed_identity = bool(
+        os.getenv("IDENTITY_ENDPOINT") or os.getenv("MSI_ENDPOINT")
+    )
     has_service_principal = all(
         os.getenv(name)
         for name in ("AZURE_TENANT_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET")
