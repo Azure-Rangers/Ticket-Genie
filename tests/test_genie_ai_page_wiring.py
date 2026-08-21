@@ -68,13 +68,13 @@ def test_sidebar_employee_section_order_matches_spec():
         "'dashboard'",
         "'create-ticket'",
         "'announcements'",
-        "'knowledge'",
         "'notifications'",
         "'genie-ai'",
         "'profile'",
     ]
     positions = [employee_region.index(tab) for tab in expected_order]
     assert positions == sorted(positions)
+    assert "'knowledge'" not in employee_region
 
 
 # ---------------------------------------------------------------------------
