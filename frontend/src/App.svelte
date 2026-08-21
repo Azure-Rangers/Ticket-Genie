@@ -21,7 +21,7 @@
   import GeneralAnalyticsView from './views/GeneralAnalyticsView.svelte';
 
   import { activeTab, loadTickets } from './lib/stores/tickets.js';
-  import { userStore, authLoading, initAuthCheck } from './lib/stores/auth.js';
+  import { userStore, authLoading, initAuthCheck, isTicketer } from './lib/stores/auth.js';
   import GenieAgentWidget from './components/GenieAgentWidget.svelte';
 
   onMount(async () => {
@@ -37,6 +37,9 @@
     loadTickets();
   } else if (!$authLoading) {
     console.log("🔒 [App User] No Active Session. Rendering Login Portal...");
+  }
+  $: if ($userStore && $activeTab === 'knowledge' && !isTicketer($userStore)) {
+    $activeTab = 'dashboard';
   }
 </script>
 

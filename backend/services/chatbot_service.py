@@ -32,7 +32,7 @@ from models.chatbot import (
     RequestType,
 )
 from models.ticket import TICKET_DEPARTMENTS, TICKET_PRIORITIES
-from services import management_action_service, ticket_draft_service
+from services import announcement_action_service, management_action_service, ticket_draft_service
 from services.ai_service import ai_service as default_ai_service
 from services.azure_ai_usage_service import (
     AzureAIUsageUnavailableError,
@@ -224,7 +224,7 @@ def _resolve_active_tab(target: NavigationTarget, role: Optional[str]) -> Option
     if target == NavigationTarget.MY_TICKETS:
         return _my_tickets_tab(role)
     if target == NavigationTarget.KNOWLEDGE_BASE:
-        return "knowledge"
+        return "knowledge" if is_department_ticketer(role) else None
     if target == NavigationTarget.NOTIFICATIONS:
         return "notifications"
     if target == NavigationTarget.ANNOUNCEMENTS:
@@ -786,6 +786,14 @@ def handle_message(
     # identity is the only role source, and asking for stats consumes no AI call.
     if _is_ai_usage_query(message):
         return _handle_ai_usage_query(current_user)
+
+    announcement_intent = (
+        request.pending_action.action_type
+        if request.pending_action and request.pending_action.action_type in announcement_action_service.ANNOUNCEMENT_INTENTS
+        else announcement_action_service.detect_intent(message)
+    )
+    if announcement_intent:
+        return announcement_action_service.handle_turn(request, announcement_intent, current_user)
 
     try:
         decision = chatbot_agent.decide(

@@ -159,6 +159,7 @@ export async function sendMessage(text) {
 // NavigationTarget -> activeTab map in services/chatbot_service.py.
 // Lives here (not in either chat surface) so both share one whitelist.
 const NAV_TAB_ROLE_GATE = {
+  knowledge: isTicketer,
   inbox: isTicketer,
   analytics: isTicketer,
   settings: isAdmin,

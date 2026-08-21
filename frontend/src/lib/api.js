@@ -542,6 +542,22 @@ export async function apiCreateAnnouncement(payload) {
   return await res.json();
 }
 
+export async function apiDeleteAnnouncement(announcementId) {
+  const res = await fetch(`${API_BASE_URL}/announcements/${encodeURIComponent(announcementId)}`, {
+    method: "DELETE",
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    let detail = `Unable to delete announcement (${res.status})`;
+    try {
+      const body = await res.json();
+      if (body.detail) detail = body.detail;
+    } catch (e) {}
+    throw new Error(detail);
+  }
+  return await res.json();
+}
+
 export async function apiCheckAnnouncementMatch(title, description = "") {
   const res = await fetch(`${API_BASE_URL}/announcements/match`, {
     method: "POST",

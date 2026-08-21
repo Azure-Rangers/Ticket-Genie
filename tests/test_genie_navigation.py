@@ -81,7 +81,7 @@ DESTINATIONS = [
     (NavigationTarget.CREATE_TICKET, "Employee", "create-ticket"),
     (NavigationTarget.MY_TICKETS, "Employee", "dashboard"),
     (NavigationTarget.MY_TICKETS, "Department Admin", "inbox"),
-    (NavigationTarget.KNOWLEDGE_BASE, "Employee", "knowledge"),
+    (NavigationTarget.KNOWLEDGE_BASE, "Ticketer", "knowledge"),
     (NavigationTarget.NOTIFICATIONS, "Employee", "notifications"),
     (NavigationTarget.ANNOUNCEMENTS, "Employee", "announcements"),
     (NavigationTarget.PROFILE, "Employee", "profile"),
@@ -119,6 +119,7 @@ def test_no_navigation_target_ever_leaks_a_stale_legacy_path():
 
 
 UNAUTHORIZED_TARGETS = [
+    NavigationTarget.KNOWLEDGE_BASE,
     NavigationTarget.SETTINGS,
     NavigationTarget.ANALYTICS,
     NavigationTarget.ONBOARDING,

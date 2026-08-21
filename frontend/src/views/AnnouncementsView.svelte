@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { apiCreateAnnouncement, apiFetchAnnouncements } from '../lib/api.js';
+  import { apiCreateAnnouncement, apiDeleteAnnouncement, apiFetchAnnouncements } from '../lib/api.js';
   import { userStore } from '../lib/stores/auth.js';
 
   let announcements = [];
@@ -11,6 +11,7 @@
   let title = '';
   let category = 'General Alert';
   let content = '';
+  let deletingId = null;
 
   $: normalizedRole = ($userStore?.role || '').trim().toLowerCase().replace('_', ' ');
   $: canCreate = normalizedRole.includes('admin');
@@ -50,6 +51,20 @@
     }
   }
 
+  async function removeAnnouncement(item) {
+    if (!confirm(`Delete “${item.title}”? This cannot be undone.`)) return;
+    deletingId = item.id;
+    formError = '';
+    try {
+      await apiDeleteAnnouncement(item.id);
+      announcements = announcements.filter((announcement) => announcement.id !== item.id);
+    } catch (error) {
+      formError = error.message || 'Unable to delete the announcement.';
+    } finally {
+      deletingId = null;
+    }
+  }
+
   function formatDate(item) {
     const rawDate = item.createdAt || item.date;
     if (!rawDate) return '';
@@ -73,6 +88,8 @@
     {/if}
   </div>
 
+  {#if formError && !isCreateOpen}<div class="form-error" role="alert">{formError}</div>{/if}
+
   {#if loading}
     <div class="loading-state"><i class="ph-bold ph-spinner animate-spin"></i> Loading announcements...</div>
   {:else if announcements.length === 0}
@@ -90,7 +107,15 @@
               <span class="category-chip">{item.category}</span>
               <h2>{item.title}</h2>
             </div>
-            <span class="date-chip"><i class="ph-bold ph-calendar"></i> {formatDate(item)}</span>
+            <div class="card-actions">
+              <span class="date-chip"><i class="ph-bold ph-calendar"></i> {formatDate(item)}</span>
+              {#if canCreate}
+                <button class="delete-button" on:click={() => removeAnnouncement(item)} disabled={deletingId === item.id} aria-label={`Delete ${item.title}`}>
+                  <i class="ph-bold {deletingId === item.id ? 'ph-spinner animate-spin' : 'ph-trash'}"></i>
+                  {deletingId === item.id ? 'Deleting...' : 'Delete'}
+                </button>
+              {/if}
+            </div>
           </div>
           <p class="card-content">{item.content}</p>
           {#if item.author}<p class="card-author"><i class="ph-bold ph-user-circle"></i> Posted by {item.author}</p>{/if}
@@ -158,6 +183,9 @@
   .category-chip { font-size: 0.72rem; font-weight: 700; color: var(--primary); background: var(--primary-light); padding: 2px 8px; border-radius: 6px; text-transform: uppercase; }
   .card-header h2 { font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-top: 6px; }
   .date-chip { flex-shrink: 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+  .card-actions { display: flex; align-items: center; gap: 12px; }
+  .delete-button { border: 1px solid #fecaca; border-radius: 8px; padding: 7px 10px; color: #b91c1c; background: #fff7f7; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .delete-button:hover { background: #fee2e2; }
   .card-content { font-size: 0.88rem; color: var(--text-main); line-height: 1.6; white-space: pre-wrap; }
   .card-author { margin-top: 14px; color: var(--text-muted); font-size: 0.78rem; font-weight: 600; }
   .modal-backdrop { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(3px); }

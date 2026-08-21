@@ -21,6 +21,8 @@ class ChatIntent(str, Enum):
     CHANGE_PRIORITY = "change_priority"
     CREATE_PORTAL_EMPLOYEE = "create_portal_employee"
     START_ONBOARDING = "start_onboarding"
+    CREATE_ANNOUNCEMENT = "create_announcement"
+    DELETE_ANNOUNCEMENT = "delete_announcement"
 
 
 class ChatScope(str, Enum):
@@ -96,6 +98,7 @@ class OnboardingDraft(BaseModel):
     employee_email: Optional[str] = None
     job_title: Optional[str] = None
     employee_department: Optional[str] = None
+
     manager: Optional[str] = None
     location: Optional[str] = None
     start_date: Optional[str] = None
@@ -144,6 +147,12 @@ class PendingManagementAction(BaseModel):
     employee_object_id: Optional[str] = None
     employee_role: Optional[str] = None
     employee_department: Optional[str] = None
+
+    # Echoed conversation state only; authorization is re-checked each turn.
+    announcement_id: Optional[str] = None
+    announcement_title: Optional[str] = None
+    announcement_content: Optional[str] = None
+    announcement_category: Optional[str] = None
 
 
 class ChatRequest(BaseModel):
