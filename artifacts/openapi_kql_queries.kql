@@ -415,10 +415,10 @@ requests
 | render timechart
 
 
-// Route: POST /api/knowledge/ingest (knowledge)
+// Route: POST /api/knowledge/documents (knowledge)
 
 requests
-| where timestamp > ago(1h) and name == "POST /api/knowledge/ingest"
+| where timestamp > ago(1h) and name == "POST /api/knowledge/documents"
 | summarize
     RequestVolume = count(),
     AvgDurationMs = avg(duration),
@@ -429,10 +429,10 @@ requests
 | render timechart
 
 
-// Route: GET /api/knowledge/search (knowledge)
+// Route: GET /api/knowledge/documents (knowledge)
 
 requests
-| where timestamp > ago(1h) and name == "GET /api/knowledge/search"
+| where timestamp > ago(1h) and name == "GET /api/knowledge/documents"
 | summarize
     RequestVolume = count(),
     AvgDurationMs = avg(duration),

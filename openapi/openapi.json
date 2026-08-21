@@ -1674,13 +1674,13 @@
         }
       }
     },
-    "/api/knowledge/ingest": {
+    "/api/knowledge/documents": {
       "post": {
         "tags": [
           "knowledge"
         ],
-        "summary": "Handle Knowledge Ingest",
-        "operationId": "handle_knowledge_ingest_api_knowledge_ingest_post",
+        "summary": "Upload Knowledge Document",
+        "operationId": "upload_knowledge_document_api_knowledge_documents_post",
         "parameters": [
           {
             "name": "authorization",
@@ -1702,9 +1702,9 @@
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/KnowledgeIngestRequest"
+                "$ref": "#/components/schemas/Body_upload_knowledge_document_api_knowledge_documents_post"
               }
             }
           }
@@ -1729,25 +1729,14 @@
             }
           }
         }
-      }
-    },
-    "/api/knowledge/search": {
+      },
       "get": {
         "tags": [
           "knowledge"
         ],
-        "summary": "Handle Knowledge Search",
-        "operationId": "handle_knowledge_search_api_knowledge_search_get",
+        "summary": "Get Knowledge Documents",
+        "operationId": "get_knowledge_documents_api_knowledge_documents_get",
         "parameters": [
-          {
-            "name": "q",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Q"
-            }
-          },
           {
             "name": "authorization",
             "in": "header",
@@ -3069,6 +3058,32 @@
         ],
         "title": "AzureLoginRequest"
       },
+      "Body_upload_knowledge_document_api_knowledge_documents_post": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 3,
+            "title": "Title"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "category",
+          "file"
+        ],
+        "title": "Body_upload_knowledge_document_api_knowledge_documents_post"
+      },
       "ChatAction": {
         "properties": {
           "type": {
@@ -3649,41 +3664,6 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
-      },
-      "KnowledgeIngestRequest": {
-        "properties": {
-          "category": {
-            "type": "string",
-            "title": "Category"
-          },
-          "title": {
-            "type": "string",
-            "title": "Title"
-          },
-          "content": {
-            "type": "string",
-            "title": "Content"
-          },
-          "source": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source",
-            "default": "Ticketer Approved Resolution"
-          }
-        },
-        "type": "object",
-        "required": [
-          "category",
-          "title",
-          "content"
-        ],
-        "title": "KnowledgeIngestRequest"
       },
       "MessageOut": {
         "properties": {
