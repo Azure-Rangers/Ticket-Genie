@@ -88,6 +88,16 @@ def apply_secret_aliases(secrets: dict[str, str]) -> dict[str, str]:
     elif "AZURE_OPENAI_API_KEY" in aliased and "GROUP1OPENAIAPIKEY" not in aliased:
         aliased["GROUP1OPENAIAPIKEY"] = aliased["AZURE_OPENAI_API_KEY"]
 
+    # 3. Application Insights Connection String Aliases
+    app_insights_val = (
+        aliased.get("APPLICATIONINSIGHTS_CONNECTION_STRING")
+        or aliased.get("APPLICATION_INSIGHTS_CONNECTION_STRING")
+        or aliased.get("APPINSIGHTS_CONNECTION_STRING")
+        or aliased.get("APP_INSIGHTS_CONNECTION_STRING")
+    )
+    if app_insights_val:
+        aliased["APPLICATIONINSIGHTS_CONNECTION_STRING"] = app_insights_val
+
     return aliased
 
 

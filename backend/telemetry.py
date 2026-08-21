@@ -30,17 +30,28 @@ def setup_telemetry(app: FastAPI, connection_string: Optional[str] = None) -> bo
     global _telemetry_initialized
 
     if _telemetry_initialized:
-        logger.info("Telemetry already initialized.")
+        logger.info("[Telemetry Setup] Telemetry already initialized.")
         return True
 
-    conn_str = connection_string or os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
+    raw_conn_str = connection_string or os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING", "")
+    conn_str = raw_conn_str.strip().strip('"\'')
 
     if not conn_str:
         logger.info(
-            "APPLICATIONINSIGHTS_CONNECTION_STRING not provided. "
-            "Telemetry export to Azure Monitor is disabled."
+            "[Telemetry Setup] APPLICATIONINSIGHTS_CONNECTION_STRING not provided. "
+            "Telemetry export to Azure Monitor is disabled. (Traces will only log locally)"
         )
         return False
+
+    # Extract masked connection string for safe diagnostic logging
+    endpoint_hint = "unknown"
+    if "IngestionEndpoint=" in conn_str:
+        endpoint_hint = conn_str.split("IngestionEndpoint=")[1].split(";")[0]
+
+    logger.info(
+        f"[Telemetry Setup] Found APPLICATIONINSIGHTS_CONNECTION_STRING. "
+        f"Configuring Azure Monitor OpenTelemetry (Ingestion: {endpoint_hint})..."
+    )
 
     try:
         from azure.monitor.opentelemetry import configure_azure_monitor
@@ -53,16 +64,23 @@ def setup_telemetry(app: FastAPI, connection_string: Optional[str] = None) -> bo
             enable_live_metrics=True,
         )
 
+        # Ensure logging level is INFO so telemetry records are transmitted
+        logging.getLogger("ticketgenie").setLevel(logging.INFO)
+        logger.setLevel(logging.INFO)
+
         # Instrument FastAPI app for route tracing and request metrics
         FastAPIInstrumentor.instrument_app(app)
 
         _telemetry_initialized = True
-        logger.info("Azure Monitor OpenTelemetry telemetry initialized successfully.")
+        logger.info(
+            "[Telemetry Setup] Azure Monitor OpenTelemetry initialized successfully. "
+            "All '[LLM Telemetry]' traces will be forwarded to Application Insights."
+        )
         return True
 
     except Exception as exc:
         logger.warning(
-            f"Failed to initialize Azure Monitor telemetry: {exc}",
+            f"[Telemetry Setup] Failed to initialize Azure Monitor telemetry: {exc}",
             exc_info=True,
         )
         return False

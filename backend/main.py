@@ -25,6 +25,13 @@ from telemetry import setup_telemetry
 
 load_dotenv()
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logging.getLogger("ticketgenie").setLevel(logging.INFO)
+logging.getLogger("ticketgenie.telemetry").setLevel(logging.INFO)
+
 app = FastAPI(
     title="TicketGenie API",
     description="AI-powered HR & IT Helpdesk System",

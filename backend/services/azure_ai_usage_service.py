@@ -124,6 +124,10 @@ def get_azure_ai_usage(
                 "local Azure service-principal credentials."
             ) from exc
 
+    logger.info(
+        f"[AI Usage Query] Querying Log Analytics workspace '{workspace}' for past {days} days..."
+    )
+
     try:
         result = client.query_workspace(
             workspace,
@@ -195,6 +199,11 @@ def get_azure_ai_usage(
     totals["estimated_cost_usd"] = round(totals["estimated_cost_usd"], 6)
     for item in daily.values():
         item["estimated_cost_usd"] = round(item["estimated_cost_usd"], 6)
+
+    logger.info(
+        f"[AI Usage Query] Completed successfully. Found {len(breakdown)} records across {len(daily)} days. "
+        f"Totals: {totals['calls']} calls, {totals['total_tokens']} tokens (${totals['estimated_cost_usd']:.6f})."
+    )
 
     now = datetime.now(timezone.utc)
     return {
