@@ -4,30 +4,33 @@
     {
       "type": 1,
       "content": {
-        "json": "## \ud83d\ude80 TicketGenie FastAPI & AI Agent Dashboard\n*Auto-generated from OpenAPI 3.0 Specification & OpenTelemetry LLM Metrics*"
+        "json": "## 🚀 TicketGenie FastAPI & AI Agent Dashboard\n*Auto-generated from OpenAPI 3.0 Specification & OpenTelemetry LLM Metrics*"
       }
     },
     {
-      "type": 3,
+      "type": 9,
       "content": {
-        "version": "KqlItem/1.0",
-        "query": "requests\n| where timestamp >= {TimeRange}\n| summarize\n    Total_Requests = count(),\n    Failed_Requests = countif(success == false),\n    Avg_Latency_Ms = round(avg(duration), 2),\n    P95_Latency_Ms = round(percentiles(duration, 95)[0], 2)\n  by name\n| extend Error_Rate_Pct = round(100.0 * Failed_Requests / Total_Requests, 2)\n| order by Total_Requests desc",
-        "size": 0,
-        "title": "API Endpoint Performance & Error Overview",
-        "queryType": 0,
-        "resourceType": "microsoft.insights/components",
-        "gridSettings": {
-          "formatters": []
-        }
-      }
-    },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
-        "query": "customMetrics\n| where timestamp >= {TimeRange} and name startswith \"llm_\"\n| summarize\n    Prompt_Tokens = sumif(value, name == \"llm_prompt_tokens\"),\n    Completion_Tokens = sumif(value, name == \"llm_completion_tokens\"),\n    Total_Tokens = sumif(value, name == \"llm_total_tokens\"),\n    Est_Cost_USD = round(sumif(value, name == \"llm_estimated_cost_usd\"), 4)\n  by tostring(customDimensions.agent)\n| order by Total_Tokens desc",
-        "size": 0,
-        "title": "LLM Token Consumption & Cost by Subagent",
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "value": { "durationMs": 86400000 },
+            "typeSettings": {
+              "selectableValues": [
+                { "durationMs": 3600000, "name": "Last 1 hour" },
+                { "durationMs": 14400000, "name": "Last 4 hours" },
+                { "durationMs": 86400000, "name": "Last 24 hours" },
+                { "durationMs": 604800000, "name": "Last 7 days" },
+                { "durationMs": 2592000000, "name": "Last 30 days" }
+              ]
+            },
+            "name": "TimeRange",
+            "label": "Time Range"
+          }
+        ],
+        "style": "pills",
         "queryType": 0,
         "resourceType": "microsoft.insights/components"
       }
@@ -36,19 +39,42 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "requests\n| where timestamp >= {TimeRange}\n| make-series Requests=count() on timestamp\n    from {TimeRange:start} to {TimeRange:end} step 5m by name\n| render timechart",
+        "query": "requests\n| where timestamp >= {TimeRange:start} and timestamp <= {TimeRange:end}\n| summarize\n    Total_Requests = count(),\n    Failed_Requests = countif(success == false),\n    Avg_Latency_Ms = round(avg(duration), 2),\n    P95_Latency_Ms = round(percentiles(duration, 95)[0], 2)\n  by name\n| extend Error_Rate_Pct = round(100.0 * Failed_Requests / Total_Requests, 2)\n| order by Total_Requests desc",
+        "size": 0,
+        "title": "API Endpoint Performance & Error Overview",
+        "timeContext": { "durationMs": 86400000 },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where timestamp >= {TimeRange:start} and timestamp <= {TimeRange:end} and name startswith \"llm_\"\n| summarize\n    Prompt_Tokens = sumif(value, name == \"llm_prompt_tokens\"),\n    Completion_Tokens = sumif(value, name == \"llm_completion_tokens\"),\n    Total_Tokens = sumif(value, name == \"llm_total_tokens\"),\n    Est_Cost_USD = round(sumif(value, name == \"llm_estimated_cost_usd\"), 4)\n  by tostring(customDimensions.agent)\n| order by Total_Tokens desc",
+        "size": 0,
+        "title": "LLM Token Consumption & Cost by Subagent",
+        "timeContext": { "durationMs": 86400000 },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests\n| where timestamp >= {TimeRange:start} and timestamp <= {TimeRange:end}\n| make-series Requests=count() on timestamp\n    from {TimeRange:start} to {TimeRange:end} step 5m by name\n| render timechart",
         "size": 0,
         "title": "Request Throughput per OpenAPI Route (RPS / 5m)",
+        "timeContext": { "durationMs": 86400000 },
+        "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.insights/components"
       }
     }
   ],
   "style": "categoryGrid",
-  "tags": [
-    "FastAPI",
-    "OpenAPI",
-    "OpenTelemetry",
-    "TicketGenie"
-  ]
+  "tags": ["FastAPI", "OpenAPI", "OpenTelemetry", "TicketGenie"]
 }
