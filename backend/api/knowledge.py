@@ -30,7 +30,9 @@ async def upload_knowledge_document(
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=503, detail="Knowledge indexing is unavailable.") from exc
+        raise HTTPException(
+            status_code=503, detail="Knowledge indexing is unavailable."
+        ) from exc
 
 
 @router.get("/documents")
@@ -41,4 +43,6 @@ def get_knowledge_documents(
     try:
         return {"documents": list_documents(), "categories": sorted(ALLOWED_CATEGORIES)}
     except Exception as exc:
-        raise HTTPException(status_code=503, detail="Knowledge storage is unavailable.") from exc
+        raise HTTPException(
+            status_code=503, detail="Knowledge storage is unavailable."
+        ) from exc

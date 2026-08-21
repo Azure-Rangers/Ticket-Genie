@@ -85,7 +85,9 @@ def _extract_text(data: bytes, extension: str) -> str:
     if extension == ".pdf":
         from pypdf import PdfReader
 
-        return "\n\n".join(page.extract_text() or "" for page in PdfReader(io.BytesIO(data)))
+        return "\n\n".join(
+            page.extract_text() or "" for page in PdfReader(io.BytesIO(data))
+        )
     if extension == ".docx":
         from docx import Document
 
@@ -128,21 +130,31 @@ async def ingest_document(
     original_name = Path(upload.filename or "").name
     extension = Path(original_name).suffix.casefold()
     if extension not in ALLOWED_EXTENSIONS:
-        raise HTTPException(status_code=415, detail="Upload a PDF, DOCX, TXT, or Markdown file.")
+        raise HTTPException(
+            status_code=415, detail="Upload a PDF, DOCX, TXT, or Markdown file."
+        )
     data = await upload.read(MAX_FILE_BYTES + 1)
     if not data or len(data) > MAX_FILE_BYTES:
-        raise HTTPException(status_code=413, detail="Document is empty or exceeds the 15 MB limit.")
+        raise HTTPException(
+            status_code=413, detail="Document is empty or exceeds the 15 MB limit."
+        )
     try:
         text = _extract_text(data, extension)
     except Exception as exc:
-        raise HTTPException(status_code=422, detail="The document text could not be extracted.") from exc
+        raise HTTPException(
+            status_code=422, detail="The document text could not be extracted."
+        ) from exc
     parts = _chunks(text)
     if not parts:
-        raise HTTPException(status_code=422, detail="The document contains no extractable text.")
+        raise HTTPException(
+            status_code=422, detail="The document contains no extractable text."
+        )
 
     digest = hashlib.sha256(data).hexdigest()
     container = _blob_container()
-    for existing in container.list_blobs(name_starts_with="managed/", include=["metadata"]):
+    for existing in container.list_blobs(
+        name_starts_with="managed/", include=["metadata"]
+    ):
         existing_metadata = existing.metadata or {}
         if existing_metadata.get("sha256") == digest:
             return {
@@ -214,11 +226,12 @@ def list_documents() -> list[dict]:
                 "filename": Path(blob.name).name,
                 "category": metadata.get("category"),
                 "size_bytes": blob.size,
-                "uploaded_at": metadata.get("uploaded_at") or (
-                    blob.last_modified.isoformat() if blob.last_modified else None
-                ),
+                "uploaded_at": metadata.get("uploaded_at")
+                or (blob.last_modified.isoformat() if blob.last_modified else None),
                 "uploaded_by": metadata.get("uploaded_by_oid"),
                 "status": "indexed" if metadata.get("document_id") else "legacy",
             }
         )
-    return sorted(documents, key=lambda item: item.get("uploaded_at") or "", reverse=True)
+    return sorted(
+        documents, key=lambda item: item.get("uploaded_at") or "", reverse=True
+    )

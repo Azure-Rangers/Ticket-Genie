@@ -82,7 +82,12 @@ def list_tickets(
             # A Ticketer is always scoped from the verified Bearer identity;
             # a client-supplied department can never widen this queue.
             effective_department = user_dept
-        elif not user_dept or "upper" in user_dept.lower() or "executive" in user_dept.lower() or department:
+        elif (
+            not user_dept
+            or "upper" in user_dept.lower()
+            or "executive" in user_dept.lower()
+            or department
+        ):
             effective_department = department
         else:
             effective_department = user_dept

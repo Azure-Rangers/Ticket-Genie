@@ -166,11 +166,7 @@ def verify_azure_user(authorization: Optional[str] = Header(None)) -> Dict[str, 
             detail="Invalid JWT claims: missing object ID (oid).",
         )
 
-    email = (
-        claims.get("preferred_username")
-        or claims.get("upn")
-        or claims.get("email")
-    )
+    email = claims.get("preferred_username") or claims.get("upn") or claims.get("email")
     if not email:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
