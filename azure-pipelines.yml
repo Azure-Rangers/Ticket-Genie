@@ -146,6 +146,8 @@ stages:
                           GROUP1OPENAIENDPOINT="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=group1openaiendpoint)" \
                           AZURE_OPENAI_API_KEY="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=azure-openai-api-key)" \
                           GROUP1OPENAIAPIKEY="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=group1openaiapikey)" \
+                          GROUP1_TEXT_EMBEDDING_3_SMALL_APIKEY="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=group1-embedding-api-key)" \
+                          GROUP1_TEXT_EMBEDDING_3_SMALL_ENDPOINT="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=group1-embedding-endpoint)" \
                           AZURE_STORAGE_ACCOUNT_NAME="seed123data" \
                           KNOWLEDGE_BLOB_CONTAINER="ticket-genie-knowledge" \
                           AZURE_AI_SEARCH_ENDPOINT="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=azure-ai-search-endpoint)" \

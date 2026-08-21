@@ -112,6 +112,8 @@ resource "azurerm_linux_web_app" "backend" {
     "GROUP1OPENAIAPIKEY"                         = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=group1openaiapikey)"
     "GROUP1_EMBEDDING_API_KEY"                   = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=group1-embedding-api-key)"
     "GROUP1_EMBEDDING_ENDPOINT"                  = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=group1-embedding-endpoint)"
+    "GROUP1_TEXT_EMBEDDING_3_SMALL_APIKEY"       = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=group1-embedding-api-key)"
+    "GROUP1_TEXT_EMBEDDING_3_SMALL_ENDPOINT"     = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=group1-embedding-endpoint)"
     "AZURE_AI_SEARCH_ENDPOINT"                   = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-ai-search-endpoint)"
     "AZURE_AI_SEARCH_KEY"                        = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-ai-search-key)"
     "AISEARCH_ENDPOINT"                          = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-ai-search-endpoint)"
