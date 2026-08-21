@@ -17,7 +17,8 @@
   let search = '';
   let scopeFilter = 'All';
 
-  $: canManage = ['admin', 'ticketer'].includes(($userStore?.role || '').trim().toLowerCase());
+  $: normalizedRole = ($userStore?.role || '').trim().toLowerCase();
+  $: canManage = ['admin', 'super admin', 'ticketer'].includes(normalizedRole);
   $: managedCount = documents.filter((doc) => doc.status !== 'legacy').length;
   $: legacyCount = documents.filter((doc) => doc.status === 'legacy').length;
   $: filteredDocuments = documents.filter((doc) => {

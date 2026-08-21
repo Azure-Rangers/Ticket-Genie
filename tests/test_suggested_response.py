@@ -94,6 +94,86 @@ def test_employee_cannot_generate_hr_response():
     assert exc.value.status_code == 403
 
 
+def test_ticketer_can_generate_response_for_own_department():
+    from api.tickets import suggest_response_for_ticket
+
+    ticket = {
+        "id": "HD-2",
+        "title": "Laptop issue",
+        "description": "The laptop will not start.",
+        "category": "IT & Technology",
+        "priority": "Medium",
+        "department": "IT Team",
+    }
+    expected = EmployeeResponse(message="Suggested IT response")
+    with (
+        patch("api.tickets.get_ticket_by_id", return_value=ticket),
+        patch("database.crud.get_ticket_comments", return_value=[]),
+        patch("agents.response_agent.draft_response", return_value=expected),
+    ):
+        result = suggest_response_for_ticket(
+            "HD-2",
+            db=MagicMock(),
+            current_user={
+                "oid": "ticketer-1",
+                "role": "Ticketer",
+                "department": "IT Team",
+            },
+        )
+    assert result == expected
+
+
+def test_ticketer_cannot_generate_response_for_another_department():
+    from api.tickets import suggest_response_for_ticket
+
+    with (
+        patch(
+            "api.tickets.get_ticket_by_id",
+            return_value={"id": "HD-3", "department": "HR Team"},
+        ),
+        pytest.raises(HTTPException) as exc,
+    ):
+        suggest_response_for_ticket(
+            "HD-3",
+            db=MagicMock(),
+            current_user={
+                "oid": "ticketer-1",
+                "role": "Ticketer",
+                "department": "IT Team",
+            },
+        )
+    assert exc.value.status_code == 403
+
+
+def test_admin_can_generate_response_across_departments():
+    from api.tickets import suggest_response_for_ticket
+
+    ticket = {
+        "id": "HD-4",
+        "title": "Laptop issue",
+        "description": "The laptop will not start.",
+        "category": "IT & Technology",
+        "priority": "Medium",
+        "department": "IT Team",
+    }
+    expected = EmployeeResponse(message="Suggested admin response")
+    with (
+        patch("api.tickets.get_ticket_by_id", return_value=ticket),
+        patch("database.crud.get_ticket_comments", return_value=[]),
+        patch("agents.response_agent.draft_response", return_value=expected),
+    ):
+        result = suggest_response_for_ticket(
+            "HD-4",
+            db=MagicMock(),
+            current_user={
+                "oid": "admin-1",
+                "role": "Admin",
+                "department": "HR Team",
+            },
+        )
+    assert result == expected
+
+
 def test_hr_ui_fills_draft_but_never_auto_sends():
     assert "async function apiSuggestTicketResponse" in API_JS
     assert "/suggested-response" in API_JS

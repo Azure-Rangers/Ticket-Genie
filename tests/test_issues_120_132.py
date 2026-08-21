@@ -48,11 +48,12 @@ def test_125_onboarding_completion_is_explicit():
     assert "completed_tickets" in ONBOARDING_VIEW
 
 
-def test_126_employee_navigation_keeps_my_tickets_and_gates_knowledge():
+def test_126_employee_navigation_keeps_my_tickets_and_policy_management_is_gated():
     my_tickets = SIDEBAR.index('title="My Tickets"')
-    knowledge = SIDEBAR.index('title="Knowledge Base"')
-    assert "canManageKnowledge" not in SIDEBAR[max(0, my_tickets - 120) : my_tickets]
-    assert "{#if canManageKnowledge}" in SIDEBAR[max(0, knowledge - 180) : knowledge]
+    add_policies = SIDEBAR.index('title="Add Policies"')
+    assert 'title="Knowledge Base"' not in SIDEBAR
+    assert "showTicketerPolicies" in SIDEBAR[max(0, add_policies - 220) : add_policies]
+    assert "Add Policies" not in SIDEBAR[max(0, my_tickets - 120) : my_tickets + 220]
 
 
 def test_128_dashboard_navigation_is_available_to_employees():

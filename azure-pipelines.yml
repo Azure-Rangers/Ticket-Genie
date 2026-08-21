@@ -116,6 +116,16 @@ stages:
                           --name "$(keyVaultName)" \
                           --object-id "$BACKEND_PRINCIPAL_ID" \
                           --secret-permissions get list >/dev/null || true
+
+                        STORAGE_SCOPE=$(az storage account show \
+                          --resource-group "$(resourceGroupName)" \
+                          --name "seed123data" \
+                          --query id -o tsv)
+                        az role assignment create \
+                          --assignee-object-id "$BACKEND_PRINCIPAL_ID" \
+                          --assignee-principal-type ServicePrincipal \
+                          --role "Storage Blob Data Contributor" \
+                          --scope "$STORAGE_SCOPE" >/dev/null
                       fi
 
                       echo "=== 2. Updating Backend Web App (FastAPI REST API on Port 8000) ==="
@@ -143,8 +153,13 @@ stages:
                           GROUP1OPENAIENDPOINT="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=group1openaiendpoint)" \
                           AZURE_OPENAI_API_KEY="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=azure-openai-api-key)" \
                           GROUP1OPENAIAPIKEY="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=group1openaiapikey)" \
+                          AZURE_STORAGE_ACCOUNT_NAME="seed123data" \
+                          KNOWLEDGE_BLOB_CONTAINER="ticket-genie-knowledge" \
                           AZURE_AI_SEARCH_ENDPOINT="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=azure-ai-search-endpoint)" \
-                          AZURE_AI_SEARCH_KEY="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=azure-ai-search-key)"
+                          AZURE_AI_SEARCH_KEY="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=azure-ai-search-key)" \
+                          AISEARCH_ENDPOINT="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=azure-ai-search-endpoint)" \
+                          AISEARCH_APIKEY="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=azure-ai-search-key)" \
+                          AISEARCH_INDEX_NAME="group-1"
 
                       az webapp restart \
                         --resource-group "$(resourceGroupName)" \

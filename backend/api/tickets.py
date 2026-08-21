@@ -19,7 +19,7 @@ router = APIRouter(prefix="/tickets", tags=["tickets"])
 
 def _is_admin_user(current_user: dict) -> bool:
     role = (current_user.get("role") or "").lower()
-    return any(
+    return role.strip() == "ticketer" or any(
         marker in role
         for marker in ("admin", "super", "operations", "management", "executive")
     )
@@ -28,12 +28,22 @@ def _is_admin_user(current_user: dict) -> bool:
 def _admin_can_access_ticket(current_user: dict, ticket: dict) -> bool:
     role = (current_user.get("role") or "").lower()
     if any(
-        marker in role for marker in ("super", "operations", "management", "executive")
+        marker in role
+        for marker in ("admin", "super", "operations", "management", "executive")
     ):
         return True
+    if role.strip() != "ticketer":
+        return False
     user_department = (current_user.get("department") or "").lower().strip()
     ticket_department = (ticket.get("department") or "").lower().strip()
-    return bool(user_department and user_department in ticket_department)
+    return bool(
+        user_department
+        and ticket_department
+        and (
+            user_department in ticket_department
+            or ticket_department in user_department
+        )
+    )
 
 
 @router.post("", status_code=201, response_model=TicketResponse)
@@ -299,7 +309,9 @@ def suggest_response_for_ticket(
     from services.ai_service import AIServiceError
 
     if not _is_admin_user(current_user):
-        raise HTTPException(status_code=403, detail="Admin access required")
+        raise HTTPException(
+            status_code=403, detail="Admin or Ticketer access required"
+        )
 
     ticket = get_ticket_by_id(ticket_id, db=db)
     if ticket is None:

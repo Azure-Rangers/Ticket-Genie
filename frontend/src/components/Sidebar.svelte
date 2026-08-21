@@ -15,7 +15,9 @@
   $: showDeptSection = isTicketer($userStore) || isSuperAdmin($userStore);
   $: showUpperManagement = isSuperAdmin($userStore);
   $: showAdminSection = isAdmin($userStore) || isSuperAdmin($userStore);
-  $: canManageKnowledge = ['admin', 'ticketer'].includes(($userStore?.role || '').trim().toLowerCase());
+  $: normalizedRole = ($userStore?.role || '').trim().toLowerCase();
+  $: canManagePolicies = ['admin', 'super admin', 'ticketer'].includes(normalizedRole);
+  $: showTicketerPolicies = canManagePolicies && !showAdminSection;
 </script>
 
 <aside class="sidebar" class:collapsed={$sidebarCollapsed}>
@@ -73,16 +75,6 @@
           <span class="menu-text">Announcements</span>
         </button>
 
-        {#if canManageKnowledge}<button
-          class="nav-link" 
-          class:active={$activeTab === 'knowledge'} 
-          on:click={() => setTab('knowledge')}
-          title="Knowledge Base"
-        >
-          <span class="menu-icon"><i class="ph-duotone ph-book-open"></i></span>
-          <span class="menu-text">Knowledge Base</span>
-        </button>{/if}
-
         <button 
           class="nav-link" 
           class:active={$activeTab === 'notifications'} 
@@ -138,6 +130,18 @@
             <span class="menu-icon"><i class="ph-duotone ph-chart-pie-slice"></i></span>
             <span class="menu-text">Dept Analytics</span>
           </button>
+
+          {#if showTicketerPolicies}
+            <button
+              class="nav-link"
+              class:active={$activeTab === 'add-policies'}
+              on:click={() => setTab('add-policies')}
+              title="Add Policies"
+            >
+              <span class="menu-icon"><i class="ph-duotone ph-file-plus"></i></span>
+              <span class="menu-text">Add Policies</span>
+            </button>
+          {/if}
         </div>
       {/if}
 

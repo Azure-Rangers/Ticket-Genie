@@ -29,10 +29,22 @@ ALLOWED_CATEGORIES = {
 }
 
 
+def _has_azure_identity_configuration() -> bool:
+    """Whether DefaultAzureCredential has a configured non-interactive identity."""
+    has_managed_identity = bool(os.getenv("IDENTITY_ENDPOINT") or os.getenv("MSI_ENDPOINT"))
+    has_service_principal = all(
+        os.getenv(name)
+        for name in ("AZURE_TENANT_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET")
+    )
+    return has_managed_identity or has_service_principal
+
+
 def require_knowledge_manager(current_user: dict) -> dict:
-    """Allow only the two current management roles; fail closed."""
+    """Allow current policy-management roles from verified identity; fail closed."""
     role = str(current_user.get("role") or "").strip().casefold()
-    if role not in {"admin", "ticketer"}:
+    if role not in {"admin", "super admin", "ticketer"} and not current_user.get(
+        "is_dev", False
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Knowledge base management requires Admin or Ticketer access.",
@@ -41,7 +53,7 @@ def require_knowledge_manager(current_user: dict) -> dict:
 
 
 def _blob_container():
-    from azure.identity import DefaultAzureCredential
+    from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
     from azure.storage.blob import BlobServiceClient
 
     connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING", "").strip()
@@ -55,11 +67,18 @@ def _blob_container():
         if account_key:
             credential: Any = account_key
         elif os.getenv("IDENTITY_ENDPOINT") or os.getenv("MSI_ENDPOINT"):
-            credential = DefaultAzureCredential()
+            # Production's system-assigned Web App identity owns the Blob
+            # data-plane role in Terraform. Select it explicitly so unrelated
+            # AZURE_CLIENT_* settings cannot take precedence.
+            credential = ManagedIdentityCredential()
+        elif _has_azure_identity_configuration():
+            credential = DefaultAzureCredential(
+                exclude_managed_identity_credential=True
+            )
         else:
             raise RuntimeError(
-                "Local knowledge uploads require AZURE_STORAGE_ACCOUNT_KEY or "
-                "AZURE_STORAGE_CONNECTION_STRING. Production uses managed identity."
+                "Knowledge storage requires a connection string, account key, "
+                "managed identity, or Azure service-principal credentials."
             )
         service = BlobServiceClient(
             account_url=f"https://{account_name}.blob.core.windows.net",

@@ -87,7 +87,9 @@ def test_employee_knowledge_navigation_is_removed_and_onboarding_is_highlighted(
     onboarding = (ROOT / "frontend/src/views/OnboardingView.svelte").read_text(encoding="utf-8")
     announcements = (ROOT / "frontend/src/views/AnnouncementsView.svelte").read_text(encoding="utf-8")
 
-    assert "{#if canManageKnowledge}<button" in sidebar
+    assert 'title="Knowledge Base"' not in sidebar
+    assert "{#if showTicketerPolicies}" in sidebar
+    assert 'title="Add Policies"' in sidebar
     assert "$activeTab === 'knowledge' && !isTicketer($userStore)" in app
     assert "knowledge: isTicketer" in genie
     assert "class:resolved={item.health === 'Complete'}" in onboarding

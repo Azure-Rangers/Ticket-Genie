@@ -1,5 +1,6 @@
 import asyncio
 import io
+from unittest.mock import patch
 
 import pytest
 from fastapi import HTTPException, UploadFile
@@ -7,14 +8,14 @@ from fastapi import HTTPException, UploadFile
 from services import knowledge_ingestion_service as ingestion
 
 
-@pytest.mark.parametrize("role", ["Admin", "Ticketer", " admin "])
+@pytest.mark.parametrize("role", ["Admin", "Super Admin", "Ticketer", " admin "])
 def test_only_canonical_management_roles_are_allowed(role):
     user = {"role": role, "oid": "oid-1"}
     assert ingestion.require_knowledge_manager(user) is user
 
 
 @pytest.mark.parametrize(
-    "role", ["Employee", "Super Admin", "Manager", "Support", "", None]
+    "role", ["Employee", "Manager", "Support", "", None]
 )
 def test_employee_and_legacy_roles_cannot_manage_knowledge(role):
     with pytest.raises(HTTPException) as exc:
@@ -28,6 +29,28 @@ def test_chunker_preserves_all_policy_text():
     assert len(chunks) > 2
     assert chunks[0].startswith("Eligibility rules")
     assert chunks[-1].endswith("Appeals.")
+
+
+def test_service_principal_is_valid_blob_identity_configuration():
+    with patch.dict(
+        "os.environ",
+        {
+            "AZURE_TENANT_ID": "tenant",
+            "AZURE_CLIENT_ID": "client",
+            "AZURE_CLIENT_SECRET": "secret",
+        },
+        clear=True,
+    ):
+        assert ingestion._has_azure_identity_configuration() is True
+
+
+def test_partial_service_principal_configuration_fails_closed():
+    with patch.dict(
+        "os.environ",
+        {"AZURE_TENANT_ID": "tenant", "AZURE_CLIENT_ID": "client"},
+        clear=True,
+    ):
+        assert ingestion._has_azure_identity_configuration() is False
 
 
 def test_rejects_unsupported_upload_before_cloud_access():
