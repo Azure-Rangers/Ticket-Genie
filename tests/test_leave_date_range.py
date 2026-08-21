@@ -111,6 +111,31 @@ def test_both_dates_survive_a_turn_that_only_changes_description():
     assert response.ticket_draft.description == "PTO because of a family reunion trip."
 
 
+def test_short_unpaid_leave_request_sets_type_without_model_category():
+    decision = _leave_decision(description="I am requesting unpaid leave.")
+    response = ask_leave(
+        "I want an unpaid leave",
+        decision=decision,
+        active_intent=ChatIntent.LEAVE_MANAGEMENT,
+    )
+    assert response.ticket_draft.category == "Unpaid Leave"
+    assert response.missing_fields == ["the start and end dates"]
+
+
+def test_explicit_unpaid_leave_corrects_stale_pto_category():
+    decision = _leave_decision(description="I am requesting unpaid leave.")
+    response = ask_leave(
+        "Actually, I want unpaid leave",
+        decision=decision,
+        active_intent=ChatIntent.LEAVE_MANAGEMENT,
+        draft=TicketDraft(
+            category="Paid Time Off (PTO)",
+            description="I am requesting paid time off.",
+        ),
+    )
+    assert response.ticket_draft.category == "Unpaid Leave"
+
+
 # ---------------------------------------------------------------------------
 # 7-10: missing-field / readiness rules
 # ---------------------------------------------------------------------------

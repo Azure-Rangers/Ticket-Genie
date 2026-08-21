@@ -77,6 +77,30 @@ _MISSING_DESCRIPTION_MARKERS = ("description", "detail", "reason", "what happene
 _MISSING_CATEGORY_MARKERS = ("categ", "leave type", "type of leave")
 _MISSING_DATE_MARKERS = ("date",)
 
+_EXPLICIT_LEAVE_TYPES = (
+    (re.compile(r"\bunpaid(?:\s+leave)?\b", re.IGNORECASE), "Unpaid Leave"),
+    (
+        re.compile(r"\b(?:paid\s+time\s+off|pto|vacation)(?:\s+leave)?\b", re.IGNORECASE),
+        "Paid Time Off (PTO)",
+    ),
+    (re.compile(r"\b(?:medical|sick)(?:\s+leave)?\b", re.IGNORECASE), "Medical Leave"),
+    (
+        re.compile(r"\b(?:parental|maternity|paternity)(?:\s+leave)?\b", re.IGNORECASE),
+        "Parental Leave",
+    ),
+    (re.compile(r"\bbereavement(?:\s+leave)?\b", re.IGNORECASE), "Bereavement"),
+)
+
+
+def explicit_leave_type(message: Optional[str]) -> Optional[str]:
+    """Return a leave type only when the user's words name it unambiguously."""
+    if not message:
+        return None
+    for pattern, leave_type in _EXPLICIT_LEAVE_TYPES:
+        if pattern.search(message):
+            return leave_type
+    return None
+
 
 def _leave_date_missing_label(draft: TicketDraft) -> Optional[str]:
     """
@@ -210,6 +234,7 @@ def merge_extracted_fields(
     gpt_missing_fields: List[str],
     intent: ChatIntent,
     request_type: Optional[RequestType] = None,
+    user_message: Optional[str] = None,
 ) -> Tuple[TicketDraft, List[str]]:
     """
     Deterministically fold the model's extraction into the running draft,
@@ -222,8 +247,13 @@ def merge_extracted_fields(
 
     draft.description = _merge_description(draft.description, extracted.description)
 
-    if not draft.category:
-        is_leave = intent == ChatIntent.LEAVE_MANAGEMENT
+    is_leave = intent == ChatIntent.LEAVE_MANAGEMENT
+    named_leave_type = explicit_leave_type(user_message) if is_leave else None
+    if named_leave_type:
+        # The user's explicit wording outranks both an omitted model field and
+        # a stale category carried from an earlier draft turn.
+        draft.category = named_leave_type
+    elif not draft.category:
         allowed = LEAVE_TYPES if is_leave else STANDARD_CATEGORIES
         draft.category = validate_category(extracted.category, allowed)
 

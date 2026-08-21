@@ -612,6 +612,7 @@ def _handle_ticket_drafting(
         gpt_missing_fields=decision.missing_fields,
         intent=intent,
         request_type=request_type,
+        user_message=request.message,
     )
 
 
