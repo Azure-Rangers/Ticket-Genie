@@ -93,7 +93,9 @@ resource "azurerm_linux_web_app" "backend" {
     "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
     "OTEL_TRACES_SAMPLER"                        = "always_on"
     "AZURE_CLIENT_ID"                            = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-client-id)"
+    "AZURE_CLIENT_SECRET"                        = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-client-secret)"
     "AZURE_TENANT_ID"                            = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-tenant-id)"
+    "AZURE_MANAGED_IDENTITY_CLIENT_ID"           = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-managed-identity-client-id)"
     "AZURE_STORAGE_ACCOUNT_NAME"                 = data.azurerm_storage_account.knowledge.name
     "KNOWLEDGE_BLOB_CONTAINER"                   = "ticket-genie-knowledge"
     "GOOGLE_EMAIL"                               = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=google-email)"
@@ -107,6 +109,8 @@ resource "azurerm_linux_web_app" "backend" {
     "GROUP1OPENAIENDPOINT"                       = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=group1openaiendpoint)"
     "AZURE_OPENAI_API_KEY"                       = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-openai-api-key)"
     "GROUP1OPENAIAPIKEY"                         = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=group1openaiapikey)"
+    "GROUP1_EMBEDDING_API_KEY"                   = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=group1-embedding-api-key)"
+    "GROUP1_EMBEDDING_ENDPOINT"                  = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=group1-embedding-endpoint)"
     "AZURE_AI_SEARCH_ENDPOINT"                   = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-ai-search-endpoint)"
     "AZURE_AI_SEARCH_KEY"                        = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-ai-search-key)"
   }

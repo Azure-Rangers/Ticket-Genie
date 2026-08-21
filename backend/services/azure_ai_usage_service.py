@@ -60,6 +60,40 @@ def _iso(value: Any) -> Optional[str]:
     return str(value)
 
 
+def _build_azure_credential():
+    """Construct Azure credential prioritizing App Service System-Assigned Managed Identity.
+
+    In Azure App Service, AZURE_CLIENT_ID in the environment is typically the App Registration
+    Client ID (used for OAuth/OIDC JWT verification). When DefaultAzureCredential detects
+    AZURE_CLIENT_ID, it incorrectly passes it as the client_id for User-Assigned Managed Identity,
+    causing IMDS token requests to fail with invalid_scope (400).
+
+    We explicitly construct a credential chain that uses ManagedIdentityCredential (system-assigned
+    by default), falling back to Azure CLI and Environment credentials.
+    """
+    from azure.identity import (
+        AzureCliCredential,
+        ChainedTokenCredential,
+        DefaultAzureCredential,
+        EnvironmentCredential,
+        ManagedIdentityCredential,
+    )
+
+    user_assigned_client_id = os.getenv("AZURE_MANAGED_IDENTITY_CLIENT_ID")
+    managed_identity = (
+        ManagedIdentityCredential(client_id=user_assigned_client_id)
+        if user_assigned_client_id
+        else ManagedIdentityCredential()
+    )
+
+    return ChainedTokenCredential(
+        managed_identity,
+        AzureCliCredential(),
+        EnvironmentCredential(),
+        DefaultAzureCredential(exclude_managed_identity_credential=True),
+    )
+
+
 def get_azure_ai_usage(
     *,
     days: int = 30,
@@ -78,10 +112,10 @@ def get_azure_ai_usage(
 
     if client is None:
         try:
-            from azure.identity import DefaultAzureCredential
             from azure.monitor.query import LogsQueryClient
 
-            client = LogsQueryClient(DefaultAzureCredential())
+            credential = _build_azure_credential()
+            client = LogsQueryClient(credential)
         except Exception as exc:
             logger.warning("Could not initialize Azure logs client: %s", exc)
             raise AzureAIUsageUnavailableError(
@@ -89,6 +123,10 @@ def get_azure_ai_usage(
                 "Deploy the backend with its managed identity, or configure "
                 "local Azure service-principal credentials."
             ) from exc
+
+    logger.info(
+        f"[AI Usage Query] Querying Log Analytics workspace '{workspace}' for past {days} days..."
+    )
 
     try:
         result = client.query_workspace(
@@ -161,6 +199,11 @@ def get_azure_ai_usage(
     totals["estimated_cost_usd"] = round(totals["estimated_cost_usd"], 6)
     for item in daily.values():
         item["estimated_cost_usd"] = round(item["estimated_cost_usd"], 6)
+
+    logger.info(
+        f"[AI Usage Query] Completed successfully. Found {len(breakdown)} records across {len(daily)} days. "
+        f"Totals: {totals['calls']} calls, {totals['total_tokens']} tokens (${totals['estimated_cost_usd']:.6f})."
+    )
 
     now = datetime.now(timezone.utc)
     return {

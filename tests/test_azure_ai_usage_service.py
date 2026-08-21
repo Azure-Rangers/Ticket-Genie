@@ -78,3 +78,13 @@ def test_ai_usage_role_boundary_is_exact_and_verified():
     assert is_ai_usage_admin({"role": "Employee"}) is False
     assert is_ai_usage_admin({"role": "Department Admin"}) is False
     assert is_ai_usage_admin(None) is False
+
+
+def test_build_azure_credential_constructs_chain(monkeypatch):
+    from azure.identity import ChainedTokenCredential
+
+    from services.azure_ai_usage_service import _build_azure_credential
+
+    monkeypatch.setenv("AZURE_CLIENT_ID", "fake-app-registration-id")
+    credential = _build_azure_credential()
+    assert isinstance(credential, ChainedTokenCredential)
