@@ -81,8 +81,9 @@ def test_ai_usage_role_boundary_is_exact_and_verified():
 
 
 def test_build_azure_credential_constructs_chain(monkeypatch):
-    from services.azure_ai_usage_service import _build_azure_credential
     from azure.identity import ChainedTokenCredential
+
+    from services.azure_ai_usage_service import _build_azure_credential
 
     monkeypatch.setenv("AZURE_CLIENT_ID", "fake-app-registration-id")
     credential = _build_azure_credential()
