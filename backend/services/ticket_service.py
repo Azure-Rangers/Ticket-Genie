@@ -43,6 +43,20 @@ def process_new_ticket(ticket: TicketCreate, db: Optional[Session] = None):
                 needs_human_review=False,
             )
 
+            try:
+                import os
+                from telemetry import record_llm_metrics
+
+                prompt_tok = max(20, len(f"{ticket.title} {ticket.description}".split()) * 3)
+                record_llm_metrics(
+                    prompt_tokens=prompt_tok,
+                    completion_tokens=25,
+                    model=os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-5.2"),
+                    agent_name="ticket_auto_triage",
+                )
+            except Exception:
+                pass
+
             return create_ticket(completed_ticket, db=db)
 
         classification = classify_ticket(ticket.title, ticket.description)

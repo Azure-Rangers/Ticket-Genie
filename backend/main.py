@@ -4,7 +4,7 @@ import os
 import sys
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.admin import router as admin_router
@@ -41,6 +41,9 @@ app = FastAPI(
 # Initialize Database Schema & Seed Initial Data
 init_db_schema()
 seed_initial_data()
+from services.prompt_cache_service import seed_warm_cache
+
+seed_warm_cache()
 if os.getenv("ENABLE_SYNTHETIC_ANALYTICS", "false").lower() == "true":
     with SessionLocal() as synthetic_db:
         synthetic_result = ensure_synthetic_tickets(synthetic_db)
@@ -54,6 +57,25 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def disable_api_response_caching(request: Request, call_next):
+    """Prevent intermediaries from caching authenticated API payloads.
+
+    NGINX default cache keys ignore Authorization. Backend responses under
+    /api/ are marked private/no-store so a later user cannot be served
+    another caller's RAG, SQL, or ticket body from an edge cache.
+    """
+    response = await call_next(request)
+    path = request.url.path
+    if path.startswith("/api/"):
+        response.headers["Cache-Control"] = (
+            "private, no-store, no-cache, must-revalidate"
+        )
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
 
 # Initialize Azure Monitor telemetry
 setup_telemetry(app)

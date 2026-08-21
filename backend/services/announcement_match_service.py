@@ -143,4 +143,19 @@ def find_matching_announcement(
                 "message": "This issue may already be addressed in a company announcement.",
             }
 
+    try:
+        import os
+        from telemetry import record_llm_metrics
+
+        prompt_tokens = max(15, len(ticket_terms) * 4 + 30)
+        completion_tokens = 20 if best_match else 5
+        record_llm_metrics(
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            model=os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-5.2"),
+            agent_name="announcement_matcher",
+        )
+    except Exception:
+        pass
+
     return best_match

@@ -18,6 +18,7 @@
   import OnboardingView from './views/OnboardingView.svelte';
   import TicketDetailView from './views/TicketDetailView.svelte';
   import GenieAIView from './views/GenieAIView.svelte';
+  import GeneralAnalyticsView from './views/GeneralAnalyticsView.svelte';
 
   import { activeTab, loadTickets } from './lib/stores/tickets.js';
   import { userStore, authLoading, initAuthCheck } from './lib/stores/auth.js';
@@ -77,8 +78,10 @@
           <InboxView />
         {:else if $activeTab === 'knowledge' || $activeTab === 'add-policies'}
           <KnowledgeBaseView />
-        {:else if $activeTab === 'analytics' || $activeTab === 'dept-analytics' || $activeTab === 'admin-analytics'}
+        {:else if $activeTab === 'dept-analytics'}
           <AnalyticsView />
+        {:else if $activeTab === 'analytics' || $activeTab === 'admin-analytics'}
+          <GeneralAnalyticsView />
         {:else if $activeTab === 'settings' || $activeTab === 'rbac'}
           <SettingsView />
         {/if}

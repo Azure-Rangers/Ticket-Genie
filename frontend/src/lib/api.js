@@ -468,6 +468,52 @@ export async function apiFetchAIUsage(days = 30) {
   return res.json();
 }
 
+export async function apiFetchAISettings() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/admin/ai-settings`, {
+      headers: getAuthHeaders()
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("apiFetchAISettings failed:", err);
+  }
+  return {
+    primary_model: "gpt-5.2",
+    fallback_model: "gpt-4o-mini",
+    temperature: 0.2,
+    max_tokens: 4096,
+    confidence_threshold: 0.70,
+    top_k_chunks: 3,
+    similarity_threshold: 0.75,
+    monthly_budget_usd: 50.0,
+    telemetry_level: "verbose",
+    feature_auto_triage: true,
+    feature_chatbot_genie: true,
+    feature_suggested_responses: true,
+    feature_rag_grounding: true,
+    feature_sla_scoring: true,
+    feature_issue_clustering: true
+  };
+}
+
+export async function apiSaveAISettings(settingsPayload) {
+  const res = await fetch(`${API_BASE_URL}/admin/ai-settings`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(settingsPayload)
+  });
+  if (!res.ok) {
+    let detail = `Failed to save AI settings (${res.status})`;
+    try {
+      const body = await res.json();
+      if (body.detail) detail = body.detail;
+    } catch (e) {}
+    throw new Error(detail);
+  }
+  return await res.json();
+}
+
+
 export async function apiCreateAnnouncement(payload) {
   const res = await fetch(`${API_BASE_URL}/announcements`, {
     method: "POST",
@@ -607,3 +653,38 @@ export async function apiClassifyAnnouncementSeverity(payload) {
     icon: "ph-megaphone"
   };
 }
+
+export async function apiFetchPromptCacheStats() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/admin/prompt-cache/stats`, {
+      headers: getAuthHeaders()
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn("apiFetchPromptCacheStats failed:", err);
+  }
+  return {
+    active_items: 0,
+    hits: 0,
+    misses: 0,
+    total_lookups: 0,
+    hit_rate_pct: 0,
+    tokens_saved: 0,
+    cost_saved_usd: 0,
+    per_agent: {}
+  };
+}
+
+export async function apiPurgePromptCache() {
+  const res = await fetch(`${API_BASE_URL}/admin/prompt-cache/purge`, {
+    method: "POST",
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to purge prompt cache (${res.status})`);
+  }
+  return await res.json();
+}
+
