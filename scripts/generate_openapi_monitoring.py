@@ -144,11 +144,39 @@ def generate_workbook_json(routes: List[Dict[str, Any]]) -> Dict[str, Any]:
                 },
             },
             {
+                "type": 9,
+                "content": {
+                    "version": "KqlParameterItem/1.0",
+                    "parameters": [
+                        {
+                            "id": "TimeRange",
+                            "type": 4,
+                            "isRequired": True,
+                            "value": {"durationMs": 86400000},
+                            "typeSettings": {
+                                "selectableValues": [
+                                    {"durationMs": 3600000, "name": "Last 1 hour"},
+                                    {"durationMs": 14400000, "name": "Last 4 hours"},
+                                    {"durationMs": 86400000, "name": "Last 24 hours"},
+                                    {"durationMs": 604800000, "name": "Last 7 days"},
+                                    {"durationMs": 2592000000, "name": "Last 30 days"},
+                                ]
+                            },
+                            "name": "TimeRange",
+                            "label": "Time Range",
+                        }
+                    ],
+                    "style": "pills",
+                    "queryType": 0,
+                    "resourceType": "microsoft.insights/components",
+                },
+            },
+            {
                 "type": 3,
                 "content": {
                     "version": "KqlItem/1.0",
                     "query": """requests
-| where timestamp >= {TimeRange}
+| where timestamp >= {TimeRange:start} and timestamp <= {TimeRange:end}
 | summarize
     Total_Requests = count(),
     Failed_Requests = countif(success == false),
@@ -161,7 +189,8 @@ def generate_workbook_json(routes: List[Dict[str, Any]]) -> Dict[str, Any]:
                     "title": "API Endpoint Performance & Error Overview",
                     "queryType": 0,
                     "resourceType": "microsoft.insights/components",
-                    "gridSettings": {"formatters": []},
+                    "timeContext": {"durationMs": 86400000},
+                    "timeContextFromParameter": "TimeRange",
                 },
             },
             {
@@ -169,7 +198,7 @@ def generate_workbook_json(routes: List[Dict[str, Any]]) -> Dict[str, Any]:
                 "content": {
                     "version": "KqlItem/1.0",
                     "query": """customMetrics
-| where timestamp >= {TimeRange} and name startswith "llm_"
+| where timestamp >= {TimeRange:start} and timestamp <= {TimeRange:end} and name startswith "llm_"
 | summarize
     Prompt_Tokens = sumif(value, name == "llm_prompt_tokens"),
     Completion_Tokens = sumif(value, name == "llm_completion_tokens"),
@@ -181,6 +210,8 @@ def generate_workbook_json(routes: List[Dict[str, Any]]) -> Dict[str, Any]:
                     "title": "LLM Token Consumption & Cost by Subagent",
                     "queryType": 0,
                     "resourceType": "microsoft.insights/components",
+                    "timeContext": {"durationMs": 86400000},
+                    "timeContextFromParameter": "TimeRange",
                 },
             },
             {
@@ -188,7 +219,7 @@ def generate_workbook_json(routes: List[Dict[str, Any]]) -> Dict[str, Any]:
                 "content": {
                     "version": "KqlItem/1.0",
                     "query": """requests
-| where timestamp >= {TimeRange}
+| where timestamp >= {TimeRange:start} and timestamp <= {TimeRange:end}
 | make-series Requests=count() on timestamp
     from {TimeRange:start} to {TimeRange:end} step 5m by name
 | render timechart""",
@@ -196,6 +227,8 @@ def generate_workbook_json(routes: List[Dict[str, Any]]) -> Dict[str, Any]:
                     "title": "Request Throughput per OpenAPI Route (RPS / 5m)",
                     "queryType": 0,
                     "resourceType": "microsoft.insights/components",
+                    "timeContext": {"durationMs": 86400000},
+                    "timeContextFromParameter": "TimeRange",
                 },
             },
         ],

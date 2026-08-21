@@ -1408,6 +1408,310 @@
         }
       }
     },
+    "/api/admin/ai-settings": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Get Ai Settings",
+        "description": "Return current enterprise AI configuration and feature toggles.",
+        "operationId": "get_ai_settings_api_admin_ai_settings_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Update Ai Settings",
+        "description": "Update enterprise AI configuration and granular feature toggles.",
+        "operationId": "update_ai_settings_api_admin_ai_settings_put",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AISettingsPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Update Ai Settings",
+        "description": "Update enterprise AI configuration and granular feature toggles.",
+        "operationId": "update_ai_settings_api_admin_ai_settings_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AISettingsPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/prompt-cache/stats": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Get Prompt Cache Statistics",
+        "description": "Return live prompt cache hit rate, token savings, and active cached prompts.",
+        "operationId": "get_prompt_cache_statistics_api_admin_prompt_cache_stats_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/prompt-cache/purge": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Purge Prompt Cache",
+        "description": "Flush all entries from the in-memory prompt & response cache.",
+        "operationId": "purge_prompt_cache_api_admin_prompt_cache_purge_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/prompt-cache/warmup": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Warmup Prompt Cache",
+        "description": "Run a set of repeated deterministic AI calls inside the live server process\nto populate the in-process LRU prompt cache with real hits.\nReturns final cache stats after warmup.",
+        "operationId": "warmup_prompt_cache_api_admin_prompt_cache_warmup_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/analytics/trends": {
       "get": {
         "tags": [
@@ -1541,100 +1845,6 @@
               "title": "Days"
             }
           },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/calendar/leave-events": {
-      "get": {
-        "tags": [
-          "calendar"
-        ],
-        "summary": "Get Leave Events",
-        "operationId": "get_leave_events_api_calendar_leave_events_get",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/calendar/export.ics": {
-      "get": {
-        "tags": [
-          "calendar"
-        ],
-        "summary": "Export Calendar Ics",
-        "operationId": "export_calendar_ics_api_calendar_export_ics_get",
-        "parameters": [
           {
             "name": "authorization",
             "in": "header",
@@ -2921,6 +3131,228 @@
   },
   "components": {
     "schemas": {
+      "AISettingsPayload": {
+        "properties": {
+          "primary_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Model",
+            "default": "gpt-5.2"
+          },
+          "fallback_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallback Model",
+            "default": "gpt-4o-mini"
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature",
+            "default": 0.2
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens",
+            "default": 4096
+          },
+          "confidence_threshold": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence Threshold",
+            "default": 0.7
+          },
+          "top_k_chunks": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top K Chunks",
+            "default": 3
+          },
+          "similarity_threshold": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Similarity Threshold",
+            "default": 0.75
+          },
+          "monthly_budget_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monthly Budget Usd",
+            "default": 50.0
+          },
+          "telemetry_level": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telemetry Level",
+            "default": "verbose"
+          },
+          "feature_auto_triage": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feature Auto Triage",
+            "default": true
+          },
+          "feature_chatbot_genie": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feature Chatbot Genie",
+            "default": true
+          },
+          "feature_suggested_responses": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feature Suggested Responses",
+            "default": true
+          },
+          "feature_rag_grounding": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feature Rag Grounding",
+            "default": true
+          },
+          "feature_sla_scoring": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feature Sla Scoring",
+            "default": true
+          },
+          "feature_issue_clustering": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feature Issue Clustering",
+            "default": true
+          },
+          "feature_prompt_lru_caching": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feature Prompt Lru Caching",
+            "default": true
+          },
+          "feature_semantic_dedup": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feature Semantic Dedup",
+            "default": true
+          },
+          "prompt_cache_ttl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Cache Ttl",
+            "default": "1h"
+          }
+        },
+        "type": "object",
+        "title": "AISettingsPayload"
+      },
       "AnnouncementCreateRequest": {
         "properties": {
           "title": {
@@ -3144,7 +3576,10 @@
           "general",
           "reassign_ticket",
           "change_priority",
-          "create_portal_employee"
+          "create_portal_employee",
+          "start_onboarding",
+          "create_announcement",
+          "delete_announcement"
         ],
         "title": "ChatIntent"
       },
@@ -3188,6 +3623,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/TicketDraft"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "onboarding_draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OnboardingDraft"
               },
               {
                 "type": "null"
@@ -3275,6 +3720,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/TicketDraft"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "onboarding_draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OnboardingDraft"
               },
               {
                 "type": "null"
@@ -3711,6 +4166,89 @@
         ],
         "title": "NotificationCreateRequest"
       },
+      "OnboardingDraft": {
+        "properties": {
+          "employee_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Name"
+          },
+          "employee_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Email"
+          },
+          "job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Title"
+          },
+          "employee_department": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Department"
+          },
+          "manager": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manager"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          }
+        },
+        "type": "object",
+        "title": "OnboardingDraft"
+      },
       "OnboardingStartRequest": {
         "properties": {
           "employee_name": {
@@ -4045,6 +4583,50 @@
               }
             ],
             "title": "Employee Department"
+          },
+          "announcement_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Announcement Id"
+          },
+          "announcement_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Announcement Title"
+          },
+          "announcement_content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Announcement Content"
+          },
+          "announcement_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Announcement Category"
           }
         },
         "type": "object",
