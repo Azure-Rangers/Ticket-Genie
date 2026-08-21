@@ -33,8 +33,10 @@ def setup_telemetry(app: FastAPI, connection_string: Optional[str] = None) -> bo
         logger.info("[Telemetry Setup] Telemetry already initialized.")
         return True
 
-    raw_conn_str = connection_string or os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING", "")
-    conn_str = raw_conn_str.strip().strip('"\'')
+    raw_conn_str = connection_string or os.getenv(
+        "APPLICATIONINSIGHTS_CONNECTION_STRING", ""
+    )
+    conn_str = raw_conn_str.strip().strip("\"'")
 
     if not conn_str:
         logger.info(
