@@ -282,13 +282,6 @@ def test_anonymous_request_ready_for_review_carries_anonymous_request_type():
     assert response.ticket_draft.is_anonymous is True
 
 
-# ---------------------------------------------------------------------------
-# Leave Calendar stays a separate concern: a leave-drafting turn never
-# produces a navigation action, so it can never be confused with "show me
-# the leave calendar" (a navigation-intent request).
-# ---------------------------------------------------------------------------
-
-
 def test_leave_drafting_response_never_carries_a_navigate_action():
     decision = _leave_decision(
         description="Requesting PTO next week.", category="Paid Time Off (PTO)"

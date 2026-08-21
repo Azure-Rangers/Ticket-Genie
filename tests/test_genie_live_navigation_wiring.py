@@ -42,7 +42,6 @@ GENIE_NAV_TABS = (
     "settings",
     "analytics",
     "onboarding",
-    "leave-calendar",
 )
 
 STALE_PATH_FRAGMENTS = (
@@ -60,15 +59,6 @@ def test_every_genie_nav_tab_is_actually_rendered_by_app_svelte():
             f"App.svelte has no activeTab branch for {tab!r} - Genie would "
             "navigate to a tab that renders nothing"
         )
-
-
-def test_leave_calendar_is_reachable_from_the_sidebar():
-    # Regression guard for the dead-view bug this change fixed: before this
-    # fix, LeaveCalendarView was imported but unreachable from any
-    # activeTab value or Sidebar link.
-    assert "LeaveCalendarView" in APP_SVELTE
-    assert "'leave-calendar'" in APP_SVELTE
-    assert "setTab('leave-calendar')" in SIDEBAR_SVELTE
 
 
 def test_genie_chat_store_whitelists_every_live_nav_tab():

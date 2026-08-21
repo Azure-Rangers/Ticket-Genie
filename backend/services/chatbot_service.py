@@ -237,8 +237,6 @@ def _resolve_active_tab(target: NavigationTarget, role: Optional[str]) -> Option
         return "analytics" if is_department_ticketer(role) else None
     if target == NavigationTarget.ONBOARDING:
         return "onboarding" if is_admin_role(role) else None
-    if target == NavigationTarget.LEAVE_CALENDAR:
-        return "leave-calendar" if is_admin_role(role) else None
     return None
 
 

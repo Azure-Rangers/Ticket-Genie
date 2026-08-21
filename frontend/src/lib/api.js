@@ -163,27 +163,6 @@ export async function apiExportTicketDOCX(ticketId) {
   }
 }
 
-export async function apiExportCalendar() {
-  try {
-    const res = await fetch(`${API_BASE_URL}/calendar/export.ics`, {
-      headers: getAuthHeaders()
-    });
-    if (!res.ok) throw new Error(`Failed to export calendar (${res.status})`);
-    const blob = await res.blob();
-    const blobUrl = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = "TicketGenie_Leave_Calendar.ics";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
-  } catch (err) {
-    console.error("apiExportCalendar error:", err);
-    alert(err.message || "Failed to download iCal calendar.");
-  }
-}
-
 /** ==================== KNOWLEDGE BASE API ==================== */
 
 export async function apiListKnowledgeDocuments() {
@@ -438,14 +417,6 @@ export async function apiFetchAnnouncements() {
     console.error("apiFetchAnnouncements failed:", err);
   }
   return [];
-}
-
-export async function apiFetchLeaveEvents() {
-  const res = await fetch(`${API_BASE_URL}/calendar/leave-events`, {
-    headers: getAuthHeaders()
-  });
-  if (!res.ok) throw new Error(`Unable to load leave calendar (${res.status})`);
-  return await res.json();
 }
 
 export async function apiFetchDepartmentHealth(department = null) {

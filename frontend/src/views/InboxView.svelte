@@ -3,7 +3,7 @@
   import { checkAuthGuard, userStore, isTicketer } from '../lib/stores/auth.js';
   import { filteredTickets, searchQuery, statusFilter, priorityFilter, assigneeFilter, selectedTicket, activeTab, changeTicketStatus, assignTicketToSelf } from '../lib/stores/tickets.js';
   import StatusBadge from '../components/StatusBadge.svelte';
-  import { apiExportTicketPDF, apiExportCalendar } from '../lib/api.js';
+  import { apiExportTicketPDF } from '../lib/api.js';
 
   onMount(() => {
     checkAuthGuard('employee');

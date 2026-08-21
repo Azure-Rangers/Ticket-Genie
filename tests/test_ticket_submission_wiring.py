@@ -54,9 +54,7 @@ def test_admin_ticket_detail_only_offers_pdf_export():
 
     assert "Export PDF" in page
     assert "Export DOCX" not in page
-    assert "> iCal" not in page
     assert "apiExportTicketDOCX" not in page
-    assert "apiExportCalendar" not in page
 
 
 def test_shared_api_client_uses_backend_api_prefix():

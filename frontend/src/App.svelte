@@ -11,7 +11,6 @@
   import SettingsView from './views/SettingsView.svelte';
   import CreateTicketView from './views/CreateTicketView.svelte';
   import LoginView from './views/LoginView.svelte';
-  import LeaveCalendarView from './views/LeaveCalendarView.svelte';
   import AnnouncementsView from './views/AnnouncementsView.svelte';
   import NotificationsView from './views/NotificationsView.svelte';
   import ProfileView from './views/ProfileView.svelte';
@@ -73,8 +72,6 @@
           <ProfileView />
         {:else if $activeTab === 'onboarding'}
           <OnboardingView />
-        {:else if $activeTab === 'leave-calendar'}
-          <LeaveCalendarView />
         {:else if $activeTab === 'ticket-detail' || $activeTab === 'ticket-thread'}
           <TicketDetailView />
         {:else if $activeTab === 'inbox' || $activeTab === 'queue-it' || $activeTab === 'queue-hr' || $activeTab === 'queue-finance'}

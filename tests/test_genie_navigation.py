@@ -88,7 +88,6 @@ DESTINATIONS = [
     (NavigationTarget.SETTINGS, "Admin", "settings"),
     (NavigationTarget.ANALYTICS, "Admin", "analytics"),
     (NavigationTarget.ONBOARDING, "Admin", "onboarding"),
-    (NavigationTarget.LEAVE_CALENDAR, "Admin", "leave-calendar"),
 ]
 
 
@@ -123,7 +122,6 @@ UNAUTHORIZED_TARGETS = [
     NavigationTarget.SETTINGS,
     NavigationTarget.ANALYTICS,
     NavigationTarget.ONBOARDING,
-    NavigationTarget.LEAVE_CALENDAR,
 ]
 
 

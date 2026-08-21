@@ -75,23 +75,13 @@ def test_admin_api_departments_and_users():
     assert user_res.status_code == 201
 
 
-def test_analytics_and_calendar_endpoints():
+def test_analytics_endpoint():
     # Analytics trends
     res = client.get("/api/analytics/trends")
     assert res.status_code == 200
     data = res.json()
     assert "total_tickets" in data
     assert "auto_resolution_rate_pct" in data
-
-    # Leave events
-    cal_res = client.get("/api/calendar/leave-events")
-    assert cal_res.status_code == 200
-
-    # ICS export
-    ics_res = client.get("/api/calendar/export.ics")
-    assert ics_res.status_code == 200
-    assert "BEGIN:VCALENDAR" in ics_res.text
-
 
 def test_genie_react_endpoint():
     res = client.post("/api/genie/react", json={"message": "Show count of tickets"})

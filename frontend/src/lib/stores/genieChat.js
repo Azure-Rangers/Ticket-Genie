@@ -163,8 +163,7 @@ const NAV_TAB_ROLE_GATE = {
   inbox: isTicketer,
   analytics: isTicketer,
   settings: isAdmin,
-  onboarding: isSuperAdmin,
-  'leave-calendar': isSuperAdmin
+  onboarding: isSuperAdmin
 };
 const NAV_TABS = new Set([
   'dashboard',

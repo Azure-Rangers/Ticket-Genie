@@ -9,7 +9,6 @@ function getEmployeePages() {
     { href: "index.html", title: "Help & Support" },
     { href: "new-request.html", title: "New Support Request" },
     { href: "my-tickets.html", title: "My Tickets" },
-    { href: "leave-calendar.html", title: "Leave Calendar" },
     { href: "knowledge-base.html", title: "Knowledge Base" },
     { href: "announcements.html", title: "Announcements" },
     { href: "notifications.html", title: "Notifications" },
@@ -58,9 +57,6 @@ function renderEmployeeNMSidebar() {
         </a>
 
         <div class="nav-title">TIME OFF & COMPANY</div>
-        <a href="leave-calendar.html" class="nav-item ${currentFile === 'leave-calendar.html' ? 'active' : ''}">
-          <i class="fa-solid fa-calendar-days"></i><span>Leave Calendar</span>
-        </a>
         <a href="announcements.html" class="nav-item ${currentFile === 'announcements.html' ? 'active' : ''}">
           <i class="fa-solid fa-bullhorn"></i><span>Announcements</span>
         </a>

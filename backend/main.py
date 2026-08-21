@@ -10,7 +10,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.admin import router as admin_router
 from api.analytics import router as analytics_router
 from api.announcements import router as announcements_router
-from api.calendar import router as calendar_router
 from api.chatbot import router as chatbot_router
 from api.genie import router as genie_router
 from api.knowledge import router as knowledge_router
@@ -86,7 +85,6 @@ app.include_router(genie_router, prefix="/api")
 app.include_router(chatbot_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
 app.include_router(analytics_router, prefix="/api")
-app.include_router(calendar_router, prefix="/api")
 app.include_router(knowledge_router, prefix="/api")
 app.include_router(announcements_router, prefix="/api")
 app.include_router(notifications_router, prefix="/api")

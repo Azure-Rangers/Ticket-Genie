@@ -45,7 +45,6 @@ class NavigationTarget(str, Enum):
     SETTINGS = "settings"
     ANALYTICS = "analytics"
     ONBOARDING = "onboarding"
-    LEAVE_CALENDAR = "leave_calendar"
 
 
 class ExtractedTicketFields(BaseModel):
@@ -255,8 +254,8 @@ create_portal_employee only - populate `management_fields`, leave
 NAVIGATION RULES:
 - Only choose from these exact navigation targets: dashboard,
   create_ticket, my_tickets, knowledge_base, notifications,
-  announcements, profile, settings, analytics, onboarding,
-  leave_calendar. Never invent a target or a URL - the backend maps the
+  announcements, profile, settings, analytics, onboarding. Never invent a
+  target or a URL - the backend maps the
   target to the real page and independently checks whether the user's
   role is allowed to see it.
 - If the message doesn't clearly match one of those targets, treat it
@@ -409,7 +408,7 @@ validates authorization and all extracted values."""
 
 _PROMPT_NAVIGATION = """NAVIGATION: navigation_target must be one of dashboard,
 create_ticket, my_tickets, knowledge_base, notifications, announcements,
-profile, settings, analytics, onboarding, leave_calendar. Never emit a URL.
+profile, settings, analytics, onboarding. Never emit a URL.
 Use create_ticket only when asked to open that page; a request to report an
 issue is a ticket intent. If no target clearly fits, use how_to."""
 

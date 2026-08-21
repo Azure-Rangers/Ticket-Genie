@@ -7,7 +7,6 @@ from agents.chatbot_agent import (
     ChatbotDecision,
     ExtractedOnboardingFields,
 )
-from api.calendar import _leave_dates
 from models.chatbot import ChatIntent, ChatRequest, ChatScope
 from services.chatbot_service import _handle_onboarding_drafting
 
@@ -16,7 +15,6 @@ ROOT = Path(__file__).resolve().parents[1]
 SIDEBAR = (ROOT / "frontend/src/components/Sidebar.svelte").read_text()
 TICKET_STORE = (ROOT / "frontend/src/lib/stores/tickets.js").read_text()
 WIDGET = (ROOT / "frontend/src/components/GenieAgentWidget.svelte").read_text()
-CALENDAR_VIEW = (ROOT / "frontend/src/views/LeaveCalendarView.svelte").read_text()
 ONBOARDING_VIEW = (ROOT / "frontend/src/views/OnboardingView.svelte").read_text()
 ONBOARDING_SERVICE = (ROOT / "backend/services/onboarding_service.py").read_text()
 CREATE_VIEW = (ROOT / "frontend/src/views/CreateTicketView.svelte").read_text()
@@ -55,16 +53,6 @@ def test_126_employee_navigation_keeps_my_tickets_and_gates_knowledge():
     knowledge = SIDEBAR.index('title="Knowledge Base"')
     assert "canManageKnowledge" not in SIDEBAR[max(0, my_tickets - 120) : my_tickets]
     assert "{#if canManageKnowledge}" in SIDEBAR[max(0, knowledge - 180) : knowledge]
-
-
-def test_127_leave_calendar_uses_live_api_and_no_sample_rows():
-    assert "apiFetchLeaveEvents" in CALENDAR_VIEW
-    assert "onMount(loadLeaveRequests)" in CALENDAR_VIEW
-    assert "LV-101" not in CALENDAR_VIEW
-    assert _leave_dates({"description": "Dates: 2026-09-01 to 2026-09-05"}) == (
-        "2026-09-01",
-        "2026-09-05",
-    )
 
 
 def test_128_dashboard_navigation_is_available_to_employees():
