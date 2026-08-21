@@ -43,7 +43,7 @@
       <div class="nav-section">
         <div class="nav-title">EMPLOYEE</div>
 
-        {#if canManageKnowledge}<button
+        <button
           class="nav-link" 
           class:active={$activeTab === 'dashboard' || $activeTab === 'my-tickets'} 
           on:click={() => setTab('dashboard')}
@@ -51,7 +51,7 @@
         >
           <span class="menu-icon"><i class="ph-duotone ph-ticket"></i></span>
           <span class="menu-text">My Tickets</span>
-        </button>{/if}
+        </button>
 
         <button 
           class="nav-link" 
@@ -73,7 +73,7 @@
           <span class="menu-text">Announcements</span>
         </button>
 
-        <button 
+        {#if canManageKnowledge}<button
           class="nav-link" 
           class:active={$activeTab === 'knowledge'} 
           on:click={() => setTab('knowledge')}
@@ -81,7 +81,7 @@
         >
           <span class="menu-icon"><i class="ph-duotone ph-book-open"></i></span>
           <span class="menu-text">Knowledge Base</span>
-        </button>
+        </button>{/if}
 
         <button 
           class="nav-link" 

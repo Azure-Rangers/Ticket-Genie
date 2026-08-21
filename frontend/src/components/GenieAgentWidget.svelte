@@ -6,10 +6,18 @@
   // immediately visible on the page and vice versa. This popup never keeps
   // its own history array, never calls the chatbot API directly, and never
   // re-implements navigation/ticket-draft handling - see genieChat.js.
+  import { afterUpdate } from 'svelte';
   import { conversationMessages, sendingMessage, suggestions, sendMessage, applyGenieResponseActions } from '../lib/stores/genieChat.js';
 
   let isOpen = false;
   let userMessage = '';
+  let messagesContainer;
+
+  afterUpdate(() => {
+    if (isOpen && messagesContainer) {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+  });
 
   function toggleChat() {
     isOpen = !isOpen;
@@ -55,7 +63,7 @@
     </div>
 
     <!-- Messages Container -->
-    <div class="genie-messages">
+    <div class="genie-messages" bind:this={messagesContainer}>
       {#if $conversationMessages.length === 0}
         <div class="genie-message">
           <div class="genie-message-avatar"><i class="ph-fill ph-ticket"></i></div>

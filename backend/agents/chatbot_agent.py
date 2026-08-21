@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from models.chatbot import ChatIntent, ChatScope, ChatTurn, RequestType, TicketDraft
+from models.chatbot import ChatIntent, ChatScope, ChatTurn, OnboardingDraft, RequestType, TicketDraft
 from services.ai_service import ai_service as default_ai_service
 
 
@@ -81,6 +81,10 @@ class ManagementActionFields(BaseModel):
     employee_department: Optional[str] = None
 
 
+class ExtractedOnboardingFields(OnboardingDraft):
+    pass
+
+
 class ChatbotDecision(BaseModel):
     # Required, no default: the workplace-scope guardrail
     # (services.chatbot_service.handle_message) must never silently treat
@@ -108,6 +112,7 @@ class ChatbotDecision(BaseModel):
     knowledge_query: Optional[str] = None
     ticket_fields: Optional[ExtractedTicketFields] = None
     management_fields: Optional[ManagementActionFields] = None
+    onboarding_fields: Optional[ExtractedOnboardingFields] = None
     missing_fields: List[str] = Field(default_factory=list)
     request_type: Optional[RequestType] = None
     anonymity_requested: bool = Field(
@@ -391,13 +396,14 @@ INTENTS: navigation=open a page; how_to=use an existing feature;
 knowledge=company policy/process fact; support_issue/create_ticket=new support
 request; leave_management=personal request to take/change leave;
 ticket_status=existing ticket status; reassign_ticket/change_priority=modify
-an existing ticket; create_portal_employee=add a portal user; general=greeting
+an existing ticket; create_portal_employee=add a portal user;
+start_onboarding=prepare a new-hire onboarding plan; general=greeting
 or other workplace chat. A general leave-policy question is knowledge, but a
 personal leave request is always leave_management.
 
 ACTIONS: navigation->navigate, knowledge->search_knowledge,
 ticket_status->check_ticket_status, management intents->management_action,
-incomplete ticket/leave->ask_followup, complete ticket/leave->show_ticket_draft
+incomplete ticket/leave/onboarding->ask_followup, complete ticket/leave->show_ticket_draft
 or start_ticket_draft, otherwise respond. Keep message short. The backend
 validates authorization and all extracted values."""
 
@@ -413,6 +419,13 @@ Extract ticket_id only when explicitly supplied. Match department, priority,
 employee role, and employee department only to the allowed values. Extract
 employee identity fields only when stated. Leave ambiguous/missing values null;
 the backend will ask for them."""
+
+_PROMPT_ONBOARDING = """ONBOARDING: use start_onboarding when an Admin wants to
+onboard a new hire and populate onboarding_fields from stated facts: employee
+name/email, job title, employee department, manager, location, and ISO start
+date. Never request an Entra/Azure object ID; the onboarding pipeline does not
+need one. Ask only for missing required fields: name, email, job title,
+department, and start date. When all are known, send the draft for review."""
 
 _PROMPT_TICKET = """TICKET/LEAVE: populate ticket_fields only for ticket,
 leave, or ticket-status work. Match category only to the relevant allowed list.
@@ -444,7 +457,7 @@ def _build_decision_prompt(known_intent: Optional[ChatIntent]) -> str:
     sections = [_PROMPT_COMMON]
     if known_intent is None:
         sections.extend(
-            [_PROMPT_NAVIGATION, _PROMPT_MANAGEMENT, _PROMPT_TICKET, _PROMPT_STATUS]
+            [_PROMPT_NAVIGATION, _PROMPT_MANAGEMENT, _PROMPT_ONBOARDING, _PROMPT_TICKET, _PROMPT_STATUS]
         )
     elif known_intent == ChatIntent.NAVIGATION:
         sections.append(_PROMPT_NAVIGATION)
@@ -462,6 +475,8 @@ def _build_decision_prompt(known_intent: Optional[ChatIntent]) -> str:
         sections.append(_PROMPT_TICKET)
     elif known_intent == ChatIntent.TICKET_STATUS:
         sections.append(_PROMPT_STATUS)
+    elif known_intent == ChatIntent.START_ONBOARDING:
+        sections.append(_PROMPT_ONBOARDING)
     return "\n\n".join(sections)
 
 
@@ -487,6 +502,7 @@ def decide(
     *,
     history: List[ChatTurn] = None,
     existing_draft: Optional[TicketDraft] = None,
+    existing_onboarding_draft: Optional[OnboardingDraft] = None,
     known_intent: Optional[ChatIntent] = None,
     standard_categories: List[str],
     leave_types: List[str],
@@ -526,6 +542,9 @@ Conversation so far:
 
 Current ticket draft (already-known fields - do not re-ask for these):
 {_format_draft(existing_draft)}
+
+Current onboarding draft (already-known fields - do not re-ask for these):
+{_format_draft(existing_onboarding_draft)}
 
 Current management action in progress (already-known fields - do not
 re-ask for these; only relevant for reassign_ticket / change_priority /

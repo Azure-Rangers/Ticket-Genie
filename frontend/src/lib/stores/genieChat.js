@@ -1,7 +1,7 @@
 import { writable, get } from 'svelte/store';
 import { apiExportGenieConversationPDF, apiFetchGenieConversations, apiFetchGenieConversation, apiGenieChat } from '../api.js';
 import { userStore, isTicketer, isAdmin, isSuperAdmin } from './auth.js';
-import { activeTab, genieDraftStore, refreshTicketState } from './tickets.js';
+import { activeTab, genieDraftStore, onboardingDraftStore, refreshTicketState } from './tickets.js';
 
 // Backend (services/conversation_service.py) is the source of truth - these
 // stores mirror what's already persisted, they are never treated as the
@@ -30,8 +30,9 @@ let activeIntent = null;
 let activeRequestType = null;
 let pendingAction = null;
 let draft = null;
+let onboardingDraft = null;
 
-const GENIE_DRAFTING_INTENTS = ['create_ticket', 'support_issue', 'leave_management'];
+const GENIE_DRAFTING_INTENTS = ['create_ticket', 'support_issue', 'leave_management', 'start_onboarding'];
 
 export async function loadConversations() {
   loadingConversations.set(true);
@@ -54,6 +55,7 @@ export function startNewChat() {
   activeRequestType = null;
   pendingAction = null;
   draft = null;
+  onboardingDraft = null;
 }
 
 export async function openConversation(conversationId) {
@@ -72,6 +74,7 @@ export async function openConversation(conversationId) {
     activeRequestType = null;
     pendingAction = null;
     draft = null;
+    onboardingDraft = null;
   } catch (err) {
     console.error('Failed to open Genie conversation:', err);
     throw err;
@@ -104,6 +107,7 @@ export async function sendMessage(text) {
       role: user?.role || 'Employee',
       history: historyForRequest,
       draft,
+      onboarding_draft: onboardingDraft,
       active_intent: activeIntent,
       active_request_type: activeRequestType,
       pending_action: pendingAction,
@@ -115,6 +119,7 @@ export async function sendMessage(text) {
     activeIntent = stillDrafting ? res.intent : null;
     activeRequestType = stillDrafting ? res.request_type : null;
     draft = stillDrafting ? res.ticket_draft || null : null;
+    onboardingDraft = stillDrafting ? res.onboarding_draft || null : null;
     pendingAction = res.pending_action || null;
 
     conversationMessages.update((msgs) => [
@@ -215,5 +220,10 @@ export function applyGenieResponseActions(res) {
     if (res.ready_for_review) {
       activeTab.set('create-ticket');
     }
+  }
+
+  if (res.onboarding_draft) {
+    onboardingDraftStore.set(res.onboarding_draft);
+    if (res.ready_for_review) activeTab.set('onboarding');
   }
 }

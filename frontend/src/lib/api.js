@@ -285,6 +285,7 @@ export async function apiGenieChat(message, state = {}) {
       role: state.role || "Employee",
       history: state.history || [],
       draft: state.draft || null,
+      onboarding_draft: state.onboarding_draft || state.onboardingDraft || null,
       active_intent: state.active_intent || state.activeIntent || null,
       active_request_type: state.active_request_type || state.activeRequestType || null,
       pending_action: state.pending_action || state.pendingAction || null,
@@ -304,6 +305,7 @@ export async function apiGenieChat(message, state = {}) {
         suggestions: data.suggestions || ["Ask a question", "Help me create a ticket", "Check my ticket status"],
         action: data.action || null,
         ticket_draft: data.ticket_draft || null,
+        onboarding_draft: data.onboarding_draft || null,
         request_type: data.request_type || null,
         missing_fields: data.missing_fields || [],
         ready_for_review: data.ready_for_review || false,
@@ -331,6 +333,7 @@ export async function apiGenieChat(message, state = {}) {
         suggestions: data.suggestions || ["Check my tickets", "IT Help"],
         action: data.action || null,
         ticket_draft: data.ticket_draft || null,
+        onboarding_draft: data.onboarding_draft || null,
         request_type: data.request_type || null,
         missing_fields: data.missing_fields || [],
         ready_for_review: data.ready_for_review || false,
@@ -435,6 +438,14 @@ export async function apiFetchAnnouncements() {
     console.error("apiFetchAnnouncements failed:", err);
   }
   return [];
+}
+
+export async function apiFetchLeaveEvents() {
+  const res = await fetch(`${API_BASE_URL}/calendar/leave-events`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Unable to load leave calendar (${res.status})`);
+  return await res.json();
 }
 
 export async function apiFetchDepartmentHealth(department = null) {

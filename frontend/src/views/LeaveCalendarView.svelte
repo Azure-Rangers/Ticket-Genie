@@ -1,15 +1,28 @@
 <script>
   import { onMount } from 'svelte';
-  import { apiExportCalendar } from '../lib/api.js';
+  import { apiExportCalendar, apiFetchLeaveEvents } from '../lib/api.js';
   import { userStore, isSuperAdmin } from '../lib/stores/auth.js';
 
   let execLoading = false;
   let execMsg = '';
-  let leaveRequests = [
-    { id: 'LV-101', employee: 'Aarav Sharma', type: 'Paid Time Off (PTO)', start: '2026-09-01', end: '2026-09-05', status: 'Approved', department: 'Engineering' },
-    { id: 'LV-102', employee: 'Elena Rostova', type: 'Sick Leave', start: '2026-09-10', end: '2026-09-12', status: 'Pending Review', department: 'Product Design' },
-    { id: 'LV-103', employee: 'Marcus Vance', type: 'Parental Leave', start: '2026-10-01', end: '2026-10-15', status: 'Approved', department: 'Analytics' }
-  ];
+  let leaveRequests = [];
+  let loading = true;
+  let loadError = '';
+
+  onMount(loadLeaveRequests);
+
+  async function loadLeaveRequests() {
+    loading = true;
+    loadError = '';
+    try {
+      leaveRequests = await apiFetchLeaveEvents();
+    } catch (error) {
+      leaveRequests = [];
+      loadError = error.message || 'Unable to load leave requests.';
+    } finally {
+      loading = false;
+    }
+  }
 
   async function handleBulkApprove() {
     execLoading = true;
@@ -78,7 +91,13 @@
           </tr>
         </thead>
         <tbody>
-          {#each leaveRequests as item}
+          {#if loading}
+            <tr><td colspan="6" class="empty-cell">Loading leave requests...</td></tr>
+          {:else if loadError}
+            <tr><td colspan="6" class="empty-cell error-cell">{loadError}</td></tr>
+          {:else if !leaveRequests.length}
+            <tr><td colspan="6" class="empty-cell">No leave requests found.</td></tr>
+          {:else}{#each leaveRequests as item}
             <tr>
               <td class="id-cell">{item.id}</td>
               <td class="emp-cell"><strong>{item.employee}</strong></td>
@@ -91,7 +110,7 @@
                 </span>
               </td>
             </tr>
-          {/each}
+          {/each}{/if}
         </tbody>
       </table>
     </div>
@@ -218,6 +237,8 @@
 
   .id-cell { font-family: monospace; font-weight: 700; color: var(--primary); }
   .date-cell { font-family: monospace; font-size: 0.82rem; }
+  .empty-cell { padding: 28px !important; text-align: center !important; color: var(--text-muted); }
+  .error-cell { color: #b91c1c; }
 
   .badge {
     padding: 4px 10px;

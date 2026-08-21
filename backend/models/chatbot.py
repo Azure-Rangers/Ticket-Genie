@@ -20,6 +20,7 @@ class ChatIntent(str, Enum):
     REASSIGN_TICKET = "reassign_ticket"
     CHANGE_PRIORITY = "change_priority"
     CREATE_PORTAL_EMPLOYEE = "create_portal_employee"
+    START_ONBOARDING = "start_onboarding"
 
 
 class ChatScope(str, Enum):
@@ -90,6 +91,16 @@ class TicketDraft(BaseModel):
     attachment: Optional[str] = None
 
 
+class OnboardingDraft(BaseModel):
+    employee_name: Optional[str] = None
+    employee_email: Optional[str] = None
+    job_title: Optional[str] = None
+    employee_department: Optional[str] = None
+    manager: Optional[str] = None
+    location: Optional[str] = None
+    start_date: Optional[str] = None
+
+
 class TicketCandidate(BaseModel):
     """Minimum info shown when Genie must ask the user which ticket they mean."""
 
@@ -141,6 +152,7 @@ class ChatRequest(BaseModel):
     department: Optional[str] = None
     history: List[ChatTurn] = Field(default_factory=list)
     draft: Optional[TicketDraft] = None
+    onboarding_draft: Optional[OnboardingDraft] = None
     # Set when the intent is already known without needing the model to
     # (re)classify it - either the user clicked a predefined option
     # (navigation/how-to don't need this; ticket-drafting/status/knowledge
@@ -169,6 +181,7 @@ class ChatResponse(BaseModel):
     action: Optional[ChatAction] = None
     request_type: Optional[RequestType] = None
     ticket_draft: Optional[TicketDraft] = None
+    onboarding_draft: Optional[OnboardingDraft] = None
     missing_fields: List[str] = Field(default_factory=list)
     suggestions: List[str] = Field(default_factory=list)
     knowledge_verified: Optional[bool] = None

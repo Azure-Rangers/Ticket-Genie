@@ -30,6 +30,7 @@ export const selectedTicket = writable(
 export const isCreateModalOpen = writable(false);
 export const sidebarCollapsed = writable(false);
 export const genieDraftStore = writable(null);
+export const onboardingDraftStore = writable(null);
 
 activeTab.subscribe((current) => {
   if (typeof sessionStorage !== 'undefined' && current) {
@@ -168,6 +169,9 @@ export const filteredTickets = derived(
       const matchSearch = !$search || 
         (t.title && t.title.toLowerCase().includes($search.toLowerCase())) ||
         (t.id && t.id.toLowerCase().includes($search.toLowerCase())) ||
+        (t.requester && t.requester.toLowerCase().includes($search.toLowerCase())) ||
+        (t.requester_name && t.requester_name.toLowerCase().includes($search.toLowerCase())) ||
+        (t.requester_id && t.requester_id.toLowerCase().includes($search.toLowerCase())) ||
         (t.category && t.category.toLowerCase().includes($search.toLowerCase())) ||
         (t.description && t.description.toLowerCase().includes($search.toLowerCase())) ||
         (t.assigned_to && t.assigned_to.toLowerCase().includes($search.toLowerCase()));

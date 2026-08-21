@@ -7,7 +7,7 @@
     apiStartOnboarding,
     apiSuggestOnboardingPlan
   } from '../lib/api.js';
-  import { activeTab, previousTab, selectedTicket } from '../lib/stores/tickets.js';
+  import { activeTab, onboardingDraftStore, previousTab, selectedTicket } from '../lib/stores/tickets.js';
 
   const departments = ['IT Team', 'HR Team', 'Accounting Team', 'Workplace Operations Team', 'Upper Management'];
   const priorities = ['Low', 'Medium', 'High', 'Critical'];
@@ -29,6 +29,14 @@
   let employee = emptyEmployee();
   let showCustomForm = false;
   let customTicket = emptyTicket();
+
+  $: if ($onboardingDraftStore) {
+    employee = { ...emptyEmployee(), ...$onboardingDraftStore };
+    onboardingDraftStore.set(null);
+    plan = [];
+    errorMsg = '';
+    mode = 'create';
+  }
 
   function emptyEmployee() {
     return { employee_name: '', employee_email: '', job_title: '', employee_department: '', manager: '', location: '', visa_status: '', start_date: '' };

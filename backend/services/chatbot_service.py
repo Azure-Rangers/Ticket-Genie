@@ -28,6 +28,7 @@ from models.chatbot import (
     ChatResponse,
     ChatScope,
     ChatTurn,
+    OnboardingDraft,
     RequestType,
 )
 from models.ticket import TICKET_DEPARTMENTS, TICKET_PRIORITIES
@@ -615,6 +616,7 @@ def _handle_ticket_drafting(
         request_type=request_type,
     )
 
+
     if (
         not missing
         and request_type != RequestType.LEAVE_MANAGEMENT
@@ -648,6 +650,48 @@ def _handle_ticket_drafting(
         request_type=request_type,
         ticket_draft=draft,
         missing_fields=[],
+        ready_for_review=True,
+    )
+
+
+def _handle_onboarding_drafting(
+    request: ChatRequest, decision: ChatbotDecision, current_user: Optional[dict]
+) -> ChatResponse:
+    role = (current_user or {}).get("role") or request.role
+    is_dev = bool((current_user or {}).get("is_dev", False))
+    if not is_admin(role, is_dev):
+        return ChatResponse(
+            message="Admin access is required to start employee onboarding.",
+            intent=ChatIntent.START_ONBOARDING,
+        )
+
+    existing = request.onboarding_draft or OnboardingDraft()
+    merged = existing.model_copy()
+    if decision.onboarding_fields:
+        for field, value in decision.onboarding_fields.model_dump(exclude_none=True).items():
+            if isinstance(value, str) and value.strip():
+                setattr(merged, field, value.strip())
+
+    required = {
+        "employee_name": "the employee's name",
+        "employee_email": "the employee's email",
+        "job_title": "their job title",
+        "employee_department": "their department",
+        "start_date": "their start date",
+    }
+    missing = [label for field, label in required.items() if not getattr(merged, field)]
+    if missing:
+        return ChatResponse(
+            message=decision.message or _missing_fields_prompt(missing),
+            intent=ChatIntent.START_ONBOARDING,
+            onboarding_draft=merged,
+            missing_fields=missing,
+        )
+    return ChatResponse(
+        message=decision.message or "I filled the onboarding form for your review.",
+        intent=ChatIntent.START_ONBOARDING,
+        action=ChatAction(type="navigate", target="onboarding", label="Review onboarding"),
+        onboarding_draft=merged,
         ready_for_review=True,
     )
 
@@ -748,6 +792,7 @@ def handle_message(
             message,
             history=request.history,
             existing_draft=request.draft,
+            existing_onboarding_draft=request.onboarding_draft,
             known_intent=request.active_intent,
             standard_categories=ticket_draft_service.STANDARD_CATEGORIES,
             leave_types=ticket_draft_service.LEAVE_TYPES,
@@ -821,6 +866,9 @@ def handle_message(
 
     if intent == ChatIntent.NAVIGATION:
         return _handle_navigation(decision, request.role)
+
+    if intent == ChatIntent.START_ONBOARDING:
+        return _handle_onboarding_drafting(request, decision, current_user)
 
     if intent in (ChatIntent.CREATE_TICKET, ChatIntent.SUPPORT_ISSUE):
         return _handle_ticket_drafting(

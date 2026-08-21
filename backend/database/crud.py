@@ -736,13 +736,28 @@ def get_leave_tickets(db: Optional[Session] = None) -> List[dict]:
         ]
         query = session.query(TicketDB)
 
-        conditions = [
-            func.lower(TicketDB.category).like(f"%{kw}%") for kw in leave_keywords
-        ]
-        conditions.append(func.lower(TicketDB.department).like("%management%"))
+        conditions = []
+        for keyword in leave_keywords:
+            pattern = f"%{keyword}%"
+            conditions.extend(
+                [
+                    func.lower(TicketDB.category).like(pattern),
+                    func.lower(TicketDB.title).like(pattern),
+                    func.lower(TicketDB.description).like(pattern),
+                ]
+            )
 
         tickets = query.filter(or_(*conditions)).all()
-        return [t.to_dict() for t in tickets]
+        results = []
+        for ticket in tickets:
+            item = ticket.to_dict()
+            item["requester"] = (
+                "Anonymous Employee"
+                if ticket.is_anonymous
+                else _resolve_requester_name(ticket.requester_id, session)
+            )
+            results.append(item)
+        return results
     finally:
         if should_close:
             session.close()

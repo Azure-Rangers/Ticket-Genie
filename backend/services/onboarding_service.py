@@ -101,20 +101,33 @@ def get_onboarding_case(onboarding_id: str, db: Session) -> dict | None:
 
 
 def _create_linked_ticket(
-    onboarding_id: str, employee_email: str, item, db: Session
+    record: OnboardingDB, item, db: Session
 ) -> dict:
+    employee_context = "\n".join(
+        [
+            "Employee being onboarded:",
+            f"- Name: {record.employee_name}",
+            f"- Email: {record.employee_email}",
+            f"- Job title: {record.role}",
+            f"- Department: {record.department}",
+            f"- Manager: {record.manager or 'Not provided'}",
+            f"- Location: {record.location or 'Not provided'}",
+            f"- Start date: {record.start_date}",
+            f"- Onboarding case: {record.id}",
+        ]
+    )
     payload = TicketCreate(
         title=item.title,
-        description=f"{item.description}\n\nOnboarding case: {onboarding_id}",
+        description=f"{item.description}\n\n{employee_context}",
         category=item.category,
         priority=item.priority,
         department=item.department,
         department_override=item.department,
-        requester_id=employee_email,
+        requester_id=record.employee_email,
     )
     created = process_new_ticket(payload, db=db)
     ticket = db.query(TicketDB).filter(TicketDB.id == created["id"]).first()
-    ticket.onboarding_id = onboarding_id
+    ticket.onboarding_id = record.id
     ticket.due_date = item.due_date
     db.commit()
     db.refresh(ticket)
@@ -142,7 +155,7 @@ def start_onboarding_case(request, current_user: dict, db: Session) -> dict:
 
     try:
         for item in request.tickets:
-            _create_linked_ticket(onboarding_id, request.employee_email, item, db)
+            _create_linked_ticket(record, item, db)
     except Exception:
         record.status = "Blocked"
         db.commit()
@@ -152,6 +165,4 @@ def start_onboarding_case(request, current_user: dict, db: Session) -> dict:
 
 
 def add_onboarding_ticket(record: OnboardingDB, item, db: Session) -> dict:
-    return _create_linked_ticket(
-        record.id, record.employee_email or record.created_by or "", item, db
-    )
+    return _create_linked_ticket(record, item, db)
