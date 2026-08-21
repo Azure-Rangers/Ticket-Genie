@@ -140,6 +140,7 @@ stages:
                         --name "$(backendWebAppName)" \
                         --settings \
                           WEBSITES_PORT=8000 \
+                          ENABLE_SYNTHETIC_ANALYTICS=true \
                           AZURE_CLIENT_ID="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=azure-client-id)" \
                           AZURE_TENANT_ID="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=azure-tenant-id)" \
                           GOOGLE_EMAIL="@Microsoft.KeyVault(VaultName=$(keyVaultName);SecretName=google-email)" \

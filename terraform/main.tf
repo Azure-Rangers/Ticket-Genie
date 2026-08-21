@@ -92,6 +92,7 @@ resource "azurerm_linux_web_app" "backend" {
     "LOG_ANALYTICS_WORKSPACE_ID"                 = azurerm_log_analytics_workspace.law.workspace_id
     "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
     "OTEL_TRACES_SAMPLER"                        = "always_on"
+    "ENABLE_SYNTHETIC_ANALYTICS"                 = "true"
     "AZURE_CLIENT_ID"                            = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-client-id)"
     "AZURE_CLIENT_SECRET"                        = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-client-secret)"
     "AZURE_TENANT_ID"                            = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-tenant-id)"
