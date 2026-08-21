@@ -144,6 +144,7 @@ def record_llm_metrics(
     completion_tokens: int,
     model: str = "gpt-4o",
     agent_name: str = "classifier",
+    cached_tokens: int = 0,
 ) -> None:
     """Record LLM token usage metrics to OpenTelemetry and Azure Monitor.
 
@@ -152,20 +153,23 @@ def record_llm_metrics(
         completion_tokens: Number of completion tokens generated.
         model: Model name/deployment used.
         agent_name: Name of the subagent or service making the call.
+        cached_tokens: Number of prompt tokens served from prefix/prompt cache (billed at 50% discount).
     """
     total_tokens = prompt_tokens + completion_tokens
+    active_prompt_tokens = max(0, prompt_tokens - cached_tokens)
 
-    # Approximate pricing per 1k tokens (GPT-4o rates: $0.005 prompt, $0.015 completion)
-    prompt_cost = (prompt_tokens / 1000.0) * 0.005
+    # Approximate pricing per 1k tokens (GPT-4o rates: $0.005 prompt, cached prompt $0.0025, $0.015 completion)
+    prompt_cost = (active_prompt_tokens / 1000.0) * 0.005 + (cached_tokens / 1000.0) * 0.0025
     completion_cost = (completion_tokens / 1000.0) * 0.015
     estimated_cost_usd = round(prompt_cost + completion_cost, 6)
 
     attributes = {"model": model, "agent": agent_name}
 
+    cache_info = f" cached_tokens={cached_tokens}" if cached_tokens > 0 else ""
     logger.info(
         f"[LLM Telemetry] agent={agent_name} model={model} "
         f"prompt_tokens={prompt_tokens} completion_tokens={completion_tokens} "
-        f"total_tokens={total_tokens} est_cost_usd=${estimated_cost_usd:.6f}"
+        f"total_tokens={total_tokens}{cache_info} est_cost_usd=${estimated_cost_usd:.6f}"
     )
 
     meter = get_meter()
@@ -177,3 +181,4 @@ def record_llm_metrics(
             _estimated_cost_counter.add(estimated_cost_usd, attributes)
         except Exception as exc:
             logger.warning(f"Failed to record LLM metrics to OpenTelemetry: {exc}")
+

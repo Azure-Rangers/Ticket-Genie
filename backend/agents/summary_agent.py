@@ -2,7 +2,10 @@
 
 from pydantic import BaseModel, Field
 
-from backend.services.ai_service import ai_service as default_ai_service
+try:
+    from services.ai_service import ai_service as default_ai_service
+except ImportError:
+    from backend.services.ai_service import ai_service as default_ai_service
 
 
 class TicketSummary(BaseModel):

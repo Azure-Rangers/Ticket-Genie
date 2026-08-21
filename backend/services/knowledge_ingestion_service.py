@@ -202,6 +202,13 @@ async def ingest_document(
         container.delete_blob(blob_path)
         raise
 
+    try:
+        from services.prompt_cache_service import prompt_cache
+
+        prompt_cache.purge()
+    except Exception:
+        pass
+
     return {
         "id": document_id,
         "title": title,

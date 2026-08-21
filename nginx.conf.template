@@ -33,6 +33,10 @@ server {
     }
 
     # 2. Reverse proxy API requests to FastAPI backend service
+    # Authenticated RAG / SQL / ticket routes must never be served from an
+    # NGINX proxy cache. Default cache keys ignore Authorization, so a cached
+    # Admin 200 could be replayed to a later user with an expired or weaker token.
+    # Identity-aware LRU lives in the app after JWT validation.
     location /api/ {
         proxy_pass ${BACKEND_URL}/api/;
         proxy_http_version 1.1;
@@ -40,6 +44,11 @@ server {
         # WebSocket & Server-Sent Events (SSE) dynamic support
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection $connection_upgrade;
+
+        # Forward identity headers; do not strip Authorization or cookies
+        proxy_set_header Authorization $http_authorization;
+        proxy_set_header Cookie $http_cookie;
+        proxy_pass_header Set-Cookie;
 
         # IP tracking and HTTPS scheme headers
         proxy_set_header X-Real-IP $remote_addr;
@@ -53,6 +62,18 @@ server {
         proxy_connect_timeout 60s;
         proxy_send_timeout 300s;
         proxy_read_timeout 300s;
+
+        # Approach C: bypass any proxy cache for authenticated API traffic
+        proxy_cache off;
+        proxy_no_cache 1;
+        proxy_cache_bypass 1;
+        expires -1;
+        add_header Cache-Control "private, no-store, no-cache, must-revalidate" always;
+        add_header Pragma "no-cache" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     }
 
     # 3. Static frontend assets with fallback and browser caching

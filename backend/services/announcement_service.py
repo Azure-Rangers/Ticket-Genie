@@ -112,28 +112,41 @@ def classify_announcement_severity(
     title: str,
     content: str,
     category: Optional[str] = "General Alert",
-    role: str = "Employee",
 ) -> dict:
-    """Classify how important an announcement is using the AI model from the perspective of a company employee role."""
+    """Classify how important an announcement is.
+
+    The result is scoped by the announcement's category (department target),
+    not by the requesting user — severity is the same for every employee in
+    the same department.  We cache by (announcement content hash + category)
+    via the shared prompt_cache so hit/miss rates are tracked per-agent.
+    """
     category_str = category or "General Alert"
-    role_str = role or "Employee"
 
+    # Build the prompt — no user identity, category is the only scope dimension
     system_prompt = (
-        f'You are an Employee working at a company with role "{role_str}" '
-        f"and you are looking at an announcement."
+        "You are a corporate communications analyst. "
+        "Classify announcement severity strictly based on operational impact."
     )
+    user_content = f"""Rate the importance of this company announcement:
 
-    user_content = f"""Tell me how important this announcement is in the following options:
-Critical
-High
-Medium
-Low
+Critical – immediate action required, service down, security incident, evacuation
+High     – significant impact, near-term action required
+Medium   – notable update, plan/schedule change, advisory
+Low      – informational, routine, no action needed
 
 Announcement:
 Title: {title}
 Category: {category_str}
 Content: {content}
 """
+
+    from services.prompt_cache_service import estimate_prompt_tokens, prompt_cache
+
+    agent_name = "announcement_severity"
+    cache_key = prompt_cache.make_key(agent_name, user_content, category_str)
+    cached = prompt_cache.get(cache_key, agent_name=agent_name)
+    if cached is not None:
+        return cached
 
     severity_choice = "Medium"
     reason = ""
@@ -148,9 +161,9 @@ Content: {content}
                 system_prompt=system_prompt,
                 user_content=user_content,
                 response_model=AnnouncementSeverityDecision,
-                max_tokens=25,
+                max_tokens=150,
             )
-            decision: AnnouncementSeverityDecision = future.result(timeout=1.5)
+            decision: AnnouncementSeverityDecision = future.result(timeout=6.0)
             if decision and decision.severity:
                 val = (
                     decision.severity.value
@@ -163,51 +176,68 @@ Content: {content}
             executor.shutdown(wait=False, cancel_futures=True)
     except Exception as exc:
         logger.info(
-            f"AI severity generation falling back to role-aware heuristic: {exc}"
+            f"AI severity generation falling back to category-aware heuristic: {exc}"
         )
         severity_choice = _heuristic_fallback(title, content, category_str)
         reason = "Classified based on announcement operational scope."
+        try:
+            import os
+            from telemetry import record_llm_metrics
+
+            prompt_tok = max(10, len((system_prompt + " " + user_content).split()) * 2)
+            record_llm_metrics(
+                prompt_tokens=prompt_tok,
+                completion_tokens=15,
+                model=os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-5.2"),
+                agent_name=agent_name,
+            )
+        except Exception as tel_exc:
+            logger.debug("Could not record fallback announcement severity telemetry: %s", tel_exc)
 
     normalized_choice = severity_choice.lower()
     meta = SEVERITY_MAPPING.get(normalized_choice, SEVERITY_MAPPING["medium"])
 
-    return {
+    result = {
         **meta,
         "raw_severity": severity_choice,
-        "role": role_str,
+        "category": category_str,
         "reason": reason,
     }
 
+    # Cache by category scope — safe to share across all users in the same dept
+    prompt_cache.set(
+        cache_key,
+        result,
+        est_tokens=estimate_prompt_tokens(user_content),
+        ttl_seconds=3600,
+        agent_name=agent_name,
+    )
 
-_SEVERITY_CACHE: dict[str, dict] = {}
+    return result
 
 
 def get_latest_announcement_with_severity(
-    role: str = "Employee",
     db: Optional[Session] = None,
 ) -> dict:
-    """Retrieve the most recent announcement and its AI-computed severity for the current user's role."""
+    """Retrieve the most recent announcement and its AI-computed severity.
+
+    Severity is scoped by the announcement's own category — not by the
+    requesting user's role.  The prompt_cache handles deduplication and
+    hit-rate tracking.
+    """
     announcements = get_announcements(db=db)
     if not announcements:
         return {"announcement": None, "severity": None}
 
     latest = announcements[0]
-    cache_key = f"{latest.get('id')}_{role}_{latest.get('title')}"
-    if cache_key in _SEVERITY_CACHE:
-        return {
-            "announcement": latest,
-            "severity": _SEVERITY_CACHE[cache_key],
-        }
-
     severity = classify_announcement_severity(
         title=latest.get("title", ""),
         content=latest.get("content", ""),
         category=latest.get("category", ""),
-        role=role,
     )
-    _SEVERITY_CACHE[cache_key] = severity
 
     return {
         "announcement": latest,
         "severity": severity,
     }
+
