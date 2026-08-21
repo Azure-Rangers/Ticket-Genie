@@ -1,6 +1,23 @@
 name: Pull Request Checks
 
 on:
+  workflow_dispatch:
+    inputs:
+      run_live_ai_benchmarks:
+        description: "Run the paid live Azure AI benchmark suite"
+        required: true
+        type: boolean
+        default: false
+      live_cases_per_metric:
+        description: "Live cases per metric (5 recommended, 36 full suite)"
+        required: true
+        type: choice
+        options:
+          - "5"
+          - "10"
+          - "20"
+          - "36"
+        default: "5"
   pull_request:
     branches:
       - '**'
@@ -64,6 +81,45 @@ jobs:
 
       - name: Run Pytest
         run: pytest tests/
+
+  ai-benchmarks:
+    name: Live Azure AI Quality Benchmarks
+    if: github.event_name == 'workflow_dispatch' && inputs.run_live_ai_benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install benchmark dependencies
+        run: pip install .[backend]
+
+      - name: Run live AI quality gates
+        env:
+          GROUP1OPENAIENDPOINT: ${{ secrets.GROUP1OPENAIENDPOINT }}
+          GROUP1OPENAIAPIKEY: ${{ secrets.GROUP1OPENAIAPIKEY }}
+          AZURE_OPENAI_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
+          AISEARCH_ENDPOINT: ${{ secrets.AISEARCH_ENDPOINT }}
+          AISEARCH_APIKEY: ${{ secrets.AISEARCH_APIKEY }}
+          AISEARCH_INDEX_NAME: ${{ secrets.AISEARCH_INDEX_NAME }}
+          USE_MOCK_AI: "false"
+        run: python scripts/run_live_ai_benchmarks.py --limit "${{ inputs.live_cases_per_metric }}"
+
+      - name: Publish benchmark summary
+        if: always()
+        run: cat artifacts/ai-benchmarks-live/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-ai-benchmark-results
+          path: artifacts/ai-benchmarks-live/
 
   docker-checks:
     name: Docker Build and Smoke Test

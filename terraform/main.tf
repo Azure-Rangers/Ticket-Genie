@@ -4,6 +4,11 @@ data "azurerm_resource_group" "rg" {
   name = "Azure_Rangers"
 }
 
+data "azurerm_storage_account" "knowledge" {
+  name                = "seed123data"
+  resource_group_name = data.azurerm_resource_group.rg.name
+}
+
 # --- Generate Secure DB Password ---
 
 resource "random_password" "db_password" {
@@ -89,6 +94,8 @@ resource "azurerm_linux_web_app" "backend" {
     "OTEL_TRACES_SAMPLER"                        = "always_on"
     "AZURE_CLIENT_ID"                            = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-client-id)"
     "AZURE_TENANT_ID"                            = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=azure-tenant-id)"
+    "AZURE_STORAGE_ACCOUNT_NAME"                 = data.azurerm_storage_account.knowledge.name
+    "KNOWLEDGE_BLOB_CONTAINER"                   = "ticket-genie-knowledge"
     "GOOGLE_EMAIL"                               = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=google-email)"
     "SMTP_USER"                                  = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=smtp-user)"
     "GOOGLE_APP_PASSWORD"                        = "@Microsoft.KeyVault(VaultName=kv-app-prod-12345;SecretName=google-app-password)"
@@ -140,4 +147,11 @@ resource "azurerm_linux_web_app" "frontend" {
       site_config[0].application_stack[0].docker_image_name,
     ]
   }
+}
+
+resource "azurerm_role_assignment" "backend_knowledge_blob_contributor" {
+  name                 = "87b70dda-dcae-453b-b4f1-e626196e6080"
+  scope                = data.azurerm_storage_account.knowledge.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_linux_web_app.backend.identity[0].principal_id
 }

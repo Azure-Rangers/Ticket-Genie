@@ -107,7 +107,8 @@ def verify_azure_jwt(token: str) -> Dict[str, Any]:
             detail="Token audience mismatch.",
         )
 
-    # 3. Attempt signature verification with PyJWT & PyCryptodome / cryptography if installed
+    # 3. Signature verification is mandatory. Claims from an unverified token
+    # are never accepted as identity.
     try:
         import jwt as pyjwt
         from jwt.algorithms import RSAAlgorithm
@@ -125,15 +126,23 @@ def verify_azure_jwt(token: str) -> Dict[str, Any]:
             )
             logger.info("Successfully verified Microsoft JWT RSA signature via JWKS.")
             return verified_payload
-    except ImportError:
-        logger.debug(
-            "PyJWT RSA cryptography module not installed; using claim validation."
-        )
-    except Exception as e:
-        logger.warning(f"Signature verification warning: {e}")
+    except ImportError as exc:
+        logger.error("JWT cryptography dependency is unavailable.")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token signature could not be verified.",
+        ) from exc
+    except Exception as exc:
+        logger.warning("JWT signature verification failed: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token signature.",
+        ) from exc
 
-    # Fallback return verified payload claims
-    return payload
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Token signing key is unavailable.",
+    )
 
 
 def verify_azure_user(authorization: Optional[str] = Header(None)) -> Dict[str, Any]:
@@ -161,8 +170,12 @@ def verify_azure_user(authorization: Optional[str] = Header(None)) -> Dict[str, 
         claims.get("preferred_username")
         or claims.get("upn")
         or claims.get("email")
-        or "user@company.com"
     )
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid JWT claims: missing email identity.",
+        )
 
     given_name = claims.get("given_name")
     family_name = claims.get("family_name")

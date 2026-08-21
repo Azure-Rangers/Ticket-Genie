@@ -35,18 +35,24 @@ def resolve_analytics_department(
 ) -> Optional[str]:
     """Resolve analytics scope exclusively from the verified identity."""
     role = (current_user.get("role") or "").strip()
-    if not is_admin(role, current_user.get("is_dev", False)):
+    is_admin_user = is_admin(role, current_user.get("is_dev", False))
+    is_ticketer_user = role.casefold() == "ticketer"
+    if not (is_admin_user or is_ticketer_user):
         raise AnalyticsAccessError(
-            "Admin privileges are required for department analytics."
+            "Admin or Ticketer access is required for department analytics."
         )
 
     requested_department = normalize_department(requested_department)
     user_department = normalize_department(current_user.get("department"))
+    if is_ticketer_user and not user_department:
+        raise AnalyticsAccessError(
+            "Ticketer accounts require a verified department assignment."
+        )
     if not user_department or user_department == "Upper Management":
         return requested_department
     if requested_department and requested_department != user_department:
         raise AnalyticsAccessError(
-            "Admins may only view analytics for their assigned department."
+            "Users may only view analytics for their assigned department."
         )
     return user_department
 

@@ -184,7 +184,7 @@ _MANAGEMENT_ACTION_INTENTS = (
 )
 
 _KNOWLEDGE_BASE_ACTION = ChatAction(
-    type="navigate", target="knowledge", label="Browse Knowledge Base"
+    type="navigate", target="create-ticket", label="Ask a support specialist"
 )
 
 
@@ -665,14 +665,11 @@ def _handle_knowledge(
     *,
     retriever: KnowledgeRetriever,
     ai_service,
+    current_user: Optional[dict] = None,
 ) -> ChatResponse:
-    # TODO(auth): request.role/request.department are client-supplied, not
-    # verified server-side (no auth/session system exists yet - see
-    # role_service.py's module docstring for the tracked gap). This is NOT
-    # production-secure: a caller could claim any role/department. Once
-    # real authentication exists, resolve these from the trusted
-    # session/JWT here instead of trusting the request body.
-    allowed_scopes = get_allowed_scopes(request.role, request.department)
+    role = (current_user or {}).get("role") or request.role
+    department = (current_user or {}).get("department") or request.department
+    allowed_scopes = get_allowed_scopes(role, department)
     query = decision.knowledge_query or request.message
 
     try:
@@ -832,7 +829,11 @@ def handle_message(
 
     if intent == ChatIntent.KNOWLEDGE:
         return _handle_knowledge(
-            request, decision, retriever=retriever, ai_service=ai_service
+            request,
+            decision,
+            retriever=retriever,
+            ai_service=ai_service,
+            current_user=current_user,
         )
 
     return ChatResponse(

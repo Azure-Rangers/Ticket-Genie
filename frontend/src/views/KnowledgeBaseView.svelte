@@ -1,525 +1,203 @@
 <script>
   import { onMount } from 'svelte';
-  import { apiSearchKB, apiIngestPolicy } from '../lib/api.js';
-  import { userStore, isAdmin, isSuperAdmin } from '../lib/stores/auth.js';
+  import AccessDenied from '../components/AccessDenied.svelte';
+  import { userStore } from '../lib/stores/auth.js';
+  import { apiListKnowledgeDocuments, apiUploadKnowledgeDocument } from '../lib/api.js';
 
-  let kbSearch = '';
-  let activeCategory = 'All';
-  let isAddPolicyOpen = false;
+  let title = '';
+  let category = 'General';
+  let selectedFile;
+  let fileInput;
+  let documents = [];
+  let loading = true;
+  let uploading = false;
+  let dragging = false;
+  let message = '';
+  let error = '';
+  let search = '';
+  let scopeFilter = 'All';
 
-  let newPolicyTitle = '';
-  let newPolicyCategory = 'IT & Security';
-  let newPolicyContent = '';
-  let ingestMessage = '';
-  let searchResultAnswer = null;
+  $: canManage = ['admin', 'ticketer'].includes(($userStore?.role || '').trim().toLowerCase());
+  $: managedCount = documents.filter((doc) => doc.status !== 'legacy').length;
+  $: legacyCount = documents.filter((doc) => doc.status === 'legacy').length;
+  $: filteredDocuments = documents.filter((doc) => {
+    const query = search.trim().toLowerCase();
+    const matchesSearch = !query || `${doc.title} ${doc.filename}`.toLowerCase().includes(query);
+    const matchesScope = scopeFilter === 'All' || (doc.category || 'Unclassified') === scopeFilter;
+    return matchesSearch && matchesScope;
+  });
 
-  $: showAddPolicyBtn = isAdmin($userStore) || isSuperAdmin($userStore);
+  async function loadDocuments() {
+    if (!canManage) { loading = false; return; }
+    loading = true;
+    error = '';
+    try { documents = (await apiListKnowledgeDocuments()).documents || []; }
+    catch (err) { error = err.message; }
+    finally { loading = false; }
+  }
 
-  const initialArticles = [
-    {
-      id: 'KB-101',
-      title: 'Corporate VPN & Remote Network Setup Guide',
-      category: 'IT & Security',
-      readTime: '3 min read',
-      snippet: 'Step-by-step instructions for installing GlobalProtect VPN client and configuring MFA tokens.'
-    },
-    {
-      id: 'KB-102',
-      title: 'Annual Paid Time Off (PTO) & Leave Accrual Policy',
-      category: 'HR & Benefits',
-      readTime: '5 min read',
-      snippet: 'Overview of PTO accumulation rules, carry-over limits, and leave request submission workflows.'
-    },
-    {
-      id: 'KB-103',
-      title: 'Hardware Upgrade Eligibility & Procurement Guidelines',
-      category: 'Hardware',
-      readTime: '4 min read',
-      snippet: 'Hardware replacement schedules for laptops, monitors, and peripherals for engineering and design teams.'
-    },
-    {
-      id: 'KB-104',
-      title: 'Expense Reimbursement & Corporate Card Usage Policy',
-      category: 'Finance',
-      readTime: '6 min read',
-      snippet: 'Rules regarding eligible travel expenses, receipt submission timelines, and manager approval tiers.'
-    }
-  ];
-
-  let articles = [...initialArticles];
-
-  async function handleKBSearch() {
-    if (!kbSearch.trim()) {
-      searchResultAnswer = null;
+  function chooseFile(file) {
+    if (!file) return;
+    const extension = `.${file.name.split('.').pop().toLowerCase()}`;
+    if (!['.pdf', '.docx', '.txt', '.md'].includes(extension)) {
+      error = 'Choose a PDF, DOCX, TXT, or Markdown document.';
       return;
     }
-    const res = await apiSearchKB(kbSearch);
-    if (res && res.answer) {
-      searchResultAnswer = res.answer;
-    }
+    selectedFile = file;
+    error = '';
+    if (!title.trim()) title = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
   }
 
-  async function submitPolicy() {
-    if (!newPolicyTitle.trim() || !newPolicyContent.trim()) return;
+  function handleDrop(event) {
+    dragging = false;
+    chooseFile(event.dataTransfer.files?.[0]);
+  }
+
+  function clearFile() {
+    selectedFile = undefined;
+    if (fileInput) fileInput.value = '';
+  }
+
+  async function upload() {
+    if (!title.trim() || !selectedFile) return;
+    uploading = true;
+    message = '';
+    error = '';
     try {
-      const res = await apiIngestPolicy({
-        title: newPolicyTitle,
-        category: newPolicyCategory,
-        content: newPolicyContent,
-        source: 'Admin Policy Editor'
-      });
-      ingestMessage = `✅ ${res.message || 'Policy successfully ingested!'}`;
-      articles = [
-        {
-          id: `KB-${Date.now().toString().slice(-3)}`,
-          title: newPolicyTitle,
-          category: newPolicyCategory,
-          readTime: '2 min read',
-          snippet: newPolicyContent.slice(0, 100) + '...'
-        },
-        ...articles
-      ];
-      setTimeout(() => {
-        isAddPolicyOpen = false;
-        newPolicyTitle = '';
-        newPolicyContent = '';
-        ingestMessage = '';
-      }, 1500);
-    } catch (e) {
-      ingestMessage = `⚠️ Ingestion Error: ${e.message}`;
-    }
+      const result = await apiUploadKnowledgeDocument({ title: title.trim(), category, file: selectedFile });
+      message = result.status === 'already_indexed'
+        ? `${result.title} is already indexed. No duplicate was created.`
+        : `${result.title} was uploaded and is now available to Genie.`;
+      title = '';
+      category = 'General';
+      clearFile();
+      await loadDocuments();
+    } catch (err) { error = err.message; }
+    finally { uploading = false; }
   }
 
-  $: filteredArticles = articles.filter(a => {
-    const matchCat = activeCategory === 'All' || a.category === activeCategory;
-    const matchSearch = !kbSearch || a.title.toLowerCase().includes(kbSearch.toLowerCase()) || a.snippet.toLowerCase().includes(kbSearch.toLowerCase());
-    return matchCat && matchSearch;
-  });
+  function formatBytes(value = 0) {
+    if (value < 1024) return `${value} B`;
+    if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+    return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  function formatDate(value) {
+    if (!value) return 'Date unavailable';
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? 'Date unavailable' : parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  onMount(loadDocuments);
 </script>
 
-<div class="kb-view animate-fade">
-  <div class="kb-hero">
-    <div class="hero-top">
+{#if !canManage}
+  <AccessDenied requiredRole="Admin or Ticketer" />
+{:else}
+  <div class="knowledge-view animate-fade">
+    <div class="view-header">
       <div>
-        <h1>Knowledge Base & Resolution Hub</h1>
-        <p>Search corporate policies, IT documentation, and AI-verified resolution guides</p>
+        <h1 class="view-title"><i class="ph-bold ph-books"></i> Corporate Knowledge Base</h1>
+        <p class="view-subtitle">Manage the approved policies and procedures Genie uses to answer employee questions.</p>
       </div>
-      {#if showAddPolicyBtn}
-        <button class="btn-add-policy" on:click={() => isAddPolicyOpen = true}>
-          <i class="ph-bold ph-plus"></i> Add New Policy
-        </button>
+      <div class="security-badge"><i class="ph-fill ph-lock-key"></i><span><strong>Restricted library</strong><small>Admin &amp; Ticketer only</small></span></div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><span class="stat-icon purple"><i class="ph-duotone ph-files"></i></span><div><strong>{documents.length}</strong><span>Total documents</span></div></div>
+      <div class="stat-card"><span class="stat-icon green"><i class="ph-duotone ph-check-circle"></i></span><div><strong>{managedCount}</strong><span>Managed uploads</span></div></div>
+      <div class="stat-card"><span class="stat-icon amber"><i class="ph-duotone ph-archive"></i></span><div><strong>{legacyCount}</strong><span>Existing sources</span></div></div>
+    </div>
+
+    <div class="workspace-grid">
+      <section class="panel upload-panel">
+        <div class="panel-heading">
+          <div class="heading-icon"><i class="ph-duotone ph-cloud-arrow-up"></i></div>
+          <div><h2>Add a source document</h2><p>Approved content is securely stored, chunked, and indexed for Genie.</p></div>
+        </div>
+
+        <form on:submit|preventDefault={upload}>
+          <div class="form-group">
+            <label for="knowledge-title">Document title <span>Required</span></label>
+            <input id="knowledge-title" bind:value={title} maxlength="255" placeholder="e.g. 2026 Employee Benefits Guide" disabled={uploading} />
+          </div>
+          <div class="form-group">
+            <label for="knowledge-category">Who can receive answers from this document?</label>
+            <div class="select-wrap"><i class="ph-bold ph-users-three"></i><select id="knowledge-category" bind:value={category} disabled={uploading}><option value="General">All employees — company-wide policy</option><option value="HR">HR team only</option><option value="IT">IT team only</option><option value="Accounting">Accounting team only</option><option value="WorkplaceOperations">Workplace Operations only</option></select><i class="ph-bold ph-caret-down caret"></i></div>
+            <small class="field-help"><i class="ph-bold ph-info"></i> Employees never browse files directly. This scope controls which answers Genie may retrieve.</small>
+          </div>
+
+          <input bind:this={fileInput} id="knowledge-file" class="hidden-file" type="file" accept=".pdf,.docx,.txt,.md" on:change={(event) => chooseFile(event.currentTarget.files?.[0])} />
+          <button type="button" class:dragging class="drop-zone" on:click={() => fileInput?.click()} on:dragover|preventDefault={() => dragging = true} on:dragleave={() => dragging = false} on:drop|preventDefault={handleDrop} disabled={uploading}>
+            {#if selectedFile}
+              <span class="file-icon"><i class="ph-duotone ph-file-text"></i></span>
+              <span class="drop-copy"><strong>{selectedFile.name}</strong><small>{formatBytes(selectedFile.size)} · Ready to upload</small></span>
+              <span class="replace-file">Replace</span>
+            {:else}
+              <span class="upload-icon"><i class="ph-duotone ph-upload-simple"></i></span>
+              <span class="drop-copy"><strong>Drop a document here or click to browse</strong><small>PDF, DOCX, TXT, or Markdown · Maximum 15 MB</small></span>
+            {/if}
+          </button>
+
+          {#if message}<div class="notice success" role="status"><i class="ph-fill ph-check-circle"></i><span>{message}</span></div>{/if}
+          {#if error}<div class="notice error" role="alert"><i class="ph-fill ph-warning-circle"></i><span>{error}</span></div>{/if}
+
+          <div class="form-actions">
+            {#if selectedFile}<button type="button" class="clear-button" on:click={clearFile} disabled={uploading}>Clear</button>{/if}
+            <button type="submit" class="upload-button" disabled={uploading || !title.trim() || !selectedFile}>
+              {#if uploading}<i class="ph-bold ph-spinner animate-spin"></i> Processing document...{:else}<i class="ph-bold ph-sparkle"></i> Upload &amp; index for Genie{/if}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <aside class="process-card">
+        <span class="process-eyebrow">HOW IT WORKS</span>
+        <h2>From document to trusted answer</h2>
+        <div class="process-step"><span>1</span><div><strong>Private storage</strong><p>The original file is secured in Azure Blob Storage.</p></div></div>
+        <div class="step-line"></div>
+        <div class="process-step"><span>2</span><div><strong>Search indexing</strong><p>Text is split into focused passages and embedded.</p></div></div>
+        <div class="step-line"></div>
+        <div class="process-step"><span>3</span><div><strong>Grounded answers</strong><p>Genie answers from authorized passages and reports when it cannot verify information.</p></div></div>
+        <div class="privacy-note"><i class="ph-fill ph-shield-check"></i><p><strong>Employee-safe by design</strong>Raw documents and this management screen remain inaccessible to employees.</p></div>
+      </aside>
+    </div>
+
+    <section class="panel library-panel">
+      <div class="library-header">
+        <div><h2>Document library</h2><p>Review every source currently connected to Genie.</p></div>
+        <button class="refresh-button" on:click={loadDocuments} disabled={loading}><i class="ph-bold ph-arrows-clockwise" class:animate-spin={loading}></i> Refresh</button>
+      </div>
+      <div class="library-tools">
+        <div class="search-box"><i class="ph-bold ph-magnifying-glass"></i><input bind:value={search} type="search" placeholder="Search by document name..." /></div>
+        <div class="filter-wrap"><i class="ph-bold ph-funnel"></i><select bind:value={scopeFilter}><option>All</option><option>General</option><option>HR</option><option>IT</option><option>Accounting</option><option>WorkplaceOperations</option><option>Unclassified</option></select></div>
+        <span class="result-count">{filteredDocuments.length} result{filteredDocuments.length === 1 ? '' : 's'}</span>
+      </div>
+
+      {#if loading}
+        <div class="state"><i class="ph-bold ph-spinner animate-spin"></i><strong>Loading knowledge sources...</strong></div>
+      {:else if !filteredDocuments.length}
+        <div class="state"><i class="ph-duotone ph-file-magnifying-glass"></i><strong>No matching documents</strong><p>Try another title or access scope.</p></div>
+      {:else}
+        <div class="table-wrap"><table><thead><tr><th>Document</th><th>Access scope</th><th>File size</th><th>Added</th><th>Index status</th></tr></thead><tbody>{#each filteredDocuments as doc (doc.id)}<tr><td><div class="document-cell"><span class="document-icon"><i class="ph-duotone ph-file-text"></i></span><div><strong>{doc.title}</strong><small>{doc.filename}</small></div></div></td><td><span class="scope scope-{(doc.category || 'unknown').toLowerCase()}">{doc.category || 'Unclassified'}</span></td><td class="muted-cell">{formatBytes(doc.size_bytes)}</td><td class="muted-cell">{formatDate(doc.uploaded_at)}</td><td><span class:existing={doc.status === 'legacy'} class="status"><i class="ph-fill ph-check-circle"></i>{doc.status === 'legacy' ? 'Existing source' : 'Indexed'}</span></td></tr>{/each}</tbody></table></div>
       {/if}
-    </div>
-
-    <div class="hero-search">
-      <i class="ph-bold ph-magnifying-glass"></i>
-      <input 
-        type="text" 
-        placeholder="Ask AI or search policies, VPN guides, PTO rules..." 
-        bind:value={kbSearch} 
-        on:input={handleKBSearch}
-      />
-    </div>
-  </div>
-
-  <!-- AI Knowledge Search Direct Answer Box -->
-  {#if searchResultAnswer}
-    <div class="ai-answer-box animate-fade">
-      <div class="answer-header">
-        <i class="ph-duotone ph-sparkle text-purple"></i>
-        <h3>AI Resolution Response</h3>
-      </div>
-      <p>{searchResultAnswer}</p>
-    </div>
-  {/if}
-
-  <div class="category-tabs">
-    {#each ['All', 'IT & Security', 'HR & Benefits', 'Hardware', 'Finance'] as cat}
-      <button 
-        class="tab-btn" 
-        class:active={activeCategory === cat} 
-        on:click={() => activeCategory = cat}
-      >
-        {cat}
-      </button>
-    {/each}
-  </div>
-
-  <div class="articles-grid">
-    {#each filteredArticles as article}
-      <div class="article-card">
-        <div class="card-top">
-          <span class="category-tag">{article.category}</span>
-          <span class="read-time"><i class="ph-bold ph-clock"></i> {article.readTime}</span>
-        </div>
-        <h3 class="article-title">{article.title}</h3>
-        <p class="article-snippet">{article.snippet}</p>
-        <button class="btn-read"><i class="ph-bold ph-arrow-right"></i> Read Full Article</button>
-      </div>
-    {/each}
-  </div>
-</div>
-
-<!-- Add Policy Modal -->
-{#if isAddPolicyOpen}
-  <div class="modal-backdrop" role="button" tabindex="0" on:click={(e) => e.target === e.currentTarget && (isAddPolicyOpen = false)} on:keydown={(e) => e.key === 'Escape' && (isAddPolicyOpen = false)}>
-    <div class="modal-card animate-fade">
-      <div class="modal-header">
-        <h2><i class="ph-duotone ph-file-plus"></i> Add Corporate Policy Article</h2>
-        <button class="btn-close" on:click={() => isAddPolicyOpen = false}><i class="ph-bold ph-x"></i></button>
-      </div>
-
-      <div class="modal-body">
-        {#if ingestMessage}
-          <div class="toast-msg">{ingestMessage}</div>
-        {/if}
-
-        <div class="form-group">
-          <label for="kb-policy-title">Policy Title</label>
-          <input id="kb-policy-title" type="text" placeholder="e.g. Remote Work Security Guidelines" bind:value={newPolicyTitle} />
-        </div>
-
-        <div class="form-group">
-          <label for="kb-policy-category">Category</label>
-          <select id="kb-policy-category" bind:value={newPolicyCategory}>
-            <option value="IT & Security">IT & Security</option>
-            <option value="HR & Benefits">HR & Benefits</option>
-            <option value="Hardware">Hardware</option>
-            <option value="Finance">Finance</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="kb-policy-content">Policy Content & Instructions</label>
-          <textarea id="kb-policy-content" rows="5" placeholder="Detailed policy text and resolution steps..." bind:value={newPolicyContent}></textarea>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn-secondary" on:click={() => isAddPolicyOpen = false}>Cancel</button>
-        <button class="btn-primary" on:click={submitPolicy}>Save & Ingest Policy</button>
-      </div>
-    </div>
+    </section>
   </div>
 {/if}
 
 <style>
-  .kb-view {
-    padding: 28px;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    height: 100%;
-    overflow-y: auto;
-  }
-
-  .kb-hero {
-    background: linear-gradient(135deg, #2b1b38 0%, #4f46e5 100%);
-    border-radius: 16px;
-    padding: 32px;
-    color: white;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    box-shadow: var(--shadow-md);
-  }
-
-  .hero-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .kb-hero h1 {
-    font-size: 1.6rem;
-    font-weight: 700;
-  }
-
-  .kb-hero p {
-    color: #c7d2fe;
-    font-size: 0.9rem;
-    margin-top: 4px;
-  }
-
-  .btn-add-policy {
-    background: #ffffff;
-    color: #4f46e5;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s;
-  }
-
-  .btn-add-policy:hover {
-    background: #f1f5f9;
-  }
-
-  .hero-search {
-    position: relative;
-    max-width: 580px;
-  }
-
-  .hero-search i {
-    position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #64748b;
-    font-size: 1.1rem;
-  }
-
-  .hero-search input {
-    width: 100%;
-    padding: 12px 16px 12px 42px;
-    border-radius: 12px;
-    border: none;
-    font-size: 0.88rem;
-    background: #ffffff;
-    color: var(--text-main);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  }
-
-  .ai-answer-box {
-    background: #ffffff;
-    border: 1px solid #c7d2fe;
-    border-radius: 14px;
-    padding: 20px;
-    box-shadow: var(--shadow-sm);
-  }
-
-  .answer-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.95rem;
-    font-weight: 700;
-    margin-bottom: 8px;
-    color: #4f46e5;
-  }
-
-  .ai-answer-box p {
-    font-size: 0.88rem;
-    color: var(--text-main);
-    line-height: 1.5;
-  }
-
-  .category-tabs {
-    display: flex;
-    gap: 10px;
-  }
-
-  .tab-btn {
-    padding: 8px 16px;
-    border-radius: 20px;
-    border: 1px solid var(--border-color);
-    background: #ffffff;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .tab-btn:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-  }
-
-  .tab-btn.active {
-    background: var(--primary);
-    color: #ffffff;
-    border-color: var(--primary);
-  }
-
-  .articles-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
-  }
-
-  .article-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    box-shadow: var(--shadow-sm);
-    transition: all 0.2s;
-  }
-
-  .article-card:hover {
-    border-color: #a5b4fc;
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-  }
-
-  .card-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .category-tag {
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: var(--primary);
-    background: var(--primary-light);
-    padding: 3px 10px;
-    border-radius: 6px;
-  }
-
-  .read-time {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .article-title {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--text-main);
-  }
-
-  .article-snippet {
-    font-size: 0.83rem;
-    color: var(--text-muted);
-    line-height: 1.45;
-  }
-
-  .btn-read {
-    margin-top: 4px;
-    background: transparent;
-    border: none;
-    color: var(--primary);
-    font-weight: 600;
-    font-size: 0.83rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0;
-  }
-
-  /* Modal */
-  .modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0,0,0,0.4);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-
-  .modal-card {
-    background: white;
-    border-radius: 16px;
-    width: 90%;
-    max-width: 520px;
-    overflow: hidden;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  }
-
-  .modal-header {
-    background: #2b1b38;
-    color: white;
-    padding: 20px 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .modal-header h2 {
-    font-size: 1.1rem;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .btn-close {
-    background: transparent;
-    border: none;
-    color: white;
-    font-size: 1.2rem;
-    cursor: pointer;
-  }
-
-  .modal-body {
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .toast-msg {
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
-    color: #1e40af;
-    padding: 10px 14px;
-    border-radius: 8px;
-    font-size: 0.82rem;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .form-group label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--text-main);
-  }
-
-  .form-group input, .form-group select, .form-group textarea {
-    padding: 10px 14px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    font-size: 0.85rem;
-  }
-
-  .modal-footer {
-    padding: 16px 24px;
-    background: #f8fafc;
-    border-top: 1px solid var(--border-color);
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-  }
-
-  .btn-primary {
-    background: var(--primary);
-    color: white;
-    border: none;
-    padding: 10px 18px;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-  }
-
-  .btn-secondary {
-    background: white;
-    border: 1px solid var(--border-color);
-    padding: 10px 18px;
-    border-radius: 10px;
-    font-size: 0.85rem;
-    cursor: pointer;
-  }
+  .knowledge-view{height:100%;overflow-y:auto;padding:28px;display:flex;flex-direction:column;gap:22px;color:var(--text-main)}
+  .view-header{display:flex;align-items:center;justify-content:space-between;gap:24px}.view-title{display:flex;align-items:center;gap:10px;font-size:1.5rem;font-weight:700}.view-title i{color:var(--primary)}.view-subtitle{margin-top:4px;color:var(--text-muted);font-size:.86rem}
+  .security-badge{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid #ddd6fe;border-radius:11px;background:#f5f3ff;color:#5b21b6}.security-badge>i{font-size:1.25rem}.security-badge span{display:flex;flex-direction:column}.security-badge strong{font-size:.78rem}.security-badge small{margin-top:1px;font-size:.68rem;color:#7c3aed}
+  .stats-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.stat-card{display:flex;align-items:center;gap:13px;padding:16px 18px;border:1px solid var(--border-color);border-radius:12px;background:#fff;box-shadow:var(--shadow-sm)}.stat-icon{width:39px;height:39px;display:grid;place-items:center;border-radius:10px;font-size:1.2rem}.stat-icon.purple{background:#eef2ff;color:#4f46e5}.stat-icon.green{background:#ecfdf5;color:#059669}.stat-icon.amber{background:#fffbeb;color:#d97706}.stat-card div{display:flex;flex-direction:column}.stat-card strong{font-size:1.2rem;line-height:1.1}.stat-card span:last-child{margin-top:3px;color:var(--text-muted);font-size:.75rem}
+  .workspace-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(270px,.85fr);gap:20px;align-items:stretch}.panel,.process-card{border:1px solid var(--border-color);border-radius:14px;background:#fff;box-shadow:var(--shadow-sm)}.upload-panel{padding:24px}.panel-heading{display:flex;align-items:center;gap:13px;padding-bottom:20px;margin-bottom:20px;border-bottom:1px solid #edf0f3}.heading-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:11px;background:var(--primary-light);color:var(--primary);font-size:1.35rem}.panel-heading h2,.library-header h2{font-size:1.04rem}.panel-heading p,.library-header p{margin-top:3px;color:var(--text-muted);font-size:.78rem}
+  form{display:flex;flex-direction:column;gap:17px}.form-group{display:flex;flex-direction:column;gap:7px}.form-group label{font-size:.8rem;font-weight:700}.form-group label span{margin-left:5px;color:#9f1239;font-size:.64rem;text-transform:uppercase;letter-spacing:.04em}.form-group input,.select-wrap select{width:100%;height:43px;border:1px solid #d7dee7;border-radius:9px;background:#fff;padding:0 12px;color:var(--text-main);font:inherit;font-size:.85rem;outline:none}.form-group input:focus,.select-wrap select:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-light)}.select-wrap{position:relative}.select-wrap>i:first-child{position:absolute;left:12px;top:50%;transform:translateY(-50%);z-index:1;color:#64748b}.select-wrap select{padding-left:36px;padding-right:35px;appearance:none}.select-wrap .caret{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:#94a3b8}.field-help{display:flex;align-items:flex-start;gap:5px;color:#64748b;font-size:.7rem;line-height:1.45}.field-help i{margin-top:2px;color:#818cf8}
+  .hidden-file{display:none}.drop-zone{width:100%;min-height:118px;display:flex;align-items:center;justify-content:center;gap:13px;padding:20px;border:1.5px dashed #b9c4d2;border-radius:11px;background:#f8fafc;color:var(--text-main);cursor:pointer;transition:.18s}.drop-zone:hover,.drop-zone.dragging{border-color:var(--primary);background:#f5f3ff}.upload-icon,.file-icon{width:43px;height:43px;display:grid;place-items:center;flex-shrink:0;border-radius:11px;background:#ede9fe;color:#6d28d9;font-size:1.35rem}.file-icon{background:#eef2ff;color:#4f46e5}.drop-copy{display:flex;flex-direction:column;text-align:left}.drop-copy strong{font-size:.82rem}.drop-copy small{margin-top:4px;color:var(--text-muted);font-size:.72rem}.replace-file{margin-left:auto;color:var(--primary);font-size:.75rem;font-weight:700}
+  .form-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding-top:2px}.upload-button,.clear-button,.refresh-button{height:40px;display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:9px;padding:0 15px;font-weight:700;font-size:.78rem;cursor:pointer}.upload-button{min-width:175px;border:0;background:var(--primary);color:#fff}.upload-button:hover{background:var(--primary-hover)}.clear-button,.refresh-button{border:1px solid var(--border-color);background:#fff;color:#475569}.clear-button:hover,.refresh-button:hover{background:#f8fafc}.upload-button:disabled,.clear-button:disabled,.refresh-button:disabled,.drop-zone:disabled{opacity:.58;cursor:not-allowed}
+  .notice{display:flex;align-items:flex-start;gap:8px;padding:11px 13px;border-radius:9px;font-size:.78rem;font-weight:600;line-height:1.4}.notice i{font-size:1rem}.notice.success{border:1px solid #a7f3d0;background:#ecfdf5;color:#047857}.notice.error{border:1px solid #fecaca;background:#fef2f2;color:#b91c1c}
+  .process-card{padding:24px;background:linear-gradient(155deg,#2b1b38 0%,#31213e 100%);color:#fff;border-color:#2b1b38}.process-eyebrow{color:#c4b5fd;font-size:.66rem;font-weight:800;letter-spacing:.12em}.process-card>h2{margin:7px 0 23px;font-size:1.05rem}.process-step{display:flex;gap:12px;align-items:flex-start}.process-step>span{width:27px;height:27px;display:grid;place-items:center;flex-shrink:0;border-radius:50%;background:#6f4b82;color:#fff;font-size:.72rem;font-weight:800}.process-step strong{display:block;font-size:.79rem}.process-step p{margin-top:3px;color:#cbd5e1;font-size:.71rem;line-height:1.45}.step-line{height:20px;margin-left:13px;border-left:1px dashed #765e82}.privacy-note{display:flex;gap:10px;margin-top:24px;padding:13px;border:1px solid #584364;border-radius:10px;background:#ffffff0d}.privacy-note i{color:#86efac;font-size:1.1rem}.privacy-note p{color:#d8d0dc;font-size:.7rem;line-height:1.45}.privacy-note strong{display:block;margin-bottom:2px;color:#fff;font-size:.74rem}
+  .library-panel{overflow:hidden}.library-header{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px 22px;border-bottom:1px solid #edf0f3}.library-tools{display:flex;align-items:center;gap:10px;padding:13px 22px;background:#fafbfc;border-bottom:1px solid #edf0f3}.search-box{position:relative;width:min(360px,100%)}.search-box i,.filter-wrap i{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#94a3b8}.search-box input,.filter-wrap select{width:100%;height:36px;border:1px solid #dbe2ea;border-radius:8px;background:#fff;padding:0 11px 0 34px;font:inherit;font-size:.76rem;outline:none}.search-box input:focus,.filter-wrap select:focus{border-color:var(--primary)}.filter-wrap{position:relative;width:180px}.filter-wrap select{appearance:none}.result-count{margin-left:auto;color:#64748b;font-size:.72rem;font-weight:600}
+  .table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse}th{text-align:left;padding:11px 18px;background:#fafbfc;color:#64748b;font-size:.65rem;font-weight:800;letter-spacing:.045em;text-transform:uppercase}td{padding:14px 18px;border-top:1px solid #edf0f3;font-size:.77rem;vertical-align:middle}tbody tr:hover{background:#fafbff}.document-cell{display:flex;align-items:center;gap:11px;min-width:230px}.document-icon{width:34px;height:34px;display:grid;place-items:center;flex-shrink:0;border-radius:8px;background:#f1f5f9;color:#64748b;font-size:1rem}.document-cell strong{display:block;max-width:340px;color:#1e293b;font-size:.79rem}.document-cell small{display:block;max-width:300px;margin-top:3px;overflow:hidden;color:#94a3b8;font-size:.68rem;text-overflow:ellipsis;white-space:nowrap}.muted-cell{color:#64748b;white-space:nowrap}.scope,.status{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:#eef2ff;color:#4338ca;font-size:.66rem;font-weight:700;white-space:nowrap}.scope-hr{background:#fdf2f8;color:#be185d}.scope-it{background:#eff6ff;color:#1d4ed8}.scope-accounting{background:#fffbeb;color:#b45309}.scope-workplaceoperations{background:#f0fdf4;color:#15803d}.scope-unclassified,.scope-unknown{background:#f1f5f9;color:#64748b}.status{background:#ecfdf5;color:#047857}.status.existing{background:#f1f5f9;color:#64748b}.state{display:flex;min-height:180px;align-items:center;justify-content:center;flex-direction:column;gap:7px;color:#64748b}.state>i{font-size:1.7rem;color:#818cf8}.state strong{font-size:.82rem}.state p{font-size:.73rem}
+  @media(max-width:1000px){.workspace-grid{grid-template-columns:1fr}.process-card{display:none}}
+  @media(max-width:700px){.knowledge-view{padding:18px}.view-header{align-items:flex-start;flex-direction:column}.security-badge{width:100%}.stats-grid{grid-template-columns:1fr}.library-tools{align-items:stretch;flex-direction:column}.search-box,.filter-wrap{width:100%}.result-count{margin-left:0}.library-header{align-items:flex-start}.upload-panel{padding:18px}.form-actions{align-items:stretch;flex-direction:column-reverse}.form-actions button{width:100%}}
 </style>

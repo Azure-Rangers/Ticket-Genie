@@ -61,23 +61,28 @@ def list_tickets(
     db: Session = Depends(get_db),
     current_user: dict = Depends(verify_azure_user),
 ):
-    user_role = (current_user.get("role") or "").lower()
+    user_role = (current_user.get("role") or "").strip().lower()
     is_admin = ("admin" in user_role) or current_user.get("is_dev", False)
+    is_ticketer = user_role == "ticketer"
 
     if admin_view:
-        if not is_admin:
+        if not (is_admin or is_ticketer):
             raise HTTPException(
                 status_code=403,
-                detail="Admin privileges required for admin_view access.",
+                detail="Admin or Ticketer access is required for a ticket queue.",
             )
         effective_requester = requester_id
         user_dept = current_user.get("department")
-        if (
-            not user_dept
-            or "upper" in user_dept.lower()
-            or "executive" in user_dept.lower()
-            or department
-        ):
+        if is_ticketer:
+            if not user_dept:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Ticketer accounts require a verified department assignment.",
+                )
+            # A Ticketer is always scoped from the verified Bearer identity;
+            # a client-supplied department can never widen this queue.
+            effective_department = user_dept
+        elif not user_dept or "upper" in user_dept.lower() or "executive" in user_dept.lower() or department:
             effective_department = department
         else:
             effective_department = user_dept

@@ -186,25 +186,41 @@ export async function apiExportCalendar() {
 
 /** ==================== KNOWLEDGE BASE API ==================== */
 
-export async function apiSearchKB(queryStr) {
-  try {
-    const res = await fetch(`/api/knowledge/search?q=${encodeURIComponent(queryStr)}`, {
-      headers: getAuthHeaders()
-    });
-    if (res.ok) return await res.json();
-  } catch (err) {
-    console.warn("apiSearchKB failed:", err);
-  }
-  return { query: queryStr, answer: "No matching knowledge base policy found.", verified: false };
+export async function apiListKnowledgeDocuments() {
+  const res = await fetch('/api/knowledge/documents', { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error(`Unable to load knowledge documents (${res.status})`);
+  return await res.json();
 }
 
-export async function apiIngestPolicy(policyPayload) {
-  const res = await fetch("/api/knowledge/ingest", {
-    method: "POST",
-    headers: getAuthHeaders(),
-    body: JSON.stringify(policyPayload)
-  });
-  if (!res.ok) throw new Error(`Policy ingestion failed (${res.status})`);
+export async function apiUploadKnowledgeDocument({ title, category, file }) {
+  const body = new FormData();
+  body.append('title', title);
+  body.append('category', category);
+  body.append('file', file);
+  const headers = getAuthHeaders();
+  delete headers['Content-Type'];
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60000);
+  let res;
+  try {
+    res = await fetch('/api/knowledge/documents', {
+      method: "POST",
+      headers,
+      body,
+      signal: controller.signal
+    });
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('Document processing exceeded 60 seconds. Nothing was confirmed as indexed; please try again.');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+  if (!res.ok) {
+    const payload = await res.json().catch(() => ({}));
+    throw new Error(payload.detail || `Document upload failed (${res.status})`);
+  }
   return await res.json();
 }
 

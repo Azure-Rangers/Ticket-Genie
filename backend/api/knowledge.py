@@ -1,48 +1,44 @@
-"""Knowledge Base Ingestion Router for Ticketer Permanent Memory Growth."""
+"""Role-protected knowledge document management API."""
 
 from __future__ import annotations
 
-from typing import Optional
-
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from services.jwt_verifier import verify_azure_user
-from services.knowledge_service import answer_question
+from services.knowledge_ingestion_service import (
+    ALLOWED_CATEGORIES,
+    ingest_document,
+    list_documents,
+    require_knowledge_manager,
+)
 
 router = APIRouter(prefix="/knowledge", tags=["knowledge"])
 
 
-class KnowledgeIngestRequest(BaseModel):
-    category: str
-    title: str
-    content: str
-    source: Optional[str] = "Ticketer Approved Resolution"
-
-
-@router.post("/ingest", status_code=201)
-def handle_knowledge_ingest(
-    req: KnowledgeIngestRequest,
+@router.post("/documents", status_code=201)
+async def upload_knowledge_document(
+    title: str = Form(..., min_length=3, max_length=255),
+    category: str = Form(...),
+    file: UploadFile = File(...),
     current_user: dict = Depends(verify_azure_user),
 ):
-    # Ingest into memory/knowledge store
-    return {
-        "success": True,
-        "message": f"Successfully ingested '{req.title}' into permanent knowledge base memory under {req.category}.",
-        "article": {
-            "title": req.title,
-            "category": req.category,
-            "content": req.content,
-            "source": req.source,
-        },
-    }
+    require_knowledge_manager(current_user)
+    try:
+        return await ingest_document(
+            file, title=title.strip(), category=category, uploaded_by=current_user
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Knowledge indexing is unavailable.") from exc
 
 
-@router.get("/search")
-def handle_knowledge_search(
-    q: str,
+@router.get("/documents")
+def get_knowledge_documents(
     current_user: dict = Depends(verify_azure_user),
 ):
-    user_role = current_user.get("role") or "Employee"
-    ans = answer_question(q, role=user_role)
-    return {"query": q, "answer": ans.answer, "verified": ans.verified}
+    require_knowledge_manager(current_user)
+    try:
+        return {"documents": list_documents(), "categories": sorted(ALLOWED_CATEGORIES)}
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Knowledge storage is unavailable.") from exc

@@ -93,6 +93,13 @@ def test_department_analytics_scope_comes_from_verified_identity():
             {"role": "Employee", "department": "IT Operations"}, None
         )
 
+    ticketer = {"role": "Ticketer", "department": "HR Team"}
+    assert resolve_analytics_department(ticketer, None) == "HR Team"
+    with pytest.raises(AnalyticsAccessError):
+        resolve_analytics_department(ticketer, "IT Team")
+    with pytest.raises(AnalyticsAccessError):
+        resolve_analytics_department({"role": "Ticketer"}, None)
+
     assert (
         resolve_analytics_department(
             {"role": "Super Admin", "department": "Upper Executive Management"},

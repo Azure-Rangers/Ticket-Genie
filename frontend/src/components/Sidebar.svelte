@@ -15,6 +15,7 @@
   $: showDeptSection = isTicketer($userStore) || isSuperAdmin($userStore);
   $: showUpperManagement = isSuperAdmin($userStore);
   $: showAdminSection = isAdmin($userStore) || isSuperAdmin($userStore);
+  $: canManageKnowledge = ['admin', 'ticketer'].includes(($userStore?.role || '').trim().toLowerCase());
 </script>
 
 <aside class="sidebar" class:collapsed={$sidebarCollapsed}>
@@ -42,7 +43,7 @@
       <div class="nav-section">
         <div class="nav-title">EMPLOYEE</div>
 
-        <button 
+        {#if canManageKnowledge}<button
           class="nav-link" 
           class:active={$activeTab === 'dashboard' || $activeTab === 'my-tickets'} 
           on:click={() => setTab('dashboard')}
@@ -50,7 +51,7 @@
         >
           <span class="menu-icon"><i class="ph-duotone ph-ticket"></i></span>
           <span class="menu-text">My Tickets</span>
-        </button>
+        </button>{/if}
 
         <button 
           class="nav-link" 

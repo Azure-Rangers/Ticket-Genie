@@ -25,7 +25,7 @@
   $: resolvedPoints = chartPoints(trends, 'resolved');
 
   onMount(() => {
-    if (!checkAuthGuard('admin')) return;
+    if (!checkAuthGuard(isDeptView ? 'ticketer' : 'admin')) return;
     mounted = true;
   });
 
