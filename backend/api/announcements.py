@@ -16,6 +16,7 @@ from services.announcement_service import (
     get_latest_announcement_with_severity,
 )
 from services.jwt_verifier import verify_azure_user
+from services.role_service import is_ticketer
 
 router = APIRouter(prefix="/announcements", tags=["announcements"])
 
@@ -40,12 +41,12 @@ class AnnouncementSeverityRequest(BaseModel):
 def require_announcement_admin(
     current_user: dict = Depends(verify_azure_user),
 ) -> dict:
-    """Allow announcement mutations only for verified Admin role."""
-    role = (current_user.get("role") or "").strip().lower().replace("_", " ")
-    if "admin" not in role:
+    """Allow announcement mutations for verified Ticketer-or-higher roles."""
+    role = current_user.get("role") or ""
+    if not is_ticketer(role, current_user.get("is_dev", False)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Forbidden: Only Admin can manage announcements.",
+            detail="Forbidden: Only Ticketers and Admins can manage announcements.",
         )
     return current_user
 

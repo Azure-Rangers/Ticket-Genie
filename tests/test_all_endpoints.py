@@ -90,6 +90,10 @@ def test_announcement_creation_role_boundary():
         require_announcement_admin({"role": "Super Admin", "oid": "super-1"})["oid"]
         == "super-1"
     )
+    assert (
+        require_announcement_admin({"role": "Ticketer", "oid": "ticketer-1"})["oid"]
+        == "ticketer-1"
+    )
 
     with pytest.raises(HTTPException) as error:
         require_announcement_admin({"role": "Employee", "oid": "employee-1"})

@@ -12,6 +12,10 @@ def _admin():
     return {"role": "Admin", "name": "Alex Admin", "email": "alex@example.com"}
 
 
+def _ticketer():
+    return {"role": "Ticketer", "name": "Taylor Ticketer", "email": "taylor@example.com"}
+
+
 def test_genie_announcement_creation_requires_confirmation():
     first = announcement_action_service.handle_turn(
         ChatRequest(message="create announcement titled Office closure"),
@@ -63,8 +67,17 @@ def test_employee_cannot_mutate_announcements_with_genie():
         ChatIntent.DELETE_ANNOUNCEMENT,
         {"role": "Employee"},
     )
-    assert "only authorized Admin" in response.message
+    assert "only authorized Ticketers and Admins" in response.message
     assert response.pending_action is None
+
+
+def test_ticketer_can_manage_announcements_with_genie():
+    response = announcement_action_service.handle_turn(
+        ChatRequest(message="create announcement titled Network maintenance"),
+        ChatIntent.CREATE_ANNOUNCEMENT,
+        _ticketer(),
+    )
+    assert response.pending_action.awaiting == "announcement_content"
 
 
 def test_employee_knowledge_navigation_is_removed_and_onboarding_is_highlighted():

@@ -1,4 +1,4 @@
-"""Deterministic, admin-only Genie workflows for announcement mutations."""
+"""Deterministic, Ticketer-or-higher Genie announcement workflows."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import Optional
 
 from database.crud import create_announcement, delete_announcement, get_announcements
 from models.chatbot import ChatIntent, ChatResponse, PendingManagementAction
-from services.role_service import is_admin
+from services.role_service import is_ticketer
 
 ANNOUNCEMENT_INTENTS = {ChatIntent.CREATE_ANNOUNCEMENT, ChatIntent.DELETE_ANNOUNCEMENT}
 
@@ -88,8 +88,8 @@ def _delete_turn(pending: PendingManagementAction, message: str) -> ChatResponse
 
 def handle_turn(request, intent: ChatIntent, current_user: Optional[dict]) -> ChatResponse:
     user = current_user or {}
-    if not is_admin(user.get("role") or "", user.get("is_dev", False)):
-        return ChatResponse(message="Sorry, only authorized Admin users can create or delete announcements.", intent=intent)
+    if not is_ticketer(user.get("role") or "", user.get("is_dev", False)):
+        return ChatResponse(message="Sorry, only authorized Ticketers and Admins can create or delete announcements.", intent=intent)
     pending = request.pending_action
     if pending is None or pending.action_type != intent:
         pending = PendingManagementAction(action_type=intent)

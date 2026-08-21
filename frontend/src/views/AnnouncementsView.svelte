@@ -14,7 +14,7 @@
   let deletingId = null;
 
   $: normalizedRole = ($userStore?.role || '').trim().toLowerCase().replace('_', ' ');
-  $: canCreate = normalizedRole.includes('admin');
+  $: canCreate = ['admin', 'ticketer', 'support', 'agent', 'super'].some((role) => normalizedRole.includes(role));
 
   onMount(loadAnnouncements);
 
